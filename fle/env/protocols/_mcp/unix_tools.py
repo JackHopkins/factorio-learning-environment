@@ -10,15 +10,25 @@ import importlib.resources
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
-from fle.env.protocols.mcp import mcp
+from fle.env.protocols._mcp import mcp
 
 
 def _get_tools_base_path() -> Path:
     """Get the base path to the tools directory"""
     return importlib.resources.files("fle") / "env" / "tools"
 
+def _get_repo_base_path() -> Path:
+    """Get the base path to the repository directory"""
+    return importlib.resources.files("fle")
 
-@mcp.tool()
+
+def _get_factorio_repo_path() -> Path:
+    """Get the path to the active .factorio_mcp_repo directory"""
+    base_path = importlib.resources.files("fle")
+    repo_path = base_path / ".claude-code"
+    return repo_path
+
+@mcp.tool(enabled=False)
 async def ls(path: str = "agent", pattern: str = None) -> str:
     """
     List tools and directories in the tools path
@@ -78,7 +88,7 @@ async def ls(path: str = "agent", pattern: str = None) -> str:
     return result
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def cat(file_path: str) -> str:
     """
     Display the contents of a file in the tools directory
@@ -86,7 +96,7 @@ async def cat(file_path: str) -> str:
     Args:
         file_path: Relative path to the file within the tools directory
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     target_file = base_path / file_path
 
     if not target_file.exists():
@@ -104,7 +114,7 @@ async def cat(file_path: str) -> str:
         return f"Error reading file '{file_path}': {str(e)}"
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def find(
     path: str = "",
     name_pattern: str = None,
@@ -122,7 +132,7 @@ async def find(
         type_filter: Limit to specific types: "f" for files, "d" for directories
         max_depth: Maximum directory depth to search
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     start_path = base_path if not path else base_path / path
 
     if not start_path.exists():
@@ -182,10 +192,10 @@ async def find(
     return f"Found {len(results)} matches:\n\n" + "\n".join(results)
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def grep(
     pattern: str,
-    path: str,
+    path: str = "tools/agent",
     recursive: bool = True,
     case_sensitive: bool = False,
     line_numbers: bool = True,
@@ -200,7 +210,7 @@ async def grep(
         case_sensitive: Whether the search should be case-sensitive
         line_numbers: Whether to show line numbers in the output
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     target_path = base_path / path
 
     if not target_path.exists():
@@ -264,7 +274,7 @@ async def grep(
     return f"Matches for '{pattern}' in {path}:\n\n" + "\n".join(results)
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def which(command: str) -> str:
     """
     Find the implementation file for a specific Factorio tool
@@ -327,8 +337,8 @@ async def which(command: str) -> str:
     return f"Tool '{command}' not found in the tools directory"
 
 
-@mcp.tool()
-async def head(file_path: str, lines: int = 10) -> str:
+@mcp.tool(enabled=False)
+async def head(file_path: str = "tools/agent", lines: int = 10) -> str:
     """
     Display the first lines of a file
 
@@ -336,7 +346,7 @@ async def head(file_path: str, lines: int = 10) -> str:
         file_path: Relative path to the file within the tools directory
         lines: Number of lines to show (default: 10)
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     target_file = base_path / file_path
 
     if not target_file.exists():
@@ -356,8 +366,8 @@ async def head(file_path: str, lines: int = 10) -> str:
         return f"Error reading file '{file_path}': {str(e)}"
 
 
-@mcp.tool()
-async def tail(file_path: str, lines: int = 10) -> str:
+@mcp.tool(enabled=False)
+async def tail(file_path: str = "tools/agent", lines: int = 10) -> str:
     """
     Display the last lines of a file
 
@@ -365,7 +375,7 @@ async def tail(file_path: str, lines: int = 10) -> str:
         file_path: Relative path to the file within the tools directory
         lines: Number of lines to show (default: 10)
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     target_file = base_path / file_path
 
     if not target_file.exists():
@@ -385,8 +395,8 @@ async def tail(file_path: str, lines: int = 10) -> str:
         return f"Error reading file '{file_path}': {str(e)}"
 
 
-@mcp.tool()
-async def tree(path: str = "", max_depth: int = 3, show_hidden: bool = False) -> str:
+@mcp.tool(enabled=False)
+async def tree(path: str = "tools/agent", max_depth: int = 3, show_hidden: bool = False) -> str:
     """
     Display directory structure in a tree-like format
 
@@ -395,7 +405,7 @@ async def tree(path: str = "", max_depth: int = 3, show_hidden: bool = False) ->
         max_depth: Maximum directory depth to display
         show_hidden: Whether to show hidden and cache files/directories (default: False)
     """
-    base_path = _get_tools_base_path()
+    base_path = _get_repo_base_path()
     start_path = base_path if not path else base_path / path
 
     if not start_path.exists():
@@ -473,7 +483,7 @@ async def tree(path: str = "", max_depth: int = 3, show_hidden: bool = False) ->
     return "\n".join(result)
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def man(command: str) -> str:
     """
     Display the manual/documentation for a Factorio tool
@@ -528,7 +538,7 @@ async def man(command: str) -> str:
     return f"No documentation found for tool '{command}'"
 
 
-@mcp.tool()
+@mcp.tool(enabled=False)
 async def whereis(keyword: str) -> str:
     """
     Find all occurrences related to a keyword in the tools directory

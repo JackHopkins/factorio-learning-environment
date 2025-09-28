@@ -5,10 +5,11 @@ from typing import Dict, List, Optional, Any
 
 from fle.env import FactorioInstance
 from fle.commons.cluster_ips import get_local_container_ips
+from fle.env.gym_env.registry import list_available_environments
 
-from fle.env.protocols.mcp.models import FactorioServer, Recipe, ResourcePatch
-from fle.env.protocols.mcp.repository import FactorioMCPRepository
-
+from fle.env.protocols._mcp.models import FactorioServer, Recipe, ResourcePatch
+from fle.env.protocols._mcp.repository import FactorioMCPRepository
+import gym
 
 class FactorioMCPState:
     """Manages the state of the Factorio MCP server"""
@@ -35,23 +36,91 @@ class FactorioMCPState:
             int, "FactorioMCPRepository"
         ] = {}  # instance_id -> VCS repo
 
+        try:
+            env_ids = list_available_environments()
+            #print(f"DEBUG: Available environment IDs: {env_ids}")
+            #print(f"DEBUG: Number of environments found: {len(env_ids)}")
+            
+            if not env_ids:
+                raise Exception("No environments found")
+                
+            for id in env_ids:
+                if 'open' in id:
+                    print(f"DEBUG: Using open environment: {id}")
+                    self.gym_env = gym.make(id, run_idx=0)
+                    self.gym_env.reset()
+                    return
+                    
+            #print(f"DEBUG: No open environment found, using first available: {env_ids[0]}")
+            self.gym_env = gym.make(env_ids[0], run_idx=0)
+
+            # program = await self.create_program_from_policy(
+            #     policy=policy,
+            #     agent_idx=agent_idx,
+            #     reward=reward,
+            #     response=obs_dict["raw_text"],
+            #     error_occurred=info["error_occurred"],
+            #     game_state=output_game_state
+            # )
+            #
+        except IndexError as e:
+            print(f"IndexError in __init__: {e}")
+            print(f"env_ids length: {len(env_ids) if 'env_ids' in locals() else 'Not available'}")
+            print("Falling back to steel_plate_throughput environment")
+            self.gym_env = gym.make('steel_plate_throughput', run_idx=0)
+        except Exception as e:
+            print(f"Error in __init__: {e}")
+            print(f"Error type: {type(e)}")
+            print("Falling back to steel_plate_throughput environment")
+            self.gym_env = gym.make('steel_plate_throughput', run_idx=0)
+
+        self.gym_env.reset()
+
     def create_factorio_instance(self, instance_id: int) -> FactorioInstance:
         """Create a single Factorio instance"""
-        ips, udp_ports, tcp_ports = get_local_container_ips()
         try:
+            ips, udp_ports, tcp_ports = get_local_container_ips()
+
+            if instance_id >= len(ips):
+                raise IndexError(f"instance_id {instance_id} out of range for ips list of length {len(ips)}")
+            if instance_id >= len(tcp_ports):
+                raise IndexError(f"instance_id {instance_id} out of range for tcp_ports list of length {len(tcp_ports)}")
+            
             instance = FactorioInstance(
                 address=ips[instance_id],
                 tcp_port=tcp_ports[instance_id],
                 bounding_box=200,
                 fast=True,
                 cache_scripts=True,
-                inventory={},
+                inventory={
+                    'stone-furnace': 1,
+                    'burner-mining-drill': 1,
+                    'wood': 5,
+                    'iron-plate': 8
+                },
                 all_technologies_researched=True,
             )
+            # Ensure agent characters exist (removed one-time associate command)
+            # Check if agent characters exist, if not create them
+            char_check = instance.rcon_client.send_command(
+                "/c rcon.print(global.agent_characters and #global.agent_characters or 0)")
+
+            if int(char_check) == 0:
+                instance.first_namespace._create_agent_characters(1)
+
             instance.set_speed(10)
             return instance
+        except IndexError as e:
+            print(f"IndexError in create_factorio_instance: {e}")
+            try:
+                print(f"Available IPs: {ips}")
+                print(f"Available TCP ports: {tcp_ports}")
+            except NameError:
+                print("ERROR: Could not retrieve container IPs/ports")
+            raise e
         except Exception as e:
             print(f"Error creating Factorio instance: {e}")
+            print(f"Error type: {type(e)}")
             raise e
 
     async def scan_for_servers(self, ctx=None) -> List[FactorioServer]:
@@ -151,7 +220,7 @@ class FactorioMCPState:
                 self.vcs_repos[instance_id] = FactorioMCPRepository(instance)
 
             return True
-        except Exception:
+        except Exception as e:
             print(f"Error connecting to Factorio server: {e}")
             return False
 

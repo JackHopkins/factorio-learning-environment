@@ -290,17 +290,17 @@ def test_entities_with_cliffs(clear_terrain):
 def test_rocks_and_decoratives(clear_terrain):
     """Test rock placement as decoratives"""
     game = clear_terrain
-
-    game.instance.rcon_client.send_command(
-        "/sc "
-        "local rock_types = {'rock-huge', 'rock-big', 'sand-rock-big'} "
-        "for i=1,10 do "
-        "  local rock = rock_types[math.random(#rock_types)] "
-        "  local x = math.random(-10, 10) "
-        "  local y = math.random(-10, 10) "
-        "  game.surfaces[1].create_entity{name=rock, position={x=x, y=y}} "
-        "end"
-    )
+    #
+    # game.instance.rcon_client.send_command(
+    #     "/sc "
+    #     "local rock_types = {'rock-huge', 'rock-big', 'sand-rock-big'} "
+    #     "for i=1,10 do "
+    #     "  local rock = rock_types[math.random(#rock_types)] "
+    #     "  local x = math.random(-10, 10) "
+    #     "  local y = math.random(-10, 10) "
+    #     "  game.surfaces[1].create_entity{name=rock, position={x=x, y=y}} "
+    #     "end"
+    # )
 
     image = game._render(position=Position(x=0, y=0), radius=15, layers=Layer.ALL)
     # image.show()

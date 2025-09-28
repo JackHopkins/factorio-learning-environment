@@ -89,6 +89,10 @@ class Controller:
     def parse_lua_dict(self, d):
         if isinstance(d, (int, str, float)):
             return d
+        
+        # Handle lists that were already converted from integer-keyed dicts
+        if isinstance(d, list):
+            return [self.parse_lua_dict(item) for item in d]
 
         if isinstance(d, dict) and all(isinstance(k, int) for k in d.keys()):
             # Convert to list if all keys are numeric

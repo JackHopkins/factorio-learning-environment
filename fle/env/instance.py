@@ -7,6 +7,8 @@ import threading
 
 from pathlib import Path
 from timeit import default_timer as timer
+from typing import Dict
+
 from typing_extensions import Optional
 import uuid
 
@@ -69,7 +71,7 @@ class FactorioInstance:
         address=None,
         fast=True,
         tcp_port=27000,
-        inventory=None,
+        inventory: Dict = {},
         cache_scripts=True,
         all_technologies_researched=True,
         clear_entities=True,
@@ -111,9 +113,9 @@ class FactorioInstance:
         self.initial_score = 0
         try:
             self.first_namespace.score()
-            print("Initial score:", self.initial_score)
+            #print("Initial score:", self.initial_score)
         except Exception as e:
-            print(e)
+            #print(e)
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.script_dict = {
@@ -241,7 +243,8 @@ class FactorioInstance:
             agent_idx=agent_idx, num_agents=self.num_agents
         )
 
-    def connect_to_server(self, address, tcp_port):
+    @staticmethod
+    def connect_to_server(address, tcp_port):
         try:
             rcon_client = RCONClient(address, tcp_port, "factorio")  #'quai2eeha3Lae7v')
             address = address

@@ -1,0 +1,632 @@
+# Simplified overlay.py modifications for MCP read-only monitoring with warning display
+
+import argparse
+import asyncio
+import base64
+import random
+import time
+import threading
+import logging
+import subprocess
+import json
+from collections import deque
+from datetime import datetime, timedelta
+from pathlib import Path
+from queue import Queue
+from typing import Optional, List, Dict, Any
+
+import gym
+from nicegui import ui, Client
+from nicegui import events
+
+from fle.agents.gym_agent import GymAgent
+from fle.commons.cluster_ips import get_local_container_ips
+from fle.commons.db_client import create_db_client
+from fle.env import FactorioInstance
+from fle.env.gym_env.action import Action
+from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.observation import Observation
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+from fle.env.gym_env.registry import get_environment_info, list_available_environments
+from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
+from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
+from fle.env.lua_manager import LuaScriptManager
+from fle.env.tools.agent.get_entities.client import GetEntities
+from fle.eval.algorithms.independent import get_next_version
+from fle.overlay import IconManager
+from tests.conftest import namespace
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('factorio_overlay.log')
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+class FactorioControlPanel:
+    """Minimal control panel for Factorio - MCP read-only monitoring with warning display."""
+
+    def __init__(self,
+                 mcp_server: list = None):
+        logger.info("Initializing FactorioControlPanel with MCP monitoring")
+
+        self.mcp_server = mcp_server or ["python", "-m", "fle.env.protocols._mcp"]
+        self.mcp_bridge = None
+
+        self.update_queue = Queue()
+        self.is_monitoring = False
+
+        # Warning buffer and submission tracking
+        self.warning_buffer = deque(maxlen=100)  # Keep last 100 warnings
+        self.displayed_warnings = deque(maxlen=10)  # Keep last 10 warnings for display
+
+        # Track submitted warnings with timestamps for expiry
+        # Format: {hash: submission_timestamp}
+        self.submitted_warnings_with_time = {}
+        self.warning_expiry_seconds = 30  # Expire after 30 seconds
+
+        self.last_warning_check = time.time()
+
+        # Warning severity levels
+        self.warning_levels = {
+            'critical': {'color': 'red-500', 'icon': '🔴', 'priority': 3},
+            'error': {'color': 'orange-500', 'icon': '🟠', 'priority': 2},
+            'warning': {'color': 'yellow-500', 'icon': '🟡', 'priority': 1},
+            'info': {'color': 'blue-500', 'icon': '🔵', 'priority': 0}
+        }
+
+        # Initialize icon manager
+        self.icon_manager = IconManager()
+
+        # Inventory data
+        self.inventory_items = {}
+
+        # Score tracking
+        self.last_score = 0
+
+        # Production chart data
+        self.production_history = {
+            'timestamps': deque(maxlen=50),
+            'data': {}
+        }
+        self.chart = None
+
+        # UI elements (will be initialized in create_ui)
+        self.coin_icon = None
+        self.score_label = None
+        self.status_label = None
+        self.entities_label = None
+        self.tick_label = None
+        self.research_label = None
+        self.game_view = None
+        self.inventory_grid = None
+        self.warnings_container = None
+        self.warning_count_badge = None
+        self.warnings_list = None
+
+        # Auto-start monitoring
+        self.auto_start = True
+
+    def send_to_claude_code(self, message: str) -> bool:
+        """Send message to Claude Code tmux session (similar to auto_continue.py logic)."""
+        try:
+            # Check if claude-code tmux session exists
+            result = subprocess.run(
+                ['tmux', 'has-session', '-t', 'claude-code'],
+                capture_output=True,
+                text=True
+            )
+
+            if result.returncode != 0:
+                logger.error("No claude-code tmux session found")
+                return False
+
+            logger.info(f"Found claude-code tmux session")
+
+            # Send the message with carriage return for proper submission
+            subprocess.run([
+                'tmux', 'send-keys', '-t', 'claude-code',
+                message, 'C-m'
+            ], check=True)
+
+            # Send additional C-m for good measure
+            subprocess.run([
+                'tmux', 'send-keys', '-t', 'claude-code', 'C-m'
+            ], check=True)
+
+            logger.info(f"Sent '{message}' to claude-code session")
+            return True
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to send to tmux: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error sending to tmux: {e}")
+            return False
+
+    def determine_warning_level(self, warning_text: str) -> str:
+        """Determine the severity level of a warning based on its content."""
+        text_lower = warning_text.lower()
+
+        if any(word in text_lower for word in ['critical', 'fatal', 'crash', 'emergency']):
+            return 'critical'
+        elif any(word in text_lower for word in ['error', 'failed', 'exception', 'invalid']):
+            return 'error'
+        elif any(word in text_lower for word in ['warning', 'warn', 'deprecated', 'issue']):
+            return 'warning'
+        else:
+            return 'info'
+
+    def clean_expired_warning_hashes(self):
+        """Remove warning hashes that are older than the expiry time."""
+        current_time = time.time()
+        expired_hashes = []
+
+        for warning_hash, submission_time in self.submitted_warnings_with_time.items():
+            if current_time - submission_time > self.warning_expiry_seconds:
+                expired_hashes.append(warning_hash)
+
+        for expired_hash in expired_hashes:
+            del self.submitted_warnings_with_time[expired_hash]
+            logger.debug(f"Expired warning hash: {expired_hash}")
+
+        if expired_hashes:
+            logger.info(f"Cleaned {len(expired_hashes)} expired warning hashes")
+
+    def add_warning(self, warning_text: str, source: str = "MCP"):
+        """Add a warning to the buffer and check if it should be submitted."""
+        timestamp = datetime.now()
+        level = self.determine_warning_level(warning_text)
+
+        warning_data = {
+            'text': warning_text,
+            'source': source,
+            'timestamp': timestamp,
+            'level': level,
+            'hash': hash(warning_text)  # Simple hash for duplicate detection
+        }
+
+        # Add to buffer
+        self.warning_buffer.append(warning_data)
+        self.displayed_warnings.append(warning_data)
+        logger.info(f"Added warning to buffer: {warning_text[:50]}...")
+
+        # Update the display
+        self.update_warnings_display()
+
+        # Clean expired hashes before checking
+        self.clean_expired_warning_hashes()
+
+        # Check if this is a new warning or an expired one that should be re-submitted
+        warning_hash = warning_data['hash']
+        if warning_hash not in self.submitted_warnings_with_time:
+            self.submit_warning_to_claude(warning_data)
+            # Track the submission time
+            self.submitted_warnings_with_time[warning_hash] = time.time()
+
+    def submit_warning_to_claude(self, warning_data: dict):
+        """Submit a warning to Claude Code terminal."""
+        warning_text = warning_data['text']
+        source = warning_data['source']
+        timestamp = warning_data['timestamp'].strftime('%H:%M:%S')
+
+        # Format the warning message for Claude
+        formatted_message = f"[{timestamp}] {source} Warning: {warning_text}"
+
+        logger.info(f"Submitting warning to Claude: {formatted_message}")
+
+        # Send to Claude Code session
+        success = self.send_to_claude_code(formatted_message)
+
+        if success:
+            logger.info(f"Successfully submitted warning to Claude")
+        else:
+            logger.warning(f"Failed to submit warning to Claude")
+
+    def update_warnings_display(self):
+        """Update the warnings display in the UI."""
+        if not self.warnings_list:
+            return
+
+        # Clear and rebuild the warnings list
+        self.warnings_list.clear()
+
+        with self.warnings_list:
+            # Sort warnings by timestamp (newest first) and priority
+            sorted_warnings = sorted(
+                self.displayed_warnings,
+                key=lambda x: (-self.warning_levels[x['level']]['priority'], x['timestamp']),
+                reverse=True
+            )
+
+            if not sorted_warnings:
+                with ui.card().classes('w-full p-2 bg-gray-700 text-gray-400'):
+                    ui.label('No warnings').classes('text-xs')
+            else:
+                for warning in sorted_warnings:
+                    level_info = self.warning_levels[warning['level']]
+
+                    with ui.card().classes(f'w-full p-2 bg-gray-700 border-l-4 border-{level_info["color"]}'):
+                        with ui.row().classes('w-full items-start gap-2'):
+                            # Icon
+                            ui.label(level_info['icon']).classes('text-sm')
+
+                            # Content
+                            with ui.column().classes('flex-1 gap-1'):
+                                # Header with source and time
+                                with ui.row().classes('w-full justify-between items-center'):
+                                    ui.label(f'{warning["source"]}').classes(
+                                        f'text-xs font-bold text-{level_info["color"]}')
+                                    ui.label(warning['timestamp'].strftime('%H:%M:%S')).classes('text-xs text-gray-400')
+
+                                # Warning text
+                                ui.label(warning['text']).classes('text-xs text-white break-words')
+
+                                # Show if this warning can be re-submitted
+                                warning_hash = warning['hash']
+                                if warning_hash in self.submitted_warnings_with_time:
+                                    time_since_submission = time.time() - self.submitted_warnings_with_time[
+                                        warning_hash]
+                                    time_until_resubmit = self.warning_expiry_seconds - time_since_submission
+                                    if time_until_resubmit > 0:
+                                        ui.label(f'Can re-notify in {time_until_resubmit:.0f}s').classes(
+                                            'text-xs text-gray-500')
+
+        # Update warning count badge
+        if self.warning_count_badge:
+            count = len(self.displayed_warnings)
+            if count > 0:
+                self.warning_count_badge.set_text(str(count))
+                self.warning_count_badge.classes(remove='hidden')
+            else:
+                self.warning_count_badge.classes('hidden')
+
+    def clear_warnings(self):
+        """Clear all displayed warnings and their submission history."""
+        self.displayed_warnings.clear()
+        # Also clear the submission history when manually clearing
+        self.submitted_warnings_with_time.clear()
+        self.update_warnings_display()
+        logger.info("Cleared all displayed warnings and submission history")
+
+    def check_for_warnings(self):
+        """Check MCP data for warnings and submit new ones."""
+        current_time = time.time()
+
+        # Only check every 2 seconds to avoid spam
+        if current_time - self.last_warning_check < 2.0:
+            return
+
+        self.last_warning_check = current_time
+
+        # Clean expired warning hashes periodically
+        self.clean_expired_warning_hashes()
+
+        # Get recent updates from the queue to check for warnings
+        # Note: This is a simplified approach - in a real implementation,
+        # you might want the MCP bridge to specifically flag warnings
+        try:
+            # Check if the MCP bridge has any warning data
+            if self.mcp_bridge and hasattr(self.mcp_bridge, 'get_warnings'):
+                warnings = self.mcp_bridge.get_warnings()
+                for warning in warnings:
+                    self.add_warning(warning, "MCP")
+        except Exception as e:
+            logger.error(f"Error checking for warnings: {e}")
+
+    def process_updates(self):
+        """Process updates from the MCP bridge."""
+        while not self.update_queue.empty():
+            update = self.update_queue.get()
+
+            # Check for warnings in any update
+            if 'warnings' in update:
+                for warning in update['warnings']:
+                    self.add_warning(warning, "MCP")
+
+            # Check for error messages that should be treated as warnings
+            if 'error' in update or 'message' in update:
+                message = update.get('message', update.get('error', ''))
+                if any(keyword in str(message).lower() for keyword in ['warning', 'error', 'failed', 'exception']):
+                    self.add_warning(str(message), "MCP")
+
+            if update['type'] == 'state_update':
+                # Update inventory
+                if 'inventory' in update and update['inventory']:
+                    if self.inventory_items != update['inventory']:
+                        self.inventory_items = update['inventory']
+                        self.update_inventory_display()
+
+                # Calculate and display score from inventory
+                if 'inventory' in update and update['inventory']:
+                    total_value = sum(update['inventory'].values())
+                    score_text = f'{total_value:.0f}'
+                    if self.score_label:
+                        self.score_label.set_content(score_text)
+
+                # Update entity count
+                if 'entities_count' in update and self.entities_label:
+                    self.entities_label.set_text(f'Entities: {update["entities_count"]}')
+
+                # Update position
+                if 'position' in update and self.tick_label:
+                    pos = update['position']
+                    self.tick_label.set_text(f'Pos: ({pos.get("x", 0):.0f}, {pos.get("y", 0):.0f})')
+
+                # Update game view image if available
+                if 'image' in update and update['image'] and self.game_view:
+                    self.game_view.set_source(update['image'])
+
+                # Update status
+                if 'status' in update and self.status_label:
+                    # Extract key info from status string
+                    if 'Connected to Factorio server' in str(update['status']):
+                        self.status_label.set_text('🟢 Connected')
+                    else:
+                        self.status_label.set_text('🟡 ' + str(update['status'])[:30])
+
+            elif update['type'] == 'init':
+                if self.status_label:
+                    self.status_label.set_text('🟢 Monitoring Active')
+
+                # Initialize coin icon
+                coin_icon_data = self.icon_manager.get_icon_base64('coin')
+                if coin_icon_data and self.coin_icon:
+                    self.coin_icon.set_source(coin_icon_data)
+                elif self.coin_icon:
+                    self.coin_icon.classes('hidden')
+
+            elif update['type'] == 'error':
+                if self.status_label:
+                    self.status_label.set_text(f'❌ {update.get("message", "Error")[:30]}')
+                # Also add as warning
+                self.add_warning(update.get("message", "Unknown error"), "System")
+
+    def update_inventory_display(self):
+        """Update the inventory grid display with sprite icons."""
+        if not self.inventory_grid:
+            return
+
+        self.inventory_grid.clear()
+
+        with self.inventory_grid:
+            # Sort items by count (descending)
+            sorted_items = sorted(self.inventory_items.items(), key=lambda x: x[1], reverse=True)
+
+            for item_name, count in sorted_items[:20]:  # Show top 20 items
+                with ui.card().classes('w-16 h-16 bg-gray-700 p-1 relative overflow-hidden'):
+                    # Try to get sprite icon
+                    icon_data = self.icon_manager.get_icon_base64(item_name)
+
+                    if icon_data:
+                        # Use actual sprite icon
+                        ui.image(icon_data).classes(
+                            'absolute inset-0 w-full h-full object-contain p-1'
+                        )
+                    else:
+                        # Fallback to emoji
+                        emoji = self.icon_manager.get_emoji_fallback(item_name)
+                        ui.label(emoji).classes(
+                            'text-2xl absolute top-1 left-1/2 transform -translate-x-1/2'
+                        )
+
+                    # Count badge
+                    ui.label(str(count)).classes(
+                        'text-sm text-white absolute bottom-0 right-1 bg-gray-900 px-1 rounded font-bold'
+                    )
+                    # Tooltip with item name
+                    ui.tooltip(item_name)
+
+    def create_ui(self):
+        """Create the MCP monitoring interface with warning display."""
+        if hasattr(self, '_ui_created'):
+            return
+        self._ui_created = True
+
+        # Main container
+        with ui.row().classes('w-full h-screen p-4 bg-gray-900 gap-4'):
+
+            # LEFT COLUMN - Stats and inventory
+            with ui.column().classes('w-96 flex-shrink-0 gap-2'):
+                # Header
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    ui.label('Factorio MCP Monitor').classes('text-xl font-bold text-center')
+                    self.status_label = ui.label('⚪ Connecting to MCP...').classes('text-sm text-center mt-2')
+
+                # Stats
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    ui.label('Statistics').classes('text-sm font-bold')
+
+                    # Score with coin icon
+                    with ui.row().classes('items-center gap-1 mt-2'):
+                        self.coin_icon = ui.image('').classes('w-4 h-4')
+                        self.score_label = ui.html('0').classes('text-lg font-bold')
+
+                    with ui.row().classes('w-full justify-between text-xs mt-2'):
+                        self.entities_label = ui.label('Entities: 0')
+                        self.tick_label = ui.label('Pos: (0, 0)')
+
+                # Warnings Panel
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    with ui.row().classes('w-full justify-between items-center'):
+                        with ui.row().classes('items-center gap-2'):
+                            ui.label('⚠️ Warnings').classes('text-sm font-bold')
+                            self.warning_count_badge = ui.label('0').classes(
+                                'px-2 py-0.5 bg-red-500 text-white text-xs rounded-full hidden'
+                            )
+                        ui.button('Clear', on_click=self.clear_warnings).classes(
+                            'text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600'
+                        )
+
+                    # Scrollable warnings list
+                    with ui.scroll_area().classes('w-full h-48 mt-2'):
+                        self.warnings_list = ui.column().classes('w-full gap-2')
+
+                # Inventory
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    ui.label('Inventory').classes('text-sm font-bold')
+                    self.inventory_grid = ui.row().classes('w-full flex-wrap gap-2 mt-2')
+
+                # Control buttons
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    with ui.row().classes('w-full gap-2'):
+                        ui.button('Reconnect', on_click=self.reconnect_mcp).classes('flex-1')
+                        ui.button('Stop', on_click=self.stop_monitoring).classes('flex-1')
+                        # Add test warning button for debugging
+                        ui.button('Test Warning', on_click=lambda: self.add_warning(
+                            f'Test warning at {datetime.now().strftime("%H:%M:%S")}',
+                            'Test'
+                        )).classes('flex-1')
+
+                # Warning Settings Info
+                with ui.card().classes('w-full bg-gray-800 text-white'):
+                    ui.label('⚙️ Warning Settings').classes('text-sm font-bold')
+                    ui.label(f'Re-notification after: {self.warning_expiry_seconds}s').classes(
+                        'text-xs text-gray-400 mt-1')
+                    ui.label('Expired warnings can be resubmitted').classes('text-xs text-gray-400')
+
+            # CENTER - Game view
+            with ui.column().classes('flex-1'):
+                with ui.card().classes('w-full h-full bg-gray-800'):
+                    ui.label('Game View').classes('text-sm font-bold text-white mb-2')
+                    self.game_view = ui.image().classes('w-full h-full object-contain')
+                    # Show placeholder initially
+                    self.game_view.set_source(
+                        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjI0IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+V2FpdGluZyBmb3IgZ2FtZSBkYXRhLi4uPC90ZXh0Pjwvc3ZnPg==')
+
+            # RIGHT COLUMN - Optional: Live warning feed (for critical warnings)
+            with ui.column().classes('w-80 flex-shrink-0 gap-2'):
+                with ui.card().classes('w-full bg-gray-800 text-white h-full'):
+                    ui.label('🚨 Live Warning Feed').classes('text-sm font-bold mb-2')
+                    with ui.scroll_area().classes('w-full flex-1'):
+                        self.live_warnings_feed = ui.column().classes('w-full gap-2')
+
+                    # Add notification settings
+                    with ui.row().classes('w-full mt-2 pt-2 border-t border-gray-700'):
+                        ui.switch('Audio alerts').classes('text-xs')
+                        ui.switch('Auto-clear old').classes('text-xs')
+
+        # Set up periodic UI updates
+        ui.timer(0.5, self.process_updates)
+
+        # Set up periodic warning checks
+        ui.timer(2.0, self.check_for_warnings)
+
+        # Auto-clear old warnings every 30 seconds
+        ui.timer(30.0, self.auto_clear_old_warnings)
+
+        # Clean expired warning hashes every 10 seconds
+        ui.timer(10.0, self.clean_expired_warning_hashes)
+
+        # Auto-start monitoring
+        if self.auto_start:
+            ui.timer(1.0, lambda: self.start_monitoring(), once=True)
+
+    def auto_clear_old_warnings(self):
+        """Automatically remove warnings older than 15 minutes from display."""
+        current_time = datetime.now()
+        cutoff_time = current_time - timedelta(minutes=15)
+
+        # Filter out old warnings from display only
+        self.displayed_warnings = deque(
+            [w for w in self.displayed_warnings if w['timestamp'] > cutoff_time],
+            maxlen=10
+        )
+
+        self.update_warnings_display()
+
+    def start_monitoring(self):
+        """Start monitoring via MCP"""
+        if self.is_monitoring:
+            return
+
+        logger.info("Starting MCP monitoring")
+        self.is_monitoring = True
+
+        if self.status_label:
+            self.status_label.set_text('🟡 Connecting to MCP...')
+
+        # Import and create the MCP bridge
+        from mcp_dataloader import MCPDataBridge
+
+        self.mcp_bridge = MCPDataBridge(
+            update_queue=self.update_queue
+        )
+
+        try:
+            self.mcp_bridge.start()
+            logger.info("MCP bridge started successfully")
+        except Exception as e:
+            logger.error(f"Failed to start MCP bridge: {e}")
+            if self.status_label:
+                self.status_label.set_text(f'❌ Failed: {str(e)[:30]}')
+            self.is_monitoring = False
+            # Add as warning
+            self.add_warning(f"Failed to start MCP bridge: {e}", "System")
+
+    def reconnect_mcp(self):
+        """Reconnect to MCP server"""
+        logger.info("Reconnecting to MCP")
+        self.stop_monitoring()
+        ui.timer(1.0, lambda: self.start_monitoring(), once=True)
+
+    def stop_monitoring(self):
+        """Stop monitoring"""
+        if not self.is_monitoring:
+            return
+
+        logger.info("Stopping MCP monitoring")
+        self.is_monitoring = False
+
+        if self.mcp_bridge:
+            try:
+                self.mcp_bridge.stop()
+            except Exception as e:
+                logger.error(f"Error stopping MCP bridge: {e}")
+            self.mcp_bridge = None
+
+        if self.status_label:
+            self.status_label.set_text('⏹️ Stopped')
+
+
+def main():
+    """Main entry point for MCP monitoring panel."""
+    import argparse
+
+    logger.info("=== Starting Factorio MCP Monitor ===")
+
+    parser = argparse.ArgumentParser(description='MCP monitoring panel for Factorio')
+    parser.add_argument('--port', type=int, default=8080, help='Port for web interface')
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host for web interface')
+    parser.add_argument('--mcp-server', nargs='+', default=['python', '-m', 'fle.env.protocols._mcp'])
+
+    args = parser.parse_args()
+
+    # Create monitoring panel
+    panel = FactorioControlPanel(
+        mcp_server=args.mcp_server
+    )
+
+    @ui.page('/')
+    def index():
+        ui.dark_mode().enable()
+        panel.create_ui()
+
+    ui.run(
+        host=args.host,
+        port=args.port,
+        title='Factorio MCP Monitor',
+        favicon='👁️',
+        dark=True,
+        reload=False
+    )
+
+
+if __name__ in {"__main__", "__mp_main__"}:
+    main()

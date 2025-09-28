@@ -7,7 +7,7 @@ from typing import Union
 from fle.env import EntityGroup
 from fle.env import FactorioInstance
 from fle.env.game_types import prototype_by_name
-from data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
+from fle.agents.data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
 
 
 class BlueprintAnalyzerWithConnect:
@@ -383,7 +383,7 @@ class BlueprintAnalyzerWithConnect:
 
 
 if __name__ == "__main__":
-    execution_dir = os.path.dirname(os.path.realpath(__file__)) + "/blueprints/mining/"
+    execution_dir = os.path.dirname(os.path.realpath(__file__)) + "/blueprints/other/"
     filename = "1a. Mining"  # Early Mining"
 
     # iterate over all json files in the directory
@@ -425,7 +425,7 @@ if __name__ == "__main__":
                     continue
 
                 print(code)
-                game_entities = instance.get_entities()
+                game_entities = instance.namespace.get_entities()
                 try:
                     analyzer.verify_placement(game_entities)
                 except AssertionError as e:

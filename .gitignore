@@ -48,3 +48,4 @@ trajectory_logs/
 /data/logs/
 /data/logs/
 /.factorio_mcp_repo/
+/.claude-code/

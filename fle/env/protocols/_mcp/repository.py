@@ -1,6 +1,7 @@
 import os
 import time
 from typing import Dict, List, Optional, Tuple, Any
+from pathlib import Path
 
 from dulwich.objects import Blob, Tree, Commit
 from dulwich.repo import Repo
@@ -10,12 +11,34 @@ from fle.commons.models.game_state import GameState
 
 
 class FactorioMCPRepository:
-    """Version control system for Factorio game states using Dulwich"""
+    """
+    Version control system for Factorio game states and project files using Dulwich.
+
+    Uses .claude-code as the working directory:
+    - If current directory is named .claude-code, uses it directly
+    - If .claude-code exists as subdirectory, uses that
+    - Otherwise creates .claude-code as a new subdirectory
+    """
 
     def __init__(self, instance: FactorioInstance):
-        # Create a directory for storing the repository in the current working directory
-        self.repo_dir = os.path.abspath(os.path.join(os.getcwd(), ".factorio_mcp_repo"))
-        os.makedirs(self.repo_dir, exist_ok=True)
+        # Determine the appropriate working directory
+        current_dir = os.getcwd()
+        current_dirname = os.path.basename(current_dir)
+
+        # Check if we're already in a .claude-code directory
+        if current_dirname == '.claude-code':
+            # We're already in .claude-code, use current directory as repo
+            self.repo_dir = current_dir
+        else:
+            # Check if .claude-code exists in current directory
+            claude_code_path = os.path.join(current_dir, '.claude-code')
+            if os.path.exists(claude_code_path) and os.path.isdir(claude_code_path):
+                # .claude-code exists as subdirectory, use it
+                self.repo_dir = os.path.abspath(claude_code_path)
+            else:
+                # Create .claude-code as subdirectory
+                self.repo_dir = os.path.abspath(claude_code_path)
+                os.makedirs(self.repo_dir, exist_ok=True)
 
         # Create instance-specific repo directory
         instance_id = instance.tcp_port
@@ -86,6 +109,12 @@ class FactorioMCPRepository:
         self.repo.object_store.add_object(blob)
         return blob.id, blob
 
+    def _make_blob_from_bytes(self, data: bytes) -> Tuple[bytes, Blob]:
+        """Create a blob object from bytes data"""
+        blob = Blob.from_string(data)
+        self.repo.object_store.add_object(blob)
+        return blob.id, blob
+
     def _make_tree(self, entries: Dict[str, Tuple[int, bytes]]) -> Tuple[bytes, Tree]:
         """Create a tree object from a dictionary of entries"""
         tree = Tree()
@@ -94,10 +123,70 @@ class FactorioMCPRepository:
         self.repo.object_store.add_object(tree)
         return tree.id, tree
 
+    def _scan_working_directory(self) -> Dict[str, bytes]:
+        """
+        Scan the instance repo directory for files to include in commits.
+        Returns a dict of relative_path -> file_content_bytes
+        """
+        files_to_track = {}
+
+        # Define patterns to ignore
+        ignore_patterns = [
+            '.git',
+            '__pycache__',
+            '*.pyc',
+            '.DS_Store',
+            '*.swp',
+            '*.swo',
+            '.factorio_mcp_repo'  # Don't track nested repos
+        ]
+
+        # Walk through the instance repo directory
+        for root, dirs, files in os.walk(self.instance_repo_dir):
+            # Filter out ignored directories
+            dirs[:] = [d for d in dirs if d not in ignore_patterns]
+
+            for file_name in files:
+                # Skip ignored files
+                if any(file_name.endswith(pattern.replace('*', '')) for pattern in ignore_patterns if '*' in pattern):
+                    continue
+                if file_name in ignore_patterns:
+                    continue
+
+                file_path = os.path.join(root, file_name)
+
+                # Get relative path from instance repo dir
+                rel_path = os.path.relpath(file_path, self.instance_repo_dir)
+
+                # Skip if it's a git internal file
+                if '.git' in rel_path:
+                    continue
+
+                # Read file content
+                try:
+                    with open(file_path, 'rb') as f:
+                        files_to_track[rel_path] = f.read()
+                except Exception as e:
+                    print(f"Warning: Could not read file {rel_path}: {str(e)}")
+
+        return files_to_track
+
     def commit(
-        self, state: GameState, message: str, policy: Optional[str] = None
+            self,
+            state: GameState,
+            message: str,
+            policy: Optional[str] = None,
+            include_files: bool = True
     ) -> str:
-        """Create a commit with the given state and message"""
+        """
+        Create a commit with the given state, message, and optionally tracked files
+
+        Args:
+            state: Game state to commit
+            message: Commit message
+            policy: Optional Python code that was executed
+            include_files: Whether to include working directory files in the commit
+        """
         # Create blobs for state and policy
         state_id, state_blob = self._make_blob(state.to_raw())
 
@@ -107,6 +196,19 @@ class FactorioMCPRepository:
         if policy:
             policy_id, policy_blob = self._make_blob(policy)
             entries["policy.py"] = (0o100644, policy_id)
+
+        # Add working directory files if requested
+        if include_files:
+            tracked_files = self._scan_working_directory()
+            for file_path, file_content in tracked_files.items():
+                # Skip gamestate.json and policy.py as they're already handled
+                if file_path in ['gamestate.json', 'policy.py']:
+                    continue
+
+                file_id, file_blob = self._make_blob_from_bytes(file_content)
+                # Use forward slashes for consistency in git tree
+                git_path = file_path.replace('\\', '/')
+                entries[git_path] = (0o100644, file_id)
 
         # Create tree
         tree_id, tree = self._make_tree(entries)
@@ -126,9 +228,7 @@ class FactorioMCPRepository:
                 commit.parents = [refs_dict[self.branch]]
         except Exception as e:
             # No parent, this is the first commit
-            print(
-                f"No parent commit found (this may be normal for first commit): {str(e)}"
-            )
+            print(f"No parent commit found (this may be normal for first commit): {str(e)}")
             pass
 
         # Add the commit object to the object store
@@ -162,12 +262,52 @@ class FactorioMCPRepository:
 
         return commit_id
 
-    def _save_state_to_disk(self, commit_id: str):
-        """Save the current repository state to disk"""
-        # No need to call do_commit here - that creates a new commit
-        # Objects are already persisted by the object_store.add_object operations
-        # and refs are persisted by pack_refs()
-        pass
+    def restore_files_from_commit(self, commit_id: str) -> Dict[str, str]:
+        """
+        Restore files from a specific commit to the working directory.
+        Returns a dict of files that were restored.
+        """
+        commit_id = commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
+        restored_files = {}
+
+        try:
+            # Get the commit
+            try:
+                commit = self.repo.object_store[commit_id]
+            except KeyError:
+                self.repo.object_store.add_objects_from_pack(commit_id)
+                commit = self.repo.object_store[commit_id]
+
+            # Get the tree
+            tree = self.repo.object_store[commit.tree]
+
+            # Restore each file from the tree
+            for name, entry in tree.items():
+                name = name.decode('utf-8')
+
+                # Skip gamestate.json as it's handled by apply_to_instance
+                if name == 'gamestate.json':
+                    continue
+
+                mode, blob_id = entry
+                blob = self.repo.object_store[blob_id]
+
+                # Determine file path
+                file_path = os.path.join(self.instance_repo_dir, name)
+
+                # Create parent directories if needed
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+                # Write the file
+                with open(file_path, 'wb') as f:
+                    f.write(blob.data)
+
+                restored_files[name] = f"Restored ({len(blob.data)} bytes)"
+
+        except Exception as e:
+            print(f"Error restoring files from commit {commit_id}: {str(e)}")
+
+        return restored_files
 
     def tag_commit(self, name: str, commit_id: Optional[str] = None) -> str:
         """Create a named tag for a commit (default: current HEAD)"""
@@ -210,7 +350,7 @@ class FactorioMCPRepository:
     def checkout(self, ref: str) -> str:
         """
         Checkout a specific commit, branch, or tag.
-        This only changes internal state - doesn't affect the game instance.
+        This changes internal state AND restores files to working directory.
         """
         refs_dict = self.repo.refs.as_dict()
 
@@ -250,6 +390,12 @@ class FactorioMCPRepository:
 
             # Make sure refs are written to disk
             self.repo.refs.pack_refs()
+
+            # Restore files from the commit
+            restored = self.restore_files_from_commit(commit_id)
+            if restored:
+                print(f"Restored {len(restored)} files from commit")
+
         except Exception as e:
             print(f"Warning: Error updating HEAD reference: {str(e)}")
 
@@ -257,7 +403,7 @@ class FactorioMCPRepository:
         return commit_id.decode("utf-8") if isinstance(commit_id, bytes) else commit_id
 
     def apply_to_instance(self, commit_id: Optional[str] = None) -> bool:
-        """Apply a specific commit to the game instance"""
+        """Apply a specific commit to the game instance and restore files"""
         if commit_id is None:
             # Use current HEAD properly
             try:
@@ -271,9 +417,7 @@ class FactorioMCPRepository:
                     if ref_name in refs_dict:
                         commit_id = refs_dict[ref_name]
                     else:
-                        raise ValueError(
-                            f"Symbolic ref {ref_name.decode('utf-8')} not found"
-                        )
+                        raise ValueError(f"Symbolic ref {ref_name.decode('utf-8')} not found")
                 else:
                     commit_id = head_value
 
@@ -282,9 +426,7 @@ class FactorioMCPRepository:
             except Exception as e:
                 raise ValueError(f"Error getting current HEAD: {str(e)}")
         else:
-            commit_id = (
-                commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
-            )
+            commit_id = commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
 
         try:
             # Get the commit - ensure it's loaded from disk if needed
@@ -307,6 +449,11 @@ class FactorioMCPRepository:
                 # Parse and apply state
                 state = GameState.parse_raw(state_json)
                 self.instance.reset(game_state=state)
+
+                # Also restore files
+                self.restore_files_from_commit(commit_id)
+
+                print("Instance reset and files restored")
                 return True
         except Exception as e:
             print(f"Error applying commit {commit_id}: {str(e)}")
@@ -362,9 +509,7 @@ class FactorioMCPRepository:
 
     def get_policy(self, commit_id: str) -> Optional[str]:
         """Get the policy associated with a commit"""
-        commit_id = (
-            commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
-        )
+        commit_id = commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
 
         try:
             try:
@@ -398,6 +543,41 @@ class FactorioMCPRepository:
 
         return None
 
+    def get_file_from_commit(self, commit_id: str, file_path: str) -> Optional[str]:
+        """Get a specific file from a commit"""
+        commit_id = commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
+        file_path = file_path.replace('\\', '/')  # Normalize path
+
+        try:
+            commit = self.repo.object_store[commit_id]
+            tree = self.repo.object_store[commit.tree]
+
+            file_path_bytes = file_path.encode('utf-8')
+            if file_path_bytes in tree:
+                mode, blob_id = tree[file_path_bytes]
+                blob = self.repo.object_store[blob_id]
+                return blob.data.decode('utf-8')
+        except Exception as e:
+            print(f"Error getting file {file_path} from commit: {str(e)}")
+
+        return None
+
+    def list_files_in_commit(self, commit_id: str) -> List[str]:
+        """List all files tracked in a specific commit"""
+        commit_id = commit_id.encode("utf-8") if isinstance(commit_id, str) else commit_id
+        files = []
+
+        try:
+            commit = self.repo.object_store[commit_id]
+            tree = self.repo.object_store[commit.tree]
+
+            for name, entry in tree.items():
+                files.append(name.decode('utf-8'))
+        except Exception as e:
+            print(f"Error listing files in commit: {str(e)}")
+
+        return files
+
     def get_history(self, max_count=10) -> List[Dict[str, Any]]:
         """Get commit history"""
         history = []
@@ -416,14 +596,17 @@ class FactorioMCPRepository:
                         self.repo.do_pack()
                         commit = self.repo.object_store[commit_id]
 
+                    # Get list of files in this commit
+                    tree = self.repo.object_store[commit.tree]
+                    file_count = len(list(tree.items()))
+
                     history.append(
                         {
-                            "id": commit_id.decode("utf-8")
-                            if isinstance(commit_id, bytes)
-                            else commit_id,
+                            "id": commit_id.decode("utf-8") if isinstance(commit_id, bytes) else commit_id,
                             "message": commit.message.decode("utf-8"),
                             "timestamp": commit.commit_time,
                             "has_policy": self._has_policy(commit.tree),
+                            "file_count": file_count
                         }
                     )
 

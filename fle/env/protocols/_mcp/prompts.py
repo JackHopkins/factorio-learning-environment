@@ -8,8 +8,9 @@ import sys
 import os
 from contextlib import contextmanager
 
-from fle.env.protocols.mcp import mcp
-from fle.env.protocols.mcp.init import state
+from fle.env.protocols._mcp import mcp
+#from fle.env.protocols._mcp.server import mcp
+from fle.env.protocols._mcp.init import state
 
 
 # Context manager to suppress stdout
@@ -83,13 +84,13 @@ PROMPTS = {
 }
 
 
-@mcp._mcp_server.list_prompts()
+@mcp.list_prompts()
 async def list_all_prompts() -> list[types.Prompt]:
     """List all available prompts"""
     return list(PROMPTS.values())
 
 
-@mcp._mcp_server.get_prompt()
+@mcp.get_prompt()
 async def get_prompt(
     name: str, arguments: dict[str, str] | None = None
 ) -> types.GetPromptResult:

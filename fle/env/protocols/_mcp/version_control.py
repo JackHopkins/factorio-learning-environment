@@ -10,12 +10,12 @@ Provides functionality for managing game state versions, including:
 
 from mcp.server.fastmcp import Context
 from fle.commons.models.game_state import GameState
-from fle.env.protocols.mcp import mcp
-from fle.env.protocols.mcp.init import state
+from fle.env.protocols._mcp import mcp
+from fle.env.protocols._mcp.init import state
 
 
 @mcp.tool()
-async def undo(ctx: Context) -> str:
+async def undo() -> str:
     """
     Undo the last code execution by restoring the previous state
     """
@@ -40,7 +40,7 @@ async def undo(ctx: Context) -> str:
 
 
 @mcp.tool()
-async def commit(ctx: Context, tag_name: str, message: str = None) -> str:
+async def commit(tag_name: str, message: str = None) -> str:
     """
     Tag the current commit with a name for easier reference
 
@@ -68,7 +68,7 @@ async def commit(ctx: Context, tag_name: str, message: str = None) -> str:
 
 
 @mcp.tool()
-async def restore(ctx: Context, ref: str) -> str:
+async def restore(ref: str) -> str:
     """
     Restore to a previous tagged state or commit ID
 
@@ -114,7 +114,7 @@ async def restore(ctx: Context, ref: str) -> str:
 
 
 @mcp.tool()
-async def view_history(ctx: Context, limit: int = 10) -> str:
+async def view_history(limit: int = 10) -> str:
     """
     View commit history of game states
 
@@ -158,7 +158,7 @@ async def view_history(ctx: Context, limit: int = 10) -> str:
 
 
 @mcp.tool()
-async def list_tags(ctx: Context) -> str:
+async def list_tags() -> str:
     """List all named checkpoints"""
     if not state.active_server:
         return "No active Factorio server connection. Use connect first."
@@ -180,7 +180,7 @@ async def list_tags(ctx: Context) -> str:
 
 
 @mcp.tool()
-async def view_code(ctx: Context, ref: str) -> str:
+async def view_code(ref: str) -> str:
     """
     View the code associated with a commit or tag
 

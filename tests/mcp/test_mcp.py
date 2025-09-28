@@ -1,47 +1,44 @@
 """
-Integration tests for MCP tools in the Factorio environment.
-Tests the happy path for each tool against a real server.
+Integration tests for MCP resources in the Factorio environment.
+Tests the happy path for each resource against a real server.
 """
 import base64
 import io
 import os
-
-import pytest
-import asyncio
 import json
 from pathlib import Path
 from typing import List, Tuple
 from concurrent import futures
 from unittest.mock import patch, MagicMock
 
-from pathlib import Path
+import pytest
 from PIL import Image as PILImage
 
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.env.entities import Position
-from fle.env.protocols.mcp.tools import (
-    render,
+from fle.env.protocols._mcp.resources import (
+    render_at,
     entities,
     inventory,
-    execute,
-    status,
-    get_entity_names,
+    entity_names,
     position,
-    get_recipe,
+    recipe,
+    manual,
     schema,
-    manual
+    status
 )
-from fle.env.protocols.mcp.init import state, initialize_session
+from fle.env.protocols._mcp.tools import reconnect
+from fle.env.protocols._mcp.init import state, initialize_session
 from fle.env.instance import FactorioInstance
+from mcp.types import ImageContent
 
-from fastmcp.tools.tool import ToolResult
-from mcp.types import ImageContent, TextContent
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class TestMCPTools:
-    """Integration tests for MCP tools"""
+
+class TestMCPResources:
+    """Integration tests for MCP resources"""
 
     @classmethod
     def setup_class(cls):
@@ -80,7 +77,6 @@ class TestMCPTools:
             return instance
 
         # Mock or get actual server details
-        # For testing, you might want to mock this or use test containers
         ips, udp_ports, tcp_ports = get_local_container_ips()
         with futures.ThreadPoolExecutor() as executor:
             return list(executor.map(init_instance, zip(ips, udp_ports, tcp_ports)))
@@ -106,241 +102,381 @@ class TestMCPTools:
         state.available_servers = {}
 
     @pytest.mark.asyncio
-    async def test_render(self):
-        """Test render tool renders the current factory state"""
-        DISPLAY_IMAGES = os.getenv('DISPLAY_TEST_IMAGES', 'false').lower() == 'true'
+    async def test_render_with_position_default(self):
+        """Test render_with_position resource with default position"""
+        # Ensure connection
+        await reconnect.run({})
 
-        await status.run({})
-        # Test with default parameters
-        result = await render.run({})
+        # Create resource with default parameters
+        resource = await render_at.create_resource('fle://render/', {
+            'center_x': '0',
+            'center_y': '0'
+        })
+
+        result = await resource.read()
         assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
 
-        first_content = result.content[0]
+        # Check if it's image content
+        if isinstance(result, ImageContent):
+            assert result.type == 'image'
+            assert result.mimeType == 'image/png'
+            assert hasattr(result, 'data')
 
-        if hasattr(first_content, 'type'):
-            if first_content.type == 'image':
-                assert hasattr(first_content, 'data')
-                assert hasattr(first_content, 'mimeType')
-                assert first_content.mimeType == 'image/png'
-
-                # Display the image if requested
-                if DISPLAY_IMAGES:
-                    image_data = base64.b64decode(first_content.data)
-                    img = PILImage.open(io.BytesIO(image_data))
-                    print(f"\nImage dimensions: {img.size}, mode: {img.mode}")
-                    img.show()  # This creates a temp file and opens it
-
-            elif first_content.type == 'text':
-                assert hasattr(first_content, 'text')
-                print(f"\nReceived text response: {first_content.text}")
-                assert "No active Factorio server connection" in first_content.text
-
-        # Test with custom center coordinates
-        result_custom = await render.run({"center_x": 10.0, "center_y": 10.0})
-        assert result_custom is not None
-        assert isinstance(result_custom, ToolResult)
+            # Optionally display the image
+            if os.getenv('DISPLAY_TEST_IMAGES', 'false').lower() == 'true':
+                image_data = base64.b64decode(result.data)
+                img = PILImage.open(io.BytesIO(image_data))
+                print(f"\nImage dimensions: {img.size}, mode: {img.mode}")
+                img.show()
+        elif isinstance(result, (str, bytes)):
+            print(f"Render returned: {type(result)}")
 
     @pytest.mark.asyncio
-    async def test_entities(self):
-        """Test entities tool retrieves entities from the map"""
-        await status.run({})
+    async def test_render_with_position_custom(self):
+        """Test render_with_position with custom center coordinates"""
+        await reconnect.run({})
 
-        # Test with default parameters
-        result = await entities.run({})
+        # Create resource with custom coordinates
+        resource = await render_at.create_resource('fle://render/', {
+            'center_x': '10.0',
+            'center_y': '10.0'
+        })
+
+        result = await resource.read()
         assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
-
-        first_content = result.content[0]
-        assert hasattr(first_content, 'text')
-        text_result = first_content.text
-        assert "Error" not in text_result or text_result == "[]"  # Empty list is valid
-
-        # Test with custom parameters
-        result_custom = await entities.run({"center_x": 50.0, "center_y": 50.0, "radius": 100.0})
-        assert result_custom is not None
-        assert isinstance(result_custom, ToolResult)
 
     @pytest.mark.asyncio
-    async def test_inventory(self):
-        """Test inventory tool retrieves current inventory"""
-        await status.run({})
+    async def test_entities_resource_default(self):
+        """Test entities resource with default parameters"""
+        await reconnect.run({})
 
-        result = await inventory.run({})
+        # Create resource with default parameters
+        resource = await entities.create_resource('fle://entities/', {
+            'center_x': 'default',
+            'center_y': 'default',
+            'radius': 'default'
+        })
+
+        result = await resource.read()
+        result = json.loads(result)
         assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
+        assert isinstance(result, list)
 
-        first_content = result.content[0]
-        assert hasattr(first_content, 'text')
-        text_result = first_content.text
-        assert "Error" not in text_result
-        # Inventory should be a string representation of dict or list
-        # Could be empty {} or [] which is valid
+        # Check structure if entities exist
+        if result:
+            first_entity = result[0]
+            assert isinstance(first_entity, dict)
 
     @pytest.mark.asyncio
-    async def test_execute(self):
-        """Test execute tool runs Python code and commits result"""
-        await status.run({})
+    async def test_entities_resource_custom(self):
+        """Test entities resource with custom parameters"""
+        await reconnect.run({})
 
-        # Simple code that should work
-        test_code = """
-# Get player position
-pos = player_location
-print(f"Player is at: {pos}")
-"""
-        result = await execute.run({"code": test_code})
+        # Create resource with specific coordinates and radius
+        resource = await entities.create_resource('fle://entities/', {
+            'center_x': '50.0',
+            'center_y': '50.0',
+            'radius': '100.0'
+        })
+
+        result = await resource.read()
         assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
-
-        first_content = result.content[0]
-        assert hasattr(first_content, 'text')
-        text_result = first_content.text
-        assert "[commit" in text_result  # Should include commit ID
-
-        # Verify state file was created
-        state_file = Path("/tmp/factorio_game_state.json")
-        if state_file.exists():
-            with open(state_file, 'r') as f:
-                game_state = json.load(f)
-                assert 'inventory' in game_state
-                assert 'entities' in game_state
-                assert 'score' in game_state
+        assert result == '[]'
 
     @pytest.mark.asyncio
-    async def test_status(self):
-        """Test status tool checks server connection"""
-        result = await status.run({})
-        assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
+    async def test_inventory_resource(self):
+        """Test inventory resource retrieves current inventory"""
+        await reconnect.run({})
 
-        first_content = result.content[0]
-        assert hasattr(first_content, 'text')
-        text_result = first_content.text
-        assert "Connected to Factorio server" in text_result or "Initializing" in text_result
+        # Create resource - no parameters needed
+        resource = inventory
+
+        result = await resource.read()
+        assert result is not None
+        assert result[0] == '{'
+        # Inventory should be a dict, could be empty {}
 
     @pytest.mark.asyncio
-    async def test_get_entity_names(self):
-        """Test get_entity_names retrieves available entity prototypes"""
-        await status.run({})
+    async def test_position_resource(self):
+        """Test position resource gets player position"""
+        await reconnect.run({})
 
-        result = await get_entity_names.run({})
+        # Create resource - no parameters needed
+        resource = position
+
+        result = await resource.read()
+        result = json.loads(result)
         assert result is not None
-        assert isinstance(result, ToolResult)
-
-        # Check if we have structured content (list of names)
-        if result.structured_content is not None:
-            assert isinstance(result.structured_content, list)
-            if result.structured_content:
-                assert all(isinstance(name, str) for name in result.structured_content)
-        else:
-            # Fall back to checking text content
-            assert len(result.content) > 0
+        assert isinstance(result, dict)
+        assert 'x' in result
+        assert 'y' in result
+        assert isinstance(result['x'], (int, float))
+        assert isinstance(result['y'], (int, float))
 
     @pytest.mark.asyncio
-    async def test_position(self):
-        """Test position tool gets player position"""
-        await status.run({})
+    async def test_entity_names_resource(self):
+        """Test entity_names resource retrieves available entity prototypes"""
+        await reconnect.run({})
 
-        result = await position.run({})
+        # Create resource - no parameters needed
+        resource = entity_names#.create_resource('fle://entity-names', {})
+
+        result = await resource.read()
+        result = json.loads(result)
         assert result is not None
-        assert isinstance(result, ToolResult)
+        assert isinstance(result, list)
 
-        # Position returns a Position object, check structured content
-        if result.structured_content is not None:
-            pos_data = result.structured_content
-            if isinstance(pos_data, dict):
-                # Wrapped result
-                if 'result' in pos_data:
-                    pos_data = pos_data['result']
-                assert 'x' in pos_data
-                assert 'y' in pos_data
-                assert isinstance(pos_data['x'], (int, float))
-                assert isinstance(pos_data['y'], (int, float))
+        if result:
+            # All items should be strings
+            assert all(isinstance(name, str) for name in result)
 
     @pytest.mark.asyncio
-    async def test_get_recipe(self):
-        """Test get_recipe retrieves recipe details"""
-        await status.run({})
+    async def test_recipe_resource(self):
+        """Test recipe resource with specific recipe name"""
+        await reconnect.run({})
 
         # First get available recipes
-        entity_names_result = await get_entity_names.run({})
-        entity_names = []
+        names_resource = entity_names
+        available_names = await names_resource.read()
+        available_names = json.loads(available_names)
 
-        if entity_names_result.structured_content:
-            entity_names = entity_names_result.structured_content['result']
-
-        if entity_names:
+        if available_names and len(available_names) > 0:
             # Test with first available recipe
-            test_recipe_name = entity_names[0]
-            result = await get_recipe.run({"name": test_recipe_name})
-            assert result is not None
-            assert isinstance(result, ToolResult)
+            test_recipe_name = available_names[0]
 
-            if result.structured_content and isinstance(result.structured_content, dict):
-                recipe_data = result.structured_content
-                if 'result' in recipe_data:
-                    recipe_data = recipe_data['result']
+            # Create resource with recipe name
+            resource = await recipe.create_resource('fle://recipe/', {
+                'name': test_recipe_name
+            })
+
+            result = await resource.read()
+            assert result is not None
+            assert isinstance(result, str)
+
+            # Check if it's valid JSON or error message
+            if "not found" not in result:
+                # Should be valid JSON
+                recipe_data = json.loads(result)
                 assert 'name' in recipe_data
                 assert 'ingredients' in recipe_data
                 assert 'results' in recipe_data
                 assert 'energy_required' in recipe_data
-            else:
-                # Check text content for "not found"
-                first_content = result.content[0]
-                assert "not found" in first_content.text
 
         # Test with non-existent recipe
-        try:
-            result_invalid = await get_recipe.run({"name": "non_existent_recipe_xyz"})
-        except Exception as e:
-            assert isinstance(e, ValueError)
+        invalid_resource = await recipe.create_resource('fle://recipe/', {
+            'name': 'non_existent_recipe_xyz'
+        })
+        result_invalid = await invalid_resource.read()
+        assert result_invalid is not None
+        assert "not found" in result_invalid
 
     @pytest.mark.asyncio
-    async def test_schema(self):
-        """Test schema tool returns API documentation"""
-        await status.run({})
+    async def test_schema_resource(self):
+        """Test schema resource returns API documentation"""
+        await reconnect.run({})
 
-        result = await schema.run({})
+        # Create resource - no parameters needed
+        resource = schema
+
+        result = await resource.read()
         assert result is not None
-        assert isinstance(result, ToolResult)
-        assert len(result.content) > 0
+        assert isinstance(result, str)
+        assert len(result) > 100  # Should have substantial documentation
 
-        first_content = result.content[0]
-        assert hasattr(first_content, 'text')
-        text_result = first_content.text
-        assert len(text_result) > 100  # Should have substantial documentation
         # Should contain type or entity information
-        assert any(keyword in text_result.lower() for keyword in ['type', 'entity', 'class', 'def'])
+        assert any(keyword in result.lower() for keyword in ['type', 'entity', 'class', 'def'])
 
     @pytest.mark.asyncio
-    async def test_manual(self):
-        """Test manual tool returns method documentation"""
-        await status.run({})
+    async def test_manual_resource(self):
+        """Test manual resource with specific method name"""
+        await reconnect.run({})
 
-        # Test with a common method name
-        test_methods = ['move_to', 'place_entity']
+        # Test with common method names
+        test_methods = ['move_to', 'place_entity', 'craft_item']
 
         for method_name in test_methods:
-            result = await manual.run({"name": method_name})
+            try:
+                # Create resource with method name
+                resource = await manual.create_resource('fle://api/manual/', {
+                    'method': method_name
+                })
+
+                result = await resource.read()
+                assert result is not None
+                assert isinstance(result, str)
+
+                if "Error" not in result:
+                    # Found valid documentation
+                    assert len(result) > 50
+                    break
+            except Exception:
+                continue
+
+        # Test with invalid method
+        invalid_resource = await manual.create_resource('fle://api/manual/', {
+            'method': 'non_existent_method_xyz'
+        })
+        result_invalid = await invalid_resource.read()
+        assert result_invalid is not None
+        assert isinstance(result_invalid, str)
+        assert "Error" in result_invalid or "not a valid" in result_invalid
+
+    @pytest.mark.asyncio
+    async def test_status_resource(self):
+        """Test status resource checks server connection"""
+        # Create resource - no parameters needed
+        resource = status#.create_resource('fle://status', {})
+
+        result = await resource.read()
+        assert result is not None
+        assert isinstance(result, str)
+        assert "Connected to Factorio server" in result or "Initializing" in result
+
+    @pytest.mark.asyncio
+    async def test_resource_error_handling_no_connection(self):
+        """Test resource error handling when server is not connected"""
+        # Clear state to simulate no connection
+        state.active_server = None
+
+        # Test inventory resource
+        inv_resource = inventory#.create_resource('fle://inventory', {})
+        with pytest.raises(Exception, match="No active Factorio server connection"):
+            await inv_resource.read()
+
+        # Test position resource
+        pos_resource = position#.create_resource('fle://position', {})
+        with pytest.raises(Exception, match="No active Factorio server connection"):
+            await pos_resource.read()
+
+        # Test entities resource
+        ent_resource = await entities.create_resource('fle://entities/', {
+            'center_x': '0',
+            'center_y': '0',
+            'radius': '100'
+        })
+        with pytest.raises(Exception, match="No active Factorio server connection"):
+            await ent_resource.read()
+
+    @pytest.mark.asyncio
+    async def test_entities_parameter_conversion(self):
+        """Test entities resource properly converts string parameters"""
+        await reconnect.run({})
+
+        # Test with different parameter formats
+        test_cases = [
+            {'center_x': '0', 'center_y': '0', 'radius': '500'},  # String numbers
+            {'center_x': '10.5', 'center_y': '-20.5', 'radius': '100.0'},  # Float strings
+            {'center_x': 'default', 'center_y': 'default', 'radius': 'default'},  # Default values
+        ]
+
+        for params in test_cases:
+            resource = await entities.create_resource('fle://entities/', params)
+            result = await resource.read()
+            result = json.loads(result)
             assert result is not None
-            assert isinstance(result, ToolResult)
-            assert len(result.content) > 0
+            assert isinstance(result, list)
 
-            first_content = result.content[0]
-            assert hasattr(first_content, 'text')
-            text_result = first_content.text
+    @pytest.mark.asyncio
+    async def test_render_parameter_conversion(self):
+        """Test render_with_position properly converts string parameters"""
+        await reconnect.run({})
 
-            # Either valid documentation or error message
-            if "Error" in text_result:
-                assert "Available tools" in text_result
-            else:
-                assert len(text_result) > 50  # Should have some documentation
-                break  # Found at least one valid method
+        # Test with different coordinate formats
+        test_cases = [
+            {'center_x': '0', 'center_y': '0'},
+            {'center_x': '10.5', 'center_y': '-20.5'},
+            {'center_x': '-100', 'center_y': '100'},
+        ]
+
+        for params in test_cases:
+            resource = await render_at.create_resource('fle://render/', params)
+            result = await resource.read()
+            assert result is not None
+
+    @pytest.mark.asyncio
+    async def test_recipe_names_consistency(self):
+        """Test that entity_names and recipe lookups are consistent"""
+        await reconnect.run({})
+
+        # Get all available recipe names
+        names_resource = entity_names#.create_resource('fle://entity-names', {})
+        names = await names_resource.read()
+        names = json.loads(names)
+        assert names is not None
+
+        if len(names) > 5:
+            # Sample a few recipes and verify they can be retrieved
+            sample_names = names[:5]
+            for name in sample_names:
+                resource = await recipe.create_resource('fle://recipe/', {
+                    'name': name
+                })
+                result = await resource.read()
+                assert result is not None
+                assert "not found" not in result
+
+                # Parse and verify structure
+                recipe_data = json.loads(result)
+                assert recipe_data['name'] == name
+
+    @pytest.mark.asyncio
+    async def test_resources_without_params(self):
+        """Test resources that don't take parameters"""
+        await reconnect.run({})
+
+        # These resources should work with empty parameter dict
+        no_param_resources = [
+            (inventory, 'fle://inventory', dict),
+            (position, 'fle://position', dict),
+            (entity_names, 'fle://entity-names', list),
+            (schema, 'fle://api/schema', str),
+            (status, 'fle://status', str)
+        ]
+
+        for resource_template, uri, expected_type in no_param_resources:
+            resource = await resource_template.create_resource(uri, {})
+            result = await resource.read()
+            assert result is not None
+            assert isinstance(result, expected_type), f"{resource_template} should return {expected_type}, got {type(result)}"
+
+    @pytest.mark.asyncio
+    async def test_resources_with_path_params(self):
+        """Test resources that take path parameters"""
+        await reconnect.run({})
+
+        # Test entities with path params
+        entities_resource = await entities.create_resource('fle://entities/', {
+            'center_x': '0',
+            'center_y': '0',
+            'radius': '100'
+        })
+        entities_result = await entities_resource.read()
+        assert isinstance(entities_result, list)
+
+        # Test render with path params
+        render_resource = await render_at.create_resource('fle://render/', {
+            'center_x': '0',
+            'center_y': '0'
+        })
+        render_result = await render_resource.read()
+        assert render_result is not None
+
+        # Test recipe with path param
+        names_resource = await entity_names.create_resource('fle://entity-names', {})
+        names = await names_resource.read()
+        if names:
+            recipe_resource = await recipe.create_resource('fle://recipe/', {
+                'name': names[0]
+            })
+            recipe_result = await recipe_resource.read()
+            assert isinstance(recipe_result, str)
+
+        # Test manual with path param
+        manual_resource = await manual.create_resource('fle://api/manual/', {
+            'method': 'move_to'
+        })
+        manual_result = await manual_resource.read()
+        assert isinstance(manual_result, str)
 
 
 if __name__ == "__main__":

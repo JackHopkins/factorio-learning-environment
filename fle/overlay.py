@@ -22,7 +22,9 @@ from nicegui import ui, Client
 from nicegui import events
 
 from fle.agents.gym_agent import GymAgent
+from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.db_client import create_db_client
+from fle.env import FactorioInstance
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.environment import FactorioGymEnv
@@ -31,7 +33,10 @@ from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.registry import get_environment_info, list_available_environments
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
+from fle.env.lua_manager import LuaScriptManager
+from fle.env.tools.agent.get_entities.client import GetEntities
 from fle.eval.algorithms.independent import get_next_version
+from tests.conftest import namespace
 
 # Configure logging
 logging.basicConfig(
@@ -151,205 +156,205 @@ class IconManager:
         return '📦'
 
 
-class VisualTrajectoryRunner(GymTrajectoryRunner):
-    """Extended trajectory runner with visual updates."""
-
-    def __init__(self, *args, update_queue: Optional[Queue] = None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.update_queue = update_queue
-        self.render_tool = None
-        logger.info("VisualTrajectoryRunner initialized with update_queue: %s", update_queue is not None)
-
-    def _initialize_render_tool(self):
-        """Initialize the render tool if not already done."""
-        if self.render_tool is None and self.instance:
-            try:
-                from fle.env.tools.admin.render.client import Render
-                self.render_tool = self.instance.namespaces[0]._render
-            except Exception as e:
-                print(f"Failed to initialize render tool: {e}")
-
-    def _get_rendered_image(self, agent_idx: int = 0) -> Optional[str]:
-        """Get rendered image of current game state as base64."""
-        try:
-            self._initialize_render_tool()
-            if self.render_tool:
-                # Render the current game state
-                rendered = self.render_tool(
-                    include_status=True,
-                    radius=32,
-                    compression_level='binary',
-                    max_render_radius=32
-                )
-                # Convert to base64
-                return rendered.to_base64()
-        except Exception as e:
-            print(f"Error rendering game state: {e}")
-            return None
-
-    async def run(self):
-        """Run trajectory with visual updates."""
-        logger.info("Starting VisualTrajectoryRunner.run()")
-        try:
-            # Initialize state
-            max_steps = self.config.task.trajectory_length
-            logger.debug("Max steps: %d", max_steps)
-
-            current_state, agent_steps = await self._initialize_trajectory_state()
-            logger.info("Trajectory state initialized, agent_steps: %s", agent_steps)
-
-            # Save system prompts
-            for agent_idx, agent in enumerate(self.agents):
-                self.logger.save_system_prompt(agent, agent_idx)
-                logger.debug("Saved system prompt for agent %d", agent_idx)
-
-            # Send initial update
-            if self.update_queue:
-                init_msg = {
-                    'type': 'init',
-                    'task': self.config.task.goal_description,
-                    'max_steps': max_steps,
-                    'num_agents': len(self.agents),
-                    'image': self._get_rendered_image()
-                }
-                self.update_queue.put(init_msg)
-                logger.info("Sent init message to update_queue")
-
-            # Run trajectory
-            from itertools import product
-            for step_num, agent_idx in product(range(max_steps), range(len(self.agents))):
-                logger.debug("Processing step %d for agent %d", step_num, agent_idx)
-                agent = self.agents[agent_idx]
-                iteration_start = time.time()
-                agent_completed = False
-
-                try:
-                    while not agent_completed and agent_steps[agent_idx] < max_steps:
-                        # Generate policy
-                        logger.debug("Generating policy for agent %d at step %d", agent_idx, agent_steps[agent_idx])
-                        policy = await agent.generate_policy()
-                        agent_steps[agent_idx] += 1
-
-                        if not policy:
-                            logger.warning("Policy generation failed for agent %d", agent_idx)
-                            print(f"Policy generation failed for agent {agent_idx}")
-                            break
-
-                        logger.debug("Policy generated successfully, executing action")
-
-                        # Send code update
-                        if self.update_queue:
-                            self.update_queue.put({
-                                'type': 'code',
-                                'agent_idx': agent_idx,
-                                'step': agent_steps[agent_idx],
-                                'code': policy.code
-                            })
-
-                        # Execute step
-                        action = Action(
-                            agent_idx=agent_idx,
-                            code=policy.code,
-                            game_state=current_state
-                        )
-                        obs_dict, reward, terminated, truncated, info = self.gym_env.step(action)
-                        observation = Observation.from_dict(obs_dict)
-                        output_game_state = info['output_game_state']
-                        done = terminated or truncated
-
-                        logger.debug("Step executed - reward: %f, terminated: %s, truncated: %s",
-                                     reward, terminated, truncated)
-
-                        # Create program
-                        program = await self.create_program_from_policy(
-                            policy=policy,
-                            agent_idx=agent_idx,
-                            reward=reward,
-                            response=obs_dict["raw_text"],
-                            error_occurred=info["error_occurred"],
-                            game_state=output_game_state
-                        )
-
-                        # Update agent conversation
-                        await agent.update_conversation(observation, previous_program=program)
-
-                        # Log trajectory state
-                        self._log_trajectory_state(
-                            iteration_start,
-                            agent,
-                            agent_idx,
-                            agent_steps[agent_idx],
-                            program,
-                            observation
-                        )
-
-                        # Send visual update with production data
-                        if self.update_queue:
-                            update_msg = {
-                                'type': 'update',
-                                'agent_idx': agent_idx,
-                                'step': agent_steps[agent_idx],
-                                'reward': reward,
-                                'score': program.value,
-                                'output': obs_dict["raw_text"][:500],  # First 500 chars
-                                'error': info["error_occurred"],
-                                'image': self._get_rendered_image(agent_idx),
-                                'observation': self._format_observation_summary(observation),
-                                'inventory': observation.inventory,
-                                'production_flows': observation.flows.to_dict() if observation.flows else None
-                            }
-                            self.update_queue.put(update_msg)
-                            logger.debug("Sent update message for step %d", agent_steps[agent_idx])
-
-                        # Check completion
-                        agent_completed, update_state = agent.check_step_completion(observation)
-                        if update_state:
-                            current_state = output_game_state
-                            logger.debug("Updated game state")
-
-                        # Check if done
-                        if done and self.config.exit_on_task_success:
-                            logger.info("Task completed successfully at step %d", agent_steps[agent_idx])
-                            if self.update_queue:
-                                self.update_queue.put({
-                                    'type': 'complete',
-                                    'success': True,
-                                    'final_step': agent_steps[agent_idx]
-                                })
-                            return
-
-                except Exception as e:
-                    logger.error("Error in trajectory runner loop: %s", e, exc_info=True)
-                    print(f"Error in trajectory runner: {e}")
-                    if self.update_queue:
-                        self.update_queue.put({
-                            'type': 'error',
-                            'message': str(e)
-                        })
-                    continue
-
-            # Send completion update
-            logger.info("Trajectory completed, max steps reached")
-            if self.update_queue:
-                self.update_queue.put({
-                    'type': 'complete',
-                    'success': False,
-                    'final_step': max(agent_steps)
-                })
-
-        except Exception as e:
-            logger.error("Fatal error in VisualTrajectoryRunner.run(): %s", e, exc_info=True)
-            raise
-
-    def _format_observation_summary(self, observation: Observation) -> Dict[str, Any]:
-        """Format observation into a summary for display."""
-        return {
-            'inventory_count': len(observation.inventory),
-            'entities_count': len(observation.entities),
-            'score': observation.score,
-            'game_tick': observation.game_info.tick,
-            'research_progress': observation.research.research_progress if observation.research.current_research else 0
-        }
+# class VisualTrajectoryRunner(GymTrajectoryRunner):
+#     """Extended trajectory runner with visual updates."""
+#
+#     def __init__(self, *args, update_queue: Optional[Queue] = None, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.update_queue = update_queue
+#         self.render_tool = None
+#         logger.info("VisualTrajectoryRunner initialized with update_queue: %s", update_queue is not None)
+#
+#     def _initialize_render_tool(self):
+#         """Initialize the render tool if not already done."""
+#         if self.render_tool is None and self.instance:
+#             try:
+#                 from fle.env.tools.admin.render.client import Render
+#                 self.render_tool = self.instance.namespaces[0]._render
+#             except Exception as e:
+#                 print(f"Failed to initialize render tool: {e}")
+#
+#     def _get_rendered_image(self, agent_idx: int = 0) -> Optional[str]:
+#         """Get rendered image of current game state as base64."""
+#         try:
+#             self._initialize_render_tool()
+#             if self.render_tool:
+#                 # Render the current game state
+#                 rendered = self.render_tool(
+#                     include_status=True,
+#                     radius=32,
+#                     compression_level='binary',
+#                     max_render_radius=32
+#                 )
+#                 # Convert to base64
+#                 return rendered.to_base64()
+#         except Exception as e:
+#             print(f"Error rendering game state: {e}")
+#             return None
+#
+#     async def run(self):
+#         """Run trajectory with visual updates."""
+#         logger.info("Starting VisualTrajectoryRunner.run()")
+#         try:
+#             # Initialize state
+#             max_steps = self.config.task.trajectory_length
+#             logger.debug("Max steps: %d", max_steps)
+#
+#             current_state, agent_steps = await self._initialize_trajectory_state()
+#             logger.info("Trajectory state initialized, agent_steps: %s", agent_steps)
+#
+#             # Save system prompts
+#             for agent_idx, agent in enumerate(self.agents):
+#                 self.logger.save_system_prompt(agent, agent_idx)
+#                 logger.debug("Saved system prompt for agent %d", agent_idx)
+#
+#             # Send initial update
+#             if self.update_queue:
+#                 init_msg = {
+#                     'type': 'init',
+#                     'task': self.config.task.goal_description,
+#                     'max_steps': max_steps,
+#                     'num_agents': len(self.agents),
+#                     'image': self._get_rendered_image()
+#                 }
+#                 self.update_queue.put(init_msg)
+#                 logger.info("Sent init message to update_queue")
+#
+#             # Run trajectory
+#             from itertools import product
+#             for step_num, agent_idx in product(range(max_steps), range(len(self.agents))):
+#                 logger.debug("Processing step %d for agent %d", step_num, agent_idx)
+#                 agent = self.agents[agent_idx]
+#                 iteration_start = time.time()
+#                 agent_completed = False
+#
+#                 try:
+#                     while not agent_completed and agent_steps[agent_idx] < max_steps:
+#                         # Generate policy
+#                         logger.debug("Generating policy for agent %d at step %d", agent_idx, agent_steps[agent_idx])
+#                         policy = await agent.generate_policy()
+#                         agent_steps[agent_idx] += 1
+#
+#                         if not policy:
+#                             logger.warning("Policy generation failed for agent %d", agent_idx)
+#                             print(f"Policy generation failed for agent {agent_idx}")
+#                             break
+#
+#                         logger.debug("Policy generated successfully, executing action")
+#
+#                         # Send code update
+#                         if self.update_queue:
+#                             self.update_queue.put({
+#                                 'type': 'code',
+#                                 'agent_idx': agent_idx,
+#                                 'step': agent_steps[agent_idx],
+#                                 'code': policy.code
+#                             })
+#
+#                         # Execute step
+#                         action = Action(
+#                             agent_idx=agent_idx,
+#                             code=policy.code,
+#                             game_state=current_state
+#                         )
+#                         obs_dict, reward, terminated, truncated, info = self.gym_env.step(action)
+#                         observation = Observation.from_dict(obs_dict)
+#                         output_game_state = info['output_game_state']
+#                         done = terminated or truncated
+#
+#                         logger.debug("Step executed - reward: %f, terminated: %s, truncated: %s",
+#                                      reward, terminated, truncated)
+#
+#                         # Create program
+#                         program = await self.create_program_from_policy(
+#                             policy=policy,
+#                             agent_idx=agent_idx,
+#                             reward=reward,
+#                             response=obs_dict["raw_text"],
+#                             error_occurred=info["error_occurred"],
+#                             game_state=output_game_state
+#                         )
+#
+#                         # Update agent conversation
+#                         await agent.update_conversation(observation, previous_program=program)
+#
+#                         # Log trajectory state
+#                         self._log_trajectory_state(
+#                             iteration_start,
+#                             agent,
+#                             agent_idx,
+#                             agent_steps[agent_idx],
+#                             program,
+#                             observation
+#                         )
+#
+#                         # Send visual update with production data
+#                         if self.update_queue:
+#                             update_msg = {
+#                                 'type': 'update',
+#                                 'agent_idx': agent_idx,
+#                                 'step': agent_steps[agent_idx],
+#                                 'reward': reward,
+#                                 'score': program.value,
+#                                 'output': obs_dict["raw_text"][:500],  # First 500 chars
+#                                 'error': info["error_occurred"],
+#                                 'image': self._get_rendered_image(agent_idx),
+#                                 'observation': self._format_observation_summary(observation),
+#                                 'inventory': observation.inventory,
+#                                 'production_flows': observation.flows.to_dict() if observation.flows else None
+#                             }
+#                             self.update_queue.put(update_msg)
+#                             logger.debug("Sent update message for step %d", agent_steps[agent_idx])
+#
+#                         # Check completion
+#                         agent_completed, update_state = agent.check_step_completion(observation)
+#                         if update_state:
+#                             current_state = output_game_state
+#                             logger.debug("Updated game state")
+#
+#                         # Check if done
+#                         if done and self.config.exit_on_task_success:
+#                             logger.info("Task completed successfully at step %d", agent_steps[agent_idx])
+#                             if self.update_queue:
+#                                 self.update_queue.put({
+#                                     'type': 'complete',
+#                                     'success': True,
+#                                     'final_step': agent_steps[agent_idx]
+#                                 })
+#                             return
+#
+#                 except Exception as e:
+#                     logger.error("Error in trajectory runner loop: %s", e, exc_info=True)
+#                     print(f"Error in trajectory runner: {e}")
+#                     if self.update_queue:
+#                         self.update_queue.put({
+#                             'type': 'error',
+#                             'message': str(e)
+#                         })
+#                     continue
+#
+#             # Send completion update
+#             logger.info("Trajectory completed, max steps reached")
+#             if self.update_queue:
+#                 self.update_queue.put({
+#                     'type': 'complete',
+#                     'success': False,
+#                     'final_step': max(agent_steps)
+#                 })
+#
+#         except Exception as e:
+#             logger.error("Fatal error in VisualTrajectoryRunner.run(): %s", e, exc_info=True)
+#             raise
+#
+#     def _format_observation_summary(self, observation: Observation) -> Dict[str, Any]:
+#         """Format observation into a summary for display."""
+#         return {
+#             'inventory_count': len(observation.inventory),
+#             'entities_count': len(observation.entities),
+#             'score': observation.score,
+#             'game_tick': observation.game_info.tick,
+#             'research_progress': observation.research.research_progress if observation.research.current_research else 0
+#         }
 
 
 import asyncio
@@ -409,74 +414,20 @@ class FactorioControlPanel:
         self.coin_icon = None
         self.score_label = None
 
+        # Camera tracking state
+        self.camera_tracking_enabled = True
+        self.camera_zoom_scale = 0.5  # Default zoom scale
+        self.last_camera_update = 0
+        self.camera_update_interval = 3.0  # Update camera every 3 seconds
+
         # Start run automatically
-        self.auto_start = True
+        self.auto_start = True  # Disabled auto-start to prevent black screen
         logger.info("Auto-start enabled: %s", self.auto_start)
 
-    def connect_to_bridge(self):
-        """Connect to the MCP bridge via WebSocket"""
-        self.ws = websocket.WebSocketApp(
-            self.ws_url,
-            on_message=self.on_message,
-            on_error=self.on_error,
-            on_close=self.on_close
-        )
+        ips, udp_ports, tcp_ports = get_local_container_ips()
+        rcon_client, address = FactorioInstance.connect_to_server(ips[0], tcp_ports[0])
+        self.rcon_client = rcon_client
 
-        # Run in background thread
-        wst = threading.Thread(target=self.ws.run_forever)
-        wst.daemon = True
-        wst.start()
-
-    def on_message(self, ws, message):
-        """Handle incoming game state updates"""
-        update = json.loads(message)
-        self.update_queue.put(update)
-
-
-    async def connect_to_mcp(self):
-        """Connect to the MCP server"""
-        server_params = StdioServerParameters(
-            command="python",
-            args=[self.mcp_server_path],
-        )
-
-        async with stdio_client(server_params) as (read, write):
-            async with ClientSession(read, write) as session:
-                self.mcp_session = session
-                await session.initialize()
-
-                # Subscribe to state updates
-                await self._subscribe_to_updates()
-
-    async def _subscribe_to_updates(self):
-        """Subscribe to game state updates from MCP"""
-        # Poll for updates periodically
-        while True:
-            try:
-                # Get current game state via MCP tools
-                result = await self.mcp_session.call_tool(
-                    "get_game_state",
-                    arguments={}
-                )
-
-                # Convert to update format expected by UI
-                update = self._convert_mcp_to_ui_update(result)
-                self.update_queue.put(update)
-
-                await asyncio.sleep(0.5)  # Update frequency
-            except Exception as e:
-                print(f"Error getting updates: {e}")
-
-    def _convert_mcp_to_ui_update(self, mcp_result):
-        """Convert MCP response to UI update format"""
-        # Parse the MCP result and format for your UI
-        return {
-            'type': 'update',
-            'inventory': mcp_result.get('inventory', {}),
-            'score': mcp_result.get('score', 0),
-            'entities_count': mcp_result.get('entities_count', 0),
-            # ... other fields
-        }
 
     def update_inventory_display(self):
         """Update the inventory grid display with sprite icons."""
@@ -525,6 +476,24 @@ class FactorioControlPanel:
                 self.production_history['data'][item] = deque(maxlen=50)
             self.production_history['data'][item].append(amount)
 
+        # Calculate total economic value for this tick
+        total_value = 0
+        for item, amount in outputs.items():
+            if item not in self.production_history['data']:
+                self.production_history['data'][item] = deque(maxlen=50)
+            self.production_history['data'][item].append(amount)
+
+            # Add to total value (you might want to weight different items differently)
+            total_value += amount
+
+        # Track cumulative economic output
+        if 'cumulative_total' not in self.production_history['data']:
+            self.production_history['data']['cumulative_total'] = deque(maxlen=50)
+            self.cumulative_sum = 0
+
+        self.cumulative_sum = total_value
+        self.production_history['data']['cumulative_total'].append(self.cumulative_sum)
+
         # Pad shorter series with zeros
         max_len = len(self.production_history['timestamps'])
         for series in self.production_history['data'].values():
@@ -558,10 +527,43 @@ class FactorioControlPanel:
             self.production_history['data'].items(),
             key=lambda x: sum(x[1]) if x[1] else 0,
             reverse=True
-        )[:5]
+        )[:20]
 
         series = []
         legend_data = []
+
+        # First, add the cumulative total as a special series
+        if 'cumulative_total' in self.production_history['data']:
+            cumulative_values = self.production_history['data']['cumulative_total']
+            series.append({
+                'name': 'cumulative_total',
+                'type': 'line',
+                'data': list(cumulative_values),
+                'smooth': True,
+                'lineStyle': {
+                    'color': '#FFD700',  # Gold color for cumulative
+                    'width': 3,  # Thicker line
+                    'type': 'solid'  # Solid line instead of dashed
+                },
+                'itemStyle': {'color': '#FFD700'},
+                # 'areaStyle': {  # Add area fill for cumulative
+                #     'color': {
+                #         'type': 'linear',
+                #         'x': 0,
+                #         'y': 0,
+                #         'x2': 0,
+                #         'y2': 1,
+                #         'colorStops': [
+                #             {'offset': 0, 'color': 'rgba(255, 215, 0, 0.3)'},
+                #             {'offset': 1, 'color': 'rgba(255, 215, 0, 0.05)'}
+                #         ]
+                #     }
+                # },
+                'showSymbol': False,
+                'animationDuration': 30,
+                # 'yAxisIndex': 1  # Use secondary y-axis for cumulative
+            })
+            legend_data.append({"name": "Cumulative Total", "icon": ""})
 
         for i, (item_name, values) in enumerate(top_items):
             color = colors[i % len(colors)]
@@ -575,10 +577,12 @@ class FactorioControlPanel:
                 'type': 'line',
                 'data': list(values),
                 'smooth': True,
-                'lineStyle': {'color': color, 'width': 2},
+                'lineStyle': {'color': color, 'width': 1, 'type': 'dashed'},
                 'itemStyle': {'color': color},
-                'symbol': 'circle',
-                'symbolSize': 6
+                #'symbol': 'circle',
+                #'symbolSize': 6
+                'showSymbol': False,
+                'animationDuration': 30
             })
 
             # Add to legend with icon if available
@@ -587,58 +591,95 @@ class FactorioControlPanel:
                     'name': legend_name,
                     'icon': f'image://{icon_data}'
                 })
-            else:
-                legend_data.append(legend_name)
+            #else:
+            #    legend_data.append({'name': legend_name})
 
         # Update chart options
-        chart_options = {
-            'backgroundColor': 'transparent',
-            'xAxis': {
-                'type': 'category',
-                'data': x_data,
-                'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                'axisLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.3)'}}
-            },
-            'yAxis': {
-                'type': 'value',
-                'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                'splitLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.1)'}}
-            },
-            'series': series,
-            'legend': {
-                'data': legend_data if isinstance(legend_data[0], str) else [item['name'] for item in legend_data],
-                'textStyle': {'color': 'rgba(255, 255, 255, 0.7)'},
-                'itemWidth': 20,
-                'itemHeight': 20,
-                'top': 0
-            },
-            'grid': {
-                'left': '5%',
-                'right': '5%',
-                'bottom': '5%',
-                'top': '15%',
-                'containLabel': True
-            },
-            'tooltip': {
-                'trigger': 'axis',
-                'backgroundColor': 'rgba(0, 0, 0, 0.8)',
-                'borderColor': '#333',
-                'textStyle': {'color': '#fff'}
+        try:
+            _series = series[:1] + series[2:]
+            assert len(_series) == len(legend_data)
+            chart_options = {
+                'backgroundColor': 'transparent',
+                'xAxis': {
+                    'type': 'category',
+                    'data': x_data,
+                    'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
+                    'axisLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.3)'}}
+                },
+                'yAxis': {
+                    'type': 'value',
+                    'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
+                    'splitLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.1)'}}
+                },
+                'series': _series,
+                'legend': {
+                    'data': legend_data if isinstance(legend_data[0], str) else [item['name'] for item in legend_data],
+                    'textStyle': {'color': 'rgba(255, 255, 255, 0.7)'},
+                    'itemWidth': 20,
+                    'itemHeight': 20,
+                    'top': 0,
+                    'icon': 'rect'
+                },
+                'grid': {
+                    'left': '5%',
+                    'right': '5%',
+                    'bottom': '5%',
+                    'top': '15%',
+                    'containLabel': True
+                },
+                'tooltip': {
+                    'trigger': 'axis',
+                    'backgroundColor': 'rgba(0, 0, 0, 0.8)',
+                    'borderColor': '#333',
+                    'textStyle': {'color': '#fff'}
+                }
             }
-        }
+        except Exception as e:
+            raise e
 
         # Update chart with new options using the update method
         self.chart.options['series'] = chart_options['series']
         self.chart.options['xAxis']['data'] = chart_options['xAxis']['data']
         self.chart.options['legend']['data'] = chart_options['legend']['data']
-        self.chart.update()
+        try:
+            self.chart.update()
+        except Exception as e:
+            pass
 
     def process_updates(self):
         """Process updates from the runner."""
         while not self.update_queue.empty():
             update = self.update_queue.get()
 
-            if update['type'] == 'init':
+            # Handle polling state updates
+            if update['type'] == 'state_update':
+                # Update UI with polled game state
+                if 'inventory' in update and update['inventory']:
+                    # Only update if inventory has changed
+                    if self.inventory_items != update['inventory']:
+                        self.inventory_items = update['inventory']
+                        self.update_inventory_display()
+
+                if 'score' in update:
+                    score_text = f'{update["score"]:.2f}'
+                    self.score_label.set_content(score_text)
+
+                if 'entities_count' in update:
+                    self.entities_label.set_text(f'Entities: {update["entities_count"]}')
+
+                if 'game_tick' in update:
+                    self.tick_label.set_text(f'Tick: {update["game_tick"]:,}')
+
+                if 'research_progress' in update:
+                    research_pct = update['research_progress'] * 100
+                    self.research_label.set_text(f'Research: {research_pct:.1f}%')
+
+                if 'production_flows' in update:
+                    self.update_production_chart(update['production_flows'])
+
+                logger.debug(f"Processed state_update at {update.get('timestamp', 'unknown')}")
+
+            elif update['type'] == 'init':
                 self.max_steps = update.get('max_steps', 100)
                 self.step_label.set_text(f'Step: 0 / {self.max_steps}')
                 self.status_label.set_text('🟢 Running')
@@ -699,7 +740,7 @@ class FactorioControlPanel:
                 self.status_label.set_text(status)
 
             elif update['type'] == 'error':
-                self.status_label.set_text('❌ Error')
+                self.status_label.set_text('❌ Error'+f"\n{update['message']}")
                 self.is_running = False
 
     def create_ui(self):
@@ -737,6 +778,12 @@ class FactorioControlPanel:
                     with ui.row().classes('w-full justify-between'):
                         self.step_label = ui.label('Step: 0 / 100').classes('text-xs')
                         self.tick_label = ui.label('Tick: 0').classes('text-xs')
+
+                    # Camera controls
+                    with ui.row().classes('w-full items-center gap-2 mt-2'):
+                        ui.label('Camera:').classes('text-xs')
+                        ui.switch('Track', value=True).bind_value(self, 'camera_tracking_enabled').classes('text-xs')
+                        ui.slider(min=0.1, max=2.0, step=0.1, value=0.5).bind_value(self, 'camera_zoom_scale').classes('flex-1')
 
                 # Stats
                 with ui.card().classes('w-full bg-gray-800 text-white mt-2'):
@@ -840,6 +887,7 @@ class FactorioControlPanel:
                 'timestamps': deque(maxlen=50),
                 'data': {}
             }
+            self.cumulative_sum = 0  # Track cumulative economic output
             logger.info("Starting trajectory runner thread")
 
             # Start runner in background thread
@@ -864,9 +912,107 @@ class FactorioControlPanel:
                 'message': str(e),
             })
 
+    async def start_polling(self):
+        """Start polling for game state updates continuously."""
+        logger.info("Starting game state polling in monitoring mode")
+
+        poll_count = 0
+
+        # Keep polling while the panel is active
+        while self.is_running:
+            try:
+                poll_count += 1
+                logger.debug(f"Polling iteration {poll_count} at {time.time()}")
+
+                # Get the current game state from the Factorio instance
+                if hasattr(self, 'gym_env') and self.gym_env:
+                    # Update camera viewport to follow agent
+                    await self._update_camera_viewport()
+
+                    # Format update message
+                    # update = {
+                    #     'type': 'state_update',
+                    #     'timestamp': time.time(),
+                    #     'inventory': obs.inventory if obs else {},
+                    #     'entities_count': len(obs.entities) if obs else 0,
+                    #     'score': obs.score if obs else 0,
+                    #     'game_tick': obs.game_info.tick if obs and obs.game_info else 0,
+                    #     'research_progress': obs.research.research_progress if obs and obs.research and obs.research.current_research else 0,
+                    #     'production_flows': obs.flows.to_dict() if obs and obs.flows else None
+                    # }
+
+                    # Put update in queue for UI processing
+                    #self.update_queue.put(update)
+                    logger.debug(f"Polling update {poll_count} sent to queue")
+
+                await asyncio.sleep(3.0)  # Poll every second
+
+            except Exception as e:
+                logger.error(f"Error in polling loop (iteration {poll_count}): {e}")
+                await asyncio.sleep(3.0)  # Continue polling even on error
+
+        logger.info(f"Stopping polling after {poll_count} iterations")
+
+    async def _update_camera_viewport(self):
+        """Update camera viewport to follow agent character."""
+        if not self.camera_tracking_enabled:
+            return
+
+        current_time = time.time()
+        if current_time - self.last_camera_update < self.camera_update_interval:
+            return
+
+        try:
+
+            # Use zoom_to_world to focus on agent character
+            #camera_cmd = f"/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].zoom_to_world(global.agent_characters[1].position, {self.camera_zoom_scale}, global.agent_characters[1]) end"
+            camera_cmd = f"/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].teleport(global.agent_characters[1].position) end"
+            self.rcon_client.send_command(camera_cmd)
+            logger.debug("Camera viewport updated to follow agent character")
+
+            #logger.info("Setting spectator mode")
+            #self.rcon_client.send_command("/sc game.players[1].spectator=false")
+
+            self.last_camera_update = current_time
+
+        except Exception as e:
+            logger.debug("Error updating camera viewport: %s", e)
+            # Don't raise - camera updates are non-criticalsa
+
+    async def _initialize_overlay_session(self):
+        """Initialize overlay session with cleanup Lua commands."""
+        logger.info("Initializing overlay session with cleanup commands")
+
+        try:
+            # Get the RCON client from the Factorio instance
+            #instance = gym_env_unwrapped.instance
+
+
+            # 0. View all map
+            logger.info("Show all map")
+            self.rcon_client.send_command("/sc game.players[1].force.chart_all()")
+
+            # 1. Clear rendering artifacts
+            logger.info("Clearing rendering artifacts")
+            self.rcon_client.send_command("/c rendering.clear()")
+
+            # 2. Remove hostile entities (enemies)
+            logger.info("Removing hostile entities")
+            enemy_cleanup_cmd = '/c local surface=game.players[1].surface for key, entity in pairs(surface.find_entities_filtered({force="enemy"})) do entity.destroy() end'
+            self.rcon_client.send_command(enemy_cleanup_cmd)
+
+
+        except Exception as e:
+            logger.error("Error during overlay session initialization: %s", e, exc_info=True)
+            # Don't raise the exception - continue with monitoring even if initialization fails
+            self.update_queue.put({
+                'type': 'error',
+                'message': f'Initialization warning: {str(e)}'
+            })
+
     async def _async_run_trajectory(self):
-        """Async trajectory runner."""
-        logger.info("_async_run_trajectory started - env_id: %s, model: %s", self.env_id, self.model)
+        """Setup monitoring connection without running trajectory."""
+        logger.info("Setting up monitoring connection - env_id: %s", self.env_id)
 
         try:
             # Get environment info
@@ -881,72 +1027,39 @@ class FactorioControlPanel:
                 return
             logger.info("Environment info retrieved successfully")
 
-            # Create database client
-            logger.info("Creating database client")
-            db_client = await create_db_client()
-            logger.info("Database client created")
+            # Create gym environment just for monitoring
+            logger.info("Creating gym environment for monitoring")
+            # gym_env = gym.make(self.env_id)
+            #
+            #
+            # # Store gym_env as instance variable for polling
+            # self.gym_env = gym_env
 
-            # Create gym environment
-            logger.info("Creating gym environment")
-            gym_env = gym.make(self.env_id)
-            gym_env_unwrapped: FactorioGymEnv = gym_env.unwrapped
-            task = gym_env_unwrapped.task
-            instance = gym_env_unwrapped.instance
-            logger.info("Gym environment created - task: %s", task.task_key if task else "None")
+            # Initialize overlay session with cleanup commands
+            await self._initialize_overlay_session()
 
-            # Create agent
-            logger.info("Creating agent with model %s", self.model)
-            system_prompt = instance.get_system_prompt(0)
-            agent = GymAgent(
-                model=self.model,
-                system_prompt=system_prompt,
-                task=task,
-                agent_idx=0,
-                observation_formatter=BasicObservationFormatter(include_research=False),
-                system_prompt_formatter=SystemPromptFormatter()
-            )
-            logger.info("Agent created successfully")
+            # Send initialization message
+            self.update_queue.put({
+                'type': 'init',
+                'task': self.env_id,
+                'max_steps': 100,  # Just for display
+                'num_agents': 1
+            })
 
-            # Get version
-            logger.info("Getting next version")
-            base_version = await get_next_version()
-            logger.info("Version: %s", base_version)
+            # Update status
+            self.update_queue.put({
+                'type': 'update',
+                'step': 0,
+                'output': 'Monitoring mode - use Claude Code to control Factorio'
+            })
 
-            # Create eval config
-            logger.info("Creating eval config")
-            config = GymEvalConfig(
-                agents=[agent],
-                version=base_version,
-                version_description=f"model:{self.model}\ntype:{task.task_key}",
-                task=task,
-                agent_cards=[agent.get_agent_card()],
-                env_id=self.env_id
-            )
-            logger.info("Eval config created")
-
-            # Create visual runner
-            log_dir = Path("../.fle/trajectory_logs") / f"v{config.version}"
-            logger.info("Creating VisualTrajectoryRunner with log_dir: %s", log_dir)
-            runner = VisualTrajectoryRunner(
-                config=config,
-                gym_env=gym_env,
-                db_client=db_client,
-                log_dir=str(log_dir),
-                process_id=0,
-                update_queue=self.update_queue
-            )
-            logger.info("VisualTrajectoryRunner created")
-
-            # Run trajectory
-            logger.info("Starting trajectory run")
-            await runner.run()
-            logger.info("Trajectory run completed")
-
-            await db_client.cleanup()
-            logger.info("Database client cleaned up")
+            # Start polling task and keep it running
+            logger.info("Starting monitoring polling")
+            await self.start_polling()
+            logger.info("Monitoring completed")
 
         except Exception as e:
-            logger.error("Fatal error in _async_run_trajectory: %s", e, exc_info=True)
+            logger.error("Fatal error in monitoring setup: %s", e, exc_info=True)
             self.update_queue.put({
                 'type': 'error',
                 'message': f'Fatal error: {str(e)}'

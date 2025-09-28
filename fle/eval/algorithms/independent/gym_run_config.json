@@ -1,6 +1,6 @@
 [
     {
-        "env_id": "advanced_circuit_throughput",
-        "model": "anthropic/claude-opus-4.1"
+        "env_id": "steel_plate_throughput",
+        "model": "claude-sonnet-4-20250514"
     }
 ] 

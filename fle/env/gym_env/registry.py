@@ -121,7 +121,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
             "tcp_port": int(tcp_port),
             "num_agents": spec.num_agents,
             "fast": True,
-            "cache_scripts": False,
+            "cache_scripts": True,
             "inventory": {},
             "all_technologies_researched": True,
         }

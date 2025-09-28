@@ -2,21 +2,12 @@ import os
 import logging
 
 from openai import AsyncOpenAI
-from tenacity import retry, wait_exponential, stop_after_attempt
+from tenacity import retry, wait_exponential
 
 from fle.agents.llm.metrics import timing_tracker, track_timing_async
 from fle.agents.llm.utils import (
     merge_contiguous_messages,
     remove_whitespace_blocks,
-)
-from fle.commons.constants import (
-    OR_QWEN3_235B_THINKING,
-    OR_GPT_OSS_120B,
-    OR_DEEPSEEK_V3_1,
-    OR_DEEPSEEK_R1,
-    OR_CLAUDE_OPUS_4_1,
-    OR_GEMINI_2_5_PRO,
-    OR_GPT_5,
 )
 
 
@@ -85,10 +76,6 @@ class APIFactory:
         self.api_key_config_file = (
             api_key_config_file  # Store for child process reinitialization
         )
-        self.api_key_manager = None
-
-        # Don't initialize API key manager in parent process to avoid multiprocessing pickle issues
-        # It will be initialized lazily in the child process when first needed
         self.api_key_manager = None
 
     def _get_provider_config(self, model: str) -> dict:
@@ -185,9 +172,7 @@ class APIFactory:
                 )
 
     @track_timing_async("llm_api_call")
-    @retry(
-        wait=wait_exponential(multiplier=2, min=2, max=15), stop=stop_after_attempt(3)
-    )
+    @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
     async def acall(self, **kwargs):
         model_to_use = kwargs.get("model", self.model)
         messages = kwargs.get("messages", [])
@@ -214,17 +199,6 @@ class APIFactory:
         )
 
         try:
-            # Check if this is a reasoning model that needs reasoning_enabled
-            reasoning_models = [
-                OR_QWEN3_235B_THINKING,
-                OR_GPT_OSS_120B,
-                OR_DEEPSEEK_V3_1,
-                OR_DEEPSEEK_R1,
-                OR_CLAUDE_OPUS_4_1,
-                OR_GEMINI_2_5_PRO,
-                OR_GPT_5,
-            ]
-
             # Build the API call parameters
             api_params = {
                 "model": model_to_use,
@@ -241,9 +215,6 @@ class APIFactory:
 
             # Standard API call for all providers
             response = await client.chat.completions.create(**api_params)
-            reasoning = getattr(response.choices[0].message, "reasoning", None)
-            if reasoning is None and model_to_use in reasoning_models:
-                print("WARNING: No reasoning was returned for model: {model_to_use}")
             # Mark key as successful
             self._mark_key_result(provider_config, api_key, success=True)
 

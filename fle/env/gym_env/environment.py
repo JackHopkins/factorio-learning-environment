@@ -420,12 +420,12 @@ class FactorioGymEnv(gym.Env):
             )
             terminated = task_success.success
 
+        production_score, _ = namespace.score()
         # Calculate reward
         if REWARD_OVERRIDE_KEY in task_success.meta:
             reward = task_success.meta[REWARD_OVERRIDE_KEY]
         else:
-            score, _ = namespace.score()
-            reward = score - initial_score
+            reward = production_score - initial_score
         reward = float(reward) - self.error_penalty
 
         output_game_state = GameState.from_instance(self.instance)
@@ -462,6 +462,7 @@ class FactorioGymEnv(gym.Env):
             "task_verification": task_response,
             "output_game_state": output_game_state,
             "achievements": achievements,
+            "production_score": production_score,
         }
 
         # pause the game until the next step if this is part of a trajectory

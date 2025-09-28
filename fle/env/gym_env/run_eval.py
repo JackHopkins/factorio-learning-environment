@@ -83,16 +83,26 @@ async def run_trajectory(run_idx: int, config: GymEvalConfig):
                     config.version_description.split("model:")[1].split("\n")[0].strip()
                 )
 
+            # Get sweep ID for tagging
+            sweep_id = os.getenv("FLE_SWEEP_ID", "unknown_sweep")
+
             wandb_logger = WandBLogger(
                 project=os.getenv("WANDB_PROJECT", "factorio-learning-environment"),
                 run_name=f"{model_name}-{task_name}-v{config.version}-trial{run_idx}",
-                tags=["gym_eval", model_name, task_name, f"v{config.version}"],
+                tags=[
+                    "gym_eval",
+                    model_name,
+                    task_name,
+                    f"v{config.version}",
+                    f"sweep:{sweep_id}",
+                ],
                 config={
                     "model": model_name,
                     "task": task_name,
                     "version": config.version,
                     "trial": run_idx,
                     "version_description": config.version_description,
+                    "sweep_id": sweep_id,
                 },
             )
         except Exception as e:
@@ -140,6 +150,11 @@ async def main(config_path):
             system_prompt = generator.generate_for_agent(
                 agent_idx=agent_idx, num_agents=num_agents
             )
+            # Get API key config file from environment (set by sweep_manager)
+            api_key_config_file = os.getenv("FLE_API_KEY_CONFIG_FILE") or os.getenv(
+                "API_KEY_CONFIG_FILE"
+            )
+
             agent = GymAgent(
                 model=run_config.model,
                 system_prompt=system_prompt,
@@ -147,6 +162,7 @@ async def main(config_path):
                 agent_idx=agent_idx,
                 observation_formatter=BasicObservationFormatter(include_research=False),
                 system_prompt_formatter=SystemPromptFormatter(),
+                api_key_config_file=api_key_config_file,
             )
             agents.append(agent)
 

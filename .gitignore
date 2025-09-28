@@ -19,10 +19,16 @@ uv.lock
 
 # Misc
 trajectory_logs/
+wandb/
+summary_cache/
 **/.claude/settings.local.json
 *.mp4
 *.jsonl
 *.db
+CLAUDE.md
 
-#fle
+# API
+api_keys.json
+
+# fle
 .fle/

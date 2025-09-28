@@ -1,3 +1,4 @@
+import os
 import time
 from itertools import product
 from typing import Any, List, Dict, Optional, Tuple
@@ -59,6 +60,7 @@ class GymTrajectoryRunner:
         agent: GymAgent,
         agent_idx: int,
         agent_step: int,
+        production_score: float,
         program: Program,
         observation: Observation,
     ):
@@ -69,6 +71,7 @@ class GymTrajectoryRunner:
             agent: The agent instance
             agent_idx: Index of the agent
             agent_step: Current step for this agent
+            production_score: Current production score
             program: The program to log
             observation: The observation to log
         """
@@ -77,7 +80,7 @@ class GymTrajectoryRunner:
         self.logger.add_iteration_time(iteration_time)
 
         # Log progress, observation and program
-        self.logger.log_progress(agent, agent_step, program.value)
+        self.logger.log_progress(agent, agent_step, program.value, production_score)
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
@@ -104,6 +107,7 @@ class GymTrajectoryRunner:
                     instance=self.process_id,
                     step=agent_step,
                     reward=program.value,
+                    production_score=production_score,
                     model=agent.model,
                     task=task_name,
                     elapsed_time=elapsed_time,
@@ -122,6 +126,7 @@ class GymTrajectoryRunner:
         error_occurred: bool,
         achievements: Dict[str, Any],
         game_state: GameState,
+        production_score: float,
     ) -> Program:
         """Create a Program object from a Policy and environment results
 
@@ -131,6 +136,9 @@ class GymTrajectoryRunner:
             reward: The reward from the environment step
             response: The raw text response from the environment
             error_occurred: Whether an error occurred during execution
+            achievements: The achievements dictionary from the environment
+            game_state: The current game state
+            production_score: The production score from the environment
 
         Returns:
             Program object with all necessary metadata and results
@@ -157,6 +165,8 @@ class GymTrajectoryRunner:
                 "model": self.agents[agent_idx].model,
                 "process_id": self.process_id,
                 "error_occurred": error_occurred,
+                "sweep_id": os.getenv("FLE_SWEEP_ID", "unknown"),
+                "production_score": production_score,
             },
             depth=depth,
         )
@@ -244,6 +254,7 @@ class GymTrajectoryRunner:
                     )
                     observation = Observation.from_dict(obs_dict)
                     output_game_state = info["output_game_state"]
+                    production_score = info["production_score"]
                     done = terminated or truncated
 
                     # Create program from policy with environment results
@@ -255,6 +266,7 @@ class GymTrajectoryRunner:
                         error_occurred=info["error_occurred"],
                         achievements=info["achievements"],
                         game_state=output_game_state,
+                        production_score=production_score,
                     )
 
                     # Update agent's conversation with the program and its results
@@ -268,6 +280,7 @@ class GymTrajectoryRunner:
                         agent,
                         agent_idx,
                         agent_steps[agent_idx],
+                        production_score,
                         program,
                         observation,
                     )

@@ -42,39 +42,7 @@ class MoveTo(Tool):
             allow_paths_through_own_entities=True,
             resolution=-1,
         )
-
-        # Wait for path to be ready using get_path's built-in polling
-        # get_path now properly waits with exponential backoff for async path completion
-        max_path_retries = 3
-        for retry in range(max_path_retries):
-            try:
-                self.get_path(path_handle, max_attempts=30)
-                break  # Success - exit retry loop
-            except Exception as e:
-                # If path request failed (likely container reuse issue), request a fresh path
-                if (
-                    "stuck" in str(e) or "container reuse" in str(e)
-                ) and retry < max_path_retries - 1:
-                    path_handle = self.request_path(
-                        start=Position(
-                            x=self.game_state.player_location.x,
-                            y=self.game_state.player_location.y,
-                        ),
-                        finish=nposition,
-                        allow_paths_through_own_entities=True,
-                        resolution=-1,
-                    )
-                    # Continue to next retry with the fresh handle
-                    continue
-                elif retry >= max_path_retries - 1:
-                    # All retries exhausted
-                    raise Exception(
-                        f"Pathfinding failed after {max_path_retries} attempts. "
-                        f"This is likely a container state issue. Try again in the next program."
-                    )
-                else:
-                    # Different error, re-raise
-                    raise
+        sleep(0.05)  # Let the pathing complete in the game.
 
         # Track elapsed ticks for fast forward
         ticks_before = self.game_state.instance.get_elapsed_ticks()

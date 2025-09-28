@@ -38,9 +38,10 @@ from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import (
 )
 from fle.commons.constants import (
     # Direct API models
-    GPT_5,
     CLAUDE_OPUS_4_1,
     CLAUDE_SONNET_4,
+    OR_DEEPSEEK_V3_1,
+    OR_QWEN3_235B_THINKING,
     OR_GEMINI_2_5_PRO,
     # OpenRouter models
     OR_GPT_5,
@@ -48,7 +49,6 @@ from fle.commons.constants import (
     OR_CLAUDE_SONNET_4,
     OR_CLAUDE_3_7_SONNET,
     OR_XAI_GROK_4,
-    OR_XAI_GROK_3,
     OR_GPT_OSS_120B,
 )
 
@@ -75,32 +75,6 @@ class SweepProfiles:
             enable_wandb=True,
             wandb_project="factorio-eval-test",
             output_dir="./sweep_results/test_small",
-            save_intermediate_results=True,
-            log_interval_minutes=5,
-            retry_failed_runs=True,
-            max_retries=2,
-            api_key_config_file="api_keys.json",
-        )
-
-    @staticmethod
-    def test_harder_tasks() -> SweepConfig:
-        """Test sweep with more challenging tasks"""
-        return SweepConfig(
-            name="test_sweep_harder",
-            description="Test sweep with challenging tasks",
-            models=[
-                CLAUDE_SONNET_4,
-                CLAUDE_OPUS_4_1,
-            ],
-            tasks=[
-                STEEL_PLATE_THROUGHPUT,
-                AUTOMATION_SCIENCE_PACK_THROUGHPUT,
-            ],
-            num_trials_per_config=3,
-            max_concurrent_processes=2,
-            enable_wandb=True,
-            wandb_project="factorio-eval-test",
-            output_dir="./sweep_results/test_harder",
             save_intermediate_results=True,
             log_interval_minutes=5,
             retry_failed_runs=True,
@@ -143,58 +117,6 @@ class SweepProfiles:
         )
 
     @staticmethod
-    def production_medium() -> SweepConfig:
-        """Medium-scale production sweep (6 models, 8 tasks, Pass@8)"""
-        return SweepConfig(
-            name="production_medium",
-            description="Medium-scale production evaluation",
-            models=[
-                # OR_DEEPSEEK_V3_1,
-                # OR_QWEN3_235B_THINKING,
-                OR_GPT_OSS_120B,
-            ],
-            tasks=[
-                ADVANCED_CIRCUIT_THROUGHPUT,
-                AUTOMATION_SCIENCE_PACK_THROUGHPUT,
-                BATTERY_THROUGHPUT,
-                CHEMICAL_SCIENCE_PACK_THROUGHPUT,
-                CRUDE_OIL_THROUGHPUT,
-                ELECTRONIC_CIRCUIT_THROUGHPUT,
-                ENGINE_UNIT_THROUGHPUT,
-                INSERTER_THROUGHPUT,
-                IRON_GEAR_WHEEL_THROUGHPUT,
-                IRON_ORE_THROUGHPUT,
-                IRON_PLATE_THROUGHPUT,
-                LOGISTICS_SCIENCE_PACK_THROUGHPUT,
-                LOW_DENSITY_STRUCTURE_THROUGHPUT,
-                MILITARY_SCIENCE_PACK_THROUGHPUT,
-                PETROLEUM_GAS_THROUGHPUT,
-                PIERCING_ROUND_THROUGHPUT,
-                PLASTIC_BAR_THROUGHPUT,
-                PROCESSING_UNIT_THROUGHPUT,
-                PRODUCTION_SCIENCE_PACK_THROUGHPUT,
-                STEEL_PLATE_THROUGHPUT,
-                STONE_WALL_THROUGHPUT,
-                SUFURIC_ACID_THROUGHPUT,
-                SULFUR_THROUGHPUT,
-                UTILITY_SCIENCE_PACK_THROUGHPUT,
-            ],
-            num_trials_per_config=8,  # Pass@8 evaluation
-            max_concurrent_processes=16,
-            task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
-            early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded
-            enable_wandb=True,
-            wandb_project="factorio-production-eval",
-            output_dir="./sweep_results/production_medium",
-            save_intermediate_results=True,
-            log_interval_minutes=30,
-            shuffle_execution_order=False,  # Better load distribution
-            retry_failed_runs=True,
-            max_retries=2,
-            api_key_config_file="api_keys.json",
-        )
-
-    @staticmethod
     def production_large() -> SweepConfig:
         """Large production sweep with comprehensive task coverage"""
         return SweepConfig(
@@ -202,10 +124,14 @@ class SweepProfiles:
             description="Comprehensive evaluation across all throughput tasks",
             models=[
                 # Frontier models through openrouter
-                # OR_GPT_5,
-                # OR_CLAUDE_OPUS_4_1,
+                OR_GPT_5,
+                OR_CLAUDE_OPUS_4_1,
                 OR_GEMINI_2_5_PRO,
                 OR_XAI_GROK_4,
+                # Open source models
+                OR_DEEPSEEK_V3_1,
+                OR_QWEN3_235B_THINKING,
+                OR_GPT_OSS_120B,
             ],
             tasks=[
                 # All throughput tasks from lab_play folder
@@ -245,79 +171,6 @@ class SweepProfiles:
             save_intermediate_results=True,
             log_interval_minutes=30,
             shuffle_execution_order=False,  # Disabled when using task inner loop
-            retry_failed_runs=True,
-            max_retries=2,
-            api_key_config_file="api_keys.json",
-        )
-
-    @staticmethod
-    def large_hard_only() -> SweepConfig:
-        """Large production sweep with only the hard tasks"""
-        return SweepConfig(
-            name="large_hard_only",
-            description="Large sweep focusing on challenging production tasks",
-            models=[
-                # Same models as production_large
-                OR_CLAUDE_OPUS_4_1,
-                OR_GEMINI_2_5_PRO,
-                OR_GPT_5,
-            ],
-            tasks=[
-                # Only the hard tasks
-                BATTERY_THROUGHPUT,
-                INSERTER_THROUGHPUT,
-                ADVANCED_CIRCUIT_THROUGHPUT,
-                LOGISTICS_SCIENCE_PACK_THROUGHPUT,
-                LOW_DENSITY_STRUCTURE_THROUGHPUT,
-                ENGINE_UNIT_THROUGHPUT,
-                MILITARY_SCIENCE_PACK_THROUGHPUT,
-                CHEMICAL_SCIENCE_PACK_THROUGHPUT,
-                PROCESSING_UNIT_THROUGHPUT,
-                PRODUCTION_SCIENCE_PACK_THROUGHPUT,
-                UTILITY_SCIENCE_PACK_THROUGHPUT,
-            ],
-            num_trials_per_config=8,
-            max_concurrent_processes=16,
-            # Pass@K optimization features
-            task_inner_loop_mode=True,  # Cycle through tasks before repeating model-task pairs
-            early_stop_on_success=True,  # Skip (model, task) pairs that already succeeded
-            enable_wandb=True,
-            wandb_project="factorio-production-hard",
-            output_dir="./sweep_results/large_hard_only",
-            save_intermediate_results=True,
-            log_interval_minutes=30,
-            shuffle_execution_order=False,  # Disabled when using task inner loop
-            retry_failed_runs=True,
-            max_retries=2,
-            api_key_config_file="api_keys.json",
-        )
-
-    @staticmethod
-    def openrouter_grok_test() -> SweepConfig:
-        """Test Grok and other models via OpenRouter"""
-        return SweepConfig(
-            name="openrouter_grok_test",
-            description="Evaluate Grok and other OpenRouter models",
-            models=[
-                OR_XAI_GROK_4,  # Grok 4 via OpenRouter
-                OR_XAI_GROK_3,  # Grok 3 via OpenRouter
-                OR_CLAUDE_3_7_SONNET,  # Claude via OpenRouter
-                OR_GPT_5,  # GPT-5 via OpenRouter
-                # Compare with direct API models
-                CLAUDE_SONNET_4,  # Direct Anthropic API
-                GPT_5,  # Direct OpenAI API
-            ],
-            tasks=[
-                "iron_ore_throughput",
-                "iron_plate_throughput",
-                "gear_production",
-            ],
-            num_trials_per_config=3,
-            max_concurrent_processes=3,
-            enable_wandb=True,
-            wandb_project="openrouter-grok-evaluation",
-            output_dir="./sweep_results/openrouter_grok",
-            log_interval_minutes=5,
             retry_failed_runs=True,
             max_retries=2,
             api_key_config_file="api_keys.json",
@@ -424,12 +277,6 @@ class SweepRunner:
         return await cls.run_sweep(config, existing_sweep_id)
 
     @classmethod
-    async def run_test_harder(cls, existing_sweep_id: Optional[str] = None) -> dict:
-        """Run test_harder sweep with optional resume"""
-        config = SweepProfiles.test_harder()
-        return await cls.run_sweep(config, existing_sweep_id)
-
-    @classmethod
     async def run_pass_at_k_optimized(
         cls, existing_sweep_id: Optional[str] = None
     ) -> dict:
@@ -438,33 +285,11 @@ class SweepRunner:
         return await cls.run_sweep(config, existing_sweep_id)
 
     @classmethod
-    async def run_production_medium(
-        cls, existing_sweep_id: Optional[str] = None
-    ) -> dict:
-        """Run production_medium sweep with optional resume"""
-        config = SweepProfiles.production_medium()
-        return await cls.run_sweep(config, existing_sweep_id)
-
-    @classmethod
     async def run_production_large(
         cls, existing_sweep_id: Optional[str] = None
     ) -> dict:
         """Run production_large sweep with optional resume"""
         config = SweepProfiles.production_large()
-        return await cls.run_sweep(config, existing_sweep_id)
-
-    @classmethod
-    async def run_large_hard_only(cls, existing_sweep_id: Optional[str] = None) -> dict:
-        """Run large_hard_only sweep with optional resume"""
-        config = SweepProfiles.large_hard_only()
-        return await cls.run_sweep(config, existing_sweep_id)
-
-    @classmethod
-    async def run_openrouter_grok_test(
-        cls, existing_sweep_id: Optional[str] = None
-    ) -> dict:
-        """Run openrouter_grok_test sweep with optional resume"""
-        config = SweepProfiles.openrouter_grok_test()
         return await cls.run_sweep(config, existing_sweep_id)
 
     @classmethod
@@ -508,18 +333,10 @@ async def run_sweep_profile(
 
     if profile == "test_small":
         return await runner.run_test_small(existing_sweep_id)
-    elif profile == "test_harder":
-        return await runner.run_test_harder(existing_sweep_id)
     elif profile == "pass_at_k":
         return await runner.run_pass_at_k_optimized(existing_sweep_id)
-    elif profile == "production_medium":
-        return await runner.run_production_medium(existing_sweep_id)
     elif profile == "production_large":
         return await runner.run_production_large(existing_sweep_id)
-    elif profile == "large_hard_only":
-        return await runner.run_large_hard_only(existing_sweep_id)
-    elif profile == "openrouter_grok":
-        return await runner.run_openrouter_grok_test(existing_sweep_id)
     elif profile == "openrouter_tournament":
         return await runner.run_openrouter_tournament(existing_sweep_id)
     elif profile == "custom":
@@ -545,12 +362,8 @@ async def main():
         print("Usage: python consolidated_sweep_config.py <profile> [options]")
         print("\nAvailable profiles:")
         print("  test_small        - Small test sweep (2 models, 2 tasks)")
-        print("  test_harder       - Test with harder tasks")
         print("  pass_at_k         - Pass@K optimized sweep")
-        print("  production_medium - Medium production sweep")
         print("  production_large  - Large production sweep")
-        print("  large_hard_only   - Large sweep with only hard tasks")
-        print("  openrouter_grok   - Test Grok models via OpenRouter")
         print("  openrouter_tournament - Full OpenRouter model tournament")
         print("  custom            - Custom configuration (requires additional args)")
         print("\nOptions:")
@@ -578,18 +391,10 @@ async def main():
     # Get the appropriate configuration
     if profile == "test_small":
         config = SweepProfiles.test_small()
-    elif profile == "test_harder":
-        config = SweepProfiles.test_harder()
     elif profile == "pass_at_k":
         config = SweepProfiles.pass_at_k_optimized()
-    elif profile == "production_medium":
-        config = SweepProfiles.production_medium()
     elif profile == "production_large":
         config = SweepProfiles.production_large()
-    elif profile == "large_hard_only":
-        config = SweepProfiles.large_hard_only()
-    elif profile == "openrouter_grok":
-        config = SweepProfiles.openrouter_grok_test()
     elif profile == "openrouter_tournament":
         config = SweepProfiles.openrouter_tournament()
     elif profile == "custom":

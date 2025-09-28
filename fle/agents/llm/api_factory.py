@@ -237,9 +237,6 @@ class APIFactory:
                 "presence_penalty": kwargs.get("presence_penalty"),
                 "frequency_penalty": kwargs.get("frequency_penalty"),
                 "stream": False,
-                "extra_body": {
-                    "reasoning": {"enabled": model_to_use in reasoning_models}
-                },
             }
 
             # Standard API call for all providers

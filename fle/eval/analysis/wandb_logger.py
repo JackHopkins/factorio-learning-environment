@@ -14,6 +14,9 @@ except ImportError:
 
 from .performance_metrics import PerformanceMetrics
 
+# Global flag to track if wandb authentication has been attempted
+_wandb_auth_attempted = False
+
 
 class WandBLogger:
     """Handles WandB logging for real-time experiment tracking"""
@@ -52,9 +55,31 @@ class WandBLogger:
         ).lower() not in ["true", "1"]
 
         if self.enabled:
+            self._setup_wandb_auth()
             self.initialize_run()
         else:
             print("WandB logging disabled (not installed or DISABLE_WANDB=true)")
+
+    def _setup_wandb_auth(self):
+        """Setup WandB authentication using WANDB_API_KEY from environment"""
+        global _wandb_auth_attempted
+
+        if not self.enabled or _wandb_auth_attempted:
+            return
+
+        _wandb_auth_attempted = True
+        wandb_api_key = os.getenv("WANDB_API_KEY")
+        if wandb_api_key:
+            try:
+                wandb.login(key=wandb_api_key)
+                print("WandB authentication successful")
+            except Exception as e:
+                print(f"WandB authentication failed: {e}")
+                self.enabled = False
+        else:
+            print(
+                "WANDB_API_KEY not found in environment - you may need to authenticate manually"
+            )
 
     def initialize_run(self):
         """Initialize WandB run"""

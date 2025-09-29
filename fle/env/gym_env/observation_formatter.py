@@ -3,6 +3,7 @@ import pickle
 import re
 
 from fle.env.gym_env.observation import Observation
+from fle.commons.constants import REWARD_OVERRIDE_KEY
 from typing import Any, Dict, List, Optional
 
 
@@ -51,6 +52,14 @@ class FormattedObservation:
     - ❌ Produce 100 iron plates
     Empty string if no task is being tracked."""
 
+    task_info_str: str
+    """Formatted string showing task information and objectives.
+    Example:
+    ### Task Information
+    **Goal:** Create automatic iron ore factory
+    **Agent Instructions:** You are the mining specialist
+    **Task Key:** iron_ore_automation"""
+
     messages_str: str
     """Formatted string showing messages received from other agents.
     Example:
@@ -68,6 +77,14 @@ class FormattedObservation:
       \"\"\"Find all furnaces that are not currently working.\"\"\"
     ```
     Shows function names, parameter types, return types, and docstrings."""
+
+    game_info_str: str
+    """Formatted string showing game timing information.
+    Example:
+    ### Game Info
+    - Elapsed Time: 1:00:00
+    - Ticks: 3600
+    Shows elapsed time in hours:minutes:seconds format and current game tick count."""
 
     raw_text_str: str
     """Formatted string showing the raw text output from the last action.
@@ -101,6 +118,10 @@ class FormattedObservation:
     def find_idle_furnaces(entities: List[Entity]) -> List[Entity]
       \"\"\"Find all furnaces that are not currently working.\"\"\"
     ```
+
+    ### Game Info
+    - Elapsed Time: 1:00:00
+    - Ticks: 3600
 
     ### Task Status
     ⏳ IN PROGRESS
@@ -136,6 +157,7 @@ class BasicObservationFormatter:
         include_state_changes: bool = True,
         include_raw_output: bool = True,
         include_research: bool = True,
+        include_game_info: bool = True,
     ):
         """Initialize the formatter with flags for which fields to include"""
         self.include_inventory = include_inventory
@@ -147,6 +169,7 @@ class BasicObservationFormatter:
         self.include_state_changes = include_state_changes
         self.include_raw_output = include_raw_output
         self.include_research = include_research
+        self.include_game_info = include_game_info
 
     @staticmethod
     def format_inventory(inventory: List[Dict[str, Any]]) -> str:
@@ -322,14 +345,14 @@ class BasicObservationFormatter:
         if not flows or not any(flows.values()):
             return "### Production Flows\nNone"
 
-        flow_str = "### Production Flows\n"
+        flow_str = "### Production Flows (for *entire* previous step)\n"
 
         # Format input flows
         if flows.get("input"):
             flow_str += "#### Inputs\n"
             for item in flows["input"]:
                 if item["rate"] > 0:
-                    flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
+                    flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
 
         # Format output flows
         if flows.get("output"):
@@ -338,7 +361,7 @@ class BasicObservationFormatter:
             flow_str += "#### Outputs\n"
             for item in flows["output"]:
                 if item["rate"] > 0:
-                    flow_str += f"- {item['type']}: {item['rate']:.2f}/s\n"
+                    flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
 
         # Format crafted items
         if flows.get("crafted"):
@@ -436,6 +459,28 @@ class BasicObservationFormatter:
         return research_str
 
     @staticmethod
+    def format_game_info(game_info: Dict[str, Any]) -> str:
+        """Format game timing information"""
+        if not game_info:
+            return "### Game Info\nNo game information available"
+
+        info_str = "### Game Info\n"
+
+        # Add elapsed time information in H:M:S format
+        if "time" in game_info:
+            total_seconds = int(game_info["time"])
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            info_str += f"- Elapsed Time: {hours:d}:{minutes:02d}:{seconds:02d}\n"
+
+        # Add tick information
+        if "tick" in game_info:
+            info_str += f"- Ticks: {game_info['tick']}\n"
+
+        return info_str
+
+    @staticmethod
     def format_task(task: Optional[Dict[str, Any]]) -> str:
         """Format task verification information"""
         if not task:
@@ -450,9 +495,33 @@ class BasicObservationFormatter:
         if task.get("meta"):
             task_str += "\n**Task Details:**\n"
             for meta_item in task["meta"]:
+                if meta_item["key"] == REWARD_OVERRIDE_KEY:
+                    continue
                 task_str += f"- {meta_item['key']}: {meta_item['value']}\n"
 
         return task_str
+
+    @staticmethod
+    def format_task_info(task_info: Optional[Dict[str, Any]]) -> str:
+        """Format task information"""
+        if not task_info:
+            return ""
+
+        info_str = "### Task Information\n"
+
+        if task_info.get("goal_description"):
+            info_str += f"**Goal:** {task_info['goal_description']}\n"
+
+        if task_info.get("agent_instructions"):
+            info_str += f"**Agent Instructions:** {task_info['agent_instructions']}\n"
+
+        if task_info.get("task_key"):
+            info_str += f"**Task Key:** {task_info['task_key']}\n"
+
+        if task_info.get("trajectory_length"):
+            info_str += f"**Trajectory Length:** {task_info['trajectory_length']}\n"
+
+        return info_str
 
     @staticmethod
     def format_messages(
@@ -542,11 +611,20 @@ class BasicObservationFormatter:
             research_str = self.format_research(obs_dict.get("research", {}))
             formatted_parts.append(research_str)
 
+        # Add game info
+        if self.include_game_info:
+            game_info_str = self.format_game_info(obs_dict.get("game_info", {}))
+            formatted_parts.append(game_info_str)
+
         # Add optional components if they exist and are enabled
         if self.include_task:
             task_str = self.format_task(obs_dict.get("task_verification"))
             if task_str:
                 formatted_parts.append(task_str)
+
+            task_info_str = self.format_task_info(obs_dict.get("task_info"))
+            if task_info_str:
+                formatted_parts.append(task_info_str)
 
         if self.include_messages:
             messages_str = self.format_messages(
@@ -578,6 +656,9 @@ class BasicObservationFormatter:
             task_str=self.format_task(obs_dict.get("task_verification"))
             if self.include_task
             else "",
+            task_info_str=self.format_task_info(obs_dict.get("task_info"))
+            if self.include_task
+            else "",
             messages_str=self.format_messages(
                 obs_dict.get("messages", []), last_message_timestamp
             )
@@ -587,6 +668,9 @@ class BasicObservationFormatter:
                 obs_dict.get("serialized_functions", [])
             )
             if self.include_functions
+            else "",
+            game_info_str=self.format_game_info(obs_dict.get("game_info", {}))
+            if self.include_game_info
             else "",
             raw_text_str=self.format_raw_text(obs_dict.get("raw_text", ""))
             if self.include_raw_output

@@ -39,8 +39,7 @@ def _construct_group(
     id: int, entities: List[Entity], prototype: Prototype, position: Position
 ) -> EntityGroup:
     if prototype == Prototype.TransportBelt or isinstance(entities[0], TransportBelt):
-        if len(entities) == 1:
-            return entities[0]
+        # Always return BeltGroup for consistent return types, even for single belts
         inputs = [c for c in entities if c.is_source]
         outputs = [c for c in entities if c.is_terminus]
         inventory = Inventory()
@@ -581,6 +580,13 @@ def agglomerate_groupable_entities(
 
     if not connected_entities:
         return []
+
+    # Check if entities are already grouped - if so, return them as-is
+    if hasattr(connected_entities[0], "__class__") and connected_entities[
+        0
+    ].__class__.__name__ in ["BeltGroup", "PipeGroup", "ElectricityGroup", "WallGroup"]:
+        # Entities are already grouped, return them directly
+        return connected_entities
 
     if hasattr(connected_entities[0], "prototype"):
         prototype = connected_entities[0].prototype

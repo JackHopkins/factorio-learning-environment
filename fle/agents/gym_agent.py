@@ -53,7 +53,7 @@ your_code_here
 ## Best Practices
 
 ### Modularity
-- Create small, modular policies, MAXIMUM 30 lines of code
+- Create small, modular policies, MAXIMUM 50 lines of code
 - Each policy should have a single clear purpose
 - Keep policies easy to debug and modify
 - Avoid breaking existing automated structures
@@ -105,7 +105,7 @@ your_code_here
 - Prefer manual fueling for boilers
 {system_prompt}
 
-ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 30 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
+ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 50 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
 
 {agent_instructions}"""
 
@@ -119,13 +119,14 @@ class GymAgent(AgentABC):
         agent_idx: Optional[int] = None,
         observation_formatter: Optional[BasicObservationFormatter] = None,
         system_prompt_formatter: Optional[SystemPromptFormatter] = None,
+        api_key_config_file: Optional[str] = None,
         *args,
         **kwargs,
     ):
         instructions = self._get_instructions(system_prompt, task, agent_idx)
         super().__init__(model, instructions, *args, **kwargs)
         self.task = task
-        self.api_factory = APIFactory(model)
+        self.api_factory = APIFactory(model, api_key_config_file=api_key_config_file)
         self.observation_formatter = (
             observation_formatter or BasicObservationFormatter()
         )

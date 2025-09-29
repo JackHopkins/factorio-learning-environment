@@ -31,6 +31,11 @@ end
 
 -- Create agent characters script
 global.actions.create_agent_characters = function(num_agents)
+    -- delete all character entities on the surface
+    for _, entity in pairs(game.surfaces[1].find_entities_filtered{type = "character"}) do
+        entity.destroy()
+    end
+
     -- Initialize agent characters table
     for _, entity in pairs(game.surfaces[1].find_entities_filtered{type = "character"}) do
         entity.destroy()

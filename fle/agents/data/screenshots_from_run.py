@@ -317,7 +317,7 @@ def main():
     for version in [
         2755,
         2757,
-    ]:  # range(1892, 1895):#range(755, 775):#[764]:#[804, 798, 800, 598, 601, 576, 559 ]:
+    ]:
         parser = argparse.ArgumentParser(
             description="Capture Factorio program evolution screenshots"
         )

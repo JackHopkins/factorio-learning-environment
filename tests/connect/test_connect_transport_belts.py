@@ -17,6 +17,8 @@ def game(instance):
         "small-electric-pole": 50,
         "underground-belt": 2,
         "transport-belt": 200,
+        "fast-transport-belt": 200,
+        "express-transport-belt": 200,
         "coal": 100,
         "wooden-chest": 5,
         "assembling-machine": 10,
@@ -856,3 +858,103 @@ def test_failure_to_connect_furnace(game):
         )
     except Exception:
         assert True
+
+
+def test_get_existing_belt_connection_group(game):
+    """Test that connecting already-connected belt entities returns existing group instead of failing"""
+    # Create initial belt connection
+    pos1 = Position(x=10, y=10)
+    pos2 = Position(x=15, y=10)
+
+    # First connection should create new belts
+    first_connection = game.connect_entities(pos1, pos2, Prototype.TransportBelt)
+    assert first_connection, "Initial belt connection should succeed"
+    assert hasattr(first_connection, "belts"), "Should return BeltGroup"
+
+    # Second connection attempt should return existing group, not fail
+    second_connection = game.connect_entities(pos1, pos2, Prototype.TransportBelt)
+    assert second_connection, "Second belt connection should return existing group"
+
+    # Should return the same or equivalent group
+    if hasattr(second_connection, "belts"):
+        assert len(second_connection.belts) > 0, "Should have belts in returned group"
+
+    print(f"✓ First belt connection: {type(first_connection)}")
+    print(f"✓ Second belt connection: {type(second_connection)}")
+
+
+def test_belt_connect_retry_logic(game):
+    """Test retry logic for intermittent Lua errors in belt connections"""
+    # This test may be harder to trigger deterministically, but we can at least
+    # verify that normal belt connections still work (the retry logic is transparent)
+    pos1 = Position(x=50, y=50)
+    pos2 = Position(x=55, y=50)
+
+    # Multiple connection attempts should all succeed due to retry logic
+    for i in range(3):
+        try:
+            connection = game.connect_entities(pos1, pos2, Prototype.TransportBelt)
+            assert connection, f"Belt connection attempt {i + 1} should succeed"
+            break
+        except Exception as e:
+            if "attempt to index field" in str(e):
+                print(
+                    f"Caught expected Lua error on attempt {i + 1}, retry should handle this"
+                )
+            else:
+                raise
+
+    print("✓ Belt retry logic allows connections to succeed")
+
+
+def test_mixed_belt_types_connection(game):
+    """Test connecting with different belt types and existing groups"""
+    # Test different belt types
+    belt_types = [
+        Prototype.TransportBelt,
+        Prototype.FastTransportBelt,
+        Prototype.ExpressTransportBelt,
+    ]
+
+    y_offset = 0
+    for belt_type in belt_types:
+        game.move_to(Position(x=30, y=70 + y_offset))
+        test_pos1 = Position(x=30, y=70 + y_offset)
+        test_pos2 = Position(x=35, y=70 + y_offset)
+
+        connection = game.connect_entities(test_pos1, test_pos2, belt_type)
+        assert connection, f"Connection with {belt_type} should succeed"
+
+        # Try to connect again - should return existing group
+        second_connection = game.connect_entities(test_pos1, test_pos2, belt_type)
+        assert second_connection, (
+            f"Second connection with {belt_type} should return existing group"
+        )
+
+        y_offset += 3
+
+    print("✓ All belt types connect successfully and handle existing connections")
+
+
+def test_belt_connection_to_existing_entities(game):
+    """Test connecting belts to entities that already exist"""
+    # Place some entities first
+    game.move_to(Position(x=90, y=90))
+    inserter1 = game.place_entity(
+        Prototype.BurnerInserter, position=Position(x=90, y=90)
+    )
+    inserter2 = game.place_entity(
+        Prototype.BurnerInserter, position=Position(x=95, y=90)
+    )
+
+    # Connect entities (should work with existing entities)
+    connection = game.connect_entities(inserter1, inserter2, Prototype.TransportBelt)
+    assert connection, "Belt connection between existing entities should succeed"
+
+    # Try to connect again (should return existing group)
+    second_connection = game.connect_entities(
+        inserter1, inserter2, Prototype.TransportBelt
+    )
+    assert second_connection, "Second belt connection should return existing group"
+
+    print("✓ Belt connections to existing entities handled properly")

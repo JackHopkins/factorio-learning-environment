@@ -13,7 +13,7 @@ from collections import deque
 from datetime import datetime, timedelta
 from pathlib import Path
 from queue import Queue
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Set
 
 import gym
 from nicegui import ui, Client
@@ -63,13 +63,16 @@ class FactorioControlPanel:
         self.is_monitoring = False
 
         # Warning buffer and submission tracking
-        self.warning_buffer = deque(maxlen=100)  # Keep last 100 warnings
+        self.warning_buffer = deque(maxlen=100)  # Keep last 100 warnings for history
         self.displayed_warnings = deque(maxlen=10)  # Keep last 10 warnings for display
 
-        # Track submitted warnings with timestamps for expiry
-        # Format: {hash: submission_timestamp}
-        self.submitted_warnings_with_time = {}
-        self.warning_expiry_seconds = 30  # Expire after 30 seconds
+        # Track current active warnings from the latest poll
+        self.current_active_warnings: Set[int] = set()  # Set of warning hashes currently active
+
+        # Track when we last notified Claude about each warning
+        # Format: {hash: last_notification_timestamp}
+        self.warning_notification_times: Dict[int, float] = {}
+        self.warning_renotification_interval = 30  # Re-notify after 30 seconds if still active
 
         self.last_warning_check = time.time()
 
@@ -96,6 +99,12 @@ class FactorioControlPanel:
             'data': {}
         }
         self.chart = None
+
+        # Production flow tracking
+        self.production_samples = deque(maxlen=10)  # Keep last 10 samples for trend analysis
+        self.last_production_notification = {}  # Track last notification time per resource
+        self.production_notification_interval = 30  # Notify about same resource every 30s
+        self.material_change_threshold = 0.1  # 10% change threshold
 
         # UI elements (will be initialized in create_ui)
         self.coin_icon = None
@@ -152,35 +161,44 @@ class FactorioControlPanel:
 
     def determine_warning_level(self, warning_text: str) -> str:
         """Determine the severity level of a warning based on its content."""
-        text_lower = warning_text.lower()
+        # text_lower = warning_text.lower()
+        #
+        # if any(word in text_lower for word in ['critical', 'fatal', 'crash', 'emergency', 'crisis']):
+        #     return 'critical'
+        # elif any(word in text_lower for word in ['error', 'failed', 'exception', 'invalid', 'falling', 'alert']):
+        #     return 'error'
+        # elif any(word in text_lower for word in ['warning', 'warn', 'deprecated', 'issue', 'consumption']):
+        #     return 'warning'
+        # else:
+        #     return 'info'
+        return 'warning'
 
-        if any(word in text_lower for word in ['critical', 'fatal', 'crash', 'emergency']):
-            return 'critical'
-        elif any(word in text_lower for word in ['error', 'failed', 'exception', 'invalid']):
-            return 'error'
-        elif any(word in text_lower for word in ['warning', 'warn', 'deprecated', 'issue']):
-            return 'warning'
-        else:
-            return 'info'
+    def update_active_warnings(self, warnings_list: List[str]):
+        """Update the set of currently active warnings from the latest poll."""
+        new_active_warnings = {hash(warning) for warning in warnings_list}
 
-    def clean_expired_warning_hashes(self):
-        """Remove warning hashes that are older than the expiry time."""
+        # Find warnings that are no longer active
+        removed_warnings = self.current_active_warnings - new_active_warnings
+
+        # Clean up notification times for warnings that are no longer active
+        for warning_hash in removed_warnings:
+            if warning_hash in self.warning_notification_times:
+                del self.warning_notification_times[warning_hash]
+                logger.debug(f"Warning {warning_hash} is no longer active, removed from tracking")
+
+        # Update the current active set
+        self.current_active_warnings = new_active_warnings
+
+        # Process each active warning
+        for warning_text in warnings_list:
+            self.process_warning(warning_text, "MCP")
+
+    def process_warning(self, warning_text: str, source: str = "MCP"):
+        """Process a warning that is currently active."""
+        warning_hash = hash(warning_text)
         current_time = time.time()
-        expired_hashes = []
 
-        for warning_hash, submission_time in self.submitted_warnings_with_time.items():
-            if current_time - submission_time > self.warning_expiry_seconds:
-                expired_hashes.append(warning_hash)
-
-        for expired_hash in expired_hashes:
-            del self.submitted_warnings_with_time[expired_hash]
-            logger.debug(f"Expired warning hash: {expired_hash}")
-
-        if expired_hashes:
-            logger.info(f"Cleaned {len(expired_hashes)} expired warning hashes")
-
-    def add_warning(self, warning_text: str, source: str = "MCP"):
-        """Add a warning to the buffer and check if it should be submitted."""
+        # Add to display buffers
         timestamp = datetime.now()
         level = self.determine_warning_level(warning_text)
 
@@ -189,26 +207,37 @@ class FactorioControlPanel:
             'source': source,
             'timestamp': timestamp,
             'level': level,
-            'hash': hash(warning_text)  # Simple hash for duplicate detection
+            'hash': warning_hash
         }
 
-        # Add to buffer
+        # Add to buffer for display (always update display with current warnings)
         self.warning_buffer.append(warning_data)
-        self.displayed_warnings.append(warning_data)
-        logger.info(f"Added warning to buffer: {warning_text[:50]}...")
+
+        # Check if this warning is already in displayed warnings
+        if not any(w['hash'] == warning_hash for w in self.displayed_warnings):
+            self.displayed_warnings.append(warning_data)
+            logger.info(f"Added new warning to display: {warning_text[:50]}...")
+
+        # Check if we should notify Claude
+        should_notify = False
+
+        if warning_hash not in self.warning_notification_times:
+            # Never notified about this warning before
+            should_notify = True
+            logger.info(f"New warning detected: {warning_text[:50]}...")
+        else:
+            # Check if enough time has passed since last notification
+            time_since_last_notification = current_time - self.warning_notification_times[warning_hash]
+            if time_since_last_notification >= self.warning_renotification_interval:
+                should_notify = True
+                logger.info(f"Re-notifying warning after {time_since_last_notification:.0f}s: {warning_text[:50]}...")
+
+        if should_notify:
+            self.submit_warning_to_claude(warning_data)
+            self.warning_notification_times[warning_hash] = current_time
 
         # Update the display
         self.update_warnings_display()
-
-        # Clean expired hashes before checking
-        self.clean_expired_warning_hashes()
-
-        # Check if this is a new warning or an expired one that should be re-submitted
-        warning_hash = warning_data['hash']
-        if warning_hash not in self.submitted_warnings_with_time:
-            self.submit_warning_to_claude(warning_data)
-            # Track the submission time
-            self.submitted_warnings_with_time[warning_hash] = time.time()
 
     def submit_warning_to_claude(self, warning_data: dict):
         """Submit a warning to Claude Code terminal."""
@@ -251,6 +280,7 @@ class FactorioControlPanel:
             else:
                 for warning in sorted_warnings:
                     level_info = self.warning_levels[warning['level']]
+                    warning_hash = warning['hash']
 
                     with ui.card().classes(f'w-full p-2 bg-gray-700 border-l-4 border-{level_info["color"]}'):
                         with ui.row().classes('w-full items-start gap-2'):
@@ -268,35 +298,47 @@ class FactorioControlPanel:
                                 # Warning text
                                 ui.label(warning['text']).classes('text-xs text-white break-words')
 
-                                # Show if this warning can be re-submitted
-                                warning_hash = warning['hash']
-                                if warning_hash in self.submitted_warnings_with_time:
-                                    time_since_submission = time.time() - self.submitted_warnings_with_time[
-                                        warning_hash]
-                                    time_until_resubmit = self.warning_expiry_seconds - time_since_submission
-                                    if time_until_resubmit > 0:
-                                        ui.label(f'Can re-notify in {time_until_resubmit:.0f}s').classes(
-                                            'text-xs text-gray-500')
+                                # Show status
+                                status_parts = []
+
+                                # Check if warning is still active
+                                if warning_hash in self.current_active_warnings:
+                                    status_parts.append('🟢 Active')
+
+                                    # Show re-notification timer if applicable
+                                    if warning_hash in self.warning_notification_times:
+                                        time_since_notification = time.time() - self.warning_notification_times[
+                                            warning_hash]
+                                        time_until_renotify = self.warning_renotification_interval - time_since_notification
+                                        if time_until_renotify > 0:
+                                            status_parts.append(f'Re-notify in {time_until_renotify:.0f}s')
+                                        else:
+                                            status_parts.append('Ready to re-notify')
+                                else:
+                                    status_parts.append('⚫ Resolved')
+
+                                if status_parts:
+                                    ui.label(' | '.join(status_parts)).classes('text-xs text-gray-500')
 
         # Update warning count badge
         if self.warning_count_badge:
-            count = len(self.displayed_warnings)
-            if count > 0:
-                self.warning_count_badge.set_text(str(count))
+            active_count = len(self.current_active_warnings)
+            if active_count > 0:
+                self.warning_count_badge.set_text(str(active_count))
                 self.warning_count_badge.classes(remove='hidden')
             else:
                 self.warning_count_badge.classes('hidden')
 
     def clear_warnings(self):
-        """Clear all displayed warnings and their submission history."""
+        """Clear all displayed warnings and their notification history."""
         self.displayed_warnings.clear()
-        # Also clear the submission history when manually clearing
-        self.submitted_warnings_with_time.clear()
+        self.current_active_warnings.clear()
+        self.warning_notification_times.clear()
         self.update_warnings_display()
-        logger.info("Cleared all displayed warnings and submission history")
+        logger.info("Cleared all displayed warnings and notification history")
 
     def check_for_warnings(self):
-        """Check MCP data for warnings and submit new ones."""
+        """Check for re-notification of active warnings."""
         current_time = time.time()
 
         # Only check every 2 seconds to avoid spam
@@ -305,36 +347,194 @@ class FactorioControlPanel:
 
         self.last_warning_check = current_time
 
-        # Clean expired warning hashes periodically
-        self.clean_expired_warning_hashes()
+        # Check if any active warnings need re-notification
+        for warning_hash in self.current_active_warnings:
+            if warning_hash in self.warning_notification_times:
+                time_since_notification = current_time - self.warning_notification_times[warning_hash]
+                if time_since_notification >= self.warning_renotification_interval:
+                    # Find the warning data
+                    for warning in self.displayed_warnings:
+                        if warning['hash'] == warning_hash:
+                            logger.info(f"Re-notifying active warning: {warning['text'][:50]}...")
+                            self.submit_warning_to_claude(warning)
+                            self.warning_notification_times[warning_hash] = current_time
+                            break
 
-        # Get recent updates from the queue to check for warnings
-        # Note: This is a simplified approach - in a real implementation,
-        # you might want the MCP bridge to specifically flag warnings
-        try:
-            # Check if the MCP bridge has any warning data
-            if self.mcp_bridge and hasattr(self.mcp_bridge, 'get_warnings'):
-                warnings = self.mcp_bridge.get_warnings()
-                for warning in warnings:
-                    self.add_warning(warning, "MCP")
-        except Exception as e:
-            logger.error(f"Error checking for warnings: {e}")
+        # Update display to show new timer values
+        self.update_warnings_display()
+
+    def analyze_production_flows(self, metrics_data: dict):
+        """Analyze production flow changes and generate notifications."""
+        if not metrics_data:
+            return
+
+        current_time = time.time()
+        timestamp = datetime.now()
+
+        # Create a sample with timestamp
+        sample = {
+            'timestamp': timestamp,
+            'time': current_time,
+            'input': metrics_data.get('input', {}),
+            'output': metrics_data.get('output', {})
+        }
+
+        self.production_samples.append(sample)
+
+        # Need at least 2 samples to calculate rate of change
+        if len(self.production_samples) < 2:
+            return
+
+        # Calculate rates of change
+        oldest_sample = self.production_samples[0]
+        latest_sample = self.production_samples[-1]
+
+        time_diff = latest_sample['time'] - oldest_sample['time']
+        if time_diff < 1:  # Avoid division by zero
+            return
+
+        # Convert to per-minute rates
+        time_diff_minutes = time_diff / 60.0
+
+        production_changes = []
+        consumption_changes = []
+        critical_changes = []
+
+        # Analyze output changes (production)
+        for resource, latest_amount in latest_sample['output'].items():
+            old_amount = oldest_sample['output'].get(resource, 0)
+            if old_amount == 0:
+                continue
+
+            change = latest_amount - old_amount
+
+            if change == 0:
+                continue
+
+            rate_per_minute = change / time_diff_minutes
+
+            # Calculate percentage change
+            if old_amount > 0:
+                percent_change = (change / old_amount)
+            else:
+                percent_change = 1.0 if change > 0 else 0
+
+            if abs(percent_change) >= self.material_change_threshold:
+                # Check if we should notify about this resource
+                last_notified = self.last_production_notification.get(f"output_{resource}", 0)
+                if current_time - last_notified >= self.production_notification_interval:
+                    if change > 0:
+                        production_changes.append({
+                            'resource': resource,
+                            'change': change,
+                            'percent': percent_change * 100,
+                            'rate': rate_per_minute
+                        })
+                    else:
+                        # Production decrease is more concerning
+                        critical_changes.append({
+                            'resource': resource,
+                            'type': 'production_decrease',
+                            'change': change,
+                            'percent': percent_change * 100,
+                            'rate': rate_per_minute
+                        })
+                    self.last_production_notification[f"output_{resource}"] = current_time
+
+        # Analyze input changes (consumption)
+        for resource, latest_amount in latest_sample['input'].items():
+            old_amount = oldest_sample['input'].get(resource, 0)
+            change = latest_amount - old_amount
+
+            if change == 0:
+                continue
+
+            rate_per_minute = change / time_diff_minutes
+
+            # Calculate percentage change
+            if old_amount > 0:
+                percent_change = (change / old_amount)
+            else:
+                percent_change = 1.0 if change > 0 else 0
+
+            if abs(percent_change) >= self.material_change_threshold:
+                # Check if we should notify about this resource
+                last_notified = self.last_production_notification.get(f"input_{resource}", 0)
+                if current_time - last_notified >= self.production_notification_interval:
+                    if change > 0:
+                        consumption_changes.append({
+                            'resource': resource,
+                            'change': change,
+                            'percent': percent_change * 100,
+                            'rate': rate_per_minute
+                        })
+                    self.last_production_notification[f"input_{resource}"] = current_time
+
+        # Check for critical situations (consumption up, production down for same resource)
+        for resource in set(latest_sample['input'].keys()) | set(latest_sample['output'].keys()):
+            input_latest = latest_sample['input'].get(resource, 0)
+            input_old = oldest_sample['input'].get(resource, 0)
+            output_latest = latest_sample['output'].get(resource, 0)
+            output_old = oldest_sample['output'].get(resource, 0)
+
+            input_change = input_latest - input_old
+            output_change = output_latest - output_old
+
+            # Critical: consumption increasing while production decreasing
+            if input_change > 0 and output_change < 0:
+                last_notified = self.last_production_notification.get(f"critical_{resource}", 0)
+                if current_time - last_notified >= self.production_notification_interval:
+                    critical_changes.append({
+                        'resource': resource,
+                        'type': 'supply_deficit',
+                        'consumption_increase': input_change,
+                        'production_decrease': -output_change
+                    })
+                    self.last_production_notification[f"critical_{resource}"] = current_time
+
+        # Generate notifications
+        for change in production_changes:
+            message = f"📈 {change['resource'].replace('-', ' ').title()} production {'increasing' if change['change'] > 0 else 'decreasing'} {abs(change['percent']):.1f}% ({change['rate']:.1f}/min)"
+            self.process_warning(message, "Production")
+
+        for change in consumption_changes:
+            message = f"⚡ {change['resource'].replace('-', ' ').title()} consumption {'increasing' if change['change'] > 0 else 'decreasing'} {abs(change['percent']):.1f}% ({change['rate']:.1f}/min)"
+            self.process_warning(message, "Consumption")
+
+        for change in critical_changes:
+            if change['type'] == 'production_decrease':
+                message = f"⚠️ {change['resource'].replace('-', ' ').title()} production falling {abs(change['percent']):.1f}% ({change['rate']:.1f}/min)"
+                self.process_warning(message, "Production Alert")
+            elif change['type'] == 'supply_deficit':
+                message = f"🚨 CRITICAL: {change['resource'].replace('-', ' ').title()} - consumption up +{change['consumption_increase']}, production down -{change['production_decrease']}"
+                self.process_warning(message, "Supply Crisis")
 
     def process_updates(self):
         """Process updates from the MCP bridge."""
         while not self.update_queue.empty():
             update = self.update_queue.get()
 
-            # Check for warnings in any update
-            if 'warnings' in update:
-                for warning in update['warnings']:
-                    self.add_warning(warning, "MCP")
+            # Check for warnings in the update
+            if 'warnings' in update and isinstance(update['warnings'], list):
+                # Update the active warnings set and process them
+                self.update_active_warnings(update['warnings'])
 
             # Check for error messages that should be treated as warnings
             if 'error' in update or 'message' in update:
                 message = update.get('message', update.get('error', ''))
                 if any(keyword in str(message).lower() for keyword in ['warning', 'error', 'failed', 'exception']):
-                    self.add_warning(str(message), "MCP")
+                    self.process_warning(str(message), "System")
+
+            # Check for metrics data and analyze production flows
+            if 'metrics' in update and update['metrics']:
+                try:
+                    if isinstance(update['metrics'], str):
+                        metrics_data = json.loads(update['metrics'])
+                    else:
+                        metrics_data = update['metrics']
+                    self.analyze_production_flows(metrics_data)
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.error(f"Error analyzing metrics: {e}")
 
             if update['type'] == 'state_update':
                 # Update inventory
@@ -386,7 +586,7 @@ class FactorioControlPanel:
                 if self.status_label:
                     self.status_label.set_text(f'❌ {update.get("message", "Error")[:30]}')
                 # Also add as warning
-                self.add_warning(update.get("message", "Unknown error"), "System")
+                self.process_warning(update.get("message", "Unknown error"), "System")
 
     def update_inventory_display(self):
         """Update the inventory grid display with sprite icons."""
@@ -479,7 +679,7 @@ class FactorioControlPanel:
                         ui.button('Reconnect', on_click=self.reconnect_mcp).classes('flex-1')
                         ui.button('Stop', on_click=self.stop_monitoring).classes('flex-1')
                         # Add test warning button for debugging
-                        ui.button('Test Warning', on_click=lambda: self.add_warning(
+                        ui.button('Test Warning', on_click=lambda: self.process_warning(
                             f'Test warning at {datetime.now().strftime("%H:%M:%S")}',
                             'Test'
                         )).classes('flex-1')
@@ -487,9 +687,10 @@ class FactorioControlPanel:
                 # Warning Settings Info
                 with ui.card().classes('w-full bg-gray-800 text-white'):
                     ui.label('⚙️ Warning Settings').classes('text-sm font-bold')
-                    ui.label(f'Re-notification after: {self.warning_expiry_seconds}s').classes(
+                    ui.label(f'Re-notification interval: {self.warning_renotification_interval}s').classes(
                         'text-xs text-gray-400 mt-1')
-                    ui.label('Expired warnings can be resubmitted').classes('text-xs text-gray-400')
+                    ui.label('Only active warnings are re-notified').classes('text-xs text-gray-400')
+                    ui.label('Resolved warnings are automatically cleaned').classes('text-xs text-gray-400')
 
             # CENTER - Game view
             with ui.column().classes('flex-1'):
@@ -515,31 +716,26 @@ class FactorioControlPanel:
         # Set up periodic UI updates
         ui.timer(0.5, self.process_updates)
 
-        # Set up periodic warning checks
+        # Set up periodic warning checks for re-notification
         ui.timer(2.0, self.check_for_warnings)
 
-        # Auto-clear old warnings every 30 seconds
+        # Auto-clear old warnings from display every 30 seconds
         ui.timer(30.0, self.auto_clear_old_warnings)
-
-        # Clean expired warning hashes every 10 seconds
-        ui.timer(10.0, self.clean_expired_warning_hashes)
 
         # Auto-start monitoring
         if self.auto_start:
             ui.timer(1.0, lambda: self.start_monitoring(), once=True)
 
     def auto_clear_old_warnings(self):
-        """Automatically remove warnings older than 15 minutes from display."""
-        current_time = datetime.now()
-        cutoff_time = current_time - timedelta(minutes=15)
-
-        # Filter out old warnings from display only
+        """Automatically remove resolved warnings from display."""
+        # Remove warnings that are no longer active from the display
         self.displayed_warnings = deque(
-            [w for w in self.displayed_warnings if w['timestamp'] > cutoff_time],
+            [w for w in self.displayed_warnings if w['hash'] in self.current_active_warnings],
             maxlen=10
         )
 
         self.update_warnings_display()
+        logger.info(f"Auto-cleaned display, {len(self.current_active_warnings)} warnings remain active")
 
     def start_monitoring(self):
         """Start monitoring via MCP"""
@@ -568,7 +764,7 @@ class FactorioControlPanel:
                 self.status_label.set_text(f'❌ Failed: {str(e)[:30]}')
             self.is_monitoring = False
             # Add as warning
-            self.add_warning(f"Failed to start MCP bridge: {e}", "System")
+            self.process_warning(f"Failed to start MCP bridge: {e}", "System")
 
     def reconnect_mcp(self):
         """Reconnect to MCP server"""

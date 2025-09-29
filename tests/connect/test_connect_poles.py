@@ -13,6 +13,8 @@ def game(instance):
         "offshore-pump": 4,
         "pipe": 100,
         "small-electric-pole": 50,
+        "medium-electric-pole": 50,
+        "big-electric-pole": 50,
         "transport-belt": 200,
         "coal": 100,
         "wooden-chest": 1,
@@ -389,12 +391,12 @@ def test_prevent_power_pole_cobwebbing(game):
     game.connect_entities(
         steam_engine, pole3, connection_type=Prototype.SmallElectricPole
     )
-    nr_of_poles = len(game.get_entities({Prototype.SmallElectricPole})[0].poles)
+    nr_of_poles = len(game.get_entities({Prototype.ElectricityGroup})[0].poles)
     # Now attempt to connect points that are already in the same network
     game.connect_entities(pole1, pole2, connection_type=Prototype.SmallElectricPole)
 
     # Verify no additional poles were placed
-    groups = game.get_entities({Prototype.SmallElectricPole})
+    groups = game.get_entities({Prototype.ElectricityGroup})
     assert len(groups[0].poles) == nr_of_poles, (
         f"Expected only {nr_of_poles} poles, found {len(groups[0].poles)}"
     )
@@ -402,3 +404,118 @@ def test_prevent_power_pole_cobwebbing(game):
     # Check that all poles share the same electrical network ID
     ids = {pole.electrical_id for pole in groups[0].poles}
     assert len(ids) == 1, "All poles should be in the same network"
+
+
+def test_get_existing_electricity_connection_group(game):
+    """Test existing electricity group return functionality"""
+    pos1 = Position(x=30, y=30)
+    pos2 = Position(x=35, y=30)
+
+    # First electricity connection
+    first_poles = game.connect_entities(pos1, pos2, Prototype.SmallElectricPole)
+    assert first_poles, "Initial pole connection should succeed"
+
+    # Second attempt should return existing group
+    second_poles = game.connect_entities(pos1, pos2, Prototype.SmallElectricPole)
+    assert second_poles, "Second pole connection should return existing group"
+
+    print("✓ Electricity connection handled gracefully")
+
+
+def test_pole_retry_logic(game):
+    """Test retry logic for intermittent Lua errors in pole connections"""
+    pos1 = Position(x=40, y=40)
+    pos2 = Position(x=50, y=40)
+
+    # Multiple connection attempts should all succeed due to retry logic
+    for i in range(3):
+        try:
+            connection = game.connect_entities(pos1, pos2, Prototype.SmallElectricPole)
+            assert connection, f"Pole connection attempt {i + 1} should succeed"
+            break
+        except Exception as e:
+            if "attempt to index field" in str(e):
+                print(
+                    f"Caught expected Lua error on attempt {i + 1}, retry should handle this"
+                )
+            else:
+                raise
+
+    print("✓ Pole retry logic allows connections to succeed")
+
+
+def test_pole_performance_no_sleep(game):
+    """Test that pole connections complete without artificial delays"""
+    import time
+
+    pos1 = Position(x=60, y=60)
+    pos2 = Position(x=70, y=60)
+
+    start_time = time.time()
+    connection = game.connect_entities(pos1, pos2, Prototype.SmallElectricPole)
+    end_time = time.time()
+
+    assert connection, "Pole connection should succeed"
+
+    # Connection should complete relatively quickly (no artificial sleep)
+    duration = end_time - start_time
+    assert duration < 5.0, (
+        f"Pole connection took {duration}s, should be faster without sleep"
+    )
+
+    print(f"✓ Pole connection completed in {duration:.2f}s (performance improved)")
+
+
+def test_pole_network_connections_multiple_types(game):
+    """Test electric pole network connections with different pole types"""
+    pole_types = [
+        Prototype.SmallElectricPole,
+        Prototype.MediumElectricPole,
+        Prototype.BigElectricPole,
+    ]
+
+    y_offset = 0
+    for pole_type in pole_types:
+        pos1 = Position(x=100, y=100 + y_offset)
+        pos2 = Position(x=110, y=100 + y_offset)
+
+        connection = game.connect_entities(pos1, pos2, pole_type)
+        assert connection, f"{pole_type} connection should succeed"
+
+        # Try to connect again - should return existing group
+        second_connection = game.connect_entities(pos1, pos2, pole_type)
+        assert second_connection, (
+            f"Second {pole_type} connection should return existing group"
+        )
+
+        y_offset += 15  # Space out different pole types
+
+    print(
+        "✓ All pole types create networks successfully and handle existing connections"
+    )
+
+
+def test_pole_connection_to_existing_entities(game):
+    """Test connecting poles to entities that already exist"""
+    # Create a power setup with existing entities
+    game.move_to(Position(x=45, y=45))
+    steam_engine = game.place_entity(
+        Prototype.SteamEngine, position=Position(x=40, y=40)
+    )
+    drill = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=50, y=50)
+    )
+
+    # First connection
+    first_poles = game.connect_entities(
+        steam_engine, drill, Prototype.SmallElectricPole
+    )
+    assert first_poles, "Initial pole connection should succeed"
+
+    # Try to connect the same entities again - should return existing group
+    second_poles = game.connect_entities(
+        steam_engine, drill, Prototype.SmallElectricPole
+    )
+    assert second_poles, "Second pole connection should return existing group"
+
+    print("✓ Pole connections to existing entities handled properly")

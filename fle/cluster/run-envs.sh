@@ -4,9 +4,8 @@
 setup_platform() {
     ARCH=$(uname -m)
     OS=$(uname -s)
-    if [ "$FORCE_AMD" = true ]; then
-        export DOCKER_PLATFORM="linux/amd64"
-    elif [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+    if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then
+        export EMULATOR="/bin/box64"
         export DOCKER_PLATFORM="linux/arm64"
     else
         export DOCKER_PLATFORM="linux/amd64"
@@ -116,7 +115,7 @@ EOF
   factorio_${i}:
     image: factoriotools/factorio:1.1.110
     platform: \${DOCKER_PLATFORM:-linux/amd64}
-    command: /opt/factorio/bin/x64/factorio ${COMMAND}
+    command: ${EMULATOR} /opt/factorio/bin/x64/factorio ${COMMAND}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
       /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
@@ -215,7 +214,6 @@ show_help() {
     echo "  -s SCENARIO   Scenario to run (open_world or default_lab_scenario, default: default_lab_scenario)"
     echo "  -sv SAVE_FILE, --use_save SAVE_FILE Use a .zip save file from factorio"
     echo "  -m, --attach_mods Attach mods to the instances"
-    echo "  -f86, --force_amd Force AMD platform"
     echo ""
     echo "Examples:"
     echo "  $0                           Start 1 instance with default_lab_scenario"
@@ -231,10 +229,10 @@ COMMAND="start"
 NUM_INSTANCES=1
 SCENARIO="default_lab_scenario"
 SAVE_FILE=""
+EMULATOR=""
 
 # Boolean: attach mods or not
 ATTACH_MOD=false
-FORCE_AMD=false
 SAVE_ADDED=false
 
 # Parse args (supporting both short and long options)
@@ -290,10 +288,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -m|--attach_mods)
       ATTACH_MOD=true
-      shift
-      ;;
-    -f86|--force_amd)
-      FORCE_AMD=true
       shift
       ;;
     -h|--help)

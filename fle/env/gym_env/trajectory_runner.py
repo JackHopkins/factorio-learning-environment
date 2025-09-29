@@ -1,6 +1,7 @@
+import os
 import time
 from itertools import product
-from typing import List, Optional, Tuple
+from typing import Any, List, Dict, Optional, Tuple
 
 from fle.agents import CompletionReason, CompletionResult
 from fle.agents.gym_agent import GymAgent
@@ -15,6 +16,13 @@ from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.observation import Observation
 from fle.env.gym_env.trajectory_logger import TrajectoryLogger
 
+try:
+    from fle.eval.analysis import WandBLogger
+
+    WANDB_ANALYSIS_AVAILABLE = True
+except ImportError:
+    WANDB_ANALYSIS_AVAILABLE = False
+
 
 class GymTrajectoryRunner:
     """Handles program generation and evaluation for a single trajectory in the gym environment"""
@@ -26,6 +34,8 @@ class GymTrajectoryRunner:
         process_id: int,
         db_client: Optional[DBClient],
         log_dir: Optional[str] = None,
+        reset_states: bool = False,
+        wandb_logger: Optional["WandBLogger"] = None,
     ):
         self.config = config
         self.agents = config.agents
@@ -34,6 +44,8 @@ class GymTrajectoryRunner:
         self.db_client = db_client
         self.process_id = process_id
         self.start_time = time.time()
+        self.reset_states = reset_states  # Whether to reset the state after each step
+        self.wandb_logger = wandb_logger
 
         # Initialize trajectory logger
         self.logger = TrajectoryLogger(
@@ -48,6 +60,7 @@ class GymTrajectoryRunner:
         agent: GymAgent,
         agent_idx: int,
         agent_step: int,
+        production_score: float,
         program: Program,
         observation: Observation,
     ):
@@ -58,6 +71,7 @@ class GymTrajectoryRunner:
             agent: The agent instance
             agent_idx: Index of the agent
             agent_step: Current step for this agent
+            production_score: Current production score
             program: The program to log
             observation: The observation to log
         """
@@ -65,14 +79,43 @@ class GymTrajectoryRunner:
         iteration_time = time.time() - iteration_start
         self.logger.add_iteration_time(iteration_time)
 
-        # Log progress every 10 steps
-        if agent_step % 10 == 0:
-            self.logger.log_progress(agent, agent_step, program.value)
-
-        # Log observation and program
+        # Log progress, observation and program
+        self.logger.log_progress(agent, agent_step, program.value, production_score)
         self.logger.log_observation_and_program(
             agent, agent_idx, agent_step, observation, program
         )
+
+        # Log to WandB if available
+        if self.wandb_logger and WANDB_ANALYSIS_AVAILABLE:
+            try:
+                # Extract task name from version description
+                task_name = "unknown_task"
+                if (
+                    self.config.version_description
+                    and "type:" in self.config.version_description
+                ):
+                    task_name = (
+                        self.config.version_description.split("type:")[1]
+                        .split("\n")[0]
+                        .strip()
+                    )
+
+                elapsed_time = time.time() - self.start_time
+
+                self.wandb_logger.log_trajectory_progress(
+                    version=self.config.version,
+                    instance=self.process_id,
+                    step=agent_step,
+                    reward=program.value,
+                    production_score=production_score,
+                    model=agent.model,
+                    task=task_name,
+                    elapsed_time=elapsed_time,
+                    tokens_used=program.token_usage,
+                )
+
+            except Exception as e:
+                print(f"Warning: Failed to log to WandB: {e}")
 
     async def create_program_from_policy(
         self,
@@ -81,7 +124,9 @@ class GymTrajectoryRunner:
         reward: float,
         response: str,
         error_occurred: bool,
+        achievements: Dict[str, Any],
         game_state: GameState,
+        production_score: float,
     ) -> Program:
         """Create a Program object from a Policy and environment results
 
@@ -91,6 +136,9 @@ class GymTrajectoryRunner:
             reward: The reward from the environment step
             response: The raw text response from the environment
             error_occurred: Whether an error occurred during execution
+            achievements: The achievements dictionary from the environment
+            game_state: The current game state
+            production_score: The production score from the environment
 
         Returns:
             Program object with all necessary metadata and results
@@ -112,10 +160,13 @@ class GymTrajectoryRunner:
             version_description=self.config.version_description,
             value=reward,
             state=game_state,
+            achievements=achievements,
             meta={
                 "model": self.agents[agent_idx].model,
                 "process_id": self.process_id,
                 "error_occurred": error_occurred,
+                "sweep_id": os.getenv("FLE_SWEEP_ID", "unknown"),
+                "production_score": production_score,
             },
             depth=depth,
         )
@@ -194,13 +245,16 @@ class GymTrajectoryRunner:
 
                     # Execute step in the environment
                     action = Action(
-                        agent_idx=agent_idx, code=policy.code, game_state=current_state
+                        code=policy.code,
+                        agent_idx=agent_idx,
+                        game_state=current_state if self.reset_states else None,
                     )
                     obs_dict, reward, terminated, truncated, info = self.gym_env.step(
                         action
                     )
                     observation = Observation.from_dict(obs_dict)
                     output_game_state = info["output_game_state"]
+                    production_score = info["production_score"]
                     done = terminated or truncated
 
                     # Create program from policy with environment results
@@ -210,7 +264,9 @@ class GymTrajectoryRunner:
                         reward=reward,
                         response=obs_dict["raw_text"],
                         error_occurred=info["error_occurred"],
+                        achievements=info["achievements"],
                         game_state=output_game_state,
+                        production_score=production_score,
                     )
 
                     # Update agent's conversation with the program and its results
@@ -224,16 +280,18 @@ class GymTrajectoryRunner:
                         agent,
                         agent_idx,
                         agent_steps[agent_idx],
+                        production_score,
                         program,
                         observation,
                     )
 
                     # Get the agent_completed flag from the agent
-                    agent_completed, update_state = agent.check_step_completion(
-                        observation
-                    )
-                    if update_state:
-                        current_state = output_game_state
+                    if self.reset_states:
+                        agent_completed, update_state = agent.check_step_completion(
+                            observation
+                        )
+                        if update_state:
+                            current_state = output_game_state
 
                     # Check if done and exit if configured
                     if done:

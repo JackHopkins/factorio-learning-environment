@@ -72,13 +72,30 @@ class TransportConnectionResolver(Resolver):
 
             case Inserter():
                 source_position = source.drop_position
-                # check for entities at the source position
+                # check for entities at the source position, but allow existing belts/belt groups
                 entities = self.get_entities(position=source_position, radius=0)
+                # Filter out belt-related entities since they're compatible with belt connections
+                problematic_entities = [
+                    x
+                    for x in entities
+                    if not (
+                        x.name
+                        in [
+                            "transport-belt",
+                            "fast-transport-belt",
+                            "express-transport-belt",
+                            "belt-group",
+                        ]
+                        or x.name.endswith("-belt")
+                    )
+                ]
 
-                if len(entities) > 0:
-                    entities = [f"{x.name} at {x.position}" for x in entities]
+                if len(problematic_entities) > 0:
+                    entities_desc = [
+                        f"{x.name} at {x.position}" for x in problematic_entities
+                    ]
                     raise Exception(
-                        f"Cannot connect to source inserter drop_position position {source_position} as it is already occupied by following entities - {entities}."
+                        f"Cannot connect to source inserter drop_position position {source_position} as it is already occupied by incompatible entities - {entities_desc}."
                     )
                 source_positions = [source.drop_position]
 
@@ -121,13 +138,30 @@ class TransportConnectionResolver(Resolver):
 
             case Inserter():
                 target_position = target.pickup_position
-                # check for entities at the target position
+                # check for entities at the target position, but allow existing belts/belt groups
                 entities = self.get_entities(position=target_position, radius=0)
-                entities = [x for x in entities if x.name != "transport-belt"]
-                if len(entities) > 0:
-                    entities = [f"{x.name} at {x.position}" for x in entities]
+                # Filter out belt-related entities since they're compatible with belt connections
+                problematic_entities = [
+                    x
+                    for x in entities
+                    if not (
+                        x.name
+                        in [
+                            "transport-belt",
+                            "fast-transport-belt",
+                            "express-transport-belt",
+                            "belt-group",
+                        ]
+                        or x.name.endswith("-belt")
+                    )
+                ]
+
+                if len(problematic_entities) > 0:
+                    entities_desc = [
+                        f"{x.name} at {x.position}" for x in problematic_entities
+                    ]
                     raise Exception(
-                        f"Cannot connect to target inserter pickup_position position {target_position} as it is already occupied by following entities {entities}."
+                        f"Cannot connect to target inserter pickup_position position {target_position} as it is already occupied by incompatible entities - {entities_desc}."
                     )
                 target_positions = [target.pickup_position]
 

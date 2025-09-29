@@ -4,15 +4,14 @@ from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
 import gym
-import json
 
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.asyncio_utils import run_async_safely
 from fle.env import FactorioInstance
 from fle.env.gym_env.environment import FactorioGymEnv
-from fle.eval.tasks import TaskFactory, TASK_FOLDER
+from fle.eval.tasks import TaskFactory
 
-PORT_OFFSET = int(os.getenv("PORT_OFFSET", 0))
+PORT_OFFSET = int(os.environ.get("PORT_OFFSET", 0))
 
 
 @dataclass
@@ -30,7 +29,6 @@ class FactorioGymRegistry:
 
     def __init__(self):
         self._environments: Dict[str, GymEnvironmentSpec] = {}
-        self._task_definitions_path = TASK_FOLDER
         self._discovered = False
 
     def discover_tasks(self) -> None:
@@ -38,23 +36,20 @@ class FactorioGymRegistry:
         if self._discovered:
             return
 
-        if not self._task_definitions_path.exists():
-            raise FileNotFoundError(
-                f"Task definitions path not found: {self._task_definitions_path}"
+        # Register all Python-based tasks from the unified registry
+        from fle.eval.tasks.task_definitions.task_registry import (
+            list_all_tasks,
+            get_task_info,
+        )
+
+        for task_key in list_all_tasks():
+            task_info = get_task_info(task_key)
+            self.register_environment(
+                task_key=task_key,
+                task_config_path=task_key,  # Task key is used directly now
+                description=task_info["goal_description"],
+                num_agents=task_info["num_agents"],
             )
-        # Discover all JSON task definition files
-        for task_file in self._task_definitions_path.rglob("*.json"):
-            try:
-                with open(task_file, "r") as f:
-                    task_data = json.load(f)
-                self.register_environment(
-                    task_key=task_data["task_key"],
-                    task_config_path=str(task_file),
-                    description=task_data["goal_description"],
-                    num_agents=task_data["num_agents"],
-                )
-            except Exception as e:
-                print(f"Warning: Failed to load task definition {task_file}: {e}")
 
         self._discovered = True
 
@@ -95,7 +90,7 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int = 0) -> FactorioGymEnv:
+def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
     # Create task from the task definition
     task = TaskFactory.create_task(spec.task_config_path)
@@ -111,7 +106,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int = 0) -> FactorioGym
                 ips, udp_ports, tcp_ports = get_local_container_ips()
             except ValueError as e:
                 raise RuntimeError("No Factorio containers available")
-            
+
             if len(tcp_ports) == 0:
                 raise RuntimeError("No Factorio containers available")
 
@@ -141,7 +136,8 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int = 0) -> FactorioGym
         else:
             instance = FactorioInstance(**common_kwargs)
 
-        instance.set_speed(10)
+        # Set initial speed and unpause
+        instance.set_speed_and_unpause(10)
 
         # Setup the task
         task.setup(instance)

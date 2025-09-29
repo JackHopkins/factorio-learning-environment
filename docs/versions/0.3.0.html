@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Factorio Learning Environment - v0.3.0</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet" />
+
+    <link rel="stylesheet" href="../static/css/bulma.min.css" />
+    <link rel="stylesheet" href="../static/css/bulma-carousel.min.css" />
+    <link rel="stylesheet" href="../static/css/bulma-slider.min.css" />
+    <link rel="stylesheet" href="../static/css/fontawesome.all.min.css" />
+    <link rel="stylesheet" href="../static/css/academicons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css" />
+    <link rel='shortcut icon' type='image/x-icon' href='../favicon.ico' />
+    <style>
+        .math-block {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 3px solid #2196F3;
+        }
+        .definition {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        .note {
+            font-style: italic;
+            color: #666;
+            margin: 10px 0;
+        }
+        .feature-box {
+            border-left: 3px solid #2196F3;
+            padding: 10px 15px;
+            margin: 15px 0;
+            background-color: #f8f9fa;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .heatmap-container {
+            text-align: center;
+            margin: 40px 0;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .heatmap-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .complexity-low { color: #27ae60; font-weight: 600; }
+        .complexity-medium { color: #f39c12; font-weight: 600; }
+        .complexity-high { color: #e74c3c; font-weight: 600; }
+        .entity-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            vertical-align: middle;
+            border-radius: 4px;
+        }
+        .entity-name {
+            font-weight: 500;
+            color: #2c3e50;
+            display: inline-flex;
+            align-items: center;
+        }
+        .complexity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+            text-align: center;
+            min-width: 40px;
+        }
+        .complexity-extreme {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="../static/js/fontawesome.all.min.js"></script>
+    <script src="../static/js/bulma-carousel.min.js"></script>
+    <script src="../static/js/bulma-slider.min.js"></script>
+    <script src="../static/js/index.js"></script>
+</head>
+<body>
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-1 publication-title">Factorio Learning Environment</h1>
+                        <h2 class="title is-2">Version 0.3.0 Release</h2>
+
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block">
+                                Tech Tree Complexity Analysis and Model Performance Evaluation
+                            </span>
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <span class="link-block">
+                                    <a target="_blank" href="https://github.com/JackHopkins/factorio-learning-environment" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span>Code</span>
+                                    </a>
+                                </span>
+                                <span class="link-block">
+                                    <a target="_blank" href="../leaderboard" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><path fill="#ffffff" d="M353.8 54.1L330.2 6.3c-3.9-8.3-16.1-8.6-20.4 0L286.2 54.1l-52.3 7.5c-9.3 1.4-13.3 12.9-6.4 19.8l38 37-9 52.1c-1.4 9.3 8.2 16.5 16.8 12.2l46.9-24.8 46.6 24.4c8.6 4.3 18.3-2.9 16.8-12.2l-9-52.1 38-36.6c6.8-6.8 2.9-18.3-6.4-19.8l-52.3-7.5zM256 256c-17.7 0-32 14.3-32 32l0 192c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-192c0-17.7-14.3-32-32-32l-128 0zM32 320c-17.7 0-32 14.3-32 32L0 480c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32L32 320zm416 96l0 64c0 17.7 14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-64c0-17.7-14.3-32-32-32l-128 0c-17.7 0-32 14.3-32 32z"/></svg>
+                                        </span>
+                                        <span>Leaderboard</span>
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        /* Improve video loading and display */
+        .video-container {
+            position: relative;
+            width: 100%;
+            min-height: 150px; /* Prevents layout shift while loading */
+            background-color: #fff; /* Placeholder color while loading */
+        }
+
+        .video-container img {
+            width: 100%;
+            object-fit: cover;
+            background-color: #fff;
+        }
+
+        /* Improved video overlay styling */
+        .video-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.4); /* Darker background for better readability */
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 16px;
+            max-width: 90%;
+            z-index: 10;
+            font-weight: 500; /* Slightly bolder text */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Subtle shadow for better visibility */
+        }
+        .columns .column.video-column {
+                padding: 0 3px; /* Tighter spacing on mobile */
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 767px) {
+            .video-container {
+                min-height: 120px; /* Smaller minimum height on mobile */
+            }
+
+            .video-overlay {
+                font-size: 14px; /* Smaller font on mobile */
+                padding: 4px 8px;
+            }
+
+            /* Optimize columns for mobile */
+            .columns .column.video-column {
+                padding: 0 3px; /* Tighter spacing on mobile */
+            }
+        }
+    </style>
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <div class="rows">
+                <div class="rows is-centered">
+                    <div class="row is-full-width">
+                        <div class="columns">
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <img src="../assets/videos/task_demo_1.gif" alt="Task Demo 1" width="100%">
+                                    <div class="video-overlay"><span>Agent Building Factory</span></div>
+                                </div>
+                            </div>
+
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <img src="../assets/videos/task_demo_2.gif" alt="Task Demo 2" width="100%">
+                                    <div class="video-overlay"><span>Resource Extraction</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="columns">
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <img src="../assets/videos/task_demo_3.gif" alt="Task Demo 3" width="100%">
+                                    <div class="video-overlay"><span>Automated Production</span></div>
+                                </div>
+                            </div>
+
+                            <div class="column has-text-left video-column">
+                                <div class="video-container">
+                                    <img src="../assets/videos/task_demo_4.gif" alt="Task Demo 4" width="100%">
+                                    <div class="video-overlay"><span>Complex Logistics</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p style="padding-top: 10px; padding-left: 5px; font-size:110%">FLE 0.3.0: Agents autonomously building factories</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Factorio Learning Environment 0.3.0 Release</span></h2>
+            <p style="font-size: 110%;">
+                The 0.3.0 release of the Factorio Learning Environment (FLE) marks a major step forward in our effort to build a robust, extensible benchmark for agents.
+                Since the original FLE paper, where we demonstrated that frontier models struggle with spatial reasoning, constrained environments, and recovery; and the 0.2.0 release, which introduced multi-agency, backtracking agents, and vision, we have worked hard over summer to bring 0.3.0.
+            </p>
+            </br>
+            <h3 class="subtitle is-4"><span class="dvima">Release Highlights</span></h3>
+
+            <div class="content has-text-justified" style="margin-top:2em">
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">🤖 Claude Code Plays Factorio</h4>
+                            <p>We bridged Claude Code into Factorio via FLE and are keeping it as a pet.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">🚀 Removal of Factorio game client requirement</h4>
+                            <p>You no longer need a running Factorio game client in order to run FLE. This offers portability and massive scaling potential across clusters and cloud environments, reducing barriers to entry and making FLE accessible at scale.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">👁️ Emulated game renderer for better vision</h4>
+                            <p>We implemented a headless game renderer from scratch, to provide realistic pixel observations for visual agents without needing the official client, to facilitate multimodal research in headless settings.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">⚡ CLI for cluster management and evaluation runs</h4>
+                            <p>A CLI makes running the environment as simple as 1-line. Simplifies orchestration of large-scale sweeps and multi-job pipelines.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">🏋️ OpenAI gym environment framework</h4>
+                            <p>We adopted the OAI gym framework for cleaner observation and action spaces that are more compatible with community projects.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">📦 Refactored package structure</h4>
+                            <p>Cleaned-up codebase and easier developer onboarding with uv-based installation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">📊 Evaluation infrastructure</h4>
+                            <p>API key management, Weights & Biases logging, and early stopping for large-scale experiments.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box">
+                            <h4 class="title is-5">🐳 Container stability</h4>
+                            <p>Ensures reproducible deployments and smooth operation in both research and production settings. Compatible with Windows, MacOSX and Debian Linux.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Tech Tree Complexity Analysis</span></h2>
+            <p style="font-size: 110%;">
+                This table shows the complexity of each entity in the lab play environment, measured by the number of prerequisite technology nodes required to unlock it. Understanding this complexity helps in designing progressive learning curricula for AI agents.
+            </p>
+
+            <div class="columns is-centered" style="margin: 30px 0;">
+                <div class="column is-narrow">
+                    <div class="box has-text-centered">
+                        <p class="title is-2 has-text-primary">24</p>
+                        <p class="subtitle">Total Entities</p>
+                    </div>
+                </div>
+                <div class="column is-narrow">
+                    <div class="box has-text-centered">
+                        <p class="title is-2 has-text-primary">1-26</p>
+                        <p class="subtitle">Complexity Range</p>
+                    </div>
+                </div>
+                <div class="column is-narrow">
+                    <div class="box has-text-centered">
+                        <p class="title is-2 has-text-primary">8.8</p>
+                        <p class="subtitle">Average Complexity</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table is-striped is-hoverable is-fullwidth">
+                <thead>
+                    <tr>
+                        <th>Entity</th>
+                        <th>Required Tech Nodes</th>
+                        <th>Complexity Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/iron-ore.png" alt="Iron Ore" class="entity-icon">
+                                Iron Ore
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">1</span></td>
+                        <td>Basic Resource</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/crude-oil.png" alt="Crude Oil" class="entity-icon">
+                                Crude Oil
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">1</span></td>
+                        <td>Basic Resource</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/iron-plate.png" alt="Iron Plate" class="entity-icon">
+                                Iron Plate
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">2</span></td>
+                        <td>Basic Resource</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/petroleum-gas.png" alt="Petroleum Gas" class="entity-icon">
+                                Petroleum Gas
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">2</span></td>
+                        <td>Basic Resource</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/iron-gear-wheel.png" alt="Iron Gear Wheel" class="entity-icon">
+                                Iron Gear Wheel
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">3</span></td>
+                        <td>Basic Component</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/steel-plate.png" alt="Steel Plate" class="entity-icon">
+                                Steel Plate
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">3</span></td>
+                        <td>Early Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/stone-wall.png" alt="Stone Wall" class="entity-icon">
+                                Stone Wall
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-low">3</span></td>
+                        <td>Early Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/sulfur.png" alt="Sulfur" class="entity-icon">
+                                Sulfur
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">4</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/plastic-bar.png" alt="Plastic Bar" class="entity-icon">
+                                Plastic Bar
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">4</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/electronic-circuit.png" alt="Electronic Circuit" class="entity-icon">
+                                Electronic Circuit
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">6</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/automation-science-pack.png" alt="Automation Science Pack" class="entity-icon">
+                                Automation Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">6</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/engine-unit.png" alt="Engine Unit" class="entity-icon">
+                                Engine Unit
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">6</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/piercing-round.png" alt="Piercing Round" class="entity-icon">
+                                Piercing Round
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">7</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/sulfuric-acid.png" alt="Sulfuric Acid" class="entity-icon">
+                                Sulfuric Acid
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">7</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/inserter.png" alt="Inserter" class="entity-icon">
+                                Inserter
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-medium">8</span></td>
+                        <td>Mid Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/battery.png" alt="Battery" class="entity-icon">
+                                Battery
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">10</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/logistics-science-pack.png" alt="Logistics Science Pack" class="entity-icon">
+                                Logistics Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">10</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/low-density-structure.png" alt="Low Density Structure" class="entity-icon">
+                                Low Density Structure
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">10</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/advanced-circuit.png" alt="Advanced Circuit" class="entity-icon">
+                                Advanced Circuit
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">11</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/military-science-pack.png" alt="Military Science Pack" class="entity-icon">
+                                Military Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">13</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/processing-unit.png" alt="Processing Unit" class="entity-icon">
+                                Processing Unit
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">15</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/chemical-science-pack.png" alt="Chemical Science Pack" class="entity-icon">
+                                Chemical Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">18</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/production-science-pack.png" alt="Production Science Pack" class="entity-icon">
+                                Production Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-high">19</span></td>
+                        <td>Advanced Tech</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <span class="entity-name">
+                                <img src="../assets/images/icons/utility-science-pack.png" alt="Utility Science Pack" class="entity-icon">
+                                Utility Science Pack
+                            </span>
+                        </td>
+                        <td><span class="complexity-badge complexity-extreme">26</span></td>
+                        <td>Elite Tech</td>
+                    </tr>
+                </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 40px;">
+                <h3 class="title is-4">Complexity Categories</h3>
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box" style="border-left-color: #28a745;">
+                            <strong>Basic (0-1 nodes):</strong> Foundation items requiring minimal or no research
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box" style="border-left-color: #ffc107;">
+                            <strong>Mid Tech (4-7 nodes):</strong> Intermediate complexity requiring focused research paths
+                        </div>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <div class="feature-box" style="border-left-color: #dc3545;">
+                            <strong>Advanced (9-12 nodes):</strong> Complex items requiring extensive research investment
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="feature-box" style="border-left-color: #17a2b8;">
+                            <strong>Elite (15+ nodes):</strong> End-game items representing peak technological achievement
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+
+            <h2 class="title is-3"><span class="dvima">Methodology</span></h2>
+            <p style="font-size: 110%;">
+                We used the standard agent that shipped in 0.2.0, without backtracking, to ensure comparability with prior results. Note: Using a backtracking agent would have improved performance but would make results incomparable to previous versions.
+            </p>
+            </br>
+            <h4 class="title is-5">Models Tested</h4>
+            <p style="font-size: 110%;">We tested 4 frontier and 3 open source models:</p>
+            <ul style="font-size: 110%;">
+                <li><strong>Frontier Models:</strong> Opus 4.1, Gemini 2.5 Pro, GPT-5, Grok 4</li>
+                <li><strong>Open Source Models:</strong> Deepseek 3.1, GPT OSS-120b, Qwen 235b</li>
+            </ul>
+            </br>
+            <h4 class="title is-5">Additional Model Configurations</h4>
+            <ul style="font-size: 110%;">
+                <li>Reasoning enabled for applicable models</li>
+                <li>Vision capabilities for some hard tasks</li>
+            </ul>
+            </br>
+            <h4 class="title is-5">Experimental Setup</h4>
+            <p style="font-size: 110%;">Each model was given an inventory of useful items and 64 steps to achieve production throughput targets of 16x per minute for solid items and 250x per minute for fluids.</p>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Limitations</span></h2>
+            <div class="content has-text-justified">
+                <div class="columns">
+                    <div class="column">
+                        <div class="notification is-warning">
+                            <h4 class="title is-5">🧠 Spatial Reasoning Challenges</h4>
+                            <p>Spatial reasoning is the biggest challenge for the base models. Models don't pick up enough things off the map when they're misplaced. This causes cascading errors and exacerbates issues with spatial reasoning.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="notification is-danger">
+                            <h4 class="title is-5">🔧 Limited Tool Extension</h4>
+                            <p>Models don't define their own functions and classes - instead relying on the out-of-the box tools that are part of core FLE.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns">
+                    <div class="column">
+                        <div class="notification is-info">
+                            <h4 class="title is-5">⚡ Reward Hacking Behavior</h4>
+                            <p>Models reward-hack to avoid full automation - despite being told to strive for full automation, continued progress towards the production targets reinforces the model reliance on 'shuttling' resources around which is easier than building functional logistics chains.</p>
+                        </div>
+                    </div>
+                    <div class="column">
+                        <div class="notification is-success">
+                            <h4 class="title is-5">🏭 Craft Item Overuse</h4>
+                            <p>Agents use craft_item liberally to create intermediate goods instead of assembly machines when the target item has a lot of dependencies (see Claude's partial success on production science pack). craft_item is run in fast mode so it has no real cost.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Discussion</span></h2>
+            <p style="font-size: 110%;">
+                We tested with a basic agent harness to assess the models themselves. In our previous release we implemented a backtracking agent which achieved better results due to having a cleaned context. We encourage the community to create agent harnesses which improve upon the baseline model performance.
+            </p>
+            </br>
+            <h4 class="title is-5">Key Findings</h4>
+            <ul style="font-size: 110%;">
+                <li><strong>Throughput vs Automation:</strong> Agents are achieving throughput as per our environment's measurements but it's not really automated for the harder tasks.</li>
+                <li><strong>Success Rate Reporting:</strong> We still report the success rates in order to enable comparisons with previous models and environment releases.</li>
+                <li><strong>Measurement Challenges:</strong> More systematic ways to measure throughput are needed in order to address the buffer problem, unlikely that it can be solved statically.</li>
+            </ul>
+            </br>
+            <h4 class="title is-5">Error Analysis Breakdown</h4>
+            <p style="font-size: 110%;">Common error patterns by category:</p>
+            <ul style="font-size: 110%;">
+                <li><strong>Invalid Python:</strong> Can't handle basic instructions</li>
+                <li><strong>Type Errors:</strong> TypeError, AttributeError, ValueError - don't understand tool docs well enough</li>
+                <li><strong>Inventory Management:</strong> insert_item not having enough in the inventory - not reasoning correctly about game state</li>
+            </ul>
+            </br>
+            <h4 class="title is-5">Future Work</h4>
+            <ul style="font-size: 110%;">
+                <li><strong>Human Baseline:</strong> Establishing human performance benchmarks</li>
+                <li><strong>METR Task Scaling:</strong> Setting up task scaling charts for systematic evaluation</li>
+                <li><strong>Open Play Testing:</strong> We didn't run open play as this is prohibitively expensive to test for each model. However, we DID run open play on our best performing model, Claude.</li>
+            </ul>
+
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Performance Results</span></h2>
+            <p style="font-size: 110%;">
+                Model performance across tasks sorted by tech tree complexity. This visualization shows how model success correlates with the number of prerequisite technology nodes required.
+            </p>
+
+            <div class="heatmap-container">
+                <img src="../assets/images/fle_0_3_0_combined_dependency_sorted_heatmap.png"
+                     alt="FLE 0.3.0 Combined Model Performance Heatmap"
+                     style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+            </div>
+
+            <div class="feature-box">
+                <h4 class="title is-5">📊 Key Observations</h4>
+                <ul style="font-size: 110%;">
+                    <li><strong>Complexity Correlation:</strong> Model success rates generally decrease as task complexity increases</li>
+                    <li><strong>Basic Tasks:</strong> Most models achieve success on low-complexity tasks (1-3 nodes)</li>
+                    <li><strong>Advanced Challenges:</strong> High-complexity tasks (15+ nodes) show significant performance gaps between models</li>
+                    <li><strong>Model Ranking:</strong> Performance hierarchy emerges clearly when tasks are sorted by dependency complexity</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column">
+                    <div class="content has-text-centered">
+                        <p>
+                            Website template borrowed from <a href="https://github.com/nerfies/nerfies.github.io" target="_blank">NeRFies</a>, <a href="https://github.com/cliport/cliport.github.io" target="_blank">CLIPort</a>, <a href="https://voyager.minedojo.org/" target="_blank">Voyager</a> and
+                            <a href="https://github.com/vimalabs/vimalabs.github.io" target="_blank">VIMA</a>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,7 +1,10 @@
 from time import sleep
 from typing import List, Set, Union
+from memoization import cached
+
 from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
+from fle.env.tools.admin.render.profiler import profile_method
 from fle.env.tools.agent.connect_entities.groupable_entities import (
     agglomerate_groupable_entities,
 )
@@ -12,6 +15,7 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
+    @cached(max_size=16, ttl=1)
     def __call__(
         self,
         entities: Union[Set[Prototype], Prototype] = set(),
@@ -23,8 +27,10 @@ class GetEntities(Tool):
         :param entities: Set of entity prototypes to filter by. If empty, all entities are returned.
         :param position: Position to search around. Can be a Position object or "player" for player's position.
         :param radius: Radius to search within.
+        :param player_only: If True, only player entities are returned, otherwise terrain features too.
         :return: Found entities
         """
+
         try:
             if not isinstance(position, Position) and position is not None:
                 raise ValueError("The second argument must be a Position object")
@@ -142,6 +148,16 @@ class GetEntities(Tool):
                 }
 
                 try:
+                    if "inventory" in entity_data:
+                        if isinstance(entity_data["inventory"], list):
+                            for inv in entity_data["inventory"]:
+                                entity_data['inventory'] += inv
+                        else:
+                            inventory_data = {
+                                k: v for k, v in entity_data['inventory'].items() if v or isinstance(v, int)
+                            }
+                            entity_data['inventory'] = inventory_data
+
                     entity = metaclass(**entity_data)
                     entities_list.append(entity)
                 except Exception as e1:

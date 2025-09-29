@@ -499,7 +499,7 @@ class FactorioGymEnv(gym.Env):
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
         observation = self.get_observation(0).to_dict()
-        return observation, {}  # Return observation for first agent
+        return observation  # Return observation for first agent
 
     def close(self):
         """Clean up resources"""

@@ -1,0 +1,9 @@
+Match the blueprint image to its correct title and purpose from the options below.
+
+Options:
+{% for i, option in enumerate(options) %}
+{{ i+1 }}. Title: {{ option.title }}
+   Purpose: {{ option.purpose }}
+{% endfor %}
+
+Which option best describes this blueprint? Respond with just the number.

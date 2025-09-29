@@ -101,4 +101,6 @@ class MoveTo(Tool):
 
             return Position(x=response["x"], y=response["y"])  # , execution_time
         except Exception as e:
+            if response:
+                raise Exception(f"Cannot move. {e} - {response}")
             raise Exception(f"Cannot move. {e}")

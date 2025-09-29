@@ -1,0 +1,134 @@
+================================================================================
+RENDERING PERFORMANCE REPORT
+================================================================================
+
+Session: renderer_test
+Duration: 2.569s
+
+OVERALL STATISTICS:
+Total operations: 3,132
+Total time: 0.946s
+Average time per operation: 0.30ms
+
+TOP PERFORMANCE BOTTLENECKS:
+Operation                                          Count    Total(s)   Avg(ms)    %Time   
+------------------------------------------------------------------------------------------------
+Render.__call__                                    1        0.439      438.81     46.4    %
+Renderer.render                                    1        0.127      126.73     13.4    %
+Renderer.__init__                                  1        0.093      93.12      9.8     %
+Render._get_map_entities                           1        0.084      83.88      8.9     %
+Renderer._render_resources                         1        0.041      41.02      4.3     %
+image_load_from_disk                               69       0.027      0.39       2.8     %
+ImageResolver.__call__                             1000     0.022      0.02       2.3     %
+Renderer._render_trees                             1        0.020      19.70      2.1     %
+Renderer._render_tree_shadows                      1        0.018      18.26      1.9     %
+Renderer._render_water_tiles                       1        0.012      11.78      1.2     %
+
+PERFORMANCE BY CATEGORY:
+
+RENDERING: 0.895s (94.7%)
+  Operations: 21
+    1. Render.__call__: 0.439s (1 calls)
+    2. Renderer.render: 0.127s (1 calls)
+    3. Renderer.__init__: 0.093s (1 calls)
+
+IMAGE_LOADING: 0.048s (5.1%)
+  Operations: 2
+    1. image_load_from_disk: 0.027s (69 calls)
+    2. ImageResolver.__call__: 0.022s (1000 calls)
+
+OTHER: 0.001s (0.1%)
+  Operations: 1
+    1. transport_belt.get_around: 0.001s (84 calls)
+
+IMAGE CACHE PERFORMANCE:
+Total image calls: 1,000
+Total image time: 0.022s
+Average time per call: 0.02ms
+Cache hit rate: 94.7%
+
+ENTITY RENDERING BREAKDOWN:
+
+RESOURCES:
+  Total time: 0.041s
+  Operations: 1
+  Avg per operation: 41.02ms
+
+OTHER:
+  Total time: 0.049s
+  Operations: 49
+  Avg per operation: 0.99ms
+
+TREES:
+  Total time: 0.020s
+  Operations: 1
+  Avg per operation: 19.70ms
+
+RAILS:
+  Total time: 0.001s
+  Operations: 1
+  Avg per operation: 1.23ms
+
+ENTITIES:
+  Total time: 0.011s
+  Operations: 1
+  Avg per operation: 10.72ms
+
+COUNTERS:
+
+alert_overlays_rendered: 3
+image_cache_hits: 1,223
+image_cache_misses: 69
+images_loaded: 69
+player_entities: 56
+resources: 616
+rock_entities: 0
+total_entities: 209
+tree_entities: 153
+water_tiles: 264
+
+RAW TIMING DATA:
+==================================================
+=== Performance Report ===
+
+Timing Statistics:
+Operation                      Count    Total(s)   Avg(ms)    Min(ms)    Max(ms)   
+----------------------------------------------------------------------------------------
+Render.__call__                1        0.439      438.81     438.81     438.81    
+Renderer.render                1        0.127      126.73     126.73     126.73    
+Renderer.__init__              1        0.093      93.12      93.12      93.12     
+Render._get_map_entities       1        0.084      83.88      83.88      83.88     
+Renderer._render_resources     1        0.041      41.02      41.02      41.02     
+image_load_from_disk           69       0.027      0.39       0.13       9.34      
+ImageResolver.__call__         1000     0.022      0.02       0.00       1.10      
+Renderer._render_trees         1        0.020      19.70      19.70      19.70     
+Renderer._render_tree_shadows  1        0.018      18.26      18.26      18.26     
+Renderer._render_water_tiles   1        0.012      11.78      11.78      11.78     
+Renderer.get_size              2        0.011      5.66       4.83       6.50      
+Renderer._render_entities      1        0.011      10.72      10.72      10.72     
+Renderer._render_visible_inventories 1        0.009      8.56       8.56       8.56      
+Renderer._paste_image          1000     0.007      0.01       0.00       0.06      
+transport_belt.render_inventory 44       0.005      0.12       0.00       0.69      
+Renderer._create_base_image    1        0.004      4.02       4.02       4.02      
+transport_belt.render          44       0.004      0.09       0.05       0.40      
+Renderer._render_entity_shadows 1        0.003      2.62       2.62       2.62      
+Renderer._render_alert_overlays 1        0.002      2.31       2.31       2.31      
+Renderer._precompute_tree_variants 1        0.002      2.25       2.25       2.25      
+RendererManager.get_renderer   871      0.002      0.00       0.00       0.48      
+transport_belt.get_around      84       0.001      0.02       0.01       0.06      
+Renderer._render_rails         1        0.001      1.23       1.23       1.23      
+Renderer._draw_grid            1        0.001      1.08       1.08       1.08      
+Renderer._resolve_sprites_dir  1        0.001      0.80       0.80       0.80      
+Renderer._sort_entities_for_rendering 1        0.000      0.08       0.08       0.08      
+
+Counters:
+alert_overlays_rendered: 3
+image_cache_hits: 1223
+image_cache_misses: 69
+images_loaded: 69
+player_entities: 56
+resources: 616
+rock_entities: 0
+total_entities: 209
+tree_entities: 153
+water_tiles: 264

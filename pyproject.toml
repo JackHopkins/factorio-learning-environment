@@ -45,14 +45,6 @@ dependencies = [
     "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
-    "gym",
-    "a2a-sdk",
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
-    "tenacity>=9.0.0",
-    "psycopg2>=2.9.10",
-    "aiohttp>=3.8.0",
-    "uvicorn>=0.15.0",
     "pytest>=8.4.1",
 ]
 
@@ -60,50 +52,23 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "black>=23.0.0",
-    "isort>=5.12.0",
     "rich>=14.0.0",
     "questionary>=2.1.0",
     "pytest-xdist>=3.8.0",
-]
-agents = [
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
 ]
 cluster = [
     "docker>=6.0.0",
     "boto3>=1.26.0",
     "opencv-python",
     "pyautogui>=0.9.54",
-    "pillow>=10.0.0",
     "psutil>=5.9.0",
-    "opencv-python",
-    "pyautogui>=0.9.54",
-    "pillow>=10.0.0",
-    "psutil>=5.9.0",
-]
-eval = [
-    "scikit-image>=0.25.2",
-    "psycopg2>=2.9.10",
-]
-all = [
-    "docker>=6.0.0",
-    "boto3>=1.26.0",
-    "scikit-image>=0.25.2",
 ]
 mcp = [
     "mcp[cli]",
     "dulwich",
 ]
 env = [
-    "anyio",
-    "pygame",
     "neptune",
-    "rich",
-    "openai",
-    "scipy",
-    "scikit-image",
-    "pyautogui",
-    "tenacity",
     "fastapi>=0.68.0",
 ]
 

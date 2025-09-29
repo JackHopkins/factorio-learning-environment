@@ -8,8 +8,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 
 <p align="center">
-<img src="docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
-<img src="docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
+<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
+<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
 </p>
 <p align="center"><em>Claude 3.5 plays Factorio</em></p>
 
@@ -25,11 +25,6 @@ We provide two settings:
 Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex
 automation (e.g electronic-circuit manufacturing).
-
-## Updates
-
-- [08/5/2025] [Blog](https://jackhopkins.github.io/factorio-learning-environment/release.0.2.0): Added support for multi-agent coordination and MCP allowing reasoning models to invoke tools within their reasoning chain
-- [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
 
 ## Quick Links
 
@@ -47,10 +42,9 @@ automation (e.g electronic-circuit manufacturing).
 ## Installation
 
 ### Prerequisites
-
-- [Factorio](https://www.factorio.com/) (version 1.1.110)
-- Docker
+- Docker 
 - Python 3.10+
+- [Factorio](https://www.factorio.com/) (version 1.1.110) (optional)
 
 ### Package Installation
 
@@ -408,9 +402,6 @@ The run config json is a list of dictionaries specifying the gym environment ID,
 
 Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached.
 
-### Gym Environment Registry
-
-The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use `gym.make()` to create environments and reference them by their environment IDs.
 
 #### Overview
 
@@ -693,25 +684,6 @@ python env/tests/gym_env/test_registry.py
 
 This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.
 
-### Legacy Task-Based Configuration
-
-For backward compatibility, you can still use the legacy task-based configuration with `eval/open/independent_runs/run.py`:
-
-```json
-[
-  {
-    "task": "iron_gear_wheel_throughput_16.json",
-    "model": "gpt-4o-mini-2024-07-18",
-    "version": 768
-  },
-  {
-    "task": "plastic_bar_throughput_16.json",
-    "model": "anthropic/claude-3.5-sonnet-open-router"
-  },
-  { "task": "open_play.json", "model": "gpt-4o-mini-2024-07-18" }
-]
-```
-
 **Note**: The CLI (`fle eval`) is the recommended approach for new users.
 
 ## Multiagent Experiments
@@ -914,59 +886,6 @@ Next time you run an eval, the tool will automatically be available to the agent
 | `sleep`                 | Pauses execution                                 | - Waits for actions to complete<br>- Adapts to game speed<br>- Maximum 15 second duration                                                  |
 | `launch_rocket`         | Controls rocket silo launches                    | - Validates launch requirements<br>- Handles launch sequence<br>- Returns updated silo state                                               |
 | `print`                 | Outputs debug information to stdout              | - Supports various object types<br>- Useful for monitoring state<br>- Returns formatted string                                             |
-
-# Project Structure
-
-Below is an overview of how the project is structured. Some directories also contain more detailed readmes.
-
-```
-factorio-learning-environment/
-├── .github/                        # GitHub workflows and scripts
-├── docs/                           # Website and documentation
-├── fle/                            # Main Factorio Learning Environment codebase
-│   ├── agents/                     # Agent implementations
-│   │   ├── formatters/             # Conversation formatting utilities
-│   │   ├── llm/                    # LLM integration utilities
-│   │   ├── agent_abc.py            # Abstract base class for agents
-│   │   ├── basic_agent.py          # Default agent implementation
-│   │   ├── backtracking_agent.py   # Backtracking agent
-│   │   ├── visual_agent.py         # Visual agent implementation
-│   │   └── gym_agent.py            # Gym-compatible agent
-│   ├── cluster/                    # Docker and deployment utilities
-│   │   ├── remote/                 # Remote deployment utilities
-│   │   └── scenarios/              # Game scenario configurations
-│   ├── commons/                    # Shared utilities and constants
-│   ├── data/                       # Data files and resources
-│   ├── env/                        # Environment implementation
-│   │   ├── gym_env/                # Gym environment interface
-│   │   ├── tools/                  # Agent tools and API
-│   │   ├── protocols/              # Communication protocols (A2A, etc.)
-│   │   ├── utils/                  # Environment utilities
-│   │   ├── lib/                    # Core libraries
-│   │   ├── exceptions/             # Custom exceptions
-│   │   ├── instance.py             # Factorio instance management
-│   │   ├── namespace.py            # Python namespace management
-│   │   ├── entities.py             # Entity definitions
-│   │   └── game_types.py           # Game type definitions
-│   ├── eval/                       # Evaluation framework
-│   │   ├── algorithms/             # Evaluation algorithms
-│   │   ├── tasks/                  # Task definitions and implementations
-│   │   ├── open/                   # Open-play evaluation scripts
-│   │   └── evaluator.py            # Main evaluation logic
-│   ├── run.py                      # Main CLI entry point
-│   ├── server.py                   # Server implementation
-│   └── __init__.py                 # Package initialization
-├── tests/                          # Test suite
-├── .example.env                    # Example environment variables
-├── .gitignore                      # Git ignore file
-├── BUILD.md                        # Build instructions
-├── CONTRIBUTING.md                 # Contribution guidelines
-├── LICENSE                         # License file
-├── README.md                       # Project readme
-├── clean.sh                        # Clean script
-├── pyproject.toml                  # Python project config
-└── uv.lock                         # UV lock file
-```
 
 ## Database
 

@@ -1124,15 +1124,14 @@ class FactorioNamespace:
     def load_messages(self, messages: List[Dict]):
         pass
 
-    @property
-    def enable_admin_tools_in_runtime(self):
-        """Get whether admin tools are enabled in runtime namespace"""
-        return self._admin_tools_enabled
-
-    def set_admin_tools_in_runtime(self, enable: bool):
+    def enable_admin_tools_in_runtime(self, enable: bool):
         """Dynamically enable/disable admin tools in runtime namespace"""
         self._admin_tools_enabled = enable
         self._update_admin_tools_visibility(enable)
+
+    def is_admin_tools_enabled(self):
+        """Check if admin tools are enabled in runtime namespace"""
+        return self._admin_tools_enabled
 
     def _update_admin_tools_visibility(self, enable: bool):
         """Update the visibility of admin tools in the namespace"""

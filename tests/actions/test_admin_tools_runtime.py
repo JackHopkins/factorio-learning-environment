@@ -5,7 +5,7 @@ from fle.env import FactorioInstance
 
 def test_admin_tools_default_behavior(namespace):
     """Test that admin tools are hidden by default."""
-    assert namespace.enable_admin_tools_in_runtime is False
+    assert namespace.is_admin_tools_enabled() is False
 
     # Check if admin tools are hidden (with underscore prefix)
     admin_tools = [
@@ -30,8 +30,8 @@ def test_admin_tools_default_behavior(namespace):
 def test_admin_tools_runtime_enable(namespace):
     """Test enabling admin tools at runtime."""
     # Enable admin tools at runtime
-    namespace.set_admin_tools_in_runtime(True)
-    assert namespace.enable_admin_tools_in_runtime is True
+    namespace.enable_admin_tools_in_runtime(True)
+    assert namespace.is_admin_tools_enabled() is True
 
     # Check that admin tools are now exposed
     exposed_tools = [
@@ -48,11 +48,11 @@ def test_admin_tools_runtime_enable(namespace):
 def test_admin_tools_runtime_disable(namespace):
     """Test disabling admin tools at runtime."""
     # Enable then disable admin tools
-    namespace.set_admin_tools_in_runtime(True)
-    assert namespace.enable_admin_tools_in_runtime is True
+    namespace.enable_admin_tools_in_runtime(True)
+    assert namespace.is_admin_tools_enabled() is True
 
-    namespace.set_admin_tools_in_runtime(False)
-    assert namespace.enable_admin_tools_in_runtime is False
+    namespace.enable_admin_tools_in_runtime(False)
+    assert namespace.is_admin_tools_enabled() is False
 
     # Check that admin tools are hidden again
     exposed_tools = [
@@ -78,7 +78,7 @@ def test_admin_tools_construction_enable(configure_game):
     )
 
     namespace = instance.first_namespace
-    assert namespace.enable_admin_tools_in_runtime is True
+    assert namespace.is_admin_tools_enabled() is True
 
     # Check that admin tools are exposed from the start
     exposed_tools = [
@@ -98,8 +98,8 @@ def test_admin_tools_toggle_multiple_times(namespace):
     """Test toggling admin tools multiple times."""
     # Toggle multiple times
     for i in range(3):
-        namespace.set_admin_tools_in_runtime(True)
-        assert namespace.enable_admin_tools_in_runtime is True
+        namespace.enable_admin_tools_in_runtime(True)
+        assert namespace.is_admin_tools_enabled() is True
 
-        namespace.set_admin_tools_in_runtime(False)
-        assert namespace.enable_admin_tools_in_runtime is False
+        namespace.enable_admin_tools_in_runtime(False)
+        assert namespace.is_admin_tools_enabled() is False

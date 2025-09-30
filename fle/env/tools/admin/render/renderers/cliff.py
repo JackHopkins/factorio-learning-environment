@@ -2,6 +2,7 @@
 """
 Cliff renderer using orientation data from server
 """
+
 import random
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
@@ -16,7 +17,9 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     return image_resolver(sprite_name)
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render cliff shadow"""
     orientation = get_orientation(entity)
     cliff_type = determine_cliff_type_from_orientation(orientation)
@@ -28,16 +31,16 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
 def get_orientation(entity: Dict) -> str:
     """Extract orientation from entity data"""
     # Handle quoted string from Lua
-    orientation = entity.get('cliff_orientation', '').strip('"')
+    orientation = entity.get("cliff_orientation", "").strip('"')
 
     if not orientation:
         # Fallback to direction field if available
-        if 'direction' in entity:
-            direction = str(entity['direction']).strip('"')
-            if direction and '-to-' in direction:
+        if "direction" in entity:
+            direction = str(entity["direction"]).strip('"')
+            if direction and "-to-" in direction:
                 orientation = direction
 
-    return orientation or 'west-to-east'
+    return orientation or "west-to-east"
 
 
 def determine_cliff_type_from_orientation(orientation: str) -> str:
@@ -56,10 +59,10 @@ def determine_cliff_type_from_orientation(orientation: str) -> str:
 
     # Terminal pieces (one end is "none") -> entrance
     if from_dir == "none" or to_dir == "none":
-        return 'cliff-entrance'
+        return "cliff-entrance"
 
     # Analyze the turn angle to determine corner type
-    direction_order = ['north', 'east', 'south', 'west']
+    direction_order = ["north", "east", "south", "west"]
 
     if from_dir in direction_order and to_dir in direction_order:
         from_idx = direction_order.index(from_dir)
@@ -70,27 +73,27 @@ def determine_cliff_type_from_orientation(orientation: str) -> str:
 
         if turn == 0:
             # Same direction - shouldn't happen
-            return 'cliff-sides'
+            return "cliff-sides"
         elif turn == 2:
             # Opposite directions - straight cliff
-            return 'cliff-sides'
+            return "cliff-sides"
         elif turn == 1:
             # 90-degree right turn - outer corner
-            return 'cliff-outer'
+            return "cliff-outer"
         elif turn == 3:
             # 90-degree left turn (270 right) - inner corner
-            return 'cliff-inner'
+            return "cliff-inner"
 
     # Default to sides for any unhandled cases
-    return 'cliff-sides'
+    return "cliff-sides"
 
 
 def parse_orientation(orientation: str) -> Tuple[str, str]:
     """Parse orientation string into from and to directions"""
-    parts = orientation.split('-to-')
+    parts = orientation.split("-to-")
     if len(parts) == 2:
         return parts[0], parts[1]
-    return 'west', 'east'
+    return "west", "east"
 
 
 def get_cliff_sprite_name(cliff_type: str, orientation: str) -> str:
@@ -104,48 +107,47 @@ def get_cliff_sprite_name(cliff_type: str, orientation: str) -> str:
     - cliff-entrance: 4x4 grid - terminals and special pieces
     """
 
-    if cliff_type == 'cliff-entrance':
+    if cliff_type == "cliff-entrance":
         # cliff-entrance uses a 4x4 layout
         orientation_map = {
             # Terminal pieces (where cliffs end/start)
-            'none-to-east': (1,4), #1-2 -> 4
-            'west-to-none': (3,4), #3-4 -> 4
-            'none-to-south': (1, 1), #1-2 -> 1
-            'north-to-none': (3, 1), #3-4 -> 1
-
-            'none-to-west': (1, 2), #1-2 -> 2
-            'east-to-none': (3, 2), #3-4 -> 2
-            'none-to-north': (1, 3), #1,2 -> 3
-            'south-to-none': (3, 3), #3,4 -> 3
+            "none-to-east": (1, 4),  # 1-2 -> 4
+            "west-to-none": (3, 4),  # 3-4 -> 4
+            "none-to-south": (1, 1),  # 1-2 -> 1
+            "north-to-none": (3, 1),  # 3-4 -> 1
+            "none-to-west": (1, 2),  # 1-2 -> 2
+            "east-to-none": (3, 2),  # 3-4 -> 2
+            "none-to-north": (1, 3),  # 1,2 -> 3
+            "south-to-none": (3, 3),  # 3,4 -> 3
         }
-        row, col = orientation_map.get(orientation, (1,1))
+        row, col = orientation_map.get(orientation, (1, 1))
         return f"{cliff_type}_{row}_{col}"
 
-    elif cliff_type == 'cliff-outer':
+    elif cliff_type == "cliff-outer":
         # Outer corners - 90 degree right turns
         orientation_map = {
-            'west-to-north': 2,
-            'north-to-east': 1,
-            'east-to-south': 2,
-            'south-to-west': 1,
+            "west-to-north": 2,
+            "north-to-east": 1,
+            "east-to-south": 2,
+            "south-to-west": 1,
         }
 
-    elif cliff_type == 'cliff-inner':
+    elif cliff_type == "cliff-inner":
         # Inner corners - 90 degree left turns
         orientation_map = {
-            'west-to-south': 2,
-            'south-to-east': 1,
-            'east-to-north': 2,
-            'north-to-west': 1,
+            "west-to-south": 2,
+            "south-to-east": 1,
+            "east-to-north": 2,
+            "north-to-west": 1,
         }
 
     else:  # cliff-sides
         # Main cliff pieces and basic transitions
         orientation_map = {
-            'north-to-south': 1,  # Horizontal cliff facing down
-            'west-to-east': 2,  # Vertical cliff facing right
-            'east-to-west':  4,  # Vertical cliff facing left
-            'south-to-north': 3,  # Horizontal cliff facing up
+            "north-to-south": 1,  # Horizontal cliff facing down
+            "west-to-east": 2,  # Vertical cliff facing right
+            "east-to-west": 4,  # Vertical cliff facing left
+            "south-to-north": 3,  # Horizontal cliff facing up
         }
 
     # Get the mapping with fallback
@@ -162,7 +164,7 @@ def get_cliff_sprite_name(cliff_type: str, orientation: str) -> str:
     # elif cliff_type == 'cliff-sides' and row > 4:
     #     row = 4
 
-    variant = random.choice([1,2,3,4])
+    variant = random.choice([1, 2, 3, 4])
     return f"{cliff_type}_{variant}_{row}"
 
 

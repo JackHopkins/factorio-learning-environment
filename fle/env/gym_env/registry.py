@@ -104,7 +104,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         if not address and not tcp_port:
             try:
                 ips, udp_ports, tcp_ports = get_local_container_ips()
-            except ValueError as e:
+            except ValueError:
                 raise RuntimeError("No Factorio containers available")
 
             if len(tcp_ports) == 0:

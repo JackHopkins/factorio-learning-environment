@@ -7,14 +7,15 @@ from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
 
-
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render heat exchanger"""
 
     return image_resolver(f"{entity['name']}_0")
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render shadow"""
 
     return image_resolver(f"{entity['name']}_2_shadow", True)
@@ -22,9 +23,9 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
 
 def get_key(entity: Dict, grid) -> str:
     """Get cache key"""
-    return str(entity.get('direction', 0))
+    return str(entity.get("direction", 0))
 
 
 def get_size(entity: Dict) -> Tuple[float, float]:
     """Get heat exchanger size based on direction"""
-    return (3,3)
+    return (3, 3)

@@ -1,9 +1,11 @@
-from inspect_ai.dataset import Dataset, Sample, MemoryDataset
+from inspect_ai.dataset import Sample, MemoryDataset
 from typing import List, Tuple
 import math
 
 
-def generate_spiral_positions(max_radius: int = 50, step: int = 1) -> List[Tuple[int, int]]:
+def generate_spiral_positions(
+    max_radius: int = 50, step: int = 1
+) -> List[Tuple[int, int]]:
     """
     Generate positions in a spiral pattern starting from origin.
 
@@ -66,7 +68,9 @@ def generate_concentric_spiral_positions(max_radius: int = 50) -> List[Tuple[int
     return positions
 
 
-def generate_true_spiral_positions(max_positions: int = 10000, spacing: float = 1.0) -> List[Tuple[int, int]]:
+def generate_true_spiral_positions(
+    max_positions: int = 10000, spacing: float = 1.0
+) -> List[Tuple[int, int]]:
     """
     Generate positions following an Archimedean spiral.
 
@@ -104,7 +108,9 @@ def generate_true_spiral_positions(max_positions: int = 10000, spacing: float = 
     return positions
 
 
-def raw_position_dataset(pattern: str = "concentric", limit: int = None) -> MemoryDataset:
+def raw_position_dataset(
+    pattern: str = "concentric", limit: int = None
+) -> MemoryDataset:
     """
     Generate position dataset with various patterns.
 
@@ -148,8 +154,9 @@ def raw_position_dataset(pattern: str = "concentric", limit: int = None) -> Memo
     return dataset
 
 
-def raw_position_dataset_with_priority(max_radius: int = 50,
-                                       inner_radius_priority: int = 10) -> MemoryDataset:
+def raw_position_dataset_with_priority(
+    max_radius: int = 50, inner_radius_priority: int = 10
+) -> MemoryDataset:
     """
     Generate position dataset with priority given to positions near origin.
 
@@ -226,5 +233,7 @@ if __name__ == "__main__":
     print("\nPriority-based pattern (first 20 positions):")
     dataset = raw_position_dataset_with_priority(max_radius=50, inner_radius_priority=5)
     for i, sample in enumerate(dataset.samples[:20]):
-        dist = sample.metadata.get('distance_from_origin', 0)
-        print(f"{i}: x={sample.metadata['x']}, y={sample.metadata['y']}, dist={dist:.2f}")
+        dist = sample.metadata.get("distance_from_origin", 0)
+        print(
+            f"{i}: x={sample.metadata['x']}, y={sample.metadata['y']}, dist={dist:.2f}"
+        )

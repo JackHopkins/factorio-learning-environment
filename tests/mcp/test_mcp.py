@@ -2,20 +2,19 @@
 Integration tests for MCP resources in the Factorio environment.
 Tests the happy path for each resource against a real server.
 """
+
 import base64
 import io
 import os
 import json
-from pathlib import Path
 from typing import List, Tuple
 from concurrent import futures
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from PIL import Image as PILImage
 
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.env.entities import Position
 from fle.env.protocols._mcp.resources import (
     render_at,
     entities,
@@ -25,7 +24,7 @@ from fle.env.protocols._mcp.resources import (
     recipe,
     manual,
     schema,
-    status
+    status,
 )
 from fle.env.protocols._mcp.tools import reconnect
 from fle.env.protocols._mcp.init import state, initialize_session
@@ -108,22 +107,21 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource with default parameters
-        resource = await render_at.create_resource('fle://render/', {
-            'center_x': '0',
-            'center_y': '0'
-        })
+        resource = await render_at.create_resource(
+            "fle://render/", {"center_x": "0", "center_y": "0"}
+        )
 
         result = await resource.read()
         assert result is not None
 
         # Check if it's image content
         if isinstance(result, ImageContent):
-            assert result.type == 'image'
-            assert result.mimeType == 'image/png'
-            assert hasattr(result, 'data')
+            assert result.type == "image"
+            assert result.mimeType == "image/png"
+            assert hasattr(result, "data")
 
             # Optionally display the image
-            if os.getenv('DISPLAY_TEST_IMAGES', 'false').lower() == 'true':
+            if os.getenv("DISPLAY_TEST_IMAGES", "false").lower() == "true":
                 image_data = base64.b64decode(result.data)
                 img = PILImage.open(io.BytesIO(image_data))
                 print(f"\nImage dimensions: {img.size}, mode: {img.mode}")
@@ -137,10 +135,9 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource with custom coordinates
-        resource = await render_at.create_resource('fle://render/', {
-            'center_x': '10.0',
-            'center_y': '10.0'
-        })
+        resource = await render_at.create_resource(
+            "fle://render/", {"center_x": "10.0", "center_y": "10.0"}
+        )
 
         result = await resource.read()
         assert result is not None
@@ -151,11 +148,10 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource with default parameters
-        resource = await entities.create_resource('fle://entities/', {
-            'center_x': 'default',
-            'center_y': 'default',
-            'radius': 'default'
-        })
+        resource = await entities.create_resource(
+            "fle://entities/",
+            {"center_x": "default", "center_y": "default", "radius": "default"},
+        )
 
         result = await resource.read()
         result = json.loads(result)
@@ -173,15 +169,14 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource with specific coordinates and radius
-        resource = await entities.create_resource('fle://entities/', {
-            'center_x': '50.0',
-            'center_y': '50.0',
-            'radius': '100.0'
-        })
+        resource = await entities.create_resource(
+            "fle://entities/",
+            {"center_x": "50.0", "center_y": "50.0", "radius": "100.0"},
+        )
 
         result = await resource.read()
         assert result is not None
-        assert result == '[]'
+        assert result == "[]"
 
     @pytest.mark.asyncio
     async def test_inventory_resource(self):
@@ -193,7 +188,7 @@ class TestMCPResources:
 
         result = await resource.read()
         assert result is not None
-        assert result[0] == '{'
+        assert result[0] == "{"
         # Inventory should be a dict, could be empty {}
 
     @pytest.mark.asyncio
@@ -208,10 +203,10 @@ class TestMCPResources:
         result = json.loads(result)
         assert result is not None
         assert isinstance(result, dict)
-        assert 'x' in result
-        assert 'y' in result
-        assert isinstance(result['x'], (int, float))
-        assert isinstance(result['y'], (int, float))
+        assert "x" in result
+        assert "y" in result
+        assert isinstance(result["x"], (int, float))
+        assert isinstance(result["y"], (int, float))
 
     @pytest.mark.asyncio
     async def test_entity_names_resource(self):
@@ -219,7 +214,7 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource - no parameters needed
-        resource = entity_names#.create_resource('fle://entity-names', {})
+        resource = entity_names  # .create_resource('fle://entity-names', {})
 
         result = await resource.read()
         result = json.loads(result)
@@ -245,9 +240,9 @@ class TestMCPResources:
             test_recipe_name = available_names[0]
 
             # Create resource with recipe name
-            resource = await recipe.create_resource('fle://recipe/', {
-                'name': test_recipe_name
-            })
+            resource = await recipe.create_resource(
+                "fle://recipe/", {"name": test_recipe_name}
+            )
 
             result = await resource.read()
             assert result is not None
@@ -257,15 +252,15 @@ class TestMCPResources:
             if "not found" not in result:
                 # Should be valid JSON
                 recipe_data = json.loads(result)
-                assert 'name' in recipe_data
-                assert 'ingredients' in recipe_data
-                assert 'results' in recipe_data
-                assert 'energy_required' in recipe_data
+                assert "name" in recipe_data
+                assert "ingredients" in recipe_data
+                assert "results" in recipe_data
+                assert "energy_required" in recipe_data
 
         # Test with non-existent recipe
-        invalid_resource = await recipe.create_resource('fle://recipe/', {
-            'name': 'non_existent_recipe_xyz'
-        })
+        invalid_resource = await recipe.create_resource(
+            "fle://recipe/", {"name": "non_existent_recipe_xyz"}
+        )
         result_invalid = await invalid_resource.read()
         assert result_invalid is not None
         assert "not found" in result_invalid
@@ -284,7 +279,9 @@ class TestMCPResources:
         assert len(result) > 100  # Should have substantial documentation
 
         # Should contain type or entity information
-        assert any(keyword in result.lower() for keyword in ['type', 'entity', 'class', 'def'])
+        assert any(
+            keyword in result.lower() for keyword in ["type", "entity", "class", "def"]
+        )
 
     @pytest.mark.asyncio
     async def test_manual_resource(self):
@@ -292,14 +289,14 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Test with common method names
-        test_methods = ['move_to', 'place_entity', 'craft_item']
+        test_methods = ["move_to", "place_entity", "craft_item"]
 
         for method_name in test_methods:
             try:
                 # Create resource with method name
-                resource = await manual.create_resource('fle://api/manual/', {
-                    'method': method_name
-                })
+                resource = await manual.create_resource(
+                    "fle://api/manual/", {"method": method_name}
+                )
 
                 result = await resource.read()
                 assert result is not None
@@ -313,9 +310,9 @@ class TestMCPResources:
                 continue
 
         # Test with invalid method
-        invalid_resource = await manual.create_resource('fle://api/manual/', {
-            'method': 'non_existent_method_xyz'
-        })
+        invalid_resource = await manual.create_resource(
+            "fle://api/manual/", {"method": "non_existent_method_xyz"}
+        )
         result_invalid = await invalid_resource.read()
         assert result_invalid is not None
         assert isinstance(result_invalid, str)
@@ -325,7 +322,7 @@ class TestMCPResources:
     async def test_status_resource(self):
         """Test status resource checks server connection"""
         # Create resource - no parameters needed
-        resource = status#.create_resource('fle://status', {})
+        resource = status  # .create_resource('fle://status', {})
 
         result = await resource.read()
         assert result is not None
@@ -339,21 +336,19 @@ class TestMCPResources:
         state.active_server = None
 
         # Test inventory resource
-        inv_resource = inventory#.create_resource('fle://inventory', {})
+        inv_resource = inventory  # .create_resource('fle://inventory', {})
         with pytest.raises(Exception, match="No active Factorio server connection"):
             await inv_resource.read()
 
         # Test position resource
-        pos_resource = position#.create_resource('fle://position', {})
+        pos_resource = position  # .create_resource('fle://position', {})
         with pytest.raises(Exception, match="No active Factorio server connection"):
             await pos_resource.read()
 
         # Test entities resource
-        ent_resource = await entities.create_resource('fle://entities/', {
-            'center_x': '0',
-            'center_y': '0',
-            'radius': '100'
-        })
+        ent_resource = await entities.create_resource(
+            "fle://entities/", {"center_x": "0", "center_y": "0", "radius": "100"}
+        )
         with pytest.raises(Exception, match="No active Factorio server connection"):
             await ent_resource.read()
 
@@ -364,13 +359,21 @@ class TestMCPResources:
 
         # Test with different parameter formats
         test_cases = [
-            {'center_x': '0', 'center_y': '0', 'radius': '500'},  # String numbers
-            {'center_x': '10.5', 'center_y': '-20.5', 'radius': '100.0'},  # Float strings
-            {'center_x': 'default', 'center_y': 'default', 'radius': 'default'},  # Default values
+            {"center_x": "0", "center_y": "0", "radius": "500"},  # String numbers
+            {
+                "center_x": "10.5",
+                "center_y": "-20.5",
+                "radius": "100.0",
+            },  # Float strings
+            {
+                "center_x": "default",
+                "center_y": "default",
+                "radius": "default",
+            },  # Default values
         ]
 
         for params in test_cases:
-            resource = await entities.create_resource('fle://entities/', params)
+            resource = await entities.create_resource("fle://entities/", params)
             result = await resource.read()
             result = json.loads(result)
             assert result is not None
@@ -383,13 +386,13 @@ class TestMCPResources:
 
         # Test with different coordinate formats
         test_cases = [
-            {'center_x': '0', 'center_y': '0'},
-            {'center_x': '10.5', 'center_y': '-20.5'},
-            {'center_x': '-100', 'center_y': '100'},
+            {"center_x": "0", "center_y": "0"},
+            {"center_x": "10.5", "center_y": "-20.5"},
+            {"center_x": "-100", "center_y": "100"},
         ]
 
         for params in test_cases:
-            resource = await render_at.create_resource('fle://render/', params)
+            resource = await render_at.create_resource("fle://render/", params)
             result = await resource.read()
             assert result is not None
 
@@ -399,7 +402,7 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Get all available recipe names
-        names_resource = entity_names#.create_resource('fle://entity-names', {})
+        names_resource = entity_names  # .create_resource('fle://entity-names', {})
         names = await names_resource.read()
         names = json.loads(names)
         assert names is not None
@@ -408,16 +411,14 @@ class TestMCPResources:
             # Sample a few recipes and verify they can be retrieved
             sample_names = names[:5]
             for name in sample_names:
-                resource = await recipe.create_resource('fle://recipe/', {
-                    'name': name
-                })
+                resource = await recipe.create_resource("fle://recipe/", {"name": name})
                 result = await resource.read()
                 assert result is not None
                 assert "not found" not in result
 
                 # Parse and verify structure
                 recipe_data = json.loads(result)
-                assert recipe_data['name'] == name
+                assert recipe_data["name"] == name
 
     @pytest.mark.asyncio
     async def test_resources_without_params(self):
@@ -426,18 +427,20 @@ class TestMCPResources:
 
         # These resources should work with empty parameter dict
         no_param_resources = [
-            (inventory, 'fle://inventory', dict),
-            (position, 'fle://position', dict),
-            (entity_names, 'fle://entity-names', list),
-            (schema, 'fle://api/schema', str),
-            (status, 'fle://status', str)
+            (inventory, "fle://inventory", dict),
+            (position, "fle://position", dict),
+            (entity_names, "fle://entity-names", list),
+            (schema, "fle://api/schema", str),
+            (status, "fle://status", str),
         ]
 
         for resource_template, uri, expected_type in no_param_resources:
             resource = await resource_template.create_resource(uri, {})
             result = await resource.read()
             assert result is not None
-            assert isinstance(result, expected_type), f"{resource_template} should return {expected_type}, got {type(result)}"
+            assert isinstance(result, expected_type), (
+                f"{resource_template} should return {expected_type}, got {type(result)}"
+            )
 
     @pytest.mark.asyncio
     async def test_resources_with_path_params(self):
@@ -445,36 +448,33 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Test entities with path params
-        entities_resource = await entities.create_resource('fle://entities/', {
-            'center_x': '0',
-            'center_y': '0',
-            'radius': '100'
-        })
+        entities_resource = await entities.create_resource(
+            "fle://entities/", {"center_x": "0", "center_y": "0", "radius": "100"}
+        )
         entities_result = await entities_resource.read()
         assert isinstance(entities_result, list)
 
         # Test render with path params
-        render_resource = await render_at.create_resource('fle://render/', {
-            'center_x': '0',
-            'center_y': '0'
-        })
+        render_resource = await render_at.create_resource(
+            "fle://render/", {"center_x": "0", "center_y": "0"}
+        )
         render_result = await render_resource.read()
         assert render_result is not None
 
         # Test recipe with path param
-        names_resource = await entity_names.create_resource('fle://entity-names', {})
+        names_resource = await entity_names.create_resource("fle://entity-names", {})
         names = await names_resource.read()
         if names:
-            recipe_resource = await recipe.create_resource('fle://recipe/', {
-                'name': names[0]
-            })
+            recipe_resource = await recipe.create_resource(
+                "fle://recipe/", {"name": names[0]}
+            )
             recipe_result = await recipe_resource.read()
             assert isinstance(recipe_result, str)
 
         # Test manual with path param
-        manual_resource = await manual.create_resource('fle://api/manual/', {
-            'method': 'move_to'
-        })
+        manual_resource = await manual.create_resource(
+            "fle://api/manual/", {"method": "move_to"}
+        )
         manual_result = await manual_resource.read()
         assert isinstance(manual_result, str)
 

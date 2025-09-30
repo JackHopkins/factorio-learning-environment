@@ -6,42 +6,23 @@ Uses sprites with naming format: name_{variant}_{direction}.png
 
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
-import os
 
 # Default player colors (can be customized)
 DEFAULT_PLAYER_COLOR = (255, 165, 0)  # Orange
 
 # Sprite sheet configurations
 SPRITE_CONFIGS = {
-    'idle': {
-        'grid': (22, 8),
-        'directions': 'standard'
-    },
-    'idle_gun': {
-        'grid': (22, 8),
-        'directions': 'standard'
-    },
-    'running': {
-        'grid': (22, 8),
-        'directions': 'standard'
-    },
-    'running_gun': {
-        'grid': (22, 18),
-        'directions': 'standard'
-    },
-    'mining': {
-        'grid': (13, 8),
-        'directions': 'mining'
-    },
-    'dead': {
-        'grid': (2, 1),
-        'directions': 'dead'
-    }
+    "idle": {"grid": (22, 8), "directions": "standard"},
+    "idle_gun": {"grid": (22, 8), "directions": "standard"},
+    "running": {"grid": (22, 8), "directions": "standard"},
+    "running_gun": {"grid": (22, 18), "directions": "standard"},
+    "mining": {"grid": (13, 8), "directions": "mining"},
+    "dead": {"grid": (2, 1), "directions": "dead"},
 }
 
 # Direction mappings for different sprite types
 DIRECTION_MAPPINGS = {
-    'standard': {
+    "standard": {
         0: 0,  # North
         1: 1,  # North-East
         2: 2,  # East
@@ -49,9 +30,9 @@ DIRECTION_MAPPINGS = {
         4: 4,  # South
         5: 5,  # South-West
         6: 6,  # West
-        7: 7  # North-West
+        7: 7,  # North-West
     },
-    'mining': {
+    "mining": {
         0: 0,  # North
         1: 0,  # NE -> North
         2: 3,  # East
@@ -59,9 +40,9 @@ DIRECTION_MAPPINGS = {
         4: 6,  # South
         5: 6,  # SW -> South
         6: 9,  # West
-        7: 9  # NW -> West
+        7: 9,  # NW -> West
     },
-    'dead': {
+    "dead": {
         0: 0,  # North/South
         1: 1,  # NE -> East/West
         2: 1,  # East/West
@@ -69,23 +50,23 @@ DIRECTION_MAPPINGS = {
         4: 0,  # South -> North/South
         5: 0,  # SW -> North/South
         6: 1,  # West -> East/West
-        7: 1  # NW -> East/West
-    }
+        7: 1,  # NW -> East/West
+    },
 }
 
 
 def get_sprite_config(state: str, has_gun: bool = False) -> Dict:
     """Get the sprite configuration for a given state."""
-    if state == 'idle':
-        return SPRITE_CONFIGS['idle_gun' if has_gun else 'idle']
-    elif state == 'running':
-        return SPRITE_CONFIGS['running_gun' if has_gun else 'running']
-    elif state == 'mining':
-        return SPRITE_CONFIGS['mining']
-    elif state == 'dead':
-        return SPRITE_CONFIGS['dead']
+    if state == "idle":
+        return SPRITE_CONFIGS["idle_gun" if has_gun else "idle"]
+    elif state == "running":
+        return SPRITE_CONFIGS["running_gun" if has_gun else "running"]
+    elif state == "mining":
+        return SPRITE_CONFIGS["mining"]
+    elif state == "dead":
+        return SPRITE_CONFIGS["dead"]
     else:
-        return SPRITE_CONFIGS['idle']
+        return SPRITE_CONFIGS["idle"]
 
 
 def apply_color_to_mask(mask: Image.Image, color: Tuple[int, int, int]) -> Image.Image:
@@ -99,14 +80,11 @@ def apply_color_to_mask(mask: Image.Image, color: Tuple[int, int, int]) -> Image
         Colored mask image
     """
     # Convert mask to RGBA if not already
-    if mask.mode != 'RGBA':
-        mask = mask.convert('RGBA')
-
-    # Create a colored overlay
-    colored = Image.new('RGBA', mask.size, tuple(color + [255]))
+    if mask.mode != "RGBA":
+        mask = mask.convert("RGBA")
 
     # Use the mask's alpha channel to blend
-    result = Image.new('RGBA', mask.size, (0, 0, 0, 0))
+    result = Image.new("RGBA", mask.size, (0, 0, 0, 0))
 
     # Apply color based on mask brightness
     pixels = mask.load()
@@ -122,7 +100,7 @@ def apply_color_to_mask(mask: Image.Image, color: Tuple[int, int, int]) -> Image
                     int(color[0] * brightness / 255),
                     int(color[1] * brightness / 255),
                     int(color[2] * brightness / 255),
-                    a
+                    a,
                 )
 
     return result
@@ -131,37 +109,37 @@ def apply_color_to_mask(mask: Image.Image, color: Tuple[int, int, int]) -> Image
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render character based on state and direction."""
     # Get character properties
-    direction = entity.get('direction', 0)
-    state = entity.get('state', 'idle')  # idle, running, mining, dead
-    level = entity.get('level', 1)  # armor level: 1, 2, or 3
-    has_gun = entity.get('has_gun', False)
-    player_color = entity.get('color', DEFAULT_PLAYER_COLOR)
-    animation_frame = entity.get('animation_frame', 0)
+    direction = entity.get("direction", 0)
+    state = entity.get("state", "idle")  # idle, running, mining, dead
+    level = entity.get("level", 1)  # armor level: 1, 2, or 3
+    has_gun = entity.get("has_gun", False)
+    player_color = entity.get("color", DEFAULT_PLAYER_COLOR)
+    animation_frame = entity.get("animation_frame", 0)
 
     # Get sprite configuration
     config = get_sprite_config(state, has_gun)
-    cols, rows = config['grid']
-    direction_mapping = DIRECTION_MAPPINGS[config['directions']]
+    cols, rows = config["grid"]
+    direction_mapping = DIRECTION_MAPPINGS[config["directions"]]
 
     # Determine sprite sheet names based on state
-    if state == 'idle':
+    if state == "idle":
         if has_gun:
             base_name = f"level{level}_idle_gun"
             mask_name = f"level{level}_idle_gun_mask"
         else:
             base_name = f"level{level}_idle"
             mask_name = f"level{level}_idle_mask"
-    elif state == 'running':
+    elif state == "running":
         if has_gun:
             base_name = f"level{level}_running_gun"
             mask_name = f"level{level}_running_gun_mask"
         else:
             base_name = f"level{level}_running"
             mask_name = f"level{level}_running_mask"
-    elif state == 'mining':
+    elif state == "mining":
         base_name = f"level{level}_mining_tool"
         mask_name = f"level{level}_mining_tool_mask"
-    elif state == 'dead':
+    elif state == "dead":
         base_name = f"level{level}_dead"
         mask_name = f"level{level}_dead_mask"
     else:
@@ -202,71 +180,75 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
         colored_mask = apply_color_to_mask(mask_sprite, player_color)
 
         # Composite the colored mask over the base sprite
-        result = Image.new('RGBA', base_sprite.size, (0, 0, 0, 0))
+        result = Image.new("RGBA", base_sprite.size, (0, 0, 0, 0))
         result.paste(base_sprite, (0, 0), base_sprite)
-        result.paste(colored_mask, (9, 0), colored_mask) # There is an offset with the mask
+        result.paste(
+            colored_mask, (9, 0), colored_mask
+        )  # There is an offset with the mask
 
         return result
 
     return base_sprite
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render character shadow."""
     # Get character properties
-    direction = entity.get('direction', 0)
-    state = entity.get('state', 'idle')
-    level = entity.get('level', 1)
-    has_gun = entity.get('has_gun', False)
-    animation_frame = entity.get('animation_frame', 0)
+    direction = entity.get("direction", 0)
+    state = entity.get("state", "idle")
+    level = entity.get("level", 1)
+    has_gun = entity.get("has_gun", False)
+    animation_frame = entity.get("animation_frame", 0)
 
     # Shadow sprites have different dimensions
     shadow_config = {
-        'idle': (22, 8),
-        'idle_gun': (22, 8),
-        'running': (10, 7),  # Running shadows are smaller
-        'running_gun': (10, 7),
-        'mining': (13, 8),
-        'dead': (2, 1)
+        "idle": (22, 8),
+        "idle_gun": (22, 8),
+        "running": (10, 7),  # Running shadows are smaller
+        "running_gun": (10, 7),
+        "mining": (13, 8),
+        "dead": (2, 1),
     }
 
     # Determine shadow sprite name
-    if state == 'idle':
+    if state == "idle":
         if has_gun:
             shadow_base = f"level{level}_idle_gun_shadow"
-            cols, rows = shadow_config['idle_gun']
+            cols, rows = shadow_config["idle_gun"]
         else:
             shadow_base = f"level{level}_idle_shadow"
-            cols, rows = shadow_config['idle']
-    elif state == 'running':
+            cols, rows = shadow_config["idle"]
+    elif state == "running":
         if has_gun:
             shadow_base = f"level{level}_running_gun_shadow"
-            cols, rows = shadow_config['running_gun']
+            cols, rows = shadow_config["running_gun"]
         else:
             shadow_base = f"level{level}_running_shadow"
-            cols, rows = shadow_config['running']
-    elif state == 'mining':
+            cols, rows = shadow_config["running"]
+    elif state == "mining":
         shadow_base = f"level{level}_mining_tool_shadow"
-        cols, rows = shadow_config['mining']
-    elif state == 'dead':
+        cols, rows = shadow_config["mining"]
+    elif state == "dead":
         shadow_base = f"level{level}_dead_shadow"
-        cols, rows = shadow_config['dead']
+        cols, rows = shadow_config["dead"]
     else:
         shadow_base = f"level{level}_idle_shadow"
-        cols, rows = shadow_config['idle']
+        cols, rows = shadow_config["idle"]
 
     # Handle armor addons
     if level > 1:
         shadow_base = shadow_base.replace(f"level{level}", f"level{level}addon")
 
     # Get appropriate direction mapping
-    if state == 'mining':
-        direction_mapping = DIRECTION_MAPPINGS['mining']
-    elif state == 'dead':
-        direction_mapping = DIRECTION_MAPPINGS['dead']
+    if state == "mining":
+        direction_mapping = DIRECTION_MAPPINGS["mining"]
+    elif state == "dead":
+        direction_mapping = DIRECTION_MAPPINGS["dead"]
     else:
         # Running shadows have fewer columns, so we need to map directions differently
-        if state == 'running':
+        if state == "running":
             # Map 8 directions to fewer columns for running shadows
             direction_mapping = {
                 0: 0,  # North
@@ -280,9 +262,11 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
             }
             # Adjust for actual available columns
             if cols < 8:
-                direction_mapping = {k: min(v, cols - 1) for k, v in direction_mapping.items()}
+                direction_mapping = {
+                    k: min(v, cols - 1) for k, v in direction_mapping.items()
+                }
         else:
-            direction_mapping = DIRECTION_MAPPINGS['standard']
+            direction_mapping = DIRECTION_MAPPINGS["standard"]
 
     # Calculate variant and direction
     variant = direction_mapping.get(direction, 0)
@@ -298,7 +282,7 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
     # Some shadows might be in separate files with -1, -2 suffixes
     if not shadow_sprite:
         # Try with -1 suffix
-        shadow_base_1 = shadow_base.replace('_shadow', '_shadow-1')
+        shadow_base_1 = shadow_base.replace("_shadow", "_shadow-1")
         shadow_filename = f"{shadow_base_1}_{variant}_{direction_row}.png"
         shadow_sprite = image_resolver(f"character/{shadow_filename}", False)
 
@@ -310,12 +294,12 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
 
 def get_key(entity: Dict, grid) -> str:
     """Get cache key for character."""
-    direction = entity.get('direction', 0)
-    state = entity.get('state', 'idle')
-    level = entity.get('level', 1)
-    has_gun = entity.get('has_gun', False)
-    animation_frame = entity.get('animation_frame', 0)
-    color = entity.get('color', DEFAULT_PLAYER_COLOR)
+    direction = entity.get("direction", 0)
+    state = entity.get("state", "idle")
+    level = entity.get("level", 1)
+    has_gun = entity.get("has_gun", False)
+    animation_frame = entity.get("animation_frame", 0)
+    color = entity.get("color", DEFAULT_PLAYER_COLOR)
 
     color_str = f"{color[0]}_{color[1]}_{color[2]}"
     return f"{direction}_{state}_{level}_{has_gun}_{animation_frame}_{color_str}"

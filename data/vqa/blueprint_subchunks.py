@@ -13,8 +13,13 @@ from data.vqa.blueprint_transforms import get_blueprint_bounds
 class SubchunkConfig:
     """Configuration for subchunk extraction."""
 
-    def __init__(self, chunk_size: Tuple[int, int], step_size: Tuple[int, int],
-                 min_entities: int = 3, padding: float = 1.0):
+    def __init__(
+        self,
+        chunk_size: Tuple[int, int],
+        step_size: Tuple[int, int],
+        min_entities: int = 3,
+        padding: float = 1.0,
+    ):
         """
         Args:
             chunk_size: (width, height) of each chunk
@@ -28,9 +33,13 @@ class SubchunkConfig:
         self.padding = padding
 
 
-def get_entities_in_region(entities: List[Dict[str, Any]],
-                           min_x: float, min_y: float,
-                           max_x: float, max_y: float) -> List[Dict[str, Any]]:
+def get_entities_in_region(
+    entities: List[Dict[str, Any]],
+    min_x: float,
+    min_y: float,
+    max_x: float,
+    max_y: float,
+) -> List[Dict[str, Any]]:
     """
     Get all entities within a rectangular region.
 
@@ -54,10 +63,14 @@ def get_entities_in_region(entities: List[Dict[str, Any]],
     return entities_in_region
 
 
-def extract_subchunk(blueprint: Dict[str, Any],
-                     min_x: float, min_y: float,
-                     max_x: float, max_y: float,
-                     normalize: bool = True) -> Dict[str, Any]:
+def extract_subchunk(
+    blueprint: Dict[str, Any],
+    min_x: float,
+    min_y: float,
+    max_x: float,
+    max_y: float,
+    normalize: bool = True,
+) -> Dict[str, Any]:
     """
     Extract a subchunk from a blueprint.
 
@@ -73,7 +86,9 @@ def extract_subchunk(blueprint: Dict[str, Any],
 
     # Get entities in the region
     original_entities = blueprint.get("entities", [])
-    chunk_entities = get_entities_in_region(original_entities, min_x, min_y, max_x, max_y)
+    chunk_entities = get_entities_in_region(
+        original_entities, min_x, min_y, max_x, max_y
+    )
 
     if normalize:
         # Normalize positions so chunk starts near (0, 0)
@@ -83,7 +98,7 @@ def extract_subchunk(blueprint: Dict[str, Any],
             pos = new_entity.get("position", {})
             new_entity["position"] = {
                 "x": pos.get("x", 0) - min_x,
-                "y": pos.get("y", 0) - min_y
+                "y": pos.get("y", 0) - min_y,
             }
             normalized_entities.append(new_entity)
         chunk_entities = normalized_entities
@@ -95,10 +110,15 @@ def extract_subchunk(blueprint: Dict[str, Any],
         chunk_blueprint["metadata"] = {}
 
     chunk_blueprint["metadata"]["subchunk"] = {
-        "original_bounds": {"min_x": min_x, "min_y": min_y, "max_x": max_x, "max_y": max_y},
+        "original_bounds": {
+            "min_x": min_x,
+            "min_y": min_y,
+            "max_x": max_x,
+            "max_y": max_y,
+        },
         "chunk_size": {"width": max_x - min_x, "height": max_y - min_y},
         "entity_count": len(chunk_entities),
-        "normalized": normalize
+        "normalized": normalize,
     }
 
     # Update label if present
@@ -108,8 +128,9 @@ def extract_subchunk(blueprint: Dict[str, Any],
     return chunk_blueprint
 
 
-def generate_subchunks(blueprint: Dict[str, Any],
-                       config: SubchunkConfig) -> List[Dict[str, Any]]:
+def generate_subchunks(
+    blueprint: Dict[str, Any], config: SubchunkConfig
+) -> List[Dict[str, Any]]:
     """
     Generate all subchunks from a blueprint using sliding window.
 
@@ -128,8 +149,6 @@ def generate_subchunks(blueprint: Dict[str, Any],
     min_x, min_y, max_x, max_y = get_blueprint_bounds(entities)
 
     # Calculate blueprint dimensions
-    blueprint_width = max_x - min_x
-    blueprint_height = max_y - min_y
 
     chunk_width, chunk_height = config.chunk_size
     step_x, step_y = config.step_size
@@ -151,9 +170,11 @@ def generate_subchunks(blueprint: Dict[str, Any],
 
             chunk = extract_subchunk(
                 blueprint,
-                chunk_min_x, chunk_min_y,
-                chunk_max_x, chunk_max_y,
-                normalize=True
+                chunk_min_x,
+                chunk_min_y,
+                chunk_max_x,
+                chunk_max_y,
+                normalize=True,
             )
 
             # Only keep chunks with enough entities
@@ -162,7 +183,7 @@ def generate_subchunks(blueprint: Dict[str, Any],
                 chunk["metadata"]["subchunk"]["id"] = chunk_id
                 chunk["metadata"]["subchunk"]["grid_position"] = {
                     "x": int((x - min_x) / step_x),
-                    "y": int((y - min_y) / step_y)
+                    "y": int((y - min_y) / step_y),
                 }
                 subchunks.append(chunk)
                 chunk_id += 1
@@ -173,10 +194,12 @@ def generate_subchunks(blueprint: Dict[str, Any],
     return subchunks
 
 
-def create_subchunk_augmented_dataset(base_dataset: Dataset,
-                                      chunk_sizes: List[Tuple[int, int]] = None,
-                                      step_sizes: List[Tuple[int, int]] = None,
-                                      min_entities: int = 3) -> MemoryDataset:
+def create_subchunk_augmented_dataset(
+    base_dataset: Dataset,
+    chunk_sizes: List[Tuple[int, int]] = None,
+    step_sizes: List[Tuple[int, int]] = None,
+    min_entities: int = 3,
+) -> MemoryDataset:
     """
     Create a subchunk-augmented dataset from a base dataset.
 
@@ -213,7 +236,7 @@ def create_subchunk_augmented_dataset(base_dataset: Dataset,
                 config = SubchunkConfig(
                     chunk_size=chunk_size,
                     step_size=step_size,
-                    min_entities=min_entities
+                    min_entities=min_entities,
                 )
 
                 subchunks = generate_subchunks(blueprint, config)
@@ -222,13 +245,15 @@ def create_subchunk_augmented_dataset(base_dataset: Dataset,
                     # Create new sample
                     new_metadata = copy.deepcopy(original_sample.metadata)
                     new_metadata["blueprint"] = chunk_blueprint
-                    new_metadata["original_filename"] = original_sample.metadata.get("filename", "")
+                    new_metadata["original_filename"] = original_sample.metadata.get(
+                        "filename", ""
+                    )
                     new_metadata["augmentation_type"] = "subchunk"
                     new_metadata["chunk_config"] = {
                         "chunk_size": chunk_size,
                         "step_size": step_size,
                         "chunk_index": i,
-                        "total_chunks": len(subchunks)
+                        "total_chunks": len(subchunks),
                     }
 
                     # Create unique ID
@@ -238,8 +263,10 @@ def create_subchunk_augmented_dataset(base_dataset: Dataset,
                         input=original_sample.input,
                         target=original_sample.target,
                         metadata=new_metadata,
-                        id=f"{original_sample.id}_{chunk_suffix}" if original_sample.id else None,
-                        files=original_sample.files
+                        id=f"{original_sample.id}_{chunk_suffix}"
+                        if original_sample.id
+                        else None,
+                        files=original_sample.files,
                     )
 
                     augmented_samples.append(new_sample)
@@ -247,9 +274,9 @@ def create_subchunk_augmented_dataset(base_dataset: Dataset,
     return MemoryDataset(samples=augmented_samples)
 
 
-def create_overlapping_subchunks(blueprint: Dict[str, Any],
-                                 chunk_size: Tuple[int, int],
-                                 overlap: float = 0.5) -> List[Dict[str, Any]]:
+def create_overlapping_subchunks(
+    blueprint: Dict[str, Any], chunk_size: Tuple[int, int], overlap: float = 0.5
+) -> List[Dict[str, Any]]:
     """
     Create overlapping subchunks with specified overlap ratio.
 
@@ -266,17 +293,15 @@ def create_overlapping_subchunks(blueprint: Dict[str, Any],
     step_y = int(chunk_height * (1 - overlap))
 
     config = SubchunkConfig(
-        chunk_size=chunk_size,
-        step_size=(step_x, step_y),
-        min_entities=3
+        chunk_size=chunk_size, step_size=(step_x, step_y), min_entities=3
     )
 
     return generate_subchunks(blueprint, config)
 
 
-def create_adaptive_subchunks(blueprint: Dict[str, Any],
-                              target_entities_per_chunk: int = 20,
-                              max_chunks: int = 10) -> List[Dict[str, Any]]:
+def create_adaptive_subchunks(
+    blueprint: Dict[str, Any], target_entities_per_chunk: int = 20, max_chunks: int = 10
+) -> List[Dict[str, Any]]:
     """
     Create subchunks with adaptive sizing based on entity density.
 
@@ -310,7 +335,7 @@ def create_adaptive_subchunks(blueprint: Dict[str, Any],
     config = SubchunkConfig(
         chunk_size=(chunk_width, chunk_height),
         step_size=(chunk_width, chunk_height),
-        min_entities=3
+        min_entities=3,
     )
 
     return generate_subchunks(blueprint, config)

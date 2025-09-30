@@ -1,10 +1,13 @@
 import json
 from pathlib import Path
 
-from fle.env.tools.admin.render.renderer import load_game_data, ImageResolver, parse_blueprint, Renderer
+from fle.env.tools.admin.render.renderer import ImageResolver, Renderer
+from fle.env.tools.admin.render.utils import parse_blueprint
 
 
-def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None, show_images: bool = True):
+def render_blueprints_from_directory(
+    blueprints_dir: str, output_dir: str = None, show_images: bool = True
+):
     """
     Render all JSON blueprint files from a directory
 
@@ -32,17 +35,16 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
 
     # Try to import the enhanced resolver
     try:
-        from basis_image_resolver import BasisImageResolver
         print("Using BasisImageResolver for .basis file support")
-        #base = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/rendering"
+        # base = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/rendering"
         # Load game data
-        #game_data, game_recipes = load_game_data(f"{base}/data.json")
+        # game_data, game_recipes = load_game_data(f"{base}/data.json")
         image_resolver = ImageResolver(".fle/sprites")
     except ImportError:
         print("BasisImageResolver not found, using simple PNG resolver")
         print("Place PNG files in 'images' directory")
         # Fallback to simple resolver
-        #game_data, game_recipes = load_game_data("data.json")
+        # game_data, game_recipes = load_game_data("data.json")
         image_resolver = ImageResolver(str(sprites_dir))
 
     # Find all JSON files
@@ -63,37 +65,40 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
             print(f"\nProcessing: {json_file.name}")
 
             # Load the JSON file
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 blueprint_data = json.load(f)
 
             # Handle different blueprint formats
-            if 'blueprint' in blueprint_data:
-                blueprint_content = blueprint_data['blueprint']
-            elif 'entities' in blueprint_data:
+            if "blueprint" in blueprint_data:
+                blueprint_content = blueprint_data["blueprint"]
+            elif "entities" in blueprint_data:
                 blueprint_content = blueprint_data
             else:
                 # Try to parse as blueprint string
                 if isinstance(blueprint_data, str):
                     parsed = parse_blueprint(blueprint_data)
-                    blueprint_content = parsed.get('blueprint', parsed)
+                    blueprint_content = parsed.get("blueprint", parsed)
                 else:
                     print(f"  Warning: Unknown blueprint format in {json_file.name}")
                     failed += 1
                     continue
 
             # Create blueprint object
-            blueprint = Renderer(sprites_dir, entities=blueprint_content["entities"],)
+            blueprint = Renderer(
+                sprites_dir,
+                entities=blueprint_content["entities"],
+            )
 
             # Calculate render size
             size = blueprint.get_size()
-            if size['width'] == 0 or size['height'] == 0:
-                print(f"  Warning: Blueprint has no entities to render")
+            if size["width"] == 0 or size["height"] == 0:
+                print("  Warning: Blueprint has no entities to render")
                 failed += 1
                 continue
 
             scaling = 32
-            width = min((size['width'] + 2) * scaling, 2048)  # Cap max width
-            height = min((size['height'] + 2) * scaling, 2048)  # Cap max height
+            width = min((size["width"] + 2) * scaling, 2048)  # Cap max width
+            height = min((size["height"] + 2) * scaling, 2048)  # Cap max height
 
             # Render the blueprint
             image = blueprint.render(width, height, image_resolver)
@@ -114,7 +119,7 @@ def render_blueprints_from_directory(blueprints_dir: str, output_dir: str = None
             print(f"  Error processing {json_file.name}: {str(e)}")
             failed += 1
 
-    print(f"\n=== Summary ===")
+    print("\n=== Summary ===")
     print(f"Successfully rendered: {successful}")
     print(f"Failed: {failed}")
     print(f"Output directory: {output_path}")
@@ -124,13 +129,12 @@ def main():
     """Main function to render all blueprints in the specified directory"""
     blueprints_dir = "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/fle/agents/data/blueprints_to_policies/blueprints/other"
 
-
     # Render all blueprints
     # Set show_images=False if you don't want them to pop up on screen
     render_blueprints_from_directory(
         blueprints_dir=blueprints_dir,
         output_dir=None,  # Will create 'rendered' subdirectory
-        show_images=True  # Set to False to just save without displaying
+        show_images=True,  # Set to False to just save without displaying
     )
 
 

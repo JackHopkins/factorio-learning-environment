@@ -1,17 +1,33 @@
+# ruff: noqa: F403
+
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, \
-    attach_bounding_box
+# Main tasks module - imports all task definitions from subdirectories
+from inspect_ai import eval
+
+# Import all tasks from the task modules
+from data.vqa.tasks import *
+from data.vqa.hook import *
+
+from data.vqa.common_solvers import (
+    validate_qa_answerability,
+    generate_direction_questions,
+    normalize_position_format,
+    attach_bounding_box,
+)
 from data.vqa.dataset import augmented_blueprint_dataset
-from data.vqa.tasks.blueprints.denoising_qa.solver import entity_removal_denoising, validate_denoising_qa
+from data.vqa.tasks.blueprints.denoising_qa.solver import (
+    entity_removal_denoising,
+    validate_denoising_qa,
+)
 
 
 @task
 def denoising_blueprint_task(qa_pairs_per_blueprint: int = 5) -> Task:
     """
     Task that creates denoising QA pairs from blueprints.
-    
+
     This task removes entities from blueprints and asks questions about what's missing.
     It's useful for training models to understand blueprint completeness and entity relationships.
 
@@ -22,7 +38,8 @@ def denoising_blueprint_task(qa_pairs_per_blueprint: int = 5) -> Task:
         dataset=augmented_blueprint_dataset(),
         solver=[
             system_message(
-                """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
+                """You are an expert at analyzing Factorio blueprints and identifying missing components."""
+            ),
             attach_bounding_box(),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
             generate_direction_questions(),
@@ -33,14 +50,14 @@ def denoising_blueprint_task(qa_pairs_per_blueprint: int = 5) -> Task:
     )
 
 
-@task 
+@task
 def denoising_validation_task(qa_pairs_per_blueprint: int = 5) -> Task:
     """
     Task that validates denoising QA pairs by testing if a model can answer them correctly.
-    
-    This task first generates denoising QA pairs, then validates them by having 
+
+    This task first generates denoising QA pairs, then validates them by having
     a model attempt to answer the questions.
-    
+
     Args:
         qa_pairs_per_blueprint: Number of QA pairs to generate per blueprint (default: 5)
     """
@@ -48,7 +65,8 @@ def denoising_validation_task(qa_pairs_per_blueprint: int = 5) -> Task:
         dataset=augmented_blueprint_dataset(),
         solver=[
             system_message(
-                """You are an expert at analyzing Factorio blueprints and identifying missing components."""),
+                """You are an expert at analyzing Factorio blueprints and identifying missing components."""
+            ),
             attach_bounding_box(),
             entity_removal_denoising(qa_pairs_per_blueprint=qa_pairs_per_blueprint),
             validate_denoising_qa(),
@@ -59,12 +77,6 @@ def denoising_validation_task(qa_pairs_per_blueprint: int = 5) -> Task:
         scorer=None,  # Custom scorer would evaluate validation accuracy
     )
 
-# Main tasks module - imports all task definitions from subdirectories
-from inspect_ai import eval
-
-# Import all tasks from the task modules
-from data.vqa.tasks import *
-from data.vqa.hook import *
 
 if __name__ == "__main__":
     model = ["anthropic/claude-sonnet-4-20250514"]
@@ -75,6 +87,5 @@ if __name__ == "__main__":
         model=model,
         limit=10,
         log_dir="../../logs",
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )
-

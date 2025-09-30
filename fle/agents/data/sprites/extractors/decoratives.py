@@ -1,15 +1,11 @@
-
 #!/usr/bin/env python3
 """
 Extended sprite extractor for Factorio decoratives
 """
 
-import json
 import os
-import shutil
 from pathlib import Path
 from PIL import Image
-from typing import Dict, List, Optional, Tuple, Any
 
 
 class DecorativeSpriteExtractor:
@@ -20,7 +16,7 @@ class DecorativeSpriteExtractor:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
 
-        self.output_dir_hr = Path(output_dir+"-hr")
+        self.output_dir_hr = Path(output_dir + "-hr")
         self.output_dir_hr.mkdir(exist_ok=True, parents=True)
 
     def extract_decorative_sprite(self, decorative_name: str):
@@ -31,21 +27,27 @@ class DecorativeSpriteExtractor:
             print(f"Decorative directory not found: {decorative_dir}")
             return
 
-
         # Process both normal and high-res versions
         for variant in range(99):
-            for prefix in ['', 'hr-']:
-                sprite_path = decorative_dir / f"{prefix}{decorative_name}-{str(variant).zfill(2)}.png"
+            for prefix in ["", "hr-"]:
+                sprite_path = (
+                    decorative_dir
+                    / f"{prefix}{decorative_name}-{str(variant).zfill(2)}.png"
+                )
 
                 if not sprite_path.exists():
                     continue
 
                 try:
-                    sprite = Image.open(sprite_path).convert('RGBA')
-                    if prefix == 'hr-':
-                        output_path = self.output_dir_hr / f"{decorative_name}_{variant}.png"
+                    sprite = Image.open(sprite_path).convert("RGBA")
+                    if prefix == "hr-":
+                        output_path = (
+                            self.output_dir_hr / f"{decorative_name}_{variant}.png"
+                        )
                     else:
-                        output_path = self.output_dir / f"{decorative_name}_{variant}.png"
+                        output_path = (
+                            self.output_dir / f"{decorative_name}_{variant}.png"
+                        )
 
                     sprite.save(output_path)
                     print(f"Saved: {output_path}")
@@ -64,4 +66,3 @@ class DecorativeSpriteExtractor:
                 self.extract_decorative_sprite(decorative_name)
 
         print("\n=== Extracting Tree Sprites ===")
-

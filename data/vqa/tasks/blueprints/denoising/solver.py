@@ -1,8 +1,5 @@
-import json
 import random
-from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
-from data.vqa.templates import Templates
 from fle.agents.data.screenshots_from_run import create_factorio_instance
 from fle.commons.models.rendered_image import RenderedImage
 
@@ -43,7 +40,9 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
 
             # Create modified blueprint with entity removed
             modified_blueprint = blueprint.copy()
-            modified_blueprint["entities"] = [e for i, e in enumerate(entities) if i != idx]
+            modified_blueprint["entities"] = [
+                e for i, e in enumerate(entities) if i != idx
+            ]
 
             # Store the modification details
             position = removed_entity.get("position", {})
@@ -52,11 +51,18 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
             # Generate a question about the missing entity using template
             question = f"Name the missing entity at: Position(x={position['x']}, y={position['y']})"
 
-            image: RenderedImage = instance.namespace._render(blueprint=modified_blueprint)
+            image: RenderedImage = instance.namespace._render(
+                blueprint=modified_blueprint
+            )
             from data.vqa.image_utils import save_rendered_image
+
             # Pass modification info to distinguish denoising variants
-            modification_info = f"denoising_removed_{removed_entity.get('name', 'unknown')}_{idx}"
-            image_id = save_rendered_image(image, modified_blueprint, state.metadata, modification_info)
+            modification_info = (
+                f"denoising_removed_{removed_entity.get('name', 'unknown')}_{idx}"
+            )
+            image_id = save_rendered_image(
+                image, modified_blueprint, state.metadata, modification_info
+            )
             id = image_id
 
             # Generate the answer
@@ -69,7 +75,7 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
                 "removed_entity": removed_entity,
                 "position": position,
                 "modified_blueprint": modified_blueprint,
-                "image": id
+                "image": id,
             }
 
             qa_pairs.append(qa_pair)

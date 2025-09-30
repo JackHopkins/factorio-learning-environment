@@ -27,13 +27,13 @@ def generate_blueprint_title_and_purpose() -> Solver:
 
         completion = response.output.completion
 
-        pattern = r'```json\s*\n(.*?)\n```'
+        pattern = r"```json\s*\n(.*?)\n```"
         match = re.search(pattern, completion, re.DOTALL)
         if match:
             json_content = match.group(1)
             data = json.loads(json_content)
-            title = data.get('title')
-            purpose = data.get('purpose')
+            title = data.get("title")
+            purpose = data.get("purpose")
 
             state.metadata["title"] = title
             state.metadata["purpose"] = purpose
@@ -77,7 +77,9 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
 
             # Create modified blueprint with entity removed
             modified_blueprint = blueprint.copy()
-            modified_blueprint["entities"] = [e for i, e in enumerate(entities) if i != idx]
+            modified_blueprint["entities"] = [
+                e for i, e in enumerate(entities) if i != idx
+            ]
 
             # Store the modification details
             position = removed_entity.get("position", {})
@@ -85,8 +87,7 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
 
             # Generate a question about the missing entity using template
             question_prompt = Templates.denoising_question(
-                position=position,
-                entity_name=entity_name
+                position=position, entity_name=entity_name
             )
 
             state.messages = [ChatMessageUser(content=question_prompt)]
@@ -102,7 +103,7 @@ def entity_removal_denoising(qa_pairs_per_blueprint: int = 5) -> Solver:
                 "answer": answer,
                 "removed_entity": removed_entity,
                 "position": position,
-                "modified_blueprint": modified_blueprint
+                "modified_blueprint": modified_blueprint,
             }
 
             qa_pairs.append(qa_pair)
@@ -134,8 +135,8 @@ def validate_denoising_qa() -> Solver:
         for qa_pair in qa_pairs:
             # Prepare validation prompt using template
             validation_prompt = Templates.denoising_validation(
-                modified_blueprint=qa_pair['modified_blueprint'],
-                question=qa_pair['question']
+                modified_blueprint=qa_pair["modified_blueprint"],
+                question=qa_pair["question"],
             )
 
             # Clear messages and ask the validation model
@@ -145,15 +146,17 @@ def validate_denoising_qa() -> Solver:
             predicted_answer = validation_response.output.completion.strip().lower()
 
             # Check if the answer is correct
-            correct_answer = qa_pair['answer'].lower()
-            is_correct = correct_answer in predicted_answer or predicted_answer in correct_answer
+            correct_answer = qa_pair["answer"].lower()
+            is_correct = (
+                correct_answer in predicted_answer or predicted_answer in correct_answer
+            )
 
             # Add validation result to QA pair
             validated_qa = qa_pair.copy()
             validated_qa["validation_result"] = {
                 "predicted": predicted_answer,
                 "correct": correct_answer,
-                "is_correct": is_correct
+                "is_correct": is_correct,
             }
 
             validated_pairs.append(validated_qa)
@@ -173,6 +176,7 @@ def generate_spatial_context_question() -> Solver:
     for each QA pair that was already generated.
     """
     instance = create_factorio_instance()
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         qa_pairs = state.metadata.get("qa_pairs", [])
         if not qa_pairs:
@@ -198,12 +202,14 @@ def generate_spatial_context_question() -> Solver:
                 ex, ey = pos.get("x", 0), pos.get("y", 0)
                 distance = abs(ex - rx) + abs(ey - ry)  # Manhattan distance
                 if distance <= 5:  # Within 5 tiles
-                    nearby_entities.append({
-                        "entity": entity,
-                        "distance": distance,
-                        "relative_x": ex - rx,
-                        "relative_y": ey - ry
-                    })
+                    nearby_entities.append(
+                        {
+                            "entity": entity,
+                            "distance": distance,
+                            "relative_x": ex - rx,
+                            "relative_y": ey - ry,
+                        }
+                    )
 
             # Sort by distance
             nearby_entities.sort(key=lambda x: x["distance"])
@@ -211,12 +217,17 @@ def generate_spatial_context_question() -> Solver:
             # Generate spatial context question using template
             context_prompt = Templates.spatial_context_question(
                 removed_entity=removed_entity,
-                removed_position={'x': rx, 'y': ry},
-                nearby_entities=[{
-                    'name': ne['entity'].get('name'),
-                    'relative_position': f"({ne['relative_x']}, {ne['relative_y']}) from missing entity"
-                } for ne in nearby_entities[:3]],
-                nearest_entity_name=nearby_entities[0]['entity'].get('name') if nearby_entities else 'nearest entity'
+                removed_position={"x": rx, "y": ry},
+                nearby_entities=[
+                    {
+                        "name": ne["entity"].get("name"),
+                        "relative_position": f"({ne['relative_x']}, {ne['relative_y']}) from missing entity",
+                    }
+                    for ne in nearby_entities[:3]
+                ],
+                nearest_entity_name=nearby_entities[0]["entity"].get("name")
+                if nearby_entities
+                else "nearest entity",
             )
 
             state.messages = [ChatMessageUser(content=context_prompt)]
@@ -230,7 +241,10 @@ def generate_spatial_context_question() -> Solver:
             blueprint = state.metadata.get("blueprint", {})
             image: RenderedImage = instance.namespace._render(blueprint=blueprint)
             from data.vqa.image_utils import save_rendered_image
-            image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_qa", "../../images")
+
+            image_id = save_rendered_image(
+                image, blueprint, state.metadata, "spatial_qa", "../../images"
+            )
             spatial_qa["image"] = image_id
 
             spatial_qa_pairs.append(spatial_qa)

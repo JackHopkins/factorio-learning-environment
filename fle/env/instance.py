@@ -214,9 +214,9 @@ class FactorioInstance:
         self.initial_score = 0
         try:
             self.first_namespace.score()
-            #print("Initial score:", self.initial_score)
-        except Exception as e:
-            #print(e)
+            # print("Initial score:", self.initial_score)
+        except Exception:
+            # print(e)
             # Invalidate cache if there is an error
             self.lua_script_manager = LuaScriptManager(self.rcon_client, False)
             self.script_dict = {
@@ -399,8 +399,7 @@ class FactorioInstance:
 
         # Submit the evaluation to the thread pool
         future = self._executor.submit(
-            self.namespaces[agent_idx].eval_with_timeout,
-            expr
+            self.namespaces[agent_idx].eval_with_timeout, expr
         )
 
         try:
@@ -410,7 +409,7 @@ class FactorioInstance:
             # Cancel the future if it's still running
             future.cancel()
             raise TimeoutError()
-        except Exception as e:
+        except Exception:
             # Re-raise any other exceptions
             raise
 
@@ -502,5 +501,5 @@ class FactorioInstance:
                     print(f"Error joining thread {thread.name}: {e}")
 
         # Shutdown the executor
-        if hasattr(self, '_executor'):
+        if hasattr(self, "_executor"):
             self._executor.shutdown(wait=True, cancel_futures=True)

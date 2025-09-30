@@ -21,7 +21,7 @@ class Reward(Tool):
         if isinstance(response, str):
             raise Exception("Could not get player score", response)
 
-        if not 'player' in response:
+        if "player" not in response:
             response["player"] = 0
 
         return response["player"], goal

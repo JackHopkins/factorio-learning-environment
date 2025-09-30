@@ -29,7 +29,6 @@ class Controller:
             game_state.agent_index + 1
         )  # +1 because Factorio is 1-indexed
 
-
     def clean_response(self, response):
         def is_lua_list(d):
             """Check if dictionary represents a Lua-style list (keys are consecutive numbers from 1)"""
@@ -89,7 +88,7 @@ class Controller:
     def parse_lua_dict(self, d):
         if isinstance(d, (int, str, float)):
             return d
-        
+
         # Handle lists that were already converted from integer-keyed dicts
         if isinstance(d, list):
             return [self.parse_lua_dict(item) for item in d]
@@ -193,7 +192,7 @@ class Controller:
                 return parts[1][:-2], -1
             except IndexError:
                 return e.args[0], -1
-            #return lua_response, -1
+            # return lua_response, -1
         except TypeError:
             return lua_response, -1
         except Exception:

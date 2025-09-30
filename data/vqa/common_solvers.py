@@ -2,7 +2,6 @@
 
 import json
 import re
-import random
 from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 
@@ -16,48 +15,56 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @solver
 def validate_qa_answerability() -> Solver:
     """
     Followup solver that validates if generated questions are answerable and unambiguous.
-    
+
     This solver checks each generated Q&A pair to ensure:
     1. The question is clear and specific
     2. The answer directly addresses the question
     3. There's enough context to answer the question
     4. The question avoids ambiguity
-    
+
     It will regenerate questions that fail validation.
     """
-    
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         # Get all question fields from metadata
         question_fields = [
-            "basic_questions", "position_questions", "counting_questions",
-            "spatial_questions", "state_questions", "inventory_questions",
-            "qa_pairs", "next_action_questions", "construction_order_questions",
-            "throughput_questions", "bottleneck_questions", "optimization_questions",
-            "direction_questions"
+            "basic_questions",
+            "position_questions",
+            "counting_questions",
+            "spatial_questions",
+            "state_questions",
+            "inventory_questions",
+            "qa_pairs",
+            "next_action_questions",
+            "construction_order_questions",
+            "throughput_questions",
+            "bottleneck_questions",
+            "optimization_questions",
+            "direction_questions",
         ]
-        blueprint = state.metadata['blueprint']
-        
+
         for field in question_fields:
             if field not in state.metadata:
                 continue
-                
+
             questions = state.metadata[field]
             if not isinstance(questions, list):
                 continue
-                
+
             validated_questions = []
-            
+
             for qa in questions:
                 question = qa.get("question", "")
                 answer = qa.get("answer", "")
-                
+
                 if not question or not answer:
                     continue
-                
+
                 # Create validation prompt
                 validation_prompt = f"""You are validating a Visual Question Answering (VQA) pair for a Factorio blueprint analysis task.
                 
@@ -99,120 +106,125 @@ Return your response in this exact JSON format:
                 # Validate the Q&A pair
                 state.messages = [ChatMessageUser(content=validation_prompt)]
                 response = await generate(state)
-                
+
                 try:
                     completion = response.output.completion
-                    json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
-                    
+                    json_match = re.search(
+                        r"```json\s*\n(.*?)\n```", completion, re.DOTALL
+                    )
+
                     if json_match:
                         validation_result = json.loads(json_match.group(1))
-                        
+
                         if validation_result.get("is_valid", False):
                             # Keep original if valid
                             validated_questions.append(qa)
                         else:
                             # Use revised version
                             revised_qa = qa.copy()
-                            revised_qa["question"] = validation_result.get("revised_question", question)
-                            revised_qa["answer"] = validation_result.get("revised_answer", answer)
+                            revised_qa["question"] = validation_result.get(
+                                "revised_question", question
+                            )
+                            revised_qa["answer"] = validation_result.get(
+                                "revised_answer", answer
+                            )
                             revised_qa["validation_notes"] = {
                                 "original_question": question,
                                 "original_answer": answer,
                                 "issues": validation_result.get("issues", []),
-                                "explanation": validation_result.get("explanation", "")
+                                "explanation": validation_result.get("explanation", ""),
                             }
                             validated_questions.append(revised_qa)
                     else:
                         # If parsing fails, keep original
                         validated_questions.append(qa)
-                        
+
                 except (json.JSONDecodeError, AttributeError):
                     # If validation fails, keep original but mark
                     qa["validation_failed"] = True
                     validated_questions.append(qa)
-            
+
             # Update metadata with validated questions
             state.metadata[field] = validated_questions
-        
+
         return state
-    
+
     return solve
 
 
-@solver  
+@solver
 def convert_directions_to_compass() -> Solver:
     """
     Solver that converts numeric directions to compass directions.
-    
+
     Converts Factorio's numeric direction system:
     - 0 → North/Up
-    - 2 → East/Right  
+    - 2 → East/Right
     - 4 → South/Down
     - 6 → West/Left
     """
-    
+
     # Direction mapping
-    direction_map = {
-        0: "north",
-        2: "east", 
-        4: "south",
-        6: "west"
-    }
-    
+    direction_map = {0: "north", 2: "east", 4: "south", 6: "west"}
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         # Convert directions in all question types
         question_fields = [
-            "basic_questions", "position_questions", "counting_questions",
-            "spatial_questions", "qa_pairs"
+            "basic_questions",
+            "position_questions",
+            "counting_questions",
+            "spatial_questions",
+            "qa_pairs",
         ]
-        
+
         for field in question_fields:
             if field not in state.metadata:
                 continue
-                
+
             questions = state.metadata[field]
             if not isinstance(questions, list):
                 continue
-                
+
             for qa in questions:
                 # Update question text
                 question = qa.get("question", "")
                 answer = qa.get("answer", "")
-                
+
                 # Replace direction references
                 for num_dir, compass_dir in direction_map.items():
                     # Replace in questions
                     question = re.sub(
-                        rf'\b(direction|facing)\s*{num_dir}\b',
-                        f'facing {compass_dir}',
+                        rf"\b(direction|facing)\s*{num_dir}\b",
+                        f"facing {compass_dir}",
                         question,
-                        flags=re.IGNORECASE
+                        flags=re.IGNORECASE,
                     )
                     question = re.sub(
-                        rf'\bdirection\s*=\s*{num_dir}\b',
-                        f'facing {compass_dir}',
+                        rf"\bdirection\s*=\s*{num_dir}\b",
+                        f"facing {compass_dir}",
                         question,
-                        flags=re.IGNORECASE
+                        flags=re.IGNORECASE,
                     )
-                    
+
                     # Replace in answers
-                    answer = re.sub(
-                        rf'\b{num_dir}\b',
-                        compass_dir,
-                        answer
-                    )
-                
+                    answer = re.sub(rf"\b{num_dir}\b", compass_dir, answer)
+
                 qa["question"] = question
                 qa["answer"] = answer
-                
+
                 # Update entity properties if present
                 if "entity_properties" in qa and "direction" in qa["entity_properties"]:
                     direction_value = qa["entity_properties"]["direction"]
-                    if isinstance(direction_value, (int, float)) and direction_value in direction_map:
-                        qa["entity_properties"]["direction_compass"] = direction_map[direction_value]
-        
+                    if (
+                        isinstance(direction_value, (int, float))
+                        and direction_value in direction_map
+                    ):
+                        qa["entity_properties"]["direction_compass"] = direction_map[
+                            direction_value
+                        ]
+
         return state
-    
+
     return solve
 
 
@@ -220,39 +232,47 @@ def convert_directions_to_compass() -> Solver:
 def normalize_position_format() -> Solver:
     """
     Solver that converts position references from (x, y) format to Position(x={x}, y={y}) format.
-    
+
     This solver ensures consistent position formatting across all QA pairs.
     """
-    
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         # Convert positions in all question types
         question_fields = [
-            "basic_questions", "position_questions", "counting_questions",
-            "spatial_questions", "state_questions", "inventory_questions",
-            "qa_pairs", "next_action_questions", "construction_order_questions",
-            "throughput_questions", "bottleneck_questions", "optimization_questions",
-            "direction_questions"
+            "basic_questions",
+            "position_questions",
+            "counting_questions",
+            "spatial_questions",
+            "state_questions",
+            "inventory_questions",
+            "qa_pairs",
+            "next_action_questions",
+            "construction_order_questions",
+            "throughput_questions",
+            "bottleneck_questions",
+            "optimization_questions",
+            "direction_questions",
         ]
-        
+
         for field in question_fields:
             if field not in state.metadata:
                 continue
-                
+
             questions = state.metadata[field]
             if not isinstance(questions, list):
                 continue
-                
+
             normalized_questions = []
             for qa in questions:
                 # Normalize position format in question and answer
                 normalized_qa = normalize_position_references_in_qa(qa)
                 normalized_questions.append(normalized_qa)
-            
+
             # Update metadata with normalized questions
             state.metadata[field] = normalized_questions
-        
+
         return state
-    
+
     return solve
 
 
@@ -260,37 +280,39 @@ def normalize_position_format() -> Solver:
 def render_blueprint_image() -> Solver:
     """
     Solver that renders and saves the blueprint image once per task.
-    
+
     This solver ensures that only one image is generated per blueprint,
     preventing duplicate images when multiple solvers run on the same blueprint.
-    
+
     Should be run early in the solver chain.
     """
     instance = create_factorio_instance()
-    
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         # Check if image is already rendered
         if "image" in state.metadata:
             return state
-        
+
         blueprint = state.metadata.get("blueprint", {})
         if not blueprint:
             return state
-        
+
         # Render the image (use a copy to avoid modifying the original blueprint)
         import copy
-        blueprint_copy = copy.deepcopy(blueprint) 
+
+        blueprint_copy = copy.deepcopy(blueprint)
         image: RenderedImage = instance.namespace._render(blueprint=blueprint_copy)
-        
+
         # Save the image using the new folder structure
         from data.vqa.image_utils import save_rendered_image
+
         image_id = save_rendered_image(image, blueprint, state.metadata)
-        
+
         # Store the image ID in metadata for other solvers to use
         state.metadata["image"] = image_id
-        
+
         return state
-    
+
     return solve
 
 
@@ -298,28 +320,28 @@ def render_blueprint_image() -> Solver:
 def attach_bounding_box() -> Solver:
     """
     Solver that calculates and attaches the blueprint bounding box to metadata.
-    
+
     This ensures the bounding box information is available for grounding positions
     in questions and answers, and gets included in the JSONL output.
     """
-    
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
-        
+
         if blueprint:
             # Calculate bounding box
             bounding_box = calculate_blueprint_bounding_box(blueprint)
-            
+
             # Attach to metadata
             state.metadata["bounding_box"] = bounding_box
-            
+
             # Also calculate and attach center point for convenience
             center_x = (bounding_box["min_x"] + bounding_box["max_x"]) / 2
             center_y = (bounding_box["min_y"] + bounding_box["max_y"]) / 2
             state.metadata["blueprint_center"] = {"x": center_x, "y": center_y}
-        
+
         return state
-    
+
     return solve
 
 
@@ -327,42 +349,46 @@ def attach_bounding_box() -> Solver:
 def generate_direction_questions(questions_per_blueprint: int = 2) -> Solver:
     """
     Solver that generates questions about entity orientations using Direction enums.
-    
+
     This solver analyzes blueprint entities that have directional properties
     and generates questions about their orientations using the Direction enum.
-    
+
     Args:
         questions_per_blueprint: Number of direction questions to generate per blueprint
     """
-    
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
         entities = blueprint.get("entities", [])
         direction_system = detect_direction_system(blueprint)
-        
+
         # Filter entities that have direction properties
         directional_entities = []
         for entity in entities:
             if "direction" in entity and entity.get("direction") is not None:
                 directional_entities.append(entity)
-        
+
         if not directional_entities:
             # No directional entities, skip generation
             state.metadata["direction_questions"] = []
             return state
-        
+
         # Create prompt for generating direction questions
         entity_info = []
         for entity in directional_entities[:10]:  # Limit to first 10 for prompt length
             pos = entity.get("position", {})
             direction_val = entity.get("direction", 0)
             direction_enum = Direction.from_value(direction_val, direction_system)
-            entity_info.append({
-                "name": entity.get("name", "unknown"),
-                "position": f"Position(x={pos.get('x', 0)}, y={pos.get('y', 0)})",
-                "direction": direction_enum.name if direction_enum else f"Direction({direction_val})"
-            })
-        
+            entity_info.append(
+                {
+                    "name": entity.get("name", "unknown"),
+                    "position": f"Position(x={pos.get('x', 0)}, y={pos.get('y', 0)})",
+                    "direction": direction_enum.name
+                    if direction_enum
+                    else f"Direction({direction_val})",
+                }
+            )
+
         # Generate direction-focused questions
         direction_prompt = f"""You are analyzing a Factorio blueprint and need to generate {questions_per_blueprint} questions about entity orientations.
 
@@ -399,14 +425,14 @@ Return your response as a JSON array of question-answer pairs:
         # Generate the questions
         state.messages = [ChatMessageUser(content=direction_prompt)]
         response = await generate(state)
-        
+
         try:
             completion = response.output.completion
-            json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
-            
+            json_match = re.search(r"```json\s*\n(.*?)\n```", completion, re.DOTALL)
+
             if json_match:
                 direction_questions = json.loads(json_match.group(1))
-                
+
                 # Validate and clean up the questions
                 validated_questions = []
                 for qa in direction_questions[:questions_per_blueprint]:
@@ -418,16 +444,16 @@ Return your response as a JSON array of question-answer pairs:
                             direction = Direction.from_value(answer, direction_system)
                             if direction:
                                 qa["answer"] = f"Direction.{direction.name}"
-                        
+
                         validated_questions.append(qa)
-                
+
                 state.metadata["direction_questions"] = validated_questions
             else:
                 state.metadata["direction_questions"] = []
-                
+
         except (json.JSONDecodeError, AttributeError):
             state.metadata["direction_questions"] = []
-        
+
         return state
-    
+
     return solve

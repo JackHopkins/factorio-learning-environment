@@ -47,10 +47,12 @@ def _construct_group(
             if (
                 hasattr(entity, "inventory") and entity.inventory
             ):  # Check if inventory exists and is not empty
-
-                if 'left' in entity.inventory.keys() or 'right' in entity.inventory.keys():
-                    for inv in ['left', 'right']:
-                        if not inv in entity.inventory:
+                if (
+                    "left" in entity.inventory.keys()
+                    or "right" in entity.inventory.keys()
+                ):
+                    for inv in ["left", "right"]:
+                        if inv not in entity.inventory:
                             continue
                         entity_inventory = entity.inventory[inv]
                         for item, value in entity_inventory.items():
@@ -163,25 +165,29 @@ def consolidate_underground_belts(belt_groups):
 
                     # Create new underground belt representing the whole section
                     try:
-                        if 'left' in entrance.inventory:
-                            if 'left' in exit.inventory:
-                                left_inventory = entrance.inventory['left'] + exit.inventory['left']
+                        if "left" in entrance.inventory:
+                            if "left" in exit.inventory:
+                                left_inventory = (
+                                    entrance.inventory["left"] + exit.inventory["left"]
+                                )
                             else:
-                                left_inventory = entrance.inventory['left']
+                                left_inventory = entrance.inventory["left"]
                         else:
-                            if 'left' in exit.inventory:
-                                left_inventory = exit.inventory['left']
+                            if "left" in exit.inventory:
+                                left_inventory = exit.inventory["left"]
                             else:
                                 left_inventory = Inventory()
 
-                        if 'right' in entrance.inventory:
-                            if 'right' in exit.inventory:
-                                right_inventory = exit.inventory['right'] + exit.inventory['right']
+                        if "right" in entrance.inventory:
+                            if "right" in exit.inventory:
+                                right_inventory = (
+                                    exit.inventory["right"] + exit.inventory["right"]
+                                )
                             else:
-                                right_inventory = exit.inventory['right']
+                                right_inventory = exit.inventory["right"]
                         else:
-                            if 'right' in exit.inventory:
-                                right_inventory = exit.inventory['right']
+                            if "right" in exit.inventory:
+                                right_inventory = exit.inventory["right"]
                             else:
                                 right_inventory = Inventory()
 
@@ -203,9 +209,9 @@ def consolidate_underground_belts(belt_groups):
                             prototype=entrance.prototype,
                             health=min(entrance.health, exit.health),
                             inventory={
-                                'left': left_inventory,
-                                'right': right_inventory
-                            }
+                                "left": left_inventory,
+                                "right": right_inventory,
+                            },
                             # inventory=Inventory(
                             #     **{
                             #         **entrance.inventory.__dict__,
@@ -214,7 +220,7 @@ def consolidate_underground_belts(belt_groups):
                             # ),
                         )
                         new_belts.append(consolidated)
-                    except Exception as e:
+                    except Exception:
                         pass
 
                     # Mark both entrance and exit for removal

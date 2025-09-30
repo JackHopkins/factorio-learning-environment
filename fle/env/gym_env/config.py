@@ -28,7 +28,6 @@ class GymEvalConfig:
     agent_cards: Optional[List[AgentCard]] = None
     env_id: Optional[str] = None  # Gym environment ID for registry-based creation
 
-
     def __post_init__(self):
         if self.task is None and hasattr(self.agents[0], "task"):
             self.task = self.agents[0].task

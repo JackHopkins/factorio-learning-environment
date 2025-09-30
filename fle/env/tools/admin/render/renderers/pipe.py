@@ -55,7 +55,9 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     return image_resolver(image_name)
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Pipes have no shadows"""
     return None
 
@@ -63,7 +65,7 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
 def get_key(entity: Dict, grid) -> str:
     """Get cache key based on connections"""
     around = get_around(entity, grid)
-    return '_'.join(map(str, around))
+    return "_".join(map(str, around))
 
 
 def get_around(entity: Dict, grid) -> list:
@@ -71,20 +73,17 @@ def get_around(entity: Dict, grid) -> list:
     # Simplified version - would need full connection logic
     return [
         # North
-        is_pipe(grid.get_relative(0, -1), 4) or
-        is_entity_in_direction(grid.get_relative(0, -1), "offshore-pump", 0),
-
+        is_pipe(grid.get_relative(0, -1), 4)
+        or is_entity_in_direction(grid.get_relative(0, -1), "offshore-pump", 0),
         # East
-        is_pipe(grid.get_relative(1, 0), 6) or
-        is_entity_in_direction(grid.get_relative(1, 0), "offshore-pump", 2),
-
+        is_pipe(grid.get_relative(1, 0), 6)
+        or is_entity_in_direction(grid.get_relative(1, 0), "offshore-pump", 2),
         # South
-        is_pipe(grid.get_relative(0, 1), 0) or
-        is_entity_in_direction(grid.get_relative(0, 1), "offshore-pump", 4),
-
+        is_pipe(grid.get_relative(0, 1), 0)
+        or is_entity_in_direction(grid.get_relative(0, 1), "offshore-pump", 4),
         # West
-        is_pipe(grid.get_relative(-1, 0), 2) or
-        is_entity_in_direction(grid.get_relative(-1, 0), "offshore-pump", 6)
+        is_pipe(grid.get_relative(-1, 0), 2)
+        or is_entity_in_direction(grid.get_relative(-1, 0), "offshore-pump", 6),
     ]
 
 
@@ -93,10 +92,10 @@ def is_pipe(entity: Optional[Dict], direction: int) -> int:
     if entity is None:
         return 0
 
-    if entity['name'] == 'pipe':
+    if entity["name"] == "pipe":
         return 1
-    elif entity['name'] == 'pipe-to-ground':
-        if entity.get('direction', 0) == direction:
+    elif entity["name"] == "pipe-to-ground":
+        if entity.get("direction", 0) == direction:
             return 1
 
     return 0
@@ -107,7 +106,7 @@ def is_entity_in_direction(entity: Optional[Dict], target: str, direction: int) 
     if entity is None:
         return 0
 
-    if entity['name'] == target and entity.get('direction', 0) == direction:
+    if entity["name"] == target and entity.get("direction", 0) == direction:
         return 1
 
     return 0

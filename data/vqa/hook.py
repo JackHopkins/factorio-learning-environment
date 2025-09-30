@@ -5,12 +5,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from inspect_ai.hooks import Hooks, SampleEnd, TaskStart, hooks, TaskEnd
+from inspect_ai.hooks import Hooks, hooks, TaskEnd
 
-from inspect_ai.log import EvalConfig, EvalLog, EvalSample
+from inspect_ai.log import EvalLog, EvalSample
 from dotenv import load_dotenv
+
 load_dotenv()
 STEP = 32
+
 
 class VQAPairsSerializer:
     """Serializer for VQA pairs that collects and saves QA data to JSONL files."""
@@ -45,39 +47,37 @@ class VQAPairsSerializer:
             ("position_questions", self._normalize_position_qa),
             ("counting_questions", self._normalize_counting_qa),
             ("direction_questions", self._normalize_direction_qa),
-
             # Spatial reasoning tasks
             ("spatial_questions", self._normalize_spatial_qa),
-
             # Spatial reasoning tasks
             ("contrastive_alignment", self._contrastive_alignment),
-
             # State prediction tasks
             ("state_questions", self._normalize_state_qa),
             ("inventory_questions", self._normalize_inventory_qa),
-
             # Denoising tasks
             ("qa_pairs", self._normalize_denoising_qa),
-
             # Action prediction tasks
             ("next_action_questions", self._normalize_action_qa),
             ("construction_order_questions", self._normalize_construction_qa),
-
             # Productivity planning tasks
             ("throughput_questions", self._normalize_throughput_qa),
             ("bottleneck_questions", self._normalize_bottleneck_qa),
             ("optimization_questions", self._normalize_optimization_qa),
-
             # Terrain tasks
             ("nearest_questions", self._normalize_nearest_qa),
             ("nearest_buildable_questions", self._normalize_nearest_buildable_qa),
-            ("nearest_buildable_resource_questions", self._normalize_nearest_buildable_resource_qa),
+            (
+                "nearest_buildable_resource_questions",
+                self._normalize_nearest_buildable_resource_qa,
+            ),
             ("tile_count_questions", self._normalize_tile_count_qa),
-            ("character_localisation_question", self._normalize_character_localisation_qa),
-
+            (
+                "character_localisation_question",
+                self._normalize_character_localisation_qa,
+            ),
             # Entity count tasks
             ("nearest_entity_questions", self._normalize_nearest_entity_qa),
-            ("entity_status_questions", self._normalize_entity_status_qa)
+            ("entity_status_questions", self._normalize_entity_status_qa),
         ]
 
         for field_name, normalizer in task_qa_fields:
@@ -86,8 +86,8 @@ class VQAPairsSerializer:
                 if isinstance(field_data, list):
                     for qa in field_data:
                         normalized = normalizer(qa, metadata)
-                        if 'image_id' not in normalized.keys():
-                            normalized['image_id'] = metadata.get('image', '')
+                        if "image_id" not in normalized.keys():
+                            normalized["image_id"] = metadata.get("image", "")
                         if normalized:
                             qa_pairs.append(normalized)
 
@@ -115,7 +115,7 @@ class VQAPairsSerializer:
 
         if "original_filename" in metadata:
             normalized["original_filename"] = metadata["original_filename"]
-            
+
         # Add character position if present (for terrain/factory tasks)
         if "character_position" in metadata:
             normalized["character_position"] = metadata["character_position"]
@@ -220,7 +220,6 @@ class VQAPairsSerializer:
         return normalized
 
     def _contrastive_alignment(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
-
         normalized = {
             "task_type": "contrastive_alignment",
             "question": qa.get("question", ""),
@@ -296,7 +295,9 @@ class VQAPairsSerializer:
             "answer": qa.get("answer", ""),
             "image_id": metadata.get("image", ""),
             "blueprint_file": metadata.get("filename", ""),
-            "previous_actions": [a.get("action", "") for a in qa.get("previous_actions", [])],
+            "previous_actions": [
+                a.get("action", "") for a in qa.get("previous_actions", [])
+            ],
             "split_point": qa.get("split_point", 0),
         }
 
@@ -376,7 +377,10 @@ class VQAPairsSerializer:
             "entity_properties": qa.get("entity_properties", ""),
             "nearest": qa.get("nearest", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
@@ -395,7 +399,10 @@ class VQAPairsSerializer:
             "entity_properties": qa.get("entity_properties", ""),
             "nearest": qa.get("nearest", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
@@ -414,16 +421,21 @@ class VQAPairsSerializer:
             "entity_properties": qa.get("entity_properties", ""),
             "nearest": qa.get("nearest", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
-        if "options" in qa['metadata']:
-            normalized["options"] = qa['metadata']["options"]
+        if "options" in qa["metadata"]:
+            normalized["options"] = qa["metadata"]["options"]
 
         return normalized
 
-    def _normalize_nearest_buildable_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+    def _normalize_nearest_buildable_qa(
+        self, qa: Dict, metadata: Dict
+    ) -> Dict[str, Any]:
         """Normalize nearest buildable position QA pairs."""
         normalized = {
             "task_type": "nearest_buildable",
@@ -435,7 +447,10 @@ class VQAPairsSerializer:
             "center_position": qa.get("center_position", {}),
             "buildable_area": qa.get("buildable_area", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
@@ -445,7 +460,9 @@ class VQAPairsSerializer:
 
         return normalized
 
-    def _normalize_nearest_buildable_resource_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+    def _normalize_nearest_buildable_resource_qa(
+        self, qa: Dict, metadata: Dict
+    ) -> Dict[str, Any]:
         """Normalize nearest buildable resource-dependent QA pairs."""
         normalized = {
             "task_type": "nearest_buildable_resource",
@@ -457,7 +474,10 @@ class VQAPairsSerializer:
             "building_box": qa.get("building_box", {}),
             "buildable_position": qa.get("buildable_position", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
@@ -477,7 +497,10 @@ class VQAPairsSerializer:
             "entity_properties": qa.get("entity_properties", ""),
             "count": qa.get("count", 0),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         # Add multiple choice options if present
@@ -486,7 +509,9 @@ class VQAPairsSerializer:
 
         return normalized
 
-    def _normalize_character_localisation_qa(self, qa: Dict, metadata: Dict) -> Dict[str, Any]:
+    def _normalize_character_localisation_qa(
+        self, qa: Dict, metadata: Dict
+    ) -> Dict[str, Any]:
         """Normalize character localisation QA pairs."""
         normalized = {
             "task_type": "character_localisation",
@@ -496,14 +521,20 @@ class VQAPairsSerializer:
             "position": qa.get("position", {}),
             "entity_properties": qa.get("entity_properties", {}),
             "question_type": qa.get("question_type", "open_ended"),
-            "terrain_position": {"x": metadata.get("x", 0)*STEP, "y": metadata.get("y", 0)*STEP},
+            "terrain_position": {
+                "x": metadata.get("x", 0) * STEP,
+                "y": metadata.get("y", 0) * STEP,
+            },
         }
 
         return normalized
 
-
-    def save_qa_pairs(self, qa_pairs: List[Dict[str, Any]], task_name: str,
-                      timestamp: Optional[str] = None) -> Path:
+    def save_qa_pairs(
+        self,
+        qa_pairs: List[Dict[str, Any]],
+        task_name: str,
+        timestamp: Optional[str] = None,
+    ) -> Path:
         """
         Save QA pairs to a JSONL file.
 
@@ -518,18 +549,18 @@ class VQAPairsSerializer:
         if timestamp is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        filename = f"{task_name}.jsonl"#_{timestamp}.jsonl"
+        filename = f"{task_name}.jsonl"  # _{timestamp}.jsonl"
         filepath = self.output_dir / filename
 
         if qa_pairs:
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 for qa_pair in qa_pairs:
                     # Add metadata
                     qa_pair["timestamp"] = timestamp
                     qa_pair["task_name"] = task_name
 
                     # Write as JSONL
-                    f.write(json.dumps(qa_pair) + '\n')
+                    f.write(json.dumps(qa_pair) + "\n")
 
         return filepath
 
@@ -555,7 +586,9 @@ class VQAPairsSerializer:
 
         return self.save_qa_pairs(all_qa_pairs, task_name, timestamp)
 
-    def merge_jsonl_files(self, pattern: str = "*.jsonl", output_file: str = "merged_qa_pairs.jsonl") -> Path:
+    def merge_jsonl_files(
+        self, pattern: str = "*.jsonl", output_file: str = "merged_qa_pairs.jsonl"
+    ) -> Path:
         """
         Merge multiple JSONL files into a single file.
 
@@ -568,10 +601,10 @@ class VQAPairsSerializer:
         """
         merged_path = self.output_dir / output_file
 
-        with open(merged_path, 'w') as outfile:
+        with open(merged_path, "w") as outfile:
             for jsonl_file in self.output_dir.glob(pattern):
                 if jsonl_file.name != output_file:  # Don't read the output file
-                    with open(jsonl_file, 'r') as infile:
+                    with open(jsonl_file, "r") as infile:
                         for line in infile:
                             outfile.write(line)
 
@@ -588,7 +621,7 @@ class VQAPairsSerializer:
             List of QA pair dictionaries
         """
         qa_pairs = []
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             for line in f:
                 qa_pairs.append(json.loads(line))
         return qa_pairs
@@ -622,22 +655,28 @@ class VQAPairsSerializer:
             "task_types": task_types,
             "question_types": question_types,
             "unique_images": len(set(qa.get("image_id", "") for qa in qa_pairs)),
-            "unique_blueprints": len(set(qa.get("blueprint_file", "") for qa in qa_pairs if qa.get("blueprint_file"))),
-            "terrain_positions": len(set(
-                f"{qa.get('terrain_position', {}).get('x', 0)*STEP},{qa.get('terrain_position', {}).get('y', 0)*STEP}"
-                for qa in qa_pairs if qa.get("terrain_position")
-            )),
+            "unique_blueprints": len(
+                set(
+                    qa.get("blueprint_file", "")
+                    for qa in qa_pairs
+                    if qa.get("blueprint_file")
+                )
+            ),
+            "terrain_positions": len(
+                set(
+                    f"{qa.get('terrain_position', {}).get('x', 0) * STEP},{qa.get('terrain_position', {}).get('y', 0) * STEP}"
+                    for qa in qa_pairs
+                    if qa.get("terrain_position")
+                )
+            ),
         }
 
 
-@hooks(
-    name="vqa_pairs_hook",
-    description="Parses logs and outputs JSONL format."
-)
+@hooks(name="vqa_pairs_hook", description="Parses logs and outputs JSONL format.")
 class VQAPairsHook(Hooks):
     """Hook that automatically serializes QA pairs after evaluation."""
 
-    def __init__(self, output_dir: str = os.getenv('VQA_DATASET_DIR')):
+    def __init__(self, output_dir: str = os.getenv("VQA_DATASET_DIR")):
         self.serializer = VQAPairsSerializer(output_dir)
 
     async def on_task_end(self, task: TaskEnd):

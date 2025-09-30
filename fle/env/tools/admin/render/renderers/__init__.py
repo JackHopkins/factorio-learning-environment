@@ -16,14 +16,16 @@ class BaseRenderer:
         raise NotImplementedError
 
     @staticmethod
-    def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+    def render_shadow(
+        entity: Dict, grid, image_resolver: Callable
+    ) -> Optional[Image.Image]:
         """Render entity shadow"""
         return None
 
     @staticmethod
     def get_key(entity: Dict, grid) -> str:
         """Get cache key for entity state"""
-        return str(entity.get('direction', 0))
+        return str(entity.get("direction", 0))
 
     @staticmethod
     def get_size(entity: Dict) -> Tuple[float, float]:

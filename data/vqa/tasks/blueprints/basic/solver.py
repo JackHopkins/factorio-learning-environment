@@ -15,8 +15,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @solver
-def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_choice: bool = False) -> Solver:
+def generate_entity_name_questions(
+    questions_per_blueprint: int = 3, multiple_choice: bool = False
+) -> Solver:
     """
     Generate questions about entity properties using a model to create diverse Q&A pairs.
 
@@ -24,7 +27,7 @@ def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_ch
         questions_per_blueprint: Number of questions to generate per blueprint
         multiple_choice: If True, generate multiple choice questions with distractor options
     """
-    #instance = create_factorio_instance()
+    # instance = create_factorio_instance()
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
@@ -39,7 +42,9 @@ def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_ch
         basic_questions = []
 
         # Get all unique entity names for creating distractors
-        all_entity_names = list(set(entity.get("name", "unknown") for entity in entities))
+        all_entity_names = list(
+            set(entity.get("name", "unknown") for entity in entities)
+        )
 
         # Sample entities for question generation
         num_questions = min(questions_per_blueprint, len(entities))
@@ -51,7 +56,7 @@ def generate_entity_name_questions(questions_per_blueprint: int = 3, multiple_ch
             x, y = position.get("x", 0), position.get("y", 0)
 
             # Extract all entity properties for the model to use
-            entity['entity_number'] = None
+            entity["entity_number"] = None
             entity_properties = {k: v for k, v in entity.items() if v is not None}
 
             # Convert direction to compass if present
@@ -89,7 +94,7 @@ Examples of GOOD multiple choice questions:
    C) electronic-circuit
    D) [correct recipe]"
 
-The correct answer should be the option at: {random.choice(['A','B','C','D'])}
+The correct answer should be the option at: {random.choice(["A", "B", "C", "D"])}
 
 Return your response in this exact JSON format:
 ```json
@@ -139,12 +144,14 @@ Return your response in this exact JSON format:
             try:
                 # Parse the JSON response
                 completion = response.output.completion
-                json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
+                json_match = re.search(r"```json\s*\n(.*?)\n```", completion, re.DOTALL)
                 if json_match:
                     qa_data = json.loads(json_match.group(1))
 
                     if multiple_choice:
-                        question = qa_data.get("question", f"What entity is at {format_position(x, y)}?")
+                        question = qa_data.get(
+                            "question", f"What entity is at {format_position(x, y)}?"
+                        )
                         options = qa_data.get("options", {})
                         correct_answer = qa_data.get("correct_answer", "D")
                         answer_text = qa_data.get("answer_text", entity_name)
@@ -152,19 +159,38 @@ Return your response in this exact JSON format:
                         # Ensure we have valid options
                         if not options or len(options) != 4:
                             # Fallback: create default options
-                            distractors = [name for name in all_entity_names if name != entity_name][:3]
+                            distractors = [
+                                name for name in all_entity_names if name != entity_name
+                            ][:3]
                             if len(distractors) < 3:
                                 # Add some common Factorio entities as distractors
-                                common_entities = ["transport-belt", "inserter", "assembly-machine-2",
-                                                   "electric-mining-drill", "stone-furnace", "splitter"]
+                                common_entities = [
+                                    "transport-belt",
+                                    "inserter",
+                                    "assembly-machine-2",
+                                    "electric-mining-drill",
+                                    "stone-furnace",
+                                    "splitter",
+                                ]
                                 distractors.extend(
-                                    [e for e in common_entities if e != entity_name and e not in distractors])[:3]
+                                    [
+                                        e
+                                        for e in common_entities
+                                        if e != entity_name and e not in distractors
+                                    ]
+                                )[:3]
 
                             options = {
-                                "A": distractors[0] if len(distractors) > 0 else "transport-belt",
-                                "B": distractors[1] if len(distractors) > 1 else "inserter",
-                                "C": distractors[2] if len(distractors) > 2 else "assembly-machine-2",
-                                "D": entity_name
+                                "A": distractors[0]
+                                if len(distractors) > 0
+                                else "transport-belt",
+                                "B": distractors[1]
+                                if len(distractors) > 1
+                                else "inserter",
+                                "C": distractors[2]
+                                if len(distractors) > 2
+                                else "assembly-machine-2",
+                                "D": entity_name,
                             }
                             correct_answer = "D"
 
@@ -176,12 +202,16 @@ Return your response in this exact JSON format:
                         answer = correct_answer
                         question = formatted_question.rstrip()
                     else:
-                        question = qa_data.get("question", f"What entity is at {format_position(x, y)}?")
+                        question = qa_data.get(
+                            "question", f"What entity is at {format_position(x, y)}?"
+                        )
                         answer = qa_data.get("answer", entity_name)
                 else:
                     # Fallback to default question format
                     if multiple_choice:
-                        distractors = [name for name in all_entity_names if name != entity_name][:3]
+                        distractors = [
+                            name for name in all_entity_names if name != entity_name
+                        ][:3]
                         question = f"What entity is located at position {format_position(x, y)}?\n"
                         question += f"   A) {distractors[0] if distractors else 'transport-belt'}\n"
                         question += f"   B) {distractors[1] if len(distractors) > 1 else 'inserter'}\n"
@@ -195,15 +225,23 @@ Return your response in this exact JSON format:
             except (JSONDecodeError, AttributeError):
                 # Fallback to default question format if parsing fails
                 if multiple_choice:
-                    distractors = [name for name in all_entity_names if name != entity_name][:3]
-                    question = f"What entity is located at position {format_position(x, y)}?\n"
-                    question += f"   A) {distractors[0] if distractors else 'transport-belt'}\n"
+                    distractors = [
+                        name for name in all_entity_names if name != entity_name
+                    ][:3]
+                    question = (
+                        f"What entity is located at position {format_position(x, y)}?\n"
+                    )
+                    question += (
+                        f"   A) {distractors[0] if distractors else 'transport-belt'}\n"
+                    )
                     question += f"   B) {distractors[1] if len(distractors) > 1 else 'inserter'}\n"
                     question += f"   C) {distractors[2] if len(distractors) > 2 else 'assembly-machine-2'}\n"
                     question += f"   D) {entity_name}"
                     answer = "D"
                 else:
-                    question = f"What entity is located at position {format_position(x, y)}?"
+                    question = (
+                        f"What entity is located at position {format_position(x, y)}?"
+                    )
                     answer = entity_name
 
             qa_entry = {
@@ -212,12 +250,14 @@ Return your response in this exact JSON format:
                 "entity": entity,
                 "position": position,
                 "entity_properties": entity_properties,
-                "question_type": "multiple_choice" if multiple_choice else "open_ended"
+                "question_type": "multiple_choice" if multiple_choice else "open_ended",
             }
 
-            if multiple_choice and 'options' in locals():
+            if multiple_choice and "options" in locals():
                 qa_entry["options"] = options
-                qa_entry["answer_text"] = answer_text if 'answer_text' in locals() else entity_name
+                qa_entry["answer_text"] = (
+                    answer_text if "answer_text" in locals() else entity_name
+                )
 
             basic_questions.append(qa_entry)
 
@@ -228,7 +268,9 @@ Return your response in this exact JSON format:
 
 
 @solver
-def generate_position_questions(questions_per_blueprint: int = 3, multiple_choice: bool = False) -> Solver:
+def generate_position_questions(
+    questions_per_blueprint: int = 3, multiple_choice: bool = False
+) -> Solver:
     """
     Generate questions asking for the position of entities using model-based generation.
 
@@ -236,7 +278,7 @@ def generate_position_questions(questions_per_blueprint: int = 3, multiple_choic
         questions_per_blueprint: Number of questions to generate per blueprint
         multiple_choice: If True, generate multiple choice questions with distractor positions
     """
-    instance = create_factorio_instance()
+    create_factorio_instance()
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
@@ -256,7 +298,10 @@ def generate_position_questions(questions_per_blueprint: int = 3, multiple_choic
             entities_by_name[entity.get("name", "unknown")].append(entity)
 
         # Get all positions for creating distractors
-        all_positions = [(e.get("position", {}).get("x", 0), e.get("position", {}).get("y", 0)) for e in entities]
+        all_positions = [
+            (e.get("position", {}).get("x", 0), e.get("position", {}).get("y", 0))
+            for e in entities
+        ]
 
         # Sample entities for question generation
         num_questions = min(questions_per_blueprint, len(entities))
@@ -278,11 +323,13 @@ def generate_position_questions(questions_per_blueprint: int = 3, multiple_choic
                     ox, oy = other_pos.get("x", 0), other_pos.get("y", 0)
                     distance = abs(ox - x) + abs(oy - y)
                     if distance <= 5:  # Within 5 tiles
-                        nearby_entities.append({
-                            "name": other.get("name", "unknown"),
-                            "position": {"x": ox, "y": oy},
-                            "distance": distance
-                        })
+                        nearby_entities.append(
+                            {
+                                "name": other.get("name", "unknown"),
+                                "position": {"x": ox, "y": oy},
+                                "distance": distance,
+                            }
+                        )
 
             # Sort by distance
             nearby_entities.sort(key=lambda e: e["distance"])
@@ -355,12 +402,14 @@ Return your response in this exact JSON format:
 
             try:
                 completion = response.output.completion
-                json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
+                json_match = re.search(r"```json\s*\n(.*?)\n```", completion, re.DOTALL)
                 if json_match:
                     qa_data = json.loads(json_match.group(1))
 
                     if multiple_choice:
-                        question = qa_data.get("question", f"Where is the {entity_name} located?")
+                        question = qa_data.get(
+                            "question", f"Where is the {entity_name} located?"
+                        )
                         options = qa_data.get("options", {})
                         correct_answer = qa_data.get("correct_answer", "C")
                         answer_text = qa_data.get("answer_text", format_position(x, y))
@@ -379,14 +428,16 @@ Return your response in this exact JSON format:
                                     offset_x = random.randint(-5, 5)
                                     offset_y = random.randint(-5, 5)
                                     if (x + offset_x, y + offset_y) != (x, y):
-                                        distractor_positions.append(format_position(x + offset_x, y + offset_y))
+                                        distractor_positions.append(
+                                            format_position(x + offset_x, y + offset_y)
+                                        )
 
                             random.shuffle(distractor_positions)
                             options = {
                                 "A": distractor_positions[0],
                                 "B": distractor_positions[1],
                                 "C": format_position(x, y),
-                                "D": distractor_positions[2]
+                                "D": distractor_positions[2],
                             }
                             correct_answer = "C"
 
@@ -398,13 +449,17 @@ Return your response in this exact JSON format:
                         answer = correct_answer
                         question = formatted_question.rstrip()
                     else:
-                        question = qa_data.get("question", f"Where is the {entity_name} located?")
+                        question = qa_data.get(
+                            "question", f"Where is the {entity_name} located?"
+                        )
                         answer = qa_data.get("answer", format_position(x, y))
                 else:
                     if multiple_choice:
                         # Fallback multiple choice
                         distractor_positions = []
-                        for ox, oy in random.sample(all_positions, min(3, len(all_positions) - 1)):
+                        for ox, oy in random.sample(
+                            all_positions, min(3, len(all_positions) - 1)
+                        ):
                             if (ox, oy) != (x, y):
                                 distractor_positions.append(format_position(ox, oy))
 
@@ -445,14 +500,16 @@ Return your response in this exact JSON format:
                 "position": position,
                 "context": {
                     "same_type_count": same_type_count,
-                    "nearby_entities": nearby_entities[:3]
+                    "nearby_entities": nearby_entities[:3],
                 },
-                "question_type": "multiple_choice" if multiple_choice else "open_ended"
+                "question_type": "multiple_choice" if multiple_choice else "open_ended",
             }
 
-            if multiple_choice and 'options' in locals():
+            if multiple_choice and "options" in locals():
                 qa_entry["options"] = options
-                qa_entry["answer_text"] = answer_text if 'answer_text' in locals() else format_position(x, y)
+                qa_entry["answer_text"] = (
+                    answer_text if "answer_text" in locals() else format_position(x, y)
+                )
 
             position_questions.append(qa_entry)
 
@@ -463,7 +520,9 @@ Return your response in this exact JSON format:
 
 
 @solver
-def generate_counting_questions(questions_per_blueprint: int = 2, multiple_choice: bool = False) -> Solver:
+def generate_counting_questions(
+    questions_per_blueprint: int = 2, multiple_choice: bool = False
+) -> Solver:
     """
     Generate questions about counting entities using model-based generation.
 
@@ -516,20 +575,24 @@ def generate_counting_questions(questions_per_blueprint: int = 2, multiple_choic
                 "total_entities": len(entities),
                 "entity_types": list(entity_counts.keys()),
                 "entity_counts": dict(entity_counts),
-                "entities_by_direction": {k: dict(v) for k, v in entity_by_direction.items()},
-                "entities_by_region": {k: dict(v) for k, v in entity_in_regions.items()},
-                "connected_entity_counts": dict(connected_entities)
+                "entities_by_direction": {
+                    k: dict(v) for k, v in entity_by_direction.items()
+                },
+                "entities_by_region": {
+                    k: dict(v) for k, v in entity_in_regions.items()
+                },
+                "connected_entity_counts": dict(connected_entities),
             }
 
             if multiple_choice:
                 prompt = f"""Given this Factorio blueprint analysis, generate a multiple choice counting question.
 
 Blueprint Statistics:
-- Total entities: {context['total_entities']}
-- Entity types and counts: {context['entity_counts']}
-- Entities by direction: {context['entities_by_direction']}
-- Entities by region: {context['entities_by_region']}
-- Connected entities: {context['connected_entity_counts']}
+- Total entities: {context["total_entities"]}
+- Entity types and counts: {context["entity_counts"]}
+- Entities by direction: {context["entities_by_direction"]}
+- Entities by region: {context["entities_by_region"]}
+- Connected entities: {context["connected_entity_counts"]}
 
 Generate a creative counting question with 4 options. The distractor numbers should be plausible but wrong.
 
@@ -551,7 +614,7 @@ GUIDELINES FOR DISTRACTORS:
 2. Avoid obvious wrong answers like 0 or 1000
 3. Include common counting mistakes (off by one, double counting, etc.)
 
-The correct answer should be the option at: {random.choice(['A','B','C','D'])}
+The correct answer should be the option at: {random.choice(["A", "B", "C", "D"])}
 
 Return your response in this exact JSON format:
 ```json
@@ -572,11 +635,11 @@ Return your response in this exact JSON format:
                 prompt = f"""Given this Factorio blueprint analysis, generate a counting question and its answer.
 
 Blueprint Statistics:
-- Total entities: {context['total_entities']}
-- Entity types and counts: {context['entity_counts']}
-- Entities by direction: {context['entities_by_direction']}
-- Entities by region: {context['entities_by_region']}
-- Connected entities: {context['connected_entity_counts']}
+- Total entities: {context["total_entities"]}
+- Entity types and counts: {context["entity_counts"]}
+- Entities by direction: {context["entities_by_direction"]}
+- Entities by region: {context["entities_by_region"]}
+- Connected entities: {context["connected_entity_counts"]}
 
 Generate a creative counting question. Examples:
 - "How many transport-belts are in this blueprint?"
@@ -603,7 +666,7 @@ Return your response in this exact JSON format:
 
             try:
                 completion = response.output.completion
-                json_match = re.search(r'```json\s*\n(.*?)\n```', completion, re.DOTALL)
+                json_match = re.search(r"```json\s*\n(.*?)\n```", completion, re.DOTALL)
                 if json_match:
                     qa_data = json.loads(json_match.group(1))
 
@@ -620,15 +683,17 @@ Return your response in this exact JSON format:
                             for letter, option in sorted(options.items()):
                                 formatted_question += f"   {letter}) {option}\n"
 
-                            counting_questions.append({
-                                "question": formatted_question.rstrip(),
-                                "answer": correct_answer,
-                                "answer_text": answer_text,
-                                "options": options,
-                                "explanation": explanation,
-                                "context": context,
-                                "question_type": "multiple_choice"
-                            })
+                            counting_questions.append(
+                                {
+                                    "question": formatted_question.rstrip(),
+                                    "answer": correct_answer,
+                                    "answer_text": answer_text,
+                                    "options": options,
+                                    "explanation": explanation,
+                                    "context": context,
+                                    "question_type": "multiple_choice",
+                                }
+                            )
                         else:
                             # Fallback with generated distractors
                             entity_name = random.choice(list(entity_counts.keys()))
@@ -636,9 +701,13 @@ Return your response in this exact JSON format:
 
                             # Generate plausible distractors
                             distractors = []
-                            distractors.append(max(1, correct_count - random.randint(1, 3)))
+                            distractors.append(
+                                max(1, correct_count - random.randint(1, 3))
+                            )
                             distractors.append(correct_count + random.randint(1, 3))
-                            distractors.append(max(1, int(correct_count * random.uniform(0.7, 0.9))))
+                            distractors.append(
+                                max(1, int(correct_count * random.uniform(0.7, 0.9)))
+                            )
 
                             options_list = distractors + [correct_count]
                             random.shuffle(options_list)
@@ -647,48 +716,56 @@ Return your response in this exact JSON format:
                                 "A": str(options_list[0]),
                                 "B": str(options_list[1]),
                                 "C": str(options_list[2]),
-                                "D": str(options_list[3])
+                                "D": str(options_list[3]),
                             }
 
                             correct_idx = options_list.index(correct_count)
                             correct_answer = ["A", "B", "C", "D"][correct_idx]
 
-                            question = f"How many {entity_name}s are in this blueprint?\n"
+                            question = (
+                                f"How many {entity_name}s are in this blueprint?\n"
+                            )
                             for letter, count in sorted(options.items()):
                                 question += f"   {letter}) {count}\n"
 
-                            counting_questions.append({
-                                "question": question.rstrip(),
-                                "answer": correct_answer,
-                                "answer_text": str(correct_count),
-                                "options": options,
-                                "explanation": f"Count of {entity_name} entities",
-                                "context": context,
-                                "question_type": "multiple_choice"
-                            })
+                            counting_questions.append(
+                                {
+                                    "question": question.rstrip(),
+                                    "answer": correct_answer,
+                                    "answer_text": str(correct_count),
+                                    "options": options,
+                                    "explanation": f"Count of {entity_name} entities",
+                                    "context": context,
+                                    "question_type": "multiple_choice",
+                                }
+                            )
                     else:
                         question = qa_data.get("question")
                         answer = qa_data.get("answer")
                         explanation = qa_data.get("explanation", "")
 
                         if question and answer:
-                            counting_questions.append({
-                                "question": question,
-                                "answer": answer,
-                                "explanation": explanation,
-                                "context": context,
-                                "question_type": "open_ended"
-                            })
+                            counting_questions.append(
+                                {
+                                    "question": question,
+                                    "answer": answer,
+                                    "explanation": explanation,
+                                    "context": context,
+                                    "question_type": "open_ended",
+                                }
+                            )
                         else:
                             # Fallback to basic counting
                             entity_name = random.choice(list(entity_counts.keys()))
-                            counting_questions.append({
-                                "question": f"How many {entity_name}s are in this blueprint?",
-                                "answer": str(entity_counts[entity_name]),
-                                "explanation": f"Count of {entity_name} entities",
-                                "context": context,
-                                "question_type": "open_ended"
-                            })
+                            counting_questions.append(
+                                {
+                                    "question": f"How many {entity_name}s are in this blueprint?",
+                                    "answer": str(entity_counts[entity_name]),
+                                    "explanation": f"Count of {entity_name} entities",
+                                    "context": context,
+                                    "question_type": "open_ended",
+                                }
+                            )
 
             except (json.JSONDecodeError, AttributeError):
                 # Fallback to basic counting question
@@ -703,30 +780,34 @@ Return your response in this exact JSON format:
                             "A": str(max(1, correct_count - 2)),
                             "B": str(correct_count + 1),
                             "C": str(correct_count),
-                            "D": str(correct_count + 3)
+                            "D": str(correct_count + 3),
                         }
 
                         question = f"How many {entity_name}s are in this blueprint?\n"
                         for letter, count in sorted(options.items()):
                             question += f"   {letter}) {count}\n"
 
-                        counting_questions.append({
-                            "question": question.rstrip(),
-                            "answer": "C",
-                            "answer_text": str(correct_count),
-                            "options": options,
-                            "explanation": f"Count of {entity_name} entities",
-                            "context": context,
-                            "question_type": "multiple_choice"
-                        })
+                        counting_questions.append(
+                            {
+                                "question": question.rstrip(),
+                                "answer": "C",
+                                "answer_text": str(correct_count),
+                                "options": options,
+                                "explanation": f"Count of {entity_name} entities",
+                                "context": context,
+                                "question_type": "multiple_choice",
+                            }
+                        )
                     else:
-                        counting_questions.append({
-                            "question": f"How many {entity_name}s are in this blueprint?",
-                            "answer": str(entity_counts[entity_name]),
-                            "explanation": f"Count of {entity_name} entities",
-                            "context": context,
-                            "question_type": "open_ended"
-                        })
+                        counting_questions.append(
+                            {
+                                "question": f"How many {entity_name}s are in this blueprint?",
+                                "answer": str(entity_counts[entity_name]),
+                                "explanation": f"Count of {entity_name} entities",
+                                "context": context,
+                                "question_type": "open_ended",
+                            }
+                        )
 
         state.metadata["counting_questions"] = counting_questions
         return state

@@ -35,7 +35,7 @@ Important guidelines:
 - Variation 1: Focus on the primary function and most obvious use case
 - Variation 2: Highlight efficiency, automation, or technical aspects
 - Variation 3: Emphasize scalability, integration, or advanced features
-{f"- Additional variations: Consider alternative use cases, specialized applications, or unique benefits" if num_variations > 3 else ""}
+{"- Additional variations: Consider alternative use cases, specialized applications, or unique benefits" if num_variations > 3 else ""}
 
 Make each title and purpose distinct while still being accurate.
 
@@ -60,7 +60,7 @@ Format your response as JSON:
         response = await generate(state)
         completion = response.output.completion
 
-        pattern = r'```json\s*\n(.*?)\n```'
+        pattern = r"```json\s*\n(.*?)\n```"
         match = re.search(pattern, completion, re.DOTALL)
 
         all_titles = []
@@ -70,11 +70,11 @@ Format your response as JSON:
             json_content = match.group(1)
             try:
                 data = json.loads(json_content)
-                variations = data.get('variations', [])
+                variations = data.get("variations", [])
 
                 for variation in variations:
-                    all_titles.append(variation.get('title', ''))
-                    all_purposes.append(variation.get('purpose', ''))
+                    all_titles.append(variation.get("title", ""))
+                    all_purposes.append(variation.get("purpose", ""))
             except json.JSONDecodeError as e:
                 print(f"Error parsing JSON: {e}")
                 # Fallback to empty lists
@@ -99,7 +99,7 @@ def contrastive_matching(num_options: int = 4) -> Solver:
     """Generate contrastive matching questions for blueprint identification."""
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
-        blueprint = state.metadata.get("blueprint", {})
+        state.metadata.get("blueprint", {})
 
         # Generate title and purpose for current blueprint if not already done
         if "titles" not in state.metadata or "purposes" not in state.metadata:
@@ -111,15 +111,22 @@ def contrastive_matching(num_options: int = 4) -> Solver:
         correct_purpose = state.metadata.get("purpose", "No description available")
 
         # Create options list (placeholder - in real implementation, would get from other blueprints)
-        options = [
-            {"title": correct_title, "purpose": correct_purpose}
-        ]
+        options = [{"title": correct_title, "purpose": correct_purpose}]
 
         # Add dummy options for now (in real implementation, would sample from other blueprints)
         dummy_options = [
-            {"title": "Belt Balancer", "purpose": "Distributes items evenly across multiple belt lanes"},
-            {"title": "Train Station", "purpose": "Automated loading and unloading point for trains"},
-            {"title": "Power Plant", "purpose": "Generates electricity using steam engines and boilers"}
+            {
+                "title": "Belt Balancer",
+                "purpose": "Distributes items evenly across multiple belt lanes",
+            },
+            {
+                "title": "Train Station",
+                "purpose": "Automated loading and unloading point for trains",
+            },
+            {
+                "title": "Power Plant",
+                "purpose": "Generates electricity using steam engines and boilers",
+            },
         ]
 
         for i in range(min(num_options - 1, len(dummy_options))):
@@ -127,6 +134,7 @@ def contrastive_matching(num_options: int = 4) -> Solver:
 
         # Shuffle options (keep track of correct answer)
         import random
+
         correct_index = 0
         random.shuffle(options)
 

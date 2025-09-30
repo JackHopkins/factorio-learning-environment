@@ -10,7 +10,6 @@ import logging
 from typing import Optional, Dict, Any
 from queue import Queue
 import threading
-from pathlib import Path
 
 from fastmcp import Client
 
@@ -20,9 +19,11 @@ logger = logging.getLogger(__name__)
 class MCPReadOnlyClient:
     """Read-only client that connects to an existing MCP server using FastMCP"""
 
-    def __init__(self,
-                 mcp_server: str = "python -m fle.env.protocols._mcp",
-                 update_queue: Optional[Queue] = None):
+    def __init__(
+        self,
+        mcp_server: str = "python -m fle.env.protocols._mcp",
+        update_queue: Optional[Queue] = None,
+    ):
         """
         Initialize MCP read-only client
 
@@ -39,25 +40,25 @@ class MCPReadOnlyClient:
         """Connect to the existing MCP server"""
         try:
             # Use stdio transport explicitly
-            from fastmcp import FastMCP
             # transport = StdioTransport(
             #     command=self.mcp_server[0],
             #     args=self.mcp_server[1:] if len(self.mcp_server) > 1 else []
             # )
-            #async with Client("http://localhost:8000/sse") as client:
-             #   tools = await client.list_tools()
-             #   pass
-            #self.client = Client(transport)
+            # async with Client("http://localhost:8000/sse") as client:
+            #   tools = await client.list_tools()
+            #   pass
+            # self.client = Client(transport)
             from fastmcp.mcp_config import StdioMCPServer
-            server = StdioMCPServer(command="/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.venv/bin/python",
-                                    args=["-m", "fle.env.protocols._mcp"],
-                                    env={
-                                        "PYTHONPATH": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser"
-                                    },
-                                    transport="stdio")
-            self.client = Client({
-                "mcpServers": {"fle": server.__dict__}
-            })
+
+            server = StdioMCPServer(
+                command="/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.venv/bin/python",
+                args=["-m", "fle.env.protocols._mcp"],
+                env={
+                    "PYTHONPATH": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser"
+                },
+                transport="stdio",
+            )
+            self.client = Client({"mcpServers": {"fle": server.__dict__}})
 
             return True
 
@@ -71,7 +72,7 @@ class MCPReadOnlyClient:
 
         if self.client:
             try:
-                await self.client.close()#.__aexit__(None, None, None)
+                await self.client.close()  # .__aexit__(None, None, None)
             except Exception as e:
                 logger.error(f"Error disconnecting from MCP server: {e}")
             self.client = None
@@ -87,14 +88,17 @@ class MCPReadOnlyClient:
             # Parse the result based on content type
             if result and result:
                 content = result[0]
-                if hasattr(content, 'text'):
+                if hasattr(content, "text"):
                     try:
                         # Try to parse as JSON
                         return json.loads(content.text)
                     except json.JSONDecodeError:
                         # Return as plain text if not JSON
                         return content.text
-                elif hasattr(content, 'mimeType') and content.mimeType == 'application/json':
+                elif (
+                    hasattr(content, "mimeType")
+                    and content.mimeType == "application/json"
+                ):
                     return json.loads(content.text)
                 return content
             return None
@@ -128,73 +132,81 @@ class MCPReadOnlyClient:
                     # Read inventory
                     inventory = await self.read_resource(ctx, "fle://inventory")
                     if inventory:
-                        state['inventory'] = inventory
+                        state["inventory"] = inventory
 
                     # Read position
                     position = await self.read_resource(ctx, "fle://position")
                     if position:
-                        state['position'] = position
+                        state["position"] = position
 
                     # Read warnings
                     warnings = await self.read_resource(ctx, "fle://warnings")
                     if warnings:
-                        state['warnings'] = warnings
+                        state["warnings"] = warnings
 
                     # Read entities around player position
                     if position and isinstance(position, dict):
-                        x = position.get('x', 0)
-                        y = position.get('y', 0)
+                        x = position.get("x", 0)
+                        y = position.get("y", 0)
                         entities_uri = f"fle://entities/{x}/{y}/100"
                         entities = await self.read_resource(ctx, entities_uri)
                         if entities:
-                            state['entities'] = entities
-                            state['entities_count'] = len(entities) if isinstance(entities, list) else 0
+                            state["entities"] = entities
+                            state["entities_count"] = (
+                                len(entities) if isinstance(entities, list) else 0
+                            )
 
                     # Read status
                     status = await self.read_resource(ctx, "fle://status")
                     if status:
-                        state['status'] = status
+                        state["status"] = status
 
                     metrics = await self.read_resource(ctx, "fle://metrics")
                     if metrics:
-                        state['metrics'] = metrics
+                        state["metrics"] = metrics
 
                     # Try to get rendered image
                     if position and isinstance(position, dict):
                         try:
                             # Call the render tool
-                            result = await self.call_tool("render", {
-                                "center_x": position.get('x', 0),
-                                "center_y": position.get('y', 0)
-                            })
+                            result = await self.call_tool(
+                                "render",
+                                {
+                                    "center_x": position.get("x", 0),
+                                    "center_y": position.get("y", 0),
+                                },
+                            )
 
                             # Extract image from result
-                            if result and hasattr(result, 'content'):
+                            if result and hasattr(result, "content"):
                                 for content in result.content:
-                                    if hasattr(content, 'type') and content.type == 'image':
-                                        if hasattr(content, 'data'):
-                                            state['image'] = f"data:image/png;base64,{content.data}"
-                                            logger.debug(f"Got rendered image")
+                                    if (
+                                        hasattr(content, "type")
+                                        and content.type == "image"
+                                    ):
+                                        if hasattr(content, "data"):
+                                            state["image"] = (
+                                                f"data:image/png;base64,{content.data}"
+                                            )
+                                            logger.debug("Got rendered image")
                                             break
                         except Exception as e:
                             logger.debug(f"Could not get render: {e}")
 
                     # Send update to queue if we have data
                     if state and self.update_queue:
-                        state['type'] = 'state_update'
-                        state['timestamp'] = asyncio.get_event_loop().time()
-                        state['poll_count'] = poll_count
+                        state["type"] = "state_update"
+                        state["timestamp"] = asyncio.get_event_loop().time()
+                        state["poll_count"] = poll_count
                         self.update_queue.put(state)
-                        logger.debug(f"Poll #{poll_count}: sent update with keys: {list(state.keys())}")
+                        logger.debug(
+                            f"Poll #{poll_count}: sent update with keys: {list(state.keys())}"
+                        )
 
                 except Exception as e:
                     logger.error(f"Error during polling (poll #{poll_count}): {e}")
                     if self.update_queue:
-                        self.update_queue.put({
-                            'type': 'error',
-                            'message': str(e)
-                        })
-
+                        self.update_queue.put({"type": "error", "message": str(e)})
 
                 # Wait before next poll
                 await asyncio.sleep(3.0)
@@ -210,9 +222,9 @@ class MCPReadOnlyClient:
 class MCPDataBridge:
     """Bridge between MCP server and overlay UI using FastMCP"""
 
-    def __init__(self,
-                 update_queue: Queue,
-                 mcp_server: str = "python -m fle.env.protocols._mcp"):
+    def __init__(
+        self, update_queue: Queue, mcp_server: str = "python -m fle.env.protocols._mcp"
+    ):
         """
         Initialize the MCP data bridge
 
@@ -244,10 +256,9 @@ class MCPDataBridge:
         except Exception as e:
             logger.error(f"Bridge error: {e}")
             if self.update_queue:
-                self.update_queue.put({
-                    'type': 'error',
-                    'message': f'MCP Bridge error: {str(e)}'
-                })
+                self.update_queue.put(
+                    {"type": "error", "message": f"MCP Bridge error: {str(e)}"}
+                )
         finally:
             logger.info("Bridge event loop ended")
 
@@ -258,8 +269,7 @@ class MCPDataBridge:
         try:
             # Create MCP client
             self.client = MCPReadOnlyClient(
-                mcp_server=self.mcp_server,
-                update_queue=self.update_queue
+                mcp_server=self.mcp_server, update_queue=self.update_queue
             )
 
             # Connect to MCP server
@@ -270,11 +280,13 @@ class MCPDataBridge:
             logger.info("MCP connection established via FastMCP")
 
             # Send init message to overlay
-            self.update_queue.put({
-                'type': 'init',
-                'task': 'MCP Monitoring Mode',
-                'message': 'Connected to MCP server via FastMCP'
-            })
+            self.update_queue.put(
+                {
+                    "type": "init",
+                    "task": "MCP Monitoring Mode",
+                    "message": "Connected to MCP server via FastMCP",
+                }
+            )
 
             # Start polling (blocks until polling_active becomes False)
             await self.client.start_polling()

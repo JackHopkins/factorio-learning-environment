@@ -7,13 +7,18 @@ from inspect_ai.dataset import MemoryDataset, Sample
 from data.vqa.blueprint_subchunks import SubchunkConfig, generate_subchunks
 from data.vqa.utils import find_blueprints_dir
 
-from typing import List, Union, Optional
-from inspect_ai.dataset import Dataset, Sample, MemoryDataset
-from data.vqa.blueprint_transforms import generate_flipped_blueprints, update_metadata_for_flip, FlipType, detect_direction_system
+from inspect_ai.dataset import Dataset
+from data.vqa.blueprint_transforms import (
+    generate_flipped_blueprints,
+    update_metadata_for_flip,
+    FlipType,
+    detect_direction_system,
+)
 
 
-def create_flip_augmented_dataset(base_dataset: Dataset,
-                                 include_flips: List[str] = None) -> MemoryDataset:
+def create_flip_augmented_dataset(
+    base_dataset: Dataset, include_flips: List[str] = None
+) -> MemoryDataset:
     """
     Create a flip-augmented dataset from a base dataset.
 
@@ -37,7 +42,7 @@ def create_flip_augmented_dataset(base_dataset: Dataset,
             "original": FlipType.NONE,
             "h_flip": FlipType.HORIZONTAL,
             "v_flip": FlipType.VERTICAL,
-            "hv_flip": FlipType.BOTH
+            "hv_flip": FlipType.BOTH,
         }
 
         flip_types = []
@@ -68,24 +73,30 @@ def create_flip_augmented_dataset(base_dataset: Dataset,
             flipped_blueprint = flipped_blueprints[flip_type]
 
             # Create new sample with flipped blueprint
-            new_metadata = update_metadata_for_flip(original_sample.metadata, flip_type, direction_system)
+            new_metadata = update_metadata_for_flip(
+                original_sample.metadata, flip_type, direction_system
+            )
             new_metadata["blueprint"] = flipped_blueprint
-            new_metadata["original_filename"] = original_sample.metadata.get("filename", "")
+            new_metadata["original_filename"] = original_sample.metadata.get(
+                "filename", ""
+            )
 
             # Create unique ID for the flipped sample
             flip_suffix = {
                 FlipType.NONE: "original",
                 FlipType.HORIZONTAL: "h_flip",
                 FlipType.VERTICAL: "v_flip",
-                FlipType.BOTH: "hv_flip"
+                FlipType.BOTH: "hv_flip",
             }[flip_type]
 
             new_sample = Sample(
                 input=original_sample.input,
                 target=original_sample.target,
                 metadata=new_metadata,
-                id=f"{original_sample.id}_{flip_suffix}" if original_sample.id else None,
-                files=original_sample.files
+                id=f"{original_sample.id}_{flip_suffix}"
+                if original_sample.id
+                else None,
+                files=original_sample.files,
             )
 
             augmented_samples.append(new_sample)
@@ -120,48 +131,38 @@ def create_all_flips_dataset(base_dataset: Dataset) -> MemoryDataset:
     """
     return create_flip_augmented_dataset(base_dataset, None)
 
+
 def raw_test_dataset() -> MemoryDataset:
     blueprint = {
-        "icons": [
-            {
-                "signal": {
-                    "type": "item",
-                    "name": "transport-belt"
-                },
-                "index": 1
-            }
-        ],
+        "icons": [{"signal": {"type": "item", "name": "transport-belt"}, "index": 1}],
         "entities": [
             {
                 "name": "transport-belt",
-                "position": {
-                    "x": -0.5,
-                    "y": -0.5
-                },
+                "position": {"x": -0.5, "y": -0.5},
                 "direction": 12,
-                "entity_number": 1
+                "entity_number": 1,
             },
             {
                 "name": "transport-belt",
-                "position": {
-                    "x": 0.5,
-                    "y": -0.5
-                },
+                "position": {"x": 0.5, "y": -0.5},
                 "direction": 8,
-                "entity_number": 1
-            }
+                "entity_number": 1,
+            },
         ],
         "item": "blueprint",
         "version": 281479274299391,
-        "label": "Blueprint"
+        "label": "Blueprint",
     }
-    dataset = MemoryDataset(samples=[
-        Sample(
-            input="dummpy",
-            metadata={"filename": "dummy", "blueprint": blueprint},
-        )
-    ])
+    dataset = MemoryDataset(
+        samples=[
+            Sample(
+                input="dummpy",
+                metadata={"filename": "dummy", "blueprint": blueprint},
+            )
+        ]
+    )
     return dataset
+
 
 def raw_blueprint_dataset() -> MemoryDataset:
     # Load blueprints from directory
@@ -169,12 +170,12 @@ def raw_blueprint_dataset() -> MemoryDataset:
     samples = []
 
     for blueprint_path in blueprint_dir.glob("*.json"):
-        with open(blueprint_path, 'r') as f:
+        with open(blueprint_path, "r") as f:
             blueprint_json = f.read()
 
         blueprint = json.loads(blueprint_json)
         sample = Sample(
-            input=blueprint['label'] if 'label' in blueprint else blueprint_path.name,
+            input=blueprint["label"] if "label" in blueprint else blueprint_path.name,
             metadata={"filename": blueprint_path.name, "blueprint": blueprint},
         )
         samples.append(sample)
@@ -187,11 +188,11 @@ def raw_blueprint_dataset() -> MemoryDataset:
 def augmented_blueprint_dataset() -> MemoryDataset:
     """
     Create an augmented blueprint dataset with rotations.
-    
+
     Args:
         rotations: List of rotation names to include (e.g., ["north", "east"])
                   If None, includes all 4 rotations
-    
+
     Returns:
         MemoryDataset with rotated blueprint variations
     """
@@ -199,9 +200,11 @@ def augmented_blueprint_dataset() -> MemoryDataset:
     return create_all_flips_dataset(base_dataset)
 
 
-def create_combined_augmented_dataset(base_dataset: Dataset,
-                                      include_flips: List[str] = None,
-                                      chunk_configs: List[SubchunkConfig] = None) -> MemoryDataset:
+def create_combined_augmented_dataset(
+    base_dataset: Dataset,
+    include_flips: List[str] = None,
+    chunk_configs: List[SubchunkConfig] = None,
+) -> MemoryDataset:
     """
     Create a dataset with both flip and subchunk augmentations.
 
@@ -221,7 +224,7 @@ def create_combined_augmented_dataset(base_dataset: Dataset,
         chunk_configs = [
             SubchunkConfig((10, 10), (5, 5)),
             SubchunkConfig((15, 15), (10, 10)),
-            SubchunkConfig((20, 20), (10, 10))
+            SubchunkConfig((20, 20), (10, 10)),
         ]
 
     augmented_samples = []
@@ -248,7 +251,7 @@ def create_combined_augmented_dataset(base_dataset: Dataset,
                 new_metadata["subchunk_config"] = {
                     "chunk_size": config.chunk_size,
                     "step_size": config.step_size,
-                    "chunk_index": i
+                    "chunk_index": i,
                 }
 
                 # Create unique ID
@@ -260,7 +263,7 @@ def create_combined_augmented_dataset(base_dataset: Dataset,
                     target=sample.target,
                     metadata=new_metadata,
                     id=f"{sample.input}_{chunk_part}_{flip_part}",
-                    files=sample.files
+                    files=sample.files,
                 )
                 print(new_sample.id)
 
@@ -274,16 +277,16 @@ def augmented_blueprint_dataset_with_chunks() -> MemoryDataset:
     Create an augmented blueprint dataset with both rotations and subchunks.
     """
     base_dataset = raw_blueprint_dataset()
-    #base_dataset.samples = base_dataset.samples[0]]
+    # base_dataset.samples = base_dataset.samples[0]]
     # Define chunk configurations
     chunk_configs = [
-        #SubchunkConfig((10, 10), (5, 5), min_entities=5),
-        #SubchunkConfig((15, 15), (7, 7), min_entities=8),
+        # SubchunkConfig((10, 10), (5, 5), min_entities=5),
+        # SubchunkConfig((15, 15), (7, 7), min_entities=8),
         SubchunkConfig((20, 20), (10, 10), min_entities=10)
     ]
 
     return create_combined_augmented_dataset(
         base_dataset,
         include_flips=["none", "horizontal", "vertical", "both"],
-        chunk_configs=chunk_configs
+        chunk_configs=chunk_configs,
     )

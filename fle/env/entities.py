@@ -1,10 +1,8 @@
 import math
-from collections import UserDict
 from typing import Tuple, Any, Union, Dict, Literal
 from typing import List, Optional
 from enum import Enum, IntFlag
-from pydantic import ConfigDict, BaseModel, model_validator, model_serializer, RootModel
-
+from pydantic import ConfigDict, BaseModel, model_validator, model_serializer
 
 
 class Layer(IntFlag):
@@ -109,8 +107,11 @@ class EntityStatus(Enum):
                 return status
         return None
 
+
 class Inventory(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True, extra='allow')
+    model_config = ConfigDict(
+        populate_by_name=True, arbitrary_types_allowed=True, extra="allow"
+    )
 
     # def __init__(self, **data):
     #     super().__init__()
@@ -126,8 +127,8 @@ class Inventory(BaseModel):
                 name = key
         except Exception:
             name = key
-        #return self.__dict__[name] if name in self.__dict__ else 0
-        if hasattr(self, '__pydantic_extra__'):
+        # return self.__dict__[name] if name in self.__dict__ else 0
+        if hasattr(self, "__pydantic_extra__"):
             return self.__pydantic_extra__.get(name, 0)
         return getattr(self, name, 0)
 
@@ -141,30 +142,30 @@ class Inventory(BaseModel):
         else:
             name = key
 
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             self.__pydantic_extra__[name] = value
         else:
             setattr(self, name, value)
 
     def items(self):
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             return self.__pydantic_extra__.items()
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}.items()
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}.items()
 
     def keys(self):
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             return self.__pydantic_extra__.keys()
-        return [k for k in self.__dict__.keys() if not k.startswith('_')]
+        return [k for k in self.__dict__.keys() if not k.startswith("_")]
 
     def values(self):
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             return self.__pydantic_extra__.values()
-        return [v for k, v in self.__dict__.items() if not k.startswith('_')]
+        return [v for k, v in self.__dict__.items() if not k.startswith("_")]
 
     def __len__(self) -> int:
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             return len(self.__pydantic_extra__)
-        return len([k for k in self.__dict__.keys() if not k.startswith('_')])
+        return len([k for k in self.__dict__.keys() if not k.startswith("_")])
 
     def __add__(self, other):
         if not isinstance(other, Inventory):
@@ -181,10 +182,9 @@ class Inventory(BaseModel):
 
     @model_serializer
     def serialize_model(self):
-        if hasattr(self, '__pydantic_extra__'):
+        if hasattr(self, "__pydantic_extra__"):
             return self.__pydantic_extra__
-        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
-
+        return {k: v for k, v in self.__dict__.items() if not k.startswith("_")}
 
 
 class Direction(Enum):
@@ -448,7 +448,7 @@ class BurnerType(BaseModel):
 
 class EntityCore(BaseModel):
     # id: Optional[str] = None
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
     name: str
     direction: Direction = Direction.NORTH
     position: Position
@@ -527,6 +527,7 @@ class Entity(EntityCore):
 
 class StaticEntity(Entity):
     """A static (non-moving) entity in the game."""
+
     neighbours: Optional[Union[Dict, List[EntityCore]]] = []
 
 
@@ -552,8 +553,8 @@ class TransportBelt(Entity):
 
     input_position: Position
     output_position: Position
-    #inventory: Inventory = Inventory()
-    inventory: Dict[Literal['left', 'right'], Inventory] = {'left': {}, 'right': {}}
+    # inventory: Inventory = Inventory()
+    inventory: Dict[Literal["left", "right"], Inventory] = {"left": {}, "right": {}}
     is_terminus: bool = False
     is_source: bool = False
     _height: float = 1

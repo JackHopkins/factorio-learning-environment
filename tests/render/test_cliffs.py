@@ -14,8 +14,8 @@ def game(instance):
         "pipe": 30,
         "transport-belt": 50,
         "underground-belt": 30,
-        'splitter': 1,
-        'lab': 1
+        "splitter": 1,
+        "lab": 1,
     }
     instance.reset()
     yield instance.namespace
@@ -79,17 +79,14 @@ def test_cliff_outer_corners(clear_terrain):
         "game.surfaces[1].create_entity{name='cliff', position={x=-10, y=0}, cliff_orientation='west-to-north'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=-8, y=0}, cliff_orientation='west-to-east'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=-10, y=2}, cliff_orientation='north-to-south'} "
-
         "-- Bottom-right outer corner\n"
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=0}, cliff_orientation='north-to-east'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=8, y=0}, cliff_orientation='east-to-west'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=2}, cliff_orientation='north-to-south'} "
-
         "-- Top-right outer corner\n"
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=10}, cliff_orientation='east-to-south'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=8, y=10}, cliff_orientation='east-to-west'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=8}, cliff_orientation='south-to-north'} "
-
         "-- Top-left outer corner\n"
         "game.surfaces[1].create_entity{name='cliff', position={x=-10, y=10}, cliff_orientation='south-to-west'} "
         "game.surfaces[1].create_entity{name='cliff', position={x=-8, y=10}, cliff_orientation='west-to-east'} "
@@ -154,20 +151,13 @@ def test_cliff_terminals(clear_terrain):
         "/sc "
         "-- Terminals ending in each direction\n"
         "game.surfaces[1].create_entity{name='cliff', position={x=-6, y=0}, cliff_orientation='west-to-none'} "
-       
         "game.surfaces[1].create_entity{name='cliff', position={x=6, y=0}, cliff_orientation='east-to-none'} "
-
         "game.surfaces[1].create_entity{name='cliff', position={x=0, y=-6}, cliff_orientation='north-to-none'} "
-        
         "game.surfaces[1].create_entity{name='cliff', position={x=0, y=6}, cliff_orientation='south-to-none'} "
-
         "-- Terminals starting from each direction\n"
         "game.surfaces[1].create_entity{name='cliff', position={x=-10, y=10}, cliff_orientation='none-to-east'} "
-        
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=10}, cliff_orientation='none-to-west'} "
-
         "game.surfaces[1].create_entity{name='cliff', position={x=-10, y=-10}, cliff_orientation='none-to-south'} "
-        
         "game.surfaces[1].create_entity{name='cliff', position={x=10, y=-10}, cliff_orientation='none-to-north'} "
     )
 
@@ -190,7 +180,6 @@ def test_cliff_t_junctions(clear_terrain):
         "for i=1,3 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=0, y=-i*2}, cliff_orientation='north-to-south'} "
         "end "
-
         "-- T-junction pointing down\n"
         "for i=-2,2 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=i*2, y=10}, cliff_orientation='west-to-east'} "
@@ -198,7 +187,6 @@ def test_cliff_t_junctions(clear_terrain):
         "for i=1,3 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=0, y=10+i*2}, cliff_orientation='north-to-south'} "
         "end "
-
         "-- T-junction pointing right\n"
         "for i=-2,2 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=-10, y=i*2}, cliff_orientation='north-to-south'} "
@@ -206,7 +194,6 @@ def test_cliff_t_junctions(clear_terrain):
         "for i=1,3 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=-10+i*2, y=0}, cliff_orientation='west-to-east'} "
         "end "
-
         "-- T-junction pointing left\n"
         "for i=-2,2 do "
         "  game.surfaces[1].create_entity{name='cliff', position={x=10, y=i*2}, cliff_orientation='north-to-south'} "
@@ -277,9 +264,7 @@ def test_entities_with_cliffs(clear_terrain):
     )
 
     game.connect_entities(
-        Position(x=0, y=-5),
-        Position(x=15, y=-5),
-        {Prototype.SmallElectricPole}
+        Position(x=0, y=-5), Position(x=15, y=-5), {Prototype.SmallElectricPole}
     )
 
     image = game._render(position=Position(x=5, y=0), radius=20, layers=Layer.ALL)

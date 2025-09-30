@@ -8,29 +8,36 @@ from data.vqa.tasks.terrain.task import terrain_task
 from data.vqa.tasks.blueprints.basic.task import (
     entity_name_task,
     position_task,
-    counting_task, entity_name_mc_task, position_mc_task, counting_mc_task, direction_mc_task, direction_task
+    counting_task,
+    entity_name_mc_task,
+    position_mc_task,
+    counting_mc_task,
+    direction_mc_task,
+    direction_task,
 )
 
 from data.vqa.tasks.blueprints.spatial_reasoning.task import (
     generate_spatial_reasoning_with_code,
-    generate_spatial_context_with_code, spatial_context_sandbox_task
+    generate_spatial_context_with_code,
+    spatial_context_sandbox_task,
 )
 
 
 from data.vqa.tasks.blueprints.denoising_qa.task import (
     denoising_blueprint_task,
-    denoising_validation_task
+    denoising_validation_task,
 )
 
 from data.vqa.tasks.blueprints.action_prediction.task import (
     action_sequence_generation_task,
     next_action_prediction_task,
     construction_order_task,
-    comprehensive_action_task
+    comprehensive_action_task,
 )
 
 from data.vqa.tasks.blueprints.contrastive_alignment.task import (
-    contrastive_blueprint_labelling_task, contrastive_alignment_task,
+    contrastive_blueprint_labelling_task,
+    contrastive_alignment_task,
 )
 
 __all__ = [
@@ -38,24 +45,30 @@ __all__ = [
     "entity_name_task",
     "position_task",
     "counting_task",
-    
+    "entity_name_mc_task",
+    "position_mc_task",
+    "counting_mc_task",
+    "direction_mc_task",
+    "direction_task",
     # Spatial reasoning tasks
     "generate_spatial_reasoning_with_code",
     "generate_spatial_context_with_code",
-    
+    "spatial_context_sandbox_task",
     # Denoising tasks
     "denoising_blueprint_task",
     "denoising_validation_task",
-    
+    "simple_denoising_blueprint_task",
     # Action prediction tasks
     "action_sequence_generation_task",
-    "next_action_prediction_task", 
+    "next_action_prediction_task",
     "construction_order_task",
     "comprehensive_action_task",
-
     # Contrastive alignment tasks
     "contrastive_blueprint_labelling_task",
-
+    "contrastive_alignment_task",
+    # Factory and terrain tasks
+    "factory_task",
+    "terrain_task",
 ]
 
 from fle.commons.cluster_ips import get_local_container_ips
@@ -103,17 +116,15 @@ if __name__ == "__main__":
             factory_task(instances[1], multiple_choice=False),
             terrain_task(instances[2], multiple_choice=True),
             terrain_task(instances[3], multiple_choice=False),
-
             denoising_blueprint_task(qa_pairs_per_blueprint=questions_per_blueprint),
-            simple_denoising_blueprint_task(qa_pairs_per_blueprint=questions_per_blueprint),
-
-            contrastive_alignment_task(limit=6, subset='title'),
-            contrastive_alignment_task(limit=6, subset='purpose'),
-
+            simple_denoising_blueprint_task(
+                qa_pairs_per_blueprint=questions_per_blueprint
+            ),
+            contrastive_alignment_task(limit=6, subset="title"),
+            contrastive_alignment_task(limit=6, subset="purpose"),
             entity_name_mc_task(questions_per_blueprint=questions_per_blueprint),
             position_mc_task(questions_per_blueprint=questions_per_blueprint),
             counting_mc_task(questions_per_blueprint=questions_per_blueprint),
-
             entity_name_task(questions_per_blueprint=questions_per_blueprint),
             position_task(questions_per_blueprint=questions_per_blueprint),
             counting_task(questions_per_blueprint=questions_per_blueprint),
@@ -123,7 +134,7 @@ if __name__ == "__main__":
         limit=25,
         fail_on_error=0.5,
         log_dir="../../logs",
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )
     # #spatial_context_sandbox_task(qa_pairs_per_blueprint=20),
     # #direction_mc_task(questions_per_blueprint=10),

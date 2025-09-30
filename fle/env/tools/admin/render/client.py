@@ -23,36 +23,31 @@ class Render(Tool):
         # Execute the Lua function with compression level
         try:
             result, _ = self.execute(
-                self.player_index,
-                include_status,
-                radius,
-                compression_level
+                self.player_index, include_status, radius, compression_level
             )
-
 
             # Decode the optimized format if necessary
             decoded_result = self._decode_optimized_format(result)
 
             return decoded_result
-        except Exception as e:
+        except Exception:
             result, _ = self.execute(
-                self.player_index,
-                include_status,
-                radius,
-                compression_level
+                self.player_index, include_status, radius, compression_level
             )
             pass
 
     @profile_method(include_args=True)
-    def __call__(self,
-                 include_status: bool = False,
-                 radius: int = 64,
-                 position: Optional[Position] = None,
-                 layers: Layer = Layer.ALL,
-                 compression_level: str = 'binary',
-                 blueprint: Union[str, List[Dict]] = None,
-                 return_renderer=False,
-                 max_render_radius: Optional[float] = None) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
+    def __call__(
+        self,
+        include_status: bool = False,
+        radius: int = 64,
+        position: Optional[Position] = None,
+        layers: Layer = Layer.ALL,
+        compression_level: str = "binary",
+        blueprint: Union[str, List[Dict]] = None,
+        return_renderer=False,
+        max_render_radius: Optional[float] = None,
+    ) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
         """
         Returns information about all entities, tiles, and resources within the specified radius of the player.
 
@@ -77,20 +72,21 @@ class Render(Tool):
 
         if not blueprint:
             # Create renderer with decoded data
-            renderer = self.get_renderer_from_map(include_status, radius, compression_level, max_render_radius)
+            renderer = self.get_renderer_from_map(
+                include_status, radius, compression_level, max_render_radius
+            )
         else:
             renderer = self.get_renderer_from_blueprint(blueprint)
 
-
         # Calculate render size
         size = renderer.get_size()
-        if size['width'] == 0 or size['height'] == 0:
+        if size["width"] == 0 or size["height"] == 0:
             raise Exception("Nothing to render.")
 
         # Calculate the ideal dimensions
-        width = size['width'] * DEFAULT_SCALING
-        height = size['height'] * DEFAULT_SCALING
-        
+        width = size["width"] * DEFAULT_SCALING
+        height = size["height"] * DEFAULT_SCALING
+
         # Cap the resolution at 1024x1024
         max_dimension = 1024
         if width > max_dimension or height > max_dimension:
@@ -102,7 +98,7 @@ class Render(Tool):
             else:
                 height = max_dimension
                 width = int(max_dimension * aspect_ratio)
-        
+
         # Ensure dimensions are at least 1
         width = max(1, width)
         height = max(1, height)
@@ -123,50 +119,47 @@ class Render(Tool):
             #     entities=entities
             # )
         else:
-            if not 'entities' in blueprint:
+            if "entities" not in blueprint:
                 raise ValueError("Blueprint passed with no entities")
 
-            entities = blueprint['entities']
-            renderer = Renderer(
-                entities=entities
-            )
+            entities = blueprint["entities"]
+            renderer = Renderer(entities=entities)
         return renderer
 
-    def get_renderer_from_map(self,
-                             include_status: bool = False,
-                             radius: int = 64,
-                             compression_level: str = 'binary',
-                             max_render_radius: Optional[float] = None,
-                             ) -> Renderer:
-
+    def get_renderer_from_map(
+        self,
+        include_status: bool = False,
+        radius: int = 64,
+        compression_level: str = "binary",
+        max_render_radius: Optional[float] = None,
+    ) -> Renderer:
         result = self._get_map_entities(include_status, radius, compression_level)
 
-
-
         # Parse the Lua dictionaries
-        entities = self.parse_lua_dict(result['entities'])
+        entities = self.parse_lua_dict(result["entities"])
 
-        character_position = [c['position'] for c in list(filter(lambda x:x['name']=='character', entities))]
+        character_position = [
+            c["position"]
+            for c in list(filter(lambda x: x["name"] == "character", entities))
+        ]
 
-        char_pos = Position(character_position[0]['x'], character_position[0]['y'])
+        char_pos = Position(character_position[0]["x"], character_position[0]["y"])
         ent = self.get_entities(position=char_pos, radius=radius)
         if ent:
             entities.extend(ent)
             pass
 
-        #ent.extend(entities)
-        water_tiles = result['water_tiles']
+        # ent.extend(entities)
+        water_tiles = result["water_tiles"]
 
-
-        resources = result['resources']
-
+        resources = result["resources"]
 
         # Create renderer with decoded data
         renderer = Renderer(
             entities=entities,
             water_tiles=water_tiles,
             resources=resources,
-            max_render_radius=max_render_radius
+            max_render_radius=max_render_radius,
         )
         return renderer
 
@@ -180,51 +173,57 @@ class Render(Tool):
         Returns:
             Dictionary with decoded entities, water_tiles, and resources
         """
-        meta = result.get('meta', {})
-        format_version = meta.get('format', 'v1')
+        meta = result.get("meta", {})
+        format_version = meta.get("format", "v1")
 
-        if format_version == 'v2-binary':
+        if format_version == "v2-binary":
             # Handle binary compressed format
-            entities = result.get('entities', [])
+            entities = result.get("entities", [])
 
             # Decode binary water data
             water_tiles = []
-            if 'water_binary' in result:
-                water_binary = self.decoder.decode_base64_urlsafe(result['water_binary'])
+            if "water_binary" in result:
+                water_binary = self.decoder.decode_base64_urlsafe(
+                    result["water_binary"]
+                )
                 water_runs = self.decoder.decode_water_binary(water_binary)
                 water_tiles = self.decoder.decode_water_runs(water_runs)
 
             # Decode binary resource data
             resources = []
-            if 'resources_binary' in result:
-                resources_binary = self.decoder.decode_base64_urlsafe(result['resources_binary'])
-                resource_patches = self.decoder.decode_resources_binary(resources_binary)
+            if "resources_binary" in result:
+                resources_binary = self.decoder.decode_base64_urlsafe(
+                    result["resources_binary"]
+                )
+                resource_patches = self.decoder.decode_resources_binary(
+                    resources_binary
+                )
                 resources = self.decoder.decode_resource_patches(resource_patches)
 
             return {
-                'entities': entities,
-                'water_tiles': water_tiles,
-                'resources': resources
+                "entities": entities,
+                "water_tiles": water_tiles,
+                "resources": resources,
             }
-        elif format_version == 'v2':
+        elif format_version == "v2":
             # Handle optimized format
-            entities = result.get('entities', [])
-            water_runs = result.get('water', [])
-            resource_patches = result.get('resources', {})
+            entities = result.get("entities", [])
+            water_runs = result.get("water", [])
+            resource_patches = result.get("resources", {})
 
             # Decode compressed data
             water_tiles = self.decoder.decode_water_runs(water_runs)
             resources = self.decoder.decode_resource_patches(resource_patches)
 
             return {
-                'entities': entities,
-                'water_tiles': water_tiles,
-                'resources': resources
+                "entities": entities,
+                "water_tiles": water_tiles,
+                "resources": resources,
             }
         else:
             # Handle legacy format
             return {
-                'entities': result.get('entities', []),
-                'water_tiles': result.get('water_tiles', []),
-                'resources': result.get('resources', [])
+                "entities": result.get("entities", []),
+                "water_tiles": result.get("water_tiles", []),
+                "resources": result.get("resources", []),
             }

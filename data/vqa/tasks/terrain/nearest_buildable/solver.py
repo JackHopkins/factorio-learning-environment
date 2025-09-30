@@ -1,5 +1,5 @@
 import random
-from typing import List, Dict, Any
+from typing import List
 from inspect_ai.solver import Solver, solver, TaskState, Generate
 from fle.env import Position, BuildingBox
 from fle.env.game_types import Prototype
@@ -10,41 +10,34 @@ BUILDABLE_PROTOTYPES = [
     Prototype.WoodenChest,
     Prototype.IronChest,
     Prototype.SteelChest,
-
     # Production buildings
     Prototype.AssemblingMachine1,
     Prototype.AssemblingMachine2,
     Prototype.StoneFurnace,
     Prototype.SteelFurnace,
     Prototype.ElectricFurnace,
-
     # Mining
     Prototype.BurnerMiningDrill,
     Prototype.ElectricMiningDrill,
-
     # Power
     Prototype.SteamEngine,
     Prototype.SolarPanel,
     Prototype.Accumulator,
     Prototype.Boiler,
-
     # Logistics
     Prototype.TransportBelt,
     Prototype.FastTransportBelt,
     Prototype.Inserter,
     Prototype.LongHandedInserter,
     Prototype.FastInserter,
-
     # Defense
     Prototype.GunTurret,
     Prototype.StoneWall,
-
     # Fluid handling
     Prototype.Pipe,
     Prototype.StorageTank,
     Prototype.OffshorePump,
     Prototype.Pump,
-
     # Advanced
     Prototype.Lab,
     Prototype.ChemicalPlant,
@@ -55,9 +48,9 @@ BUILDABLE_PROTOTYPES = [
 
 @solver
 def nearest_buildable_questions(
-        questions_per_position: int = 5,
-        multiple_choice: bool = True,
-        prototype_subset: List[Prototype] = None
+    questions_per_position: int = 5,
+    multiple_choice: bool = True,
+    prototype_subset: List[Prototype] = None,
 ) -> Solver:
     """
     Generate questions about nearest buildable positions for various prototypes.
@@ -69,8 +62,8 @@ def nearest_buildable_questions(
     """
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
-        instance = state.metadata.get('instance')
-        renderer = state.metadata.get('renderer')
+        instance = state.metadata.get("instance")
+        renderer = state.metadata.get("renderer")
 
         if not instance or not renderer:
             state.metadata["error"] = "No instance found"
@@ -80,7 +73,7 @@ def nearest_buildable_questions(
         if not renderer:
             return state
 
-        characters = list(filter(lambda x: x.name == 'character', renderer.entities))
+        characters = list(filter(lambda x: x.name == "character", renderer.entities))
         player_position = None
         if len(characters) == 1:
             player_position = characters[0].position
@@ -113,7 +106,7 @@ def nearest_buildable_questions(
                 buildable_area = instance.namespace.nearest_buildable(
                     entity=prototype,
                     building_box=building_box,
-                    center_position=center_pos
+                    center_position=center_pos,
                 )
 
                 # Extract the center position of buildable area
@@ -132,10 +125,16 @@ def nearest_buildable_questions(
                         "center_position": {"x": center_pos.x, "y": center_pos.y},
                         "buildable_area": {
                             "center": {"x": nearest_pos.x, "y": nearest_pos.y},
-                            "left_top": {"x": buildable_area.left_top.x, "y": buildable_area.left_top.y},
-                            "right_bottom": {"x": buildable_area.right_bottom.x, "y": buildable_area.right_bottom.y}
+                            "left_top": {
+                                "x": buildable_area.left_top.x,
+                                "y": buildable_area.left_top.y,
+                            },
+                            "right_bottom": {
+                                "x": buildable_area.right_bottom.x,
+                                "y": buildable_area.right_bottom.y,
+                            },
                         },
-                        "question_type": "open_ended"
+                        "question_type": "open_ended",
                     }
                 else:
                     # Multiple choice question
@@ -144,14 +143,19 @@ def nearest_buildable_questions(
 
                     # Add some offset positions as distractors
                     offsets = [
-                        (-5, -5), (5, 5), (-10, 0), (0, 10),
-                        (-7, 3), (3, -7), (8, -2), (-2, 8)
+                        (-5, -5),
+                        (5, 5),
+                        (-10, 0),
+                        (0, 10),
+                        (-7, 3),
+                        (3, -7),
+                        (8, -2),
+                        (-2, 8),
                     ]
 
                     for offset_x, offset_y in random.sample(offsets, 3):
                         distractor_pos = Position(
-                            x=center_pos.x + offset_x,
-                            y=center_pos.y + offset_y
+                            x=center_pos.x + offset_x, y=center_pos.y + offset_y
                         )
                         distractors.append(distractor_pos)
 
@@ -160,12 +164,14 @@ def nearest_buildable_questions(
                     random.shuffle(options)
 
                     # Create alphabet labels
-                    alphabet = ['a', 'b', 'c', 'd']
+                    alphabet = ["a", "b", "c", "d"]
 
                     # Format options string
                     option_strings = []
                     for i, pos in enumerate(options):
-                        option_strings.append(f"{alphabet[i]}) Position(x={pos.x}, y={pos.y})")
+                        option_strings.append(
+                            f"{alphabet[i]}) Position(x={pos.x}, y={pos.y})"
+                        )
 
                     options_text = "\n".join(option_strings)
 
@@ -187,12 +193,18 @@ def nearest_buildable_questions(
                         "center_position": {"x": center_pos.x, "y": center_pos.y},
                         "buildable_area": {
                             "center": {"x": nearest_pos.x, "y": nearest_pos.y},
-                            "left_top": {"x": buildable_area.left_top.x, "y": buildable_area.left_top.y},
-                            "right_bottom": {"x": buildable_area.right_bottom.x, "y": buildable_area.right_bottom.y}
+                            "left_top": {
+                                "x": buildable_area.left_top.x,
+                                "y": buildable_area.left_top.y,
+                            },
+                            "right_bottom": {
+                                "x": buildable_area.right_bottom.x,
+                                "y": buildable_area.right_bottom.y,
+                            },
                         },
                         "options": [{"x": pos.x, "y": pos.y} for pos in options],
                         "correct_index": correct_index,
-                        "question_type": "multiple_choice"
+                        "question_type": "multiple_choice",
                     }
 
                 nearest_buildable_questions.append(qa_entry)
@@ -210,8 +222,7 @@ def nearest_buildable_questions(
 
 @solver
 def nearest_buildable_with_resources_questions(
-        questions_per_position: int = 3,
-        multiple_choice: bool = True
+    questions_per_position: int = 3, multiple_choice: bool = True
 ) -> Solver:
     """
     Generate questions about nearest buildable positions for resource-dependent entities
@@ -223,12 +234,12 @@ def nearest_buildable_with_resources_questions(
         (Prototype.BurnerMiningDrill, ["iron-ore", "copper-ore", "coal", "stone"]),
         (Prototype.ElectricMiningDrill, ["iron-ore", "copper-ore", "coal", "stone"]),
         (Prototype.PumpJack, ["crude-oil"]),
-        (Prototype.OffshorePump, ["water"])
+        (Prototype.OffshorePump, ["water"]),
     ]
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
-        instance = state.metadata.get('instance')
-        renderer = state.metadata.get('renderer')
+        instance = state.metadata.get("instance")
+        renderer = state.metadata.get("renderer")
 
         if not instance or not renderer:
             state.metadata["error"] = "No instance found"
@@ -238,7 +249,7 @@ def nearest_buildable_with_resources_questions(
         questions = []
         if not renderer:
             return state
-        characters = list(filter(lambda x: x.name == 'character', renderer.entities))
+        characters = list(filter(lambda x: x.name == "character", renderer.entities))
         player_position = None
         if len(characters) == 1:
             player_position = characters[0].position
@@ -256,14 +267,14 @@ def nearest_buildable_with_resources_questions(
                 building_box = BuildingBox(width=width, height=height)
 
                 # Get current position
-                player_pos = player_position #instance.namespace.get_player().position
+                player_pos = player_position  # instance.namespace.get_player().position
                 center_pos = Position(x=player_pos.x, y=player_pos.y)
 
                 # Find nearest buildable position (will consider resource requirements)
                 buildable_area = instance.namespace.nearest_buildable(
                     entity=prototype,
                     building_box=building_box,
-                    center_position=center_pos
+                    center_position=center_pos,
                 )
 
                 nearest_pos = buildable_area.center
@@ -278,9 +289,7 @@ def nearest_buildable_with_resources_questions(
                     resource_type = "ore"
 
                 if not multiple_choice:
-                    question = (
-                        f"What is the position of the nearest {resource_type} where I can build a {prototype.value[0]}?"
-                    )
+                    question = f"What is the position of the nearest {resource_type} where I can build a {prototype.value[0]}?"
                     answer = f"Position(x={nearest_pos.x}, y={nearest_pos.y})"
 
                     qa_entry = {
@@ -290,7 +299,7 @@ def nearest_buildable_with_resources_questions(
                         "resource_type": resource_type,
                         "building_box": {"width": width, "height": height},
                         "buildable_position": {"x": nearest_pos.x, "y": nearest_pos.y},
-                        "question_type": "open_ended"
+                        "question_type": "open_ended",
                     }
                 else:
                     # Generate distractors
@@ -299,15 +308,14 @@ def nearest_buildable_with_resources_questions(
 
                     for offset_x, offset_y in random.sample(offsets, 3):
                         distractor = Position(
-                            x=center_pos.x + offset_x,
-                            y=center_pos.y + offset_y
+                            x=center_pos.x + offset_x, y=center_pos.y + offset_y
                         )
                         distractors.append(distractor)
 
                     options = distractors + [nearest_pos]
                     random.shuffle(options)
 
-                    alphabet = ['a', 'b', 'c', 'd']
+                    alphabet = ["a", "b", "c", "d"]
                     option_strings = [
                         f"{alphabet[i]}) Position(x={pos.x}, y={pos.y})"
                         for i, pos in enumerate(options)
@@ -330,7 +338,7 @@ def nearest_buildable_with_resources_questions(
                         "buildable_position": {"x": nearest_pos.x, "y": nearest_pos.y},
                         "options": [{"x": pos.x, "y": pos.y} for pos in options],
                         "correct_index": correct_index,
-                        "question_type": "multiple_choice"
+                        "question_type": "multiple_choice",
                     }
 
                 questions.append(qa_entry)

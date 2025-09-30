@@ -5,15 +5,15 @@ from typing import List, Tuple
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from data.vqa.common_solvers import (
-    attach_bounding_box
+from data.vqa.common_solvers import attach_bounding_box
+from data.vqa.tasks.terrain.character_localisation.solver import (
+    character_localisation_question,
 )
-from data.vqa.tasks.terrain.character_localisation.solver import character_localisation_question
 from data.vqa.tasks.terrain.dataset import raw_position_dataset
 from data.vqa.tasks.terrain.nearest.solver import nearest_questions
 from data.vqa.tasks.terrain.nearest_buildable.solver import (
     nearest_buildable_questions,
-    nearest_buildable_with_resources_questions
+    nearest_buildable_with_resources_questions,
 )
 from data.vqa.tasks.terrain.solver import render_terrain
 from data.vqa.tasks.terrain.tile_count.solver import tile_count_questions
@@ -23,13 +23,13 @@ from fle.env import FactorioInstance
 
 @task
 def terrain_task(
-        instance,
-        include_nearest: bool = True,
-        include_buildable: bool = True,
-        include_resource_buildable: bool = True,
-        include_tile_count: bool = False,
-        include_character_loc: bool = True,
-        multiple_choice: bool = True
+    instance,
+    include_nearest: bool = True,
+    include_buildable: bool = True,
+    include_resource_buildable: bool = True,
+    include_tile_count: bool = False,
+    include_character_loc: bool = True,
+    multiple_choice: bool = True,
 ) -> Task:
     """
     Terrain analysis task including nearest buildable positions.
@@ -56,16 +56,18 @@ def terrain_task(
         solvers.append(nearest_questions(multiple_choice=multiple_choice))
 
     if include_buildable:
-        solvers.append(nearest_buildable_questions(
-            questions_per_position=5,
-            multiple_choice=multiple_choice
-        ))
+        solvers.append(
+            nearest_buildable_questions(
+                questions_per_position=5, multiple_choice=multiple_choice
+            )
+        )
 
     if include_resource_buildable:
-        solvers.append(nearest_buildable_with_resources_questions(
-            questions_per_position=3,
-            multiple_choice=multiple_choice
-        ))
+        solvers.append(
+            nearest_buildable_with_resources_questions(
+                questions_per_position=3, multiple_choice=multiple_choice
+            )
+        )
 
     if include_tile_count:
         solvers.append(tile_count_questions(multiple_choice=multiple_choice))
@@ -95,16 +97,15 @@ def nearest_buildable_task(instance, multiple_choice: bool = True) -> Task:
             attach_bounding_box(),
             render_terrain(instance),
             nearest_buildable_questions(
-                questions_per_position=8,
-                multiple_choice=multiple_choice
+                questions_per_position=8, multiple_choice=multiple_choice
             ),
             nearest_buildable_with_resources_questions(
-                questions_per_position=4,
-                multiple_choice=multiple_choice
-            )
+                questions_per_position=4, multiple_choice=multiple_choice
+            ),
         ],
         scorer=None,
     )
+
 
 def create_factorio_instances() -> List[FactorioInstance]:
     def init_instance(params: Tuple[str, int, int]) -> FactorioInstance:
@@ -131,27 +132,30 @@ if __name__ == "__main__":
     model = ["anthropic/claude-sonnet-4-20250514"]
 
     instance = create_factorio_instances()[-1]
-    #instance.reset()
+    # instance.reset()
     # Example 1: Run comprehensive terrain task
     results = eval(
-        tasks=[terrain_task(
-            instance,
-            include_nearest=True,
-            include_buildable=True,
-            include_resource_buildable=True,
-            multiple_choice=True
-        ), terrain_task(
-            instance,
-            include_nearest=True,
-            include_buildable=True,
-            include_resource_buildable=True,
-            multiple_choice=False
-        )],
+        tasks=[
+            terrain_task(
+                instance,
+                include_nearest=True,
+                include_buildable=True,
+                include_resource_buildable=True,
+                multiple_choice=True,
+            ),
+            terrain_task(
+                instance,
+                include_nearest=True,
+                include_buildable=True,
+                include_resource_buildable=True,
+                multiple_choice=False,
+            ),
+        ],
         model=model,
         limit=10,
         log_dir="../../logs/",
         fail_on_error=0.5,
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )
 
     # Example 2: Run focused nearest buildable task

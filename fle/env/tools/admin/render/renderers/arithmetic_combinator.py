@@ -6,14 +6,8 @@ Arithmetic combinator renderer with display
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
-from fle.env import EntityCore
 
-DIRECTIONS = {
-    0: "north",
-    2: "east",
-    4: "south",
-    6: "west"
-}
+DIRECTIONS = {0: "north", 2: "east", 4: "south", 6: "west"}
 
 COMBINATOR_TO_NORMAL = {
     None: "empty",
@@ -32,30 +26,30 @@ COMBINATOR_TO_NORMAL = {
     "or": "or",
     "OR": "or",
     "xor": "xor",
-    "XOR": "xor"
+    "XOR": "xor",
 }
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render arithmetic combinator with display"""
-    #entity = ent.model_dump()
-    direction = entity.get('direction', 0)
+    # entity = ent.model_dump()
+    direction = entity.get("direction", 0)
     base = image_resolver(f"{entity['name']}_{DIRECTIONS[direction]}")
 
     if base is None:
         return None
 
     # Check for control behavior
-    control = entity.get('control_behavior', {})
-    conditions = control.get('arithmetic_conditions', {})
-    operation = conditions.get('operation')
+    control = entity.get("control_behavior", {})
+    conditions = control.get("arithmetic_conditions", {})
+    operation = conditions.get("operation")
 
     if operation is None:
         return base
 
     # Create a copy to modify
     result = base.copy()
-    display_name = COMBINATOR_TO_NORMAL.get(operation, 'empty')
+    display_name = COMBINATOR_TO_NORMAL.get(operation, "empty")
     icon = image_resolver(f"display_{display_name}")
 
     if icon:
@@ -65,22 +59,24 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
         else:
             x, y = 36, 20
 
-        result.paste(icon, (x, y), icon if icon.mode == 'RGBA' else None)
+        result.paste(icon, (x, y), icon if icon.mode == "RGBA" else None)
 
     return result
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Arithmetic combinators have no shadows"""
     return None
 
 
 def get_key(entity: Dict, grid) -> str:
     """Get cache key including operation"""
-    direction = entity.get('direction', 0)
-    control = entity.get('control_behavior', {})
-    conditions = control.get('arithmetic_conditions', {})
-    operation = conditions.get('operation', '')
+    direction = entity.get("direction", 0)
+    control = entity.get("control_behavior", {})
+    conditions = control.get("arithmetic_conditions", {})
+    operation = conditions.get("operation", "")
 
     if operation:
         return f"{direction}_{operation}"
@@ -89,7 +85,7 @@ def get_key(entity: Dict, grid) -> str:
 
 def get_size(entity: Dict) -> Tuple[float, float]:
     """Get size based on direction"""
-    direction = entity.get('direction', 0)
+    direction = entity.get("direction", 0)
     if direction in [2, 6]:  # East/West
         return (2, 1)
     else:  # North/South

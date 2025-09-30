@@ -3,30 +3,24 @@
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
-from data.vqa.common_solvers import (
-    normalize_position_format,
-    attach_bounding_box
-)
+from data.vqa.common_solvers import normalize_position_format, attach_bounding_box
 
 from data.vqa.tasks.factory.dataset import terrain_position_dataset
 from data.vqa.tasks.factory.nearest_entity.solver import (
     render_factory,
-    nearest_entity_questions
+    nearest_entity_questions,
 )
 from data.vqa.tasks.factory.entity_status.solver import entity_status_questions
 from data.vqa.tasks.terrain.task import create_factorio_instances
-from fle.agents.data.screenshots_from_run import create_factorio_instance
 
 
 @task
 def nearest_entity_task(
-        instance,
-        questions_per_position: int = 5,
-        multiple_choice: bool = True
+    instance, questions_per_position: int = 5, multiple_choice: bool = True
 ) -> Task:
     """
     Task for finding and placing entities, then asking about nearest entity positions.
-    
+
     Args:
         questions_per_position: Number of questions to generate per position
         multiple_choice: If True, generate multiple choice questions
@@ -44,9 +38,9 @@ def nearest_entity_task(
             nearest_entity_questions(
                 instance,
                 questions_per_position=questions_per_position,
-                multiple_choice=multiple_choice
+                multiple_choice=multiple_choice,
             ),
-            normalize_position_format()
+            normalize_position_format(),
         ],
         scorer=None,
     )
@@ -54,13 +48,11 @@ def nearest_entity_task(
 
 @task
 def entity_status_task(
-        instance,
-        questions_per_position: int = 5,
-        multiple_choice: bool = True
+    instance, questions_per_position: int = 5, multiple_choice: bool = True
 ) -> Task:
     """
     Task for asking about entity statuses in a factory.
-    
+
     Args:
         questions_per_position: Number of questions to generate per position
         multiple_choice: If True, generate multiple choice questions
@@ -78,14 +70,14 @@ def entity_status_task(
             nearest_entity_questions(
                 instance,
                 questions_per_position=3,  # Place some entities first
-                multiple_choice=multiple_choice
+                multiple_choice=multiple_choice,
             ),
             entity_status_questions(
                 instance,
                 questions_per_position=questions_per_position,
-                multiple_choice=multiple_choice
+                multiple_choice=multiple_choice,
             ),
-            normalize_position_format()
+            normalize_position_format(),
         ],
         scorer=None,
     )
@@ -93,14 +85,14 @@ def entity_status_task(
 
 @task
 def factory_task(
-        instance,
-        include_nearest_entity: bool = True,
-        include_entity_status: bool = True,
-        multiple_choice: bool = True
+    instance,
+    include_nearest_entity: bool = True,
+    include_entity_status: bool = True,
+    multiple_choice: bool = True,
 ) -> Task:
     """
     Comprehensive factory analysis task.
-    
+
     Args:
         include_nearest_entity: Include nearest entity questions
         include_entity_status: Include entity status questions
@@ -113,26 +105,25 @@ def factory_task(
             entity positions, statuses, production chains, and factory layout."""),
         attach_bounding_box(),
         render_factory(instance),
-
     ]
-    
+
     # Add selected question types
     if include_nearest_entity:
-        solvers.append(nearest_entity_questions(
-            instance,
-            questions_per_position=5,
-            multiple_choice=multiple_choice
-        ))
-    
+        solvers.append(
+            nearest_entity_questions(
+                instance, questions_per_position=5, multiple_choice=multiple_choice
+            )
+        )
+
     if include_entity_status:
-        solvers.append(entity_status_questions(
-            instance,
-            questions_per_position=5,
-            multiple_choice=multiple_choice
-        ))
-    
+        solvers.append(
+            entity_status_questions(
+                instance, questions_per_position=5, multiple_choice=multiple_choice
+            )
+        )
+
     solvers.append(normalize_position_format())
-    
+
     return Task(
         name="factory_task" + ("_mc" if multiple_choice else ""),
         dataset=terrain_position_dataset(),
@@ -144,9 +135,9 @@ def factory_task(
 if __name__ == "__main__":
     from inspect_ai import eval
     from data.vqa.hook import VQAPairsHook
-    
+
     model = ["anthropic/claude-sonnet-4-20250514"]
-    
+
     # Example 1: Run nearest entity task
     # results = eval(
     #     tasks=nearest_entity_task(
@@ -158,7 +149,7 @@ if __name__ == "__main__":
     #     log_dir="../../logs",
     #     hooks=[VQAPairsHook()]
     # )
-    
+
     # Example 2: Run entity status task
     # results = eval(
     #     tasks=entity_status_task(
@@ -178,11 +169,11 @@ if __name__ == "__main__":
             instances[0],
             include_nearest_entity=True,
             include_entity_status=True,
-            multiple_choice=True
+            multiple_choice=True,
         ),
         model=model,
         limit=10,
         fail_on_error=0.5,
         log_dir="../../logs",
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )

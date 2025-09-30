@@ -8,10 +8,9 @@ import shutil
 import tarfile
 import zipfile
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 import concurrent.futures
 from functools import partial
-import requests
 from tqdm import tqdm
 from huggingface_hub import hf_hub_download, list_repo_files, snapshot_download
 import threading
@@ -29,7 +28,9 @@ class OptimizedSpriteDownloader:
         self.completed_files = 0
         self.total_files = 0
 
-    def download_file_parallel(self, file_path: str, output_path: Path, pbar: tqdm) -> Optional[Path]:
+    def download_file_parallel(
+        self, file_path: str, output_path: Path, pbar: tqdm
+    ) -> Optional[Path]:
         """Download a single file with progress tracking"""
         try:
             # Download to cache
@@ -38,7 +39,7 @@ class OptimizedSpriteDownloader:
                 filename=file_path,
                 repo_type="dataset",
                 cache_dir=output_path / ".cache",
-                force_filename=file_path  # Keep original structure
+                force_filename=file_path,  # Keep original structure
             )
 
             # Copy to final location
@@ -68,12 +69,12 @@ class OptimizedSpriteDownloader:
 
 
 def download_sprites_from_hf(
-        repo_id: str = "Noddybear/fle_images",
-        output_dir: str = ".fle/spritemaps",
-        force: bool = False,
-        num_workers: int = 10,
-        use_snapshot: bool = True,
-        archive_name: Optional[str] = None
+    repo_id: str = "Noddybear/fle_images",
+    output_dir: str = ".fle/spritemaps",
+    force: bool = False,
+    num_workers: int = 10,
+    use_snapshot: bool = True,
+    archive_name: Optional[str] = None,
 ) -> bool:
     """
     Optimized sprite download with multiple strategies
@@ -94,7 +95,9 @@ def download_sprites_from_hf(
     # Check if already downloaded
     if output_path.exists() and not force:
         if any(output_path.iterdir()):
-            print(f"Sprites already exist in {output_path}. Use --force to re-download.")
+            print(
+                f"Sprites already exist in {output_path}. Use --force to re-download."
+            )
             return True
 
     output_path.mkdir(parents=True, exist_ok=True)
@@ -122,13 +125,19 @@ def check_for_archive(repo_id: str) -> Optional[str]:
         files = list_repo_files(repo_id, repo_type="dataset")
 
         # Look for common archive formats
-        archive_extensions = ['.tar.gz', '.tar.bz2', '.tar', '.zip', '.7z']
-        archives = [f for f in files if any(f.endswith(ext) for ext in archive_extensions)]
+        archive_extensions = [".tar.gz", ".tar.bz2", ".tar", ".zip", ".7z"]
+        archives = [
+            f for f in files if any(f.endswith(ext) for ext in archive_extensions)
+        ]
 
         # Look for files that might contain sprites
         sprite_archives = [
-            a for a in archives
-            if any(keyword in a.lower() for keyword in ['sprite', 'image', 'all', 'complete'])
+            a
+            for a in archives
+            if any(
+                keyword in a.lower()
+                for keyword in ["sprite", "image", "all", "complete"]
+            )
         ]
 
         if sprite_archives:
@@ -145,7 +154,9 @@ def check_for_archive(repo_id: str) -> Optional[str]:
     return None
 
 
-def download_archive_strategy(repo_id: str, output_path: Path, archive_name: Optional[str]) -> bool:
+def download_archive_strategy(
+    repo_id: str, output_path: Path, archive_name: Optional[str]
+) -> bool:
     """Download and extract archive file (fastest method)"""
     print("Using archive download strategy...")
 
@@ -163,14 +174,14 @@ def download_archive_strategy(repo_id: str, output_path: Path, archive_name: Opt
             repo_id=repo_id,
             filename=archive_name,
             repo_type="dataset",
-            cache_dir=output_path / ".cache"
+            cache_dir=output_path / ".cache",
         )
 
         # Extract based on file type
         print("Extracting sprites...")
 
-        if archive_name.endswith('.zip'):
-            with zipfile.ZipFile(archive_path, 'r') as zf:
+        if archive_name.endswith(".zip"):
+            with zipfile.ZipFile(archive_path, "r") as zf:
                 # Extract with progress bar
                 members = zf.namelist()
                 with tqdm(total=len(members), desc="Extracting") as pbar:
@@ -178,8 +189,14 @@ def download_archive_strategy(repo_id: str, output_path: Path, archive_name: Opt
                         zf.extract(member, output_path)
                         pbar.update(1)
 
-        elif archive_name.endswith(('.tar.gz', '.tar.bz2', '.tar')):
-            mode = 'r:gz' if archive_name.endswith('.gz') else 'r:bz2' if archive_name.endswith('.bz2') else 'r'
+        elif archive_name.endswith((".tar.gz", ".tar.bz2", ".tar")):
+            mode = (
+                "r:gz"
+                if archive_name.endswith(".gz")
+                else "r:bz2"
+                if archive_name.endswith(".bz2")
+                else "r"
+            )
             with tarfile.open(archive_path, mode) as tf:
                 # Extract with progress bar
                 members = tf.getmembers()
@@ -210,7 +227,7 @@ def download_snapshot_strategy(repo_id: str, output_path: Path) -> bool:
 
     try:
         # snapshot_download is optimized for downloading entire repos
-        snapshot_path = snapshot_download(
+        snapshot_download(
             repo_id=repo_id,
             repo_type="dataset",
             cache_dir=output_path / ".cache",
@@ -232,7 +249,9 @@ def download_snapshot_strategy(repo_id: str, output_path: Path) -> bool:
         return False
 
 
-def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int) -> bool:
+def download_parallel_strategy(
+    repo_id: str, output_path: Path, num_workers: int
+) -> bool:
     """Parallel download of individual files"""
     print(f"Using parallel download strategy with {num_workers} workers...")
 
@@ -241,7 +260,7 @@ def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int
 
         # List all files
         files = list_repo_files(repo_id, repo_type="dataset")
-        image_files = [f for f in files if f.endswith(('.png', '.jpg', '.jpeg'))]
+        image_files = [f for f in files if f.endswith((".png", ".jpg", ".jpeg"))]
 
         if not image_files:
             print("No image files found in the repository.")
@@ -253,12 +272,14 @@ def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int
         # Create progress bar
         with tqdm(total=len(image_files), desc="Downloading sprites") as pbar:
             # Use ThreadPoolExecutor for parallel downloads
-            with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=num_workers
+            ) as executor:
                 # Create partial function with fixed arguments
                 download_func = partial(
                     downloader.download_file_parallel,
                     output_path=output_path,
-                    pbar=pbar
+                    pbar=pbar,
                 )
 
                 # Submit all downloads
@@ -269,7 +290,7 @@ def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int
 
                 # Wait for completion
                 for future in concurrent.futures.as_completed(futures):
-                    result = future.result()
+                    future.result()
                     # Result handling is done in download_file_parallel
 
         # Clean up cache
@@ -277,7 +298,9 @@ def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int
         if cache_dir.exists():
             shutil.rmtree(cache_dir)
 
-        print(f"Successfully downloaded {downloader.completed_files}/{downloader.total_files} sprites")
+        print(
+            f"Successfully downloaded {downloader.completed_files}/{downloader.total_files} sprites"
+        )
         return downloader.completed_files > 0
 
     except Exception as e:
@@ -286,9 +309,9 @@ def download_parallel_strategy(repo_id: str, output_path: Path, num_workers: int
 
 
 def create_sprite_archive(
-        input_dir: str = ".fle/sprites",
-        output_file: str = "fle_sprites.tar.gz",
-        compression: str = "gz"
+    input_dir: str = ".fle/sprites",
+    output_file: str = "fle_sprites.tar.gz",
+    compression: str = "gz",
 ) -> bool:
     """
     Create a compressed archive of sprites for faster distribution
@@ -307,7 +330,7 @@ def create_sprite_archive(
     print(f"Creating archive {output_file}...")
 
     try:
-        mode = f'w:{compression}' if compression else 'w'
+        mode = f"w:{compression}" if compression else "w"
 
         with tarfile.open(output_file, mode) as tar:
             # Get all files to archive
@@ -330,9 +353,9 @@ def create_sprite_archive(
         print(f"Error creating archive: {e}")
         return False
 
+
 def generate_sprites(
-        input_dir: str = ".fle/spritemaps",
-        output_dir: str = ".fle/sprites"
+    input_dir: str = ".fle/spritemaps", output_dir: str = ".fle/sprites"
 ):
     """
     Generate individual sprites from spritemaps
@@ -352,7 +375,9 @@ def generate_sprites(
         sys.path.insert(0, str(sprites_module_path))
 
     try:
-        from fle.agents.data.sprites.extractors.entities import EntitySpritesheetExtractor
+        from fle.agents.data.sprites.extractors.entities import (
+            EntitySpritesheetExtractor,
+        )
         from fle.agents.data.sprites.extractors.resources import ResourceSpriteExtractor
         from fle.agents.data.sprites.extractors.terrain import TerrainSpriteExtractor
         from fle.agents.data.sprites.extractors.trees import TreeSpriteExtractor
@@ -365,7 +390,9 @@ def generate_sprites(
     output_path = Path(output_dir)
 
     if not input_path.exists():
-        print(f"Input directory {input_path} does not exist. Run 'fle sprites download' first.")
+        print(
+            f"Input directory {input_path} does not exist. Run 'fle sprites download' first."
+        )
         return False
 
     print(f"Generating sprites from {input_path} to {output_path}...")
@@ -386,7 +413,9 @@ def generate_sprites(
         if base_graphics.exists():
             resources_path = base_graphics / "resources"
             if resources_path.exists():
-                resources = ResourceSpriteExtractor(str(resources_path), str(output_path))
+                resources = ResourceSpriteExtractor(
+                    str(resources_path), str(output_path)
+                )
                 resources.extract_all_resources()
                 resources.create_all_icons()
 
@@ -435,5 +464,6 @@ def generate_sprites(
     except Exception as e:
         print(f"Error generating sprites: {e}")
         import traceback
+
         traceback.print_exc()
         return False

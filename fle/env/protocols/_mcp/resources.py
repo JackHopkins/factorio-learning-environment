@@ -3,7 +3,6 @@ from typing import List, Dict
 
 from fle.commons.models import ProductionFlows
 from fle.env.entities import Position
-from fle.env.gym_env.action import Action
 from fle.env.gym_env.observation import Observation
 from fle.env.protocols._mcp.init import state, initialize_session
 from fle.env.protocols._mcp import mcp
@@ -16,6 +15,7 @@ from mcp.types import ImageContent, Annotations
 
 # ============== RESOURCES ==============
 # These are read-only operations that return data
+
 
 @mcp.resource("fle://entities/{center_x}/{center_y}/{radius}")
 async def entities(center_x: str, center_y: str, radius: str) -> List[Dict]:
@@ -34,9 +34,7 @@ async def entities(center_x: str, center_y: str, radius: str) -> List[Dict]:
         cy = float(center_y) if center_y != "default" else 0
         r = float(radius) if radius != "default" else 500
 
-        entities = instance.namespace.get_entities(
-            position=Position(cx, cy), radius=r
-        )
+        entities = instance.namespace.get_entities(position=Position(cx, cy), radius=r)
         return [e.model_dump() for e in entities]
     except Exception as e:
         raise Exception(f"Error getting entities: {str(e)}")
@@ -50,21 +48,23 @@ async def inventory() -> Dict:
         if not state.active_server:
             raise Exception(f"No active Factorio server connection. {init_result}")
 
-        #raise Exception("No active Factorio server connection. Use `status` first to connect.")
+        # raise Exception("No active Factorio server connection. Use `status` first to connect.")
 
     instance = state.active_server
 
     try:
         inventory = instance.namespaces[0].inspect_inventory()
-        return inventory#.dict()
+        return inventory  # .dict()
     except Exception as e:
         raise Exception(f"Error getting inventory: {str(e)}")
 
 
-@mcp.resource("fle://position",
-              name="position",
-              description="Gets your current position",
-              annotations=Annotations(audience=['assistant'], priority=1))
+@mcp.resource(
+    "fle://position",
+    name="position",
+    description="Gets your current position",
+    annotations=Annotations(audience=["assistant"], priority=1),
+)
 async def position() -> Dict[str, int]:
     """Get your position in the Factorio world"""
     if not state.active_server:
@@ -74,18 +74,17 @@ async def position() -> Dict[str, int]:
 
     try:
         position = state.active_server.namespaces[0].player_location
-        return {
-            'x': position.x,
-            'y': position.y
-        }
+        return {"x": position.x, "y": position.y}
     except Exception as e:
         raise Exception(f"Error getting position: {str(e)}")
 
 
-@mcp.resource("fle://prototypes",
-              name="prototypes",
-              description="Gets the names of all entity prototypes in the game",
-              annotations=Annotations(audience=['assistant'], priority=1))
+@mcp.resource(
+    "fle://prototypes",
+    name="prototypes",
+    description="Gets the names of all entity prototypes in the game",
+    annotations=Annotations(audience=["assistant"], priority=1),
+)
 async def prototypes() -> List[str]:
     """Get the names of all entities available in the game (Prototype objects)"""
     # Initialize recipes if empty
@@ -108,6 +107,7 @@ async def recipe(prototype: str) -> str:
 
     recipe = state.recipes[prototype]
     import json
+
     recipe_data = {
         "name": recipe.name,
         "ingredients": recipe.ingredients,
@@ -127,21 +127,18 @@ async def schema() -> str:
 
 
 @mcp.resource("fle://api/manual", mime_type="application/json")
-async def manuals() -> dict:#List[str]:
+async def manuals() -> dict:  # List[str]:
     """Get API documentation for a specific method"""
     execution_path = importlib.resources.files("fle") / "env"
     agent_tools_path = execution_path / "tools" / "agent"
 
     if not agent_tools_path.exists() or not agent_tools_path.is_dir():
-        return {
-            "error": f"Agent tools directory not found at {agent_tools_path}"
-        }
+        return {"error": f"Agent tools directory not found at {agent_tools_path}"}
 
     available_tools = [d.name for d in agent_tools_path.iterdir() if d.is_dir()]
 
-    return {
-        "tools": available_tools
-    }
+    return {"tools": available_tools}
+
 
 @mcp.resource("fle://api/manual/{method}")
 async def manual(method: str) -> str:
@@ -184,7 +181,6 @@ async def status() -> str:
         return "Connected to Factorio server"
 
 
-
 @mcp.resource("fle://metrics")
 async def metrics() -> dict:
     """Production throughput statistics in the world"""
@@ -200,15 +196,16 @@ async def metrics() -> dict:
             "error": str(e),
         }
 
+
 @mcp.resource("fle://warnings")
 async def warnings() -> list:
-
     if not state.active_server:
         await initialize_session(None)
 
     warnings = state.active_server.get_warnings()
 
     return warnings
+
 
 @mcp.resource("fle://render/{center_x}/{center_y}")
 async def render_at(center_x: str, center_y: str) -> ImageContent:
@@ -233,20 +230,21 @@ async def render_at(center_x: str, center_y: str) -> ImageContent:
 
         img = instance.namespace._render(position=Position(cx, cy))
         if img is None:
-            raise Exception("Failed to render: Game state not properly initialized or player entity invalid")
+            raise Exception(
+                "Failed to render: Game state not properly initialized or player entity invalid"
+            )
 
         # Convert to base64
-        import io
-        import base64
 
-        #buffer = io.BytesIO()
-        #img.save(buffer, format='PNG')
-        #img_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        # buffer = io.BytesIO()
+        # img.save(buffer, format='PNG')
+        # img_data = base64.b64encode(buffer.getvalue()).decode('utf-8')
         content = Image(data=img._repr_png_(), format="png").to_image_content()
-        #return f"data:image/png;base64,{img_data}"
+        # return f"data:image/png;base64,{img_data}"
         return content
 
     except Exception as e:
         raise Exception(f"Error rendering: {str(e)}")
+
 
 pass

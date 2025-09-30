@@ -11,6 +11,7 @@ from fle.env.protocols._mcp.models import FactorioServer, Recipe, ResourcePatch
 from fle.env.protocols._mcp.repository import FactorioMCPRepository
 import gym
 
+
 class FactorioMCPState:
     """Manages the state of the Factorio MCP server"""
 
@@ -38,20 +39,20 @@ class FactorioMCPState:
 
         try:
             env_ids = list_available_environments()
-            #print(f"DEBUG: Available environment IDs: {env_ids}")
-            #print(f"DEBUG: Number of environments found: {len(env_ids)}")
-            
+            # print(f"DEBUG: Available environment IDs: {env_ids}")
+            # print(f"DEBUG: Number of environments found: {len(env_ids)}")
+
             if not env_ids:
                 raise Exception("No environments found")
-                
+
             for id in env_ids:
-                if 'open' in id:
+                if "open" in id:
                     print(f"DEBUG: Using open environment: {id}")
                     self.gym_env = gym.make(id, run_idx=0)
                     self.gym_env.reset()
                     return
-                    
-            #print(f"DEBUG: No open environment found, using first available: {env_ids[0]}")
+
+            # print(f"DEBUG: No open environment found, using first available: {env_ids[0]}")
             self.gym_env = gym.make(env_ids[0], run_idx=0)
 
             # program = await self.create_program_from_policy(
@@ -65,14 +66,16 @@ class FactorioMCPState:
             #
         except IndexError as e:
             print(f"IndexError in __init__: {e}")
-            print(f"env_ids length: {len(env_ids) if 'env_ids' in locals() else 'Not available'}")
+            print(
+                f"env_ids length: {len(env_ids) if 'env_ids' in locals() else 'Not available'}"
+            )
             print("Falling back to steel_plate_throughput environment")
-            self.gym_env = gym.make('steel_plate_throughput', run_idx=0)
+            self.gym_env = gym.make("steel_plate_throughput", run_idx=0)
         except Exception as e:
             print(f"Error in __init__: {e}")
             print(f"Error type: {type(e)}")
             print("Falling back to steel_plate_throughput environment")
-            self.gym_env = gym.make('steel_plate_throughput', run_idx=0)
+            self.gym_env = gym.make("steel_plate_throughput", run_idx=0)
 
         self.gym_env.reset()
 
@@ -82,10 +85,14 @@ class FactorioMCPState:
             ips, udp_ports, tcp_ports = get_local_container_ips()
 
             if instance_id >= len(ips):
-                raise IndexError(f"instance_id {instance_id} out of range for ips list of length {len(ips)}")
+                raise IndexError(
+                    f"instance_id {instance_id} out of range for ips list of length {len(ips)}"
+                )
             if instance_id >= len(tcp_ports):
-                raise IndexError(f"instance_id {instance_id} out of range for tcp_ports list of length {len(tcp_ports)}")
-            
+                raise IndexError(
+                    f"instance_id {instance_id} out of range for tcp_ports list of length {len(tcp_ports)}"
+                )
+
             instance = FactorioInstance(
                 address=ips[instance_id],
                 tcp_port=tcp_ports[instance_id],
@@ -93,17 +100,18 @@ class FactorioMCPState:
                 fast=True,
                 cache_scripts=True,
                 inventory={
-                    'stone-furnace': 1,
-                    'burner-mining-drill': 1,
-                    'wood': 5,
-                    'iron-plate': 8
+                    "stone-furnace": 1,
+                    "burner-mining-drill": 1,
+                    "wood": 5,
+                    "iron-plate": 8,
                 },
                 all_technologies_researched=True,
             )
             # Ensure agent characters exist (removed one-time associate command)
             # Check if agent characters exist, if not create them
             char_check = instance.rcon_client.send_command(
-                "/c rcon.print(global.agent_characters and #global.agent_characters or 0)")
+                "/c rcon.print(global.agent_characters and #global.agent_characters or 0)"
+            )
 
             if int(char_check) == 0:
                 instance.first_namespace._create_agent_characters(1)

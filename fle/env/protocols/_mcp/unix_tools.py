@@ -17,6 +17,7 @@ def _get_tools_base_path() -> Path:
     """Get the base path to the tools directory"""
     return importlib.resources.files("fle") / "env" / "tools"
 
+
 def _get_repo_base_path() -> Path:
     """Get the base path to the repository directory"""
     return importlib.resources.files("fle")
@@ -27,6 +28,7 @@ def _get_factorio_repo_path() -> Path:
     base_path = importlib.resources.files("fle")
     repo_path = base_path / ".claude-code"
     return repo_path
+
 
 @mcp.tool(enabled=False)
 async def ls(path: str = "agent", pattern: str = None) -> str:
@@ -396,7 +398,9 @@ async def tail(file_path: str = "tools/agent", lines: int = 10) -> str:
 
 
 @mcp.tool(enabled=False)
-async def tree(path: str = "tools/agent", max_depth: int = 3, show_hidden: bool = False) -> str:
+async def tree(
+    path: str = "tools/agent", max_depth: int = 3, show_hidden: bool = False
+) -> str:
     """
     Display directory structure in a tree-like format
 

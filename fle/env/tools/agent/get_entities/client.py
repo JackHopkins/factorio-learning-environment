@@ -4,7 +4,6 @@ from memoization import cached
 
 from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
-from fle.env.tools.admin.render.profiler import profile_method
 from fle.env.tools.agent.connect_entities.groupable_entities import (
     agglomerate_groupable_entities,
 )
@@ -151,12 +150,14 @@ class GetEntities(Tool):
                     if "inventory" in entity_data:
                         if isinstance(entity_data["inventory"], list):
                             for inv in entity_data["inventory"]:
-                                entity_data['inventory'] += inv
+                                entity_data["inventory"] += inv
                         else:
                             inventory_data = {
-                                k: v for k, v in entity_data['inventory'].items() if v or isinstance(v, int)
+                                k: v
+                                for k, v in entity_data["inventory"].items()
+                                if v or isinstance(v, int)
                             }
-                            entity_data['inventory'] = inventory_data
+                            entity_data["inventory"] = inventory_data
 
                     entity = metaclass(**entity_data)
                     entities_list.append(entity)

@@ -3,19 +3,9 @@
 from typing import Dict, Final
 
 # Direction mappings
-DIRECTIONS: Final[Dict[int, str]] = {
-    0: "north",
-    2: "east", 
-    4: "south",
-    6: "west"
-}
+DIRECTIONS: Final[Dict[int, str]] = {0: "north", 2: "east", 4: "south", 6: "west"}
 
-RELATIVE_DIRECTIONS: Final[Dict[int, str]] = {
-    0: "up",
-    2: "right",
-    4: "down",
-    6: "left"
-}
+RELATIVE_DIRECTIONS: Final[Dict[int, str]] = {0: "up", 2: "right", 4: "down", 6: "left"}
 
 # Direction constants
 NORTH: Final[int] = 0
@@ -52,7 +42,7 @@ COMBINATOR_TO_NORMAL: Final[Dict[str, str]] = {
     ">=": "gte",
     "≥": "gte",
     "<=": "lte",
-    "≤": "lte"
+    "≤": "lte",
 }
 
 # Rendering constants
@@ -61,11 +51,11 @@ GRID_LINE_WIDTH: Final[int] = 2
 GRID_LINE_WIDTH_THIN: Final[float] = 0.25
 GRID_LINE_WIDTH_MEDIUM: Final[float] = 1.0
 GRID_LINE_WIDTH_THICK: Final[float] = 1.5
-BACKGROUND_COLOR: Final[str] = '#282828'
-GRID_COLOR: Final[str] = '#3c3c3c'
-GRID_COLOR_THIN: Final[str] = '#3c3c3c'
-GRID_COLOR_MEDIUM: Final[str] = '#4a4a4a'
-GRID_COLOR_THICK: Final[str] = '#5a5a5a'
+BACKGROUND_COLOR: Final[str] = "#282828"
+GRID_COLOR: Final[str] = "#3c3c3c"
+GRID_COLOR_THIN: Final[str] = "#3c3c3c"
+GRID_COLOR_MEDIUM: Final[str] = "#4a4a4a"
+GRID_COLOR_THICK: Final[str] = "#5a5a5a"
 
 # Resource constants
 DEFAULT_MAX_RESOURCE_AMOUNT: Final[int] = 10000
@@ -76,8 +66,21 @@ DEFAULT_ROCK_VARIANTS: Final[int] = 20
 OIL_RESOURCE_VARIANTS: Final[int] = 4
 
 # Tree constants
-TREE_VARIATIONS: Final[list[str]] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
-TREE_FOLIAGE_STATES: Final[list[str]] = ['full', 'medium', 'minimal', 'trunk_only']
+TREE_VARIATIONS: Final[list[str]] = [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+]
+TREE_FOLIAGE_STATES: Final[list[str]] = ["full", "medium", "minimal", "trunk_only"]
 TREE_FILES_PER_VARIATION: Final[int] = 5
 
 SHADOW_INTENSITY: Final[float] = 0.4
@@ -146,6 +149,6 @@ RENDERERS: Final[Dict[str, str]] = {
     "cliff-outer": "cliff",
     "cliff-entrance": "cliff",
     "cliff-sides": "cliff",
-    "character": "character"
-    #"lab": "lab"
+    "character": "character",
+    # "lab": "lab"
 }

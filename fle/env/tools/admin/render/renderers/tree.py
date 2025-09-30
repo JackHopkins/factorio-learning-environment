@@ -12,17 +12,17 @@ from ..constants import TREE_VARIATIONS, TREE_FILES_PER_VARIATION
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render tree based on type and position"""
-    tree_name = entity['name']
-    x = entity['position']['x']
-    y = entity['position']['y']
+    tree_name = entity["name"]
+    x = entity["position"]["x"]
+    y = entity["position"]["y"]
 
     # Get available trees from grid (passed from main renderer)
-    available_trees = getattr(grid, 'available_trees', {})
+    available_trees = getattr(grid, "available_trees", {})
 
     # Handle dead trees differently (they don't have variations)
-    if 'dead' in tree_name or 'dry' in tree_name:
+    if "dead" in tree_name or "dry" in tree_name:
         # Dead trees use numbered sprites
-        tree_parts = tree_name.split('-')
+        tree_parts = tree_name.split("-")
         if len(tree_parts) >= 3:
             # e.g., "dead-tree-desert" -> use position to pick 00-09
             num_variants = 10  # Adjust based on actual dead tree variants
@@ -33,7 +33,7 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     else:
         # Regular trees with foliage states
         # Extract tree type number from name (e.g., "tree-01" -> "01")
-        tree_type = tree_name.split('-')[-1] if '-' in tree_name else '01'
+        tree_type = tree_name.split("-")[-1] if "-" in tree_name else "01"
 
         variation, foliage_state = get_tree_variant(x, y, tree_type, available_trees)
 
@@ -42,18 +42,20 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     return image_resolver(sprite_name, False)
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render tree shadow"""
-    tree_name = entity['name']
-    x = entity['position']['x']
-    y = entity['position']['y']
+    tree_name = entity["name"]
+    x = entity["position"]["x"]
+    y = entity["position"]["y"]
 
     # Get available trees from grid (passed from main renderer)
-    available_trees = getattr(grid, 'available_trees', {})
+    available_trees = getattr(grid, "available_trees", {})
 
     # Dead trees might have different shadow naming
-    if 'dead' in tree_name or 'dry' in tree_name:
-        tree_parts = tree_name.split('-')
+    if "dead" in tree_name or "dry" in tree_name:
+        tree_parts = tree_name.split("-")
         if len(tree_parts) >= 3:
             num_variants = 10
             variant_num = abs(int(x + y * 7)) % num_variants
@@ -62,7 +64,7 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
             shadow_name = f"{tree_name}_shadow"
     else:
         # Regular trees
-        tree_type = tree_name.split('-')[-1] if '-' in tree_name else '01'
+        tree_type = tree_name.split("-")[-1] if "-" in tree_name else "01"
         variation, foliage_state = get_tree_variant(x, y, tree_type, available_trees)
 
         # Regular trees append -shadow to the full sprite name
@@ -73,8 +75,8 @@ def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Imag
 
 def get_key(entity: Dict, grid) -> str:
     """Get cache key for tree based on position"""
-    x = entity['position']['x']
-    y = entity['position']['y']
+    x = entity["position"]["x"]
+    y = entity["position"]["y"]
 
     # Use position to generate consistent key
     return f"{entity['name']}_{x}_{y}"
@@ -87,7 +89,9 @@ def get_size(entity: Dict) -> Tuple[float, float]:
     return (1, 1)
 
 
-def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[str, Set[str]]) -> Tuple[str, str]:
+def get_tree_variant(
+    x: float, y: float, tree_type: str, available_trees: Dict[str, Set[str]]
+) -> Tuple[str, str]:
     """
     Calculate tree variant and foliage state based on position.
     Returns (variation_letter, foliage_state)
@@ -121,7 +125,7 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
 
     # If no valid variations, use default
     if not valid_variations:
-        valid_variations = ['a']  # Default fallback
+        valid_variations = ["a"]  # Default fallback
 
     # Select variation using deterministic randomness
     variation_index = seed % len(valid_variations)
@@ -129,10 +133,10 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
 
     # Foliage states with weighted probability (more full trees)
     foliage_weights = [
-        ('full', 70),  # 70% chance
-        ('medium', 25),  # 25% chance
-        ('minimal', 5),  # 5% chance
-        ('trunk_only', 0)  # 0% chance (adjusted from original)
+        ("full", 70),  # 70% chance
+        ("medium", 25),  # 25% chance
+        ("minimal", 5),  # 5% chance
+        ("trunk_only", 0),  # 0% chance (adjusted from original)
     ]
 
     # Calculate weighted random choice
@@ -140,7 +144,7 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
     choice = (seed // len(variations)) % total_weight
 
     cumulative = 0
-    foliage_state = 'full'
+    foliage_state = "full"
     for state, weight in foliage_weights:
         cumulative += weight
         if choice < cumulative:
@@ -150,7 +154,7 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
     # Verify the selected combination exists
     if f"{variation}-{foliage_state}" not in available_for_type:
         # Fall back to any available state for this variation
-        for state in ['full', 'medium', 'minimal', 'trunk_only']:
+        for state in ["full", "medium", "minimal", "trunk_only"]:
             if f"{variation}-{state}" in available_for_type:
                 foliage_state = state
                 break
@@ -158,7 +162,7 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
             # If still no valid state, pick the first available state for this variation
             for combo in available_for_type:
                 if combo.startswith(f"{variation}-"):
-                    foliage_state = combo.split('-', 1)[1]
+                    foliage_state = combo.split("-", 1)[1]
                     break
 
     return variation, foliage_state
@@ -166,10 +170,12 @@ def get_tree_variant(x: float, y: float, tree_type: str, available_trees: Dict[s
 
 def is_tree_entity(entity_name: str) -> bool:
     """Check if an entity is a tree"""
-    return (entity_name.startswith('tree-') or
-            'dead-tree' in entity_name or
-            'dry-tree' in entity_name or
-            'dead-grey-trunk' in entity_name)
+    return (
+        entity_name.startswith("tree-")
+        or "dead-tree" in entity_name
+        or "dry-tree" in entity_name
+        or "dead-grey-trunk" in entity_name
+    )
 
 
 def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
@@ -188,10 +194,10 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
 
     # Pattern to match tree sprite files
     # Matches: tree-03-a-full.png, hr-tree-03-a-full.png, etc.
-    tree_pattern = re.compile(r'^(?:hr-)?tree-(\d+)-([a-l])-(\w+)\.png$')
+    tree_pattern = re.compile(r"^(?:hr-)?tree-(\d+)-([a-l])-(\w+)\.png$")
 
     sprites_dir = Path(sprites_dir)
-    for sprite_file in sprites_dir.glob('*.png'):
+    for sprite_file in sprites_dir.glob("*.png"):
         match = tree_pattern.match(sprite_file.name)
         if match:
             tree_type = match.group(1)
@@ -199,7 +205,7 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             state = match.group(3)
 
             # Skip shadow files in our count
-            if state.endswith('-shadow'):
+            if state.endswith("-shadow"):
                 continue
 
             # Count files per tree type and variation
@@ -223,6 +229,8 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             for state, _ in all_files[(tree_type, variation)]:
                 available_trees[tree_type].add(f"{variation}-{state}")
         else:
-            print(f"Skipping tree-{tree_type}-{variation}: has {count} files instead of {TREE_FILES_PER_VARIATION}")
+            print(
+                f"Skipping tree-{tree_type}-{variation}: has {count} files instead of {TREE_FILES_PER_VARIATION}"
+            )
 
     return available_trees

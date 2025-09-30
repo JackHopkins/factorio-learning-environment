@@ -12,7 +12,9 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     return image_resolver(get_name(entity, grid))
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render shadow"""
     return image_resolver(get_name(entity, grid), True)
 
@@ -64,27 +66,20 @@ def get_name(entity: Dict, grid) -> str:
 def get_key(entity: Dict, grid) -> str:
     """Get cache key based on connections"""
     around = get_around(entity, grid)
-    return '_'.join(map(str, around))
+    return "_".join(map(str, around))
 
 
 def get_around(entity: Dict, grid) -> list:
     """Check surrounding wall connections"""
     return [
         # North
-        is_stone_wall(grid.get_relative(0, -1)) or
-        is_gate(grid.get_relative(0, -1), 0),
-
+        is_stone_wall(grid.get_relative(0, -1)) or is_gate(grid.get_relative(0, -1), 0),
         # East
-        is_stone_wall(grid.get_relative(1, 0)) or
-        is_gate(grid.get_relative(1, 0), 2),
-
+        is_stone_wall(grid.get_relative(1, 0)) or is_gate(grid.get_relative(1, 0), 2),
         # South
-        is_stone_wall(grid.get_relative(0, 1)) or
-        is_gate(grid.get_relative(0, 1), 0),
-
+        is_stone_wall(grid.get_relative(0, 1)) or is_gate(grid.get_relative(0, 1), 0),
         # West
-        is_stone_wall(grid.get_relative(-1, 0)) or
-        is_gate(grid.get_relative(-1, 0), 2)
+        is_stone_wall(grid.get_relative(-1, 0)) or is_gate(grid.get_relative(-1, 0), 2),
     ]
 
 
@@ -92,14 +87,16 @@ def is_stone_wall(entity: Optional[Dict]) -> int:
     """Check if entity is stone wall"""
     if entity is None:
         return 0
-    return 1 if entity['name'] == 'stone-wall' else 0
+    return 1 if entity["name"] == "stone-wall" else 0
 
 
 def is_gate(entity: Optional[Dict], direction: int) -> int:
     """Check if entity is gate with direction"""
     if entity is None:
         return 0
-    return 1 if entity['name'] == 'gate' and entity.get('direction', 0) == direction else 0
+    return (
+        1 if entity["name"] == "gate" and entity.get("direction", 0) == direction else 0
+    )
 
 
 def get_size(entity: Dict) -> Tuple[float, float]:

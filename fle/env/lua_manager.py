@@ -90,9 +90,8 @@ class LuaScriptManager:
 
             response = self.rcon_client.send_command("/sc " + script)
 
-            if response and 'error' in response.lower():
+            if response and "error" in response.lower():
                 raise Exception(response)
-
 
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
@@ -109,7 +108,7 @@ class LuaScriptManager:
 
         response = self.rcon_client.send_command("/c " + script)
 
-        if response and 'error' in response.lower():
+        if response and "error" in response.lower():
             raise Exception(response)
 
         pass

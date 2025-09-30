@@ -1,11 +1,15 @@
 """Image utilities for VQA tasks - supports both blueprints and game maps."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Dict, Any, Union, Optional
 from datetime import datetime
 from fle.commons.models.rendered_image import RenderedImage
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def get_blueprint_name(blueprint: Dict[str, Any], metadata: Dict[str, Any]) -> str:
@@ -20,8 +24,8 @@ def get_blueprint_name(blueprint: Dict[str, Any], metadata: Dict[str, Any]) -> s
         Clean blueprint name suitable for folder name
     """
     # Try to get label first, then fall back to filename
-    if 'label' in blueprint and blueprint['label']:
-        name = blueprint['label']
+    if "label" in blueprint and blueprint["label"]:
+        name = blueprint["label"]
     else:
         # Get filename without extension
         filename = metadata.get("filename", "unknown")
@@ -53,17 +57,17 @@ def get_map_name(metadata: Dict[str, Any]) -> str:
         Clean map name suitable for folder name
     """
     # Try different naming strategies for maps
-    if 'map_name' in metadata and metadata['map_name']:
-        name = metadata['map_name']
-    elif 'location' in metadata and metadata['location']:
+    if "map_name" in metadata and metadata["map_name"]:
+        name = metadata["map_name"]
+    elif "location" in metadata and metadata["location"]:
         name = f"map_{metadata['location']}"
-    elif 'position' in metadata:
-        pos = metadata['position']
-        if isinstance(pos, dict) and 'x' in pos and 'y' in pos:
+    elif "position" in metadata:
+        pos = metadata["position"]
+        if isinstance(pos, dict) and "x" in pos and "y" in pos:
             name = f"map_{int(pos['x'])}_{int(pos['y'])}"
         else:
             name = f"map_{str(pos).replace(',', '_').replace(' ', '')}"
-    elif 'x' in metadata and 'y' in metadata:
+    elif "x" in metadata and "y" in metadata:
         name = f"map_{int(metadata['x'])}_{int(metadata['y'])}"
     else:
         # Use timestamp as fallback
@@ -83,10 +87,12 @@ def get_map_name(metadata: Dict[str, Any]) -> str:
     return clean_name
 
 
-def generate_variant_hash(content: Union[Dict[str, Any], None] = None,
-                         modification_info: str = "",
-                         metadata: Dict[str, Any] = None,
-                         is_map: bool = False) -> str:
+def generate_variant_hash(
+    content: Union[Dict[str, Any], None] = None,
+    modification_info: str = "",
+    metadata: Dict[str, Any] = None,
+    is_map: bool = False,
+) -> str:
     """
     Generate a hash representing this specific variant of the blueprint or map.
 
@@ -104,14 +110,16 @@ def generate_variant_hash(content: Union[Dict[str, Any], None] = None,
 
     if is_map and metadata:
         # For maps, use position, radius, layers, etc.
-        variant_components.extend([
-            f"map_render",
-            str(metadata.get("position", "")),
-            str(metadata.get("radius", 64)),
-            str(metadata.get("layers", "all")),
-            str(metadata.get("include_status", False)),
-            str(metadata.get("timestamp", ""))
-        ])
+        variant_components.extend(
+            [
+                "map_render",
+                str(metadata.get("position", "")),
+                str(metadata.get("radius", 64)),
+                str(metadata.get("layers", "all")),
+                str(metadata.get("include_status", False)),
+                str(metadata.get("timestamp", "")),
+            ]
+        )
     elif content:
         # For blueprints
         variant_components.append(str(content))
@@ -131,11 +139,13 @@ def generate_variant_hash(content: Union[Dict[str, Any], None] = None,
     return hash_object.hexdigest()[:12]  # Use first 12 characters
 
 
-def generate_image_path_and_id(content: Union[Dict[str, Any], None] = None,
-                              metadata: Dict[str, Any] = None,
-                              modification_info: str = "",
-                              base_dir: str = "../../../dataset/images",
-                              is_map: bool = False) -> tuple[str, str]:
+def generate_image_path_and_id(
+    content: Union[Dict[str, Any], None] = None,
+    metadata: Dict[str, Any] = None,
+    modification_info: str = "",
+    base_dir: str = "../../../dataset/images",
+    is_map: bool = False,
+) -> tuple[str, str]:
     """
     Generate the folder structure image path and ID for blueprints or maps.
 
@@ -154,7 +164,7 @@ def generate_image_path_and_id(content: Union[Dict[str, Any], None] = None,
     if is_map:
         name = get_map_name(metadata or {})
         # Add "maps" subdirectory to separate from blueprints
-        folder_path = Path(base_dir) / "maps"# / name
+        folder_path = Path(base_dir) / "maps"  # / name
     else:
         if not content:
             raise ValueError("Blueprint content required when is_map=False")
@@ -227,24 +237,15 @@ def generate_image_path_and_id(content: Union[Dict[str, Any], None] = None,
 #
 #     return image_id
 
-import hashlib
-import json
-import os
-from pathlib import Path
-from typing import Dict, Any, Optional
-from fle.commons.models.rendered_image import RenderedImage
-
-from dotenv import load_dotenv
-load_dotenv()
 
 def save_rendered_image(
-        image: RenderedImage,
-        blueprint: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        modification_info: Optional[str] = None,
-        base_dir: str = os.getenv('VQA_DATASET_DIR'),
-        is_map: bool = False,
-        is_factory: bool = False
+    image: RenderedImage,
+    blueprint: Optional[Dict[str, Any]] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+    modification_info: Optional[str] = None,
+    base_dir: str = os.getenv("VQA_DATASET_DIR"),
+    is_map: bool = False,
+    is_factory: bool = False,
 ) -> str:
     """
     Save a rendered image with associated metadata and return its unique ID.
@@ -265,12 +266,12 @@ def save_rendered_image(
     if is_factory:
         subdirectory = "factory"
         # For factory images, use position as part of the identifier
-        position = metadata.get('position', {'x': 0, 'y': 0})
+        position = metadata.get("position", {"x": 0, "y": 0})
         base_identifier = f"factory_x{int(position['x'])}_y{int(position['y'])}"
     elif is_map:
         subdirectory = "terrain"
         # For terrain/map images, use position as part of the identifier
-        position = metadata.get('position', {'x': 0, 'y': 0})
+        position = metadata.get("position", {"x": 0, "y": 0})
         base_identifier = f"terrain_x{int(position['x'])}_y{int(position['y'])}"
     elif blueprint is not None:
         subdirectory = "blueprints"
@@ -298,21 +299,22 @@ def save_rendered_image(
     save_dir.mkdir(parents=True, exist_ok=True)
 
     # Save the image
-    abs = save_dir.absolute()
     image_path = save_dir / f"{identifier}.png"
     image.save(str(image_path))
 
     # Save metadata
     metadata_to_save = metadata.copy() if metadata else {}
     if blueprint:
-        metadata_to_save['blueprint'] = blueprint
-    metadata_to_save['image_id'] = identifier
-    metadata_to_save['image_type'] = subdirectory if subdirectory else 'general'
-    metadata_to_save['image_filename'] = f"{identifier}.png"
-    metadata_to_save['image_path'] = f"{subdirectory}/{identifier}.png" if subdirectory else f"{identifier}.png"
+        metadata_to_save["blueprint"] = blueprint
+    metadata_to_save["image_id"] = identifier
+    metadata_to_save["image_type"] = subdirectory if subdirectory else "general"
+    metadata_to_save["image_filename"] = f"{identifier}.png"
+    metadata_to_save["image_path"] = (
+        f"{subdirectory}/{identifier}.png" if subdirectory else f"{identifier}.png"
+    )
 
     metadata_path = save_dir / f"{identifier}_metadata.json"
-    with open(metadata_path, 'w') as f:
+    with open(metadata_path, "w") as f:
         json.dump(metadata_to_save, f, indent=2)
 
     # Return the full relative path including subdirectory
@@ -323,8 +325,9 @@ def save_rendered_image(
         return f"{identifier}.png"
 
 
-def load_image_and_metadata(image_id: str, base_dir: str = os.getenv('VQA_DATASET_DIR')) -> tuple[
-    Optional[str], Optional[Dict[str, Any]]]:
+def load_image_and_metadata(
+    image_id: str, base_dir: str = os.getenv("VQA_DATASET_DIR")
+) -> tuple[Optional[str], Optional[Dict[str, Any]]]:
     """
     Load an image and its associated metadata by ID.
 
@@ -350,13 +353,15 @@ def load_image_and_metadata(image_id: str, base_dir: str = os.getenv('VQA_DATASE
 
     metadata = None
     if metadata_path.exists():
-        with open(metadata_path, 'r') as f:
+        with open(metadata_path, "r") as f:
             metadata = json.load(f)
 
     return str(image_path), metadata
 
 
-def get_image_full_path(image_id: str, base_dir: str = os.getenv('VQA_DATASET_DIR')) -> str:
+def get_image_full_path(
+    image_id: str, base_dir: str = os.getenv("VQA_DATASET_DIR")
+) -> str:
     """
     Get the full filesystem path for an image given its ID.
 
@@ -370,7 +375,7 @@ def get_image_full_path(image_id: str, base_dir: str = os.getenv('VQA_DATASET_DI
     return str(Path(base_dir) / image_id)
 
 
-def ensure_image_directories(base_dir: str = os.getenv('VQA_DATASET_DIR')) -> None:
+def ensure_image_directories(base_dir: str = os.getenv("VQA_DATASET_DIR")) -> None:
     """
     Ensure all required image subdirectories exist.
 
@@ -386,11 +391,14 @@ def ensure_image_directories(base_dir: str = os.getenv('VQA_DATASET_DIR')) -> No
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
 
-def save_map_render(image: RenderedImage,
-                   position: Optional[Dict[str, float]] = None,
-                   radius: int = 64,
-                   metadata: Optional[Dict[str, Any]] = None,
-                   base_dir: str = os.getenv('VQA_DATASET_DIR')) -> str:
+
+def save_map_render(
+    image: RenderedImage,
+    position: Optional[Dict[str, float]] = None,
+    radius: int = 64,
+    metadata: Optional[Dict[str, Any]] = None,
+    base_dir: str = os.getenv("VQA_DATASET_DIR"),
+) -> str:
     """
     Convenience function specifically for saving game map renders.
 
@@ -406,11 +414,13 @@ def save_map_render(image: RenderedImage,
     """
     # Build map-specific metadata
     map_metadata = metadata or {}
-    map_metadata.update({
-        "position": position,
-        "radius": radius,
-        "timestamp": datetime.now().isoformat()
-    })
+    map_metadata.update(
+        {
+            "position": position,
+            "radius": radius,
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
     return save_rendered_image(
         image=image,
@@ -418,17 +428,17 @@ def save_map_render(image: RenderedImage,
         metadata=map_metadata,
         modification_info=f"radius_{radius}",
         base_dir=base_dir,
-        is_map=True
+        is_map=True,
     )
 
 
 def get_legacy_image_id(blueprint: Dict[str, Any]) -> str:
     """
     Generate the old-style hash-based image ID for backwards compatibility.
-    
+
     Args:
         blueprint: Blueprint dictionary
-        
+
     Returns:
         Legacy hash-based image ID
     """

@@ -68,7 +68,7 @@ class EntitiesLayerRenderer(LayerRenderer):
                 y2,
                 shape_type,
                 entity_color,
-                #entity_name=getattr(entity, 'name', None),
+                # entity_name=getattr(entity, 'name', None),
                 direction=entity.direction if hasattr(entity, "direction") else None,
             )
 

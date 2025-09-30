@@ -7,7 +7,6 @@ Handles individual alert icon files and renames them consistently
 import shutil
 from pathlib import Path
 from PIL import Image
-from typing import Dict, List, Optional, Tuple
 
 
 class AlertSpriteExtractor:
@@ -20,21 +19,21 @@ class AlertSpriteExtractor:
 
         # Mapping of original filenames to standardized alert names
         self.alert_mappings = {
-            'warning-icon.png': 'alert-warning',
-            'danger-icon.png': 'alert-danger',
-            'destroyed-icon.png': 'alert-destroyed',
-            'electricity-icon-red.png': 'alert-no-electricity',
-            'electricity-icon-unplugged.png': 'alert-disconnected',
-            'fluid-icon-red.png': 'alert-no-fluid',
-            'fuel-icon-red.png': 'alert-no-fuel',
-            'ammo-icon-red.png': 'alert-no-ammo',
-            'too-far-from-roboport-icon.png': 'alert-no-roboport-coverage',
-            'no-building-material-icon.png': 'alert-no-building-materials',
-            'no-storage-space-icon.png': 'alert-no-storage',
-            'not-enough-repair-packs-icon.png': 'alert-no-repair-packs',
-            'not-enough-construction-robots-icon.png': 'alert-no-construction-robots',
-            'recharge-icon.png': 'alert-recharge-needed',
-            'logistic-delivery.png': 'alert-logistic-delivery'
+            "warning-icon.png": "alert-warning",
+            "danger-icon.png": "alert-danger",
+            "destroyed-icon.png": "alert-destroyed",
+            "electricity-icon-red.png": "alert-no-electricity",
+            "electricity-icon-unplugged.png": "alert-disconnected",
+            "fluid-icon-red.png": "alert-no-fluid",
+            "fuel-icon-red.png": "alert-no-fuel",
+            "ammo-icon-red.png": "alert-no-ammo",
+            "too-far-from-roboport-icon.png": "alert-no-roboport-coverage",
+            "no-building-material-icon.png": "alert-no-building-materials",
+            "no-storage-space-icon.png": "alert-no-storage",
+            "not-enough-repair-packs-icon.png": "alert-no-repair-packs",
+            "not-enough-construction-robots-icon.png": "alert-no-construction-robots",
+            "recharge-icon.png": "alert-recharge-needed",
+            "logistic-delivery.png": "alert-logistic-delivery",
         }
 
     def extract_alert_icon(self, original_filename: str, alert_name: str):
@@ -53,7 +52,7 @@ class AlertSpriteExtractor:
 
         try:
             # Load the icon
-            icon = Image.open(input_path).convert('RGBA')
+            icon = Image.open(input_path).convert("RGBA")
 
             # Save with standardized name
             output_filename = f"{alert_name}.png"
@@ -96,7 +95,7 @@ class AlertSpriteExtractor:
             for filename in unmapped_files:
                 print(f"  - {filename}")
                 # Process unmapped files with a generic naming scheme
-                base_name = filename.replace('.png', '').replace('-icon', '')
+                base_name = filename.replace(".png", "").replace("-icon", "")
                 alert_name = f"alert-{base_name}"
                 print(f"    Processing as: {alert_name}")
                 self.extract_alert_icon(filename, alert_name)
@@ -124,11 +123,11 @@ class AlertSpriteExtractor:
         max_height = 0
 
         for file_path in sorted(alert_files):
-            if 'composite' in file_path.name or file_path.name.startswith('icon_'):
+            if "composite" in file_path.name or file_path.name.startswith("icon_"):
                 continue
 
             try:
-                icon = Image.open(file_path).convert('RGBA')
+                icon = Image.open(file_path).convert("RGBA")
                 icons.append((file_path.name, icon))
                 max_width = max(max_width, icon.width)
                 max_height = max(max_height, icon.height)
@@ -151,7 +150,7 @@ class AlertSpriteExtractor:
         # Create composite image
         composite_width = grid_cols * cell_width
         composite_height = grid_rows * cell_height
-        composite = Image.new('RGBA', (composite_width, composite_height), (0, 0, 0, 0))
+        composite = Image.new("RGBA", (composite_width, composite_height), (0, 0, 0, 0))
 
         # Place icons in grid
         for idx, (filename, icon) in enumerate(icons):
@@ -167,7 +166,9 @@ class AlertSpriteExtractor:
         # Save composite
         composite_path = self.output_dir / output_filename
         composite.save(composite_path)
-        print(f"Saved alert composite: {composite_path} (size: {composite_width}x{composite_height})")
+        print(
+            f"Saved alert composite: {composite_path} (size: {composite_width}x{composite_height})"
+        )
         print(f"Grid: {grid_cols}x{grid_rows}, {len(icons)} icons")
 
     def generate_alert_categories(self):
@@ -175,10 +176,21 @@ class AlertSpriteExtractor:
         Organize alerts by category and create category-specific composites
         """
         categories = {
-            'resource': ['no-electricity', 'no-fluid', 'no-fuel', 'no-ammo', 'no-building-materials'],
-            'robot': ['no-roboport-coverage', 'no-construction-robots', 'no-repair-packs', 'recharge-needed'],
-            'status': ['warning', 'danger', 'destroyed', 'disconnected'],
-            'logistics': ['no-storage', 'logistic-delivery']
+            "resource": [
+                "no-electricity",
+                "no-fluid",
+                "no-fuel",
+                "no-ammo",
+                "no-building-materials",
+            ],
+            "robot": [
+                "no-roboport-coverage",
+                "no-construction-robots",
+                "no-repair-packs",
+                "recharge-needed",
+            ],
+            "status": ["warning", "danger", "destroyed", "disconnected"],
+            "logistics": ["no-storage", "logistic-delivery"],
         }
 
         print("\n=== Organizing Alerts by Category ===")
@@ -187,7 +199,7 @@ class AlertSpriteExtractor:
             print(f"\nCategory: {category_name}")
 
             # Create category subdirectory
-            category_dir = self.output_dir / 'alerts' / category_name
+            category_dir = self.output_dir / "alerts" / category_name
             category_dir.mkdir(exist_ok=True, parents=True)
 
             # Copy relevant alerts to category directory
@@ -212,27 +224,38 @@ class AlertSpriteExtractor:
         import json
 
         mapping = {
-            'alerts': {},
-            'categories': {
-                'resource': ['no-electricity', 'no-fluid', 'no-fuel', 'no-ammo', 'no-building-materials'],
-                'robot': ['no-roboport-coverage', 'no-construction-robots', 'no-repair-packs', 'recharge-needed'],
-                'status': ['warning', 'danger', 'destroyed', 'disconnected'],
-                'logistics': ['no-storage', 'logistic-delivery']
-            }
+            "alerts": {},
+            "categories": {
+                "resource": [
+                    "no-electricity",
+                    "no-fluid",
+                    "no-fuel",
+                    "no-ammo",
+                    "no-building-materials",
+                ],
+                "robot": [
+                    "no-roboport-coverage",
+                    "no-construction-robots",
+                    "no-repair-packs",
+                    "recharge-needed",
+                ],
+                "status": ["warning", "danger", "destroyed", "disconnected"],
+                "logistics": ["no-storage", "logistic-delivery"],
+            },
         }
 
         # Build alert mappings
         for original, standardized in self.alert_mappings.items():
-            alert_key = standardized.replace('alert-', '')
-            mapping['alerts'][alert_key] = {
-                'filename': f"{standardized}.png",
-                'icon_filename': f"icon_{standardized}.png",
-                'original': original
+            alert_key = standardized.replace("alert-", "")
+            mapping["alerts"][alert_key] = {
+                "filename": f"{standardized}.png",
+                "icon_filename": f"icon_{standardized}.png",
+                "original": original,
             }
 
         # Save mapping
         mapping_path = self.output_dir / "alert_mapping.json"
-        with open(mapping_path, 'w') as f:
+        with open(mapping_path, "w") as f:
             json.dump(mapping, f, indent=2, sort_keys=True)
 
         print(f"\nCreated alert mapping: {mapping_path}")

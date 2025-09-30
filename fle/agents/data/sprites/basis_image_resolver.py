@@ -3,14 +3,13 @@
 Enhanced Image Resolver that handles .basis files for Factorio sprites
 """
 
-import os
 import json
 import subprocess
 import tempfile
 import shutil
 from pathlib import Path
 from PIL import Image
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 
 
 class BasisImageResolver:
@@ -42,7 +41,7 @@ class BasisImageResolver:
         """Load data.json for entity information"""
         data_file = self.data_dir / "data.json"
         if data_file.exists():
-            with open(data_file, 'r') as f:
+            with open(data_file, "r") as f:
                 return json.load(f)
         return {}
 
@@ -78,71 +77,92 @@ class BasisImageResolver:
                 "up": "N",
                 "right": "E",
                 "down": "S",
-                "left": "W"
+                "left": "W",
             }
 
             dir_letter = dir_map.get(direction, direction.upper()[:1])
 
             # Common entity sprite patterns
             if is_shadow:
-                search_patterns.extend([
-                    f"entity/{entity_name}/{entity_name}-{dir_letter}-shadow",
-                    f"entity/{entity_name}/hr-{entity_name}-{dir_letter}-shadow",
-                ])
+                search_patterns.extend(
+                    [
+                        f"entity/{entity_name}/{entity_name}-{dir_letter}-shadow",
+                        f"entity/{entity_name}/hr-{entity_name}-{dir_letter}-shadow",
+                    ]
+                )
             else:
-                search_patterns.extend([
-                    f"entity/{entity_name}/{entity_name}-{dir_letter}-idle",
-                    f"entity/{entity_name}/{entity_name}-{dir_letter}",
-                    f"entity/{entity_name}/hr-{entity_name}-{dir_letter}-idle",
-                    f"entity/{entity_name}/hr-{entity_name}-{dir_letter}",
-                ])
+                search_patterns.extend(
+                    [
+                        f"entity/{entity_name}/{entity_name}-{dir_letter}-idle",
+                        f"entity/{entity_name}/{entity_name}-{dir_letter}",
+                        f"entity/{entity_name}/hr-{entity_name}-{dir_letter}-idle",
+                        f"entity/{entity_name}/hr-{entity_name}-{dir_letter}",
+                    ]
+                )
 
         # Icon sprites (e.g., icon_stone-furnace)
         if clean_name.startswith("icon_"):
             icon_name = clean_name[5:]  # Remove 'icon_' prefix
-            search_patterns.extend([
-                f"icons/{icon_name}",
-                f"icons/hr-{icon_name}",
-            ])
+            search_patterns.extend(
+                [
+                    f"icons/{icon_name}",
+                    f"icons/hr-{icon_name}",
+                ]
+            )
 
         # Pipe sprites
         if clean_name.startswith("pipe_"):
             pipe_type = clean_name[5:]  # Remove 'pipe_' prefix
-            search_patterns.extend([
-                f"entity/pipe/{pipe_type}",
-                f"entity/pipe/hr-{pipe_type}",
-                f"entity/pipe-covers/{pipe_type}",
-                f"entity/pipe-covers/hr-{pipe_type}",
-            ])
+            search_patterns.extend(
+                [
+                    f"entity/pipe/{pipe_type}",
+                    f"entity/pipe/hr-{pipe_type}",
+                    f"entity/pipe-covers/{pipe_type}",
+                    f"entity/pipe-covers/hr-{pipe_type}",
+                ]
+            )
 
         # Heat pipe sprites
         if "heat-pipe" in clean_name:
             heat_pipe_type = clean_name.replace("heat-pipe_", "")
-            search_patterns.extend([
-                f"entity/heat-pipe/{heat_pipe_type}",
-                f"entity/heat-pipe/hr-{heat_pipe_type}",
-            ])
+            search_patterns.extend(
+                [
+                    f"entity/heat-pipe/{heat_pipe_type}",
+                    f"entity/heat-pipe/hr-{heat_pipe_type}",
+                ]
+            )
 
         # Transport belt sprites
-        if any(belt in clean_name for belt in ["transport-belt", "fast-transport-belt", "express-transport-belt"]):
+        if any(
+            belt in clean_name
+            for belt in [
+                "transport-belt",
+                "fast-transport-belt",
+                "express-transport-belt",
+            ]
+        ):
             belt_parts = clean_name.split("_")
             if len(belt_parts) >= 2:
                 belt_name = belt_parts[0]
                 belt_type = belt_parts[1] if len(belt_parts) > 1 else ""
-                search_patterns.extend([
-                    f"entity/{belt_name}/{belt_name}",
-                    f"entity/{belt_name}/hr-{belt_name}",
-                    f"entity/{belt_name}/{belt_type}",
-                    f"entity/{belt_name}/hr-{belt_type}",
-                ])
+                search_patterns.extend(
+                    [
+                        f"entity/{belt_name}/{belt_name}",
+                        f"entity/{belt_name}/hr-{belt_name}",
+                        f"entity/{belt_name}/{belt_type}",
+                        f"entity/{belt_name}/hr-{belt_type}",
+                    ]
+                )
 
         # Generic entity pattern
-        search_patterns.extend([
-            f"entity/{clean_name}/{clean_name}",
-            f"entity/{clean_name}/hr-{clean_name}",
-            f"icons/{clean_name}",
-            f"icons/hr-{clean_name}",
-        ])
+        search_patterns.extend(
+            [
+                f"entity/{clean_name}/{clean_name}",
+                f"entity/{clean_name}/hr-{clean_name}",
+                f"icons/{clean_name}",
+                f"icons/hr-{clean_name}",
+            ]
+        )
 
         # Check each pattern for .basis and .png files
         for pattern in search_patterns:
@@ -175,10 +195,7 @@ class BasisImageResolver:
                 # Run basisu transcoder
                 cmd = ["basisu", "-unpack", str(basis_path)]
                 result = subprocess.run(
-                    cmd,
-                    cwd=temp_path,
-                    capture_output=True,
-                    text=True
+                    cmd, cwd=temp_path, capture_output=True, text=True
                 )
 
                 if result.returncode != 0:
@@ -305,53 +322,80 @@ class BasisImageResolver:
             if len(parts) >= 4:
                 tree_type = parts[1]  # 01, 02, etc.
                 variation = parts[2]  # a, b, c, etc.
-                state = "-".join(parts[3:])  # full, medium, minimal, trunk_only, or full-shadow
+                state = "-".join(
+                    parts[3:]
+                )  # full, medium, minimal, trunk_only, or full-shadow
 
                 # Handle shadow sprites
                 if state.endswith("-shadow"):
                     base_state = state[:-7]  # Remove -shadow
                     # Shadows are in the tree type folder
-                    search_patterns.extend([
-                        f"tree/{tree_type}/tree-{tree_type}-{variation}-{base_state}-shadow",
-                        f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-{base_state}-shadow",
-                        f"tree/{tree_type}/tree-{tree_type}-{variation}-shadow",  # Fallback
-                        f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-shadow",
-                    ])
+                    search_patterns.extend(
+                        [
+                            f"tree/{tree_type}/tree-{tree_type}-{variation}-{base_state}-shadow",
+                            f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-{base_state}-shadow",
+                            f"tree/{tree_type}/tree-{tree_type}-{variation}-shadow",  # Fallback
+                            f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-shadow",
+                        ]
+                    )
                 else:
                     # Regular tree sprites
-                    search_patterns.extend([
-                        f"tree/{tree_type}/tree-{tree_type}-{variation}-{state}",
-                        f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-{state}",
-                    ])
+                    search_patterns.extend(
+                        [
+                            f"tree/{tree_type}/tree-{tree_type}-{variation}-{state}",
+                            f"tree/{tree_type}/hr-tree-{tree_type}-{variation}-{state}",
+                        ]
+                    )
 
         # Dead tree sprites (e.g., dead-tree-desert-01)
-        elif "dead-tree" in sprite_name or "dry-tree" in sprite_name or "dead-dry-hairy-tree" in sprite_name:
+        elif (
+            "dead-tree" in sprite_name
+            or "dry-tree" in sprite_name
+            or "dead-dry-hairy-tree" in sprite_name
+        ):
             # These are stored in their specific folders
-            tree_type = "-".join(sprite_name.split("-")[:-1])  # Everything except the number
-            variant_num = sprite_name.split("-")[-1] if sprite_name[-1].isdigit() else "00"
+            tree_type = "-".join(
+                sprite_name.split("-")[:-1]
+            )  # Everything except the number
+            (sprite_name.split("-")[-1] if sprite_name[-1].isdigit() else "00")
 
-            search_patterns.extend([
-                f"tree/{tree_type}/{sprite_name}",
-                f"tree/{tree_type}/hr-{sprite_name}",
-            ])
+            search_patterns.extend(
+                [
+                    f"tree/{tree_type}/{sprite_name}",
+                    f"tree/{tree_type}/hr-{sprite_name}",
+                ]
+            )
 
         # Dead grey trunk sprites
         elif "dead-grey-trunk" in sprite_name:
-            search_patterns.extend([
-                f"tree/dead-grey-trunk/{sprite_name}",
-                f"tree/dead-grey-trunk/hr-{sprite_name}",
-            ])
+            search_patterns.extend(
+                [
+                    f"tree/dead-grey-trunk/{sprite_name}",
+                    f"tree/dead-grey-trunk/hr-{sprite_name}",
+                ]
+            )
 
         # Dry hairy tree sprites
         elif "dry-hairy-tree" in sprite_name:
-            search_patterns.extend([
-                f"tree/dry-hairy-tree/{sprite_name}",
-                f"tree/dry-hairy-tree/hr-{sprite_name}",
-            ])
+            search_patterns.extend(
+                [
+                    f"tree/dry-hairy-tree/{sprite_name}",
+                    f"tree/dry-hairy-tree/hr-{sprite_name}",
+                ]
+            )
 
         # Resource sprites (e.g., coal_1_8, iron-ore_3_5)
-        elif "_" in sprite_name and any(resource in sprite_name for resource in
-                                        ["coal", "copper-ore", "iron-ore", "stone", "uranium-ore", "crude-oil"]):
+        elif "_" in sprite_name and any(
+            resource in sprite_name
+            for resource in [
+                "coal",
+                "copper-ore",
+                "iron-ore",
+                "stone",
+                "uranium-ore",
+                "crude-oil",
+            ]
+        ):
             parts = sprite_name.split("_")
             if len(parts) == 3:
                 resource_name = parts[0]
@@ -383,7 +427,7 @@ class BasisImageResolver:
         for pattern in search_patterns:
             for ext in [".png"]:  # Extracted sprites are PNG
                 # Check in the spritemaps directory (where extracted sprites are saved)
-                if hasattr(self, 'spritemaps_dir'):
+                if hasattr(self, "spritemaps_dir"):
                     file_path = self.spritemaps_dir / (pattern + ext)
                     if file_path.exists():
                         return file_path

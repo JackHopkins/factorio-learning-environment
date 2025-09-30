@@ -1,20 +1,28 @@
-from importlib.metadata import metadata
-
 from inspect_ai import task, Task
 from inspect_ai.solver import system_message
 
 from data.vqa.dataset import raw_blueprint_dataset
 from data.vqa.tasks.blueprints.spatial_reasoning.solver import (
     generate_spatial_reasoning_with_code,
-    generate_spatial_context_with_code
+    generate_spatial_context_with_code,
 )
 from inspect_ai.tool import bash, python
 from data.vqa.tasks.blueprints.denoising_qa.solver import entity_removal_denoising
 from inspect_ai.solver import use_tools
 
-from data.vqa.common_solvers import validate_qa_answerability, generate_direction_questions, normalize_position_format, attach_bounding_box
+from data.vqa.common_solvers import (
+    validate_qa_answerability,
+    generate_direction_questions,
+    normalize_position_format,
+    attach_bounding_box,
+)
 
 from data.vqa.hook import VQAPairsHook
+from inspect_ai import eval
+
+"""
+Example of using the spatial reasoning sandbox tasks
+"""
 
 
 @task
@@ -48,12 +56,14 @@ def spatial_reasoning_sandbox_task(questions_per_blueprint: int = 3) -> Task:
                 Your code has access to the blueprint data and can use standard Python
                 libraries for calculations."""),
             attach_bounding_box(),
-            generate_spatial_reasoning_with_code(questions_per_blueprint=questions_per_blueprint),
+            generate_spatial_reasoning_with_code(
+                questions_per_blueprint=questions_per_blueprint
+            ),
             generate_direction_questions(),
             normalize_position_format(),
             validate_qa_answerability(),
         ],
-        sandbox='docker',  # Use local Python sandbox
+        sandbox="docker",  # Use local Python sandbox
         scorer=None,
     )
 
@@ -93,17 +103,12 @@ def spatial_context_sandbox_task(qa_pairs_per_blueprint: int = 5) -> Task:
             generate_spatial_context_with_code(),
             generate_direction_questions(),
             normalize_position_format(),
-            #validate_qa_answerability(),
+            # validate_qa_answerability(),
         ],
-        sandbox='docker',
+        sandbox="docker",
         scorer=None,
     )
 
-
-"""
-Example of using the spatial reasoning sandbox tasks
-"""
-from inspect_ai import eval
 
 if __name__ == "__main__":
     # Example 1: Basic spatial reasoning with code generation
@@ -113,11 +118,11 @@ if __name__ == "__main__":
 
     results = eval(
         tasks=spatial_reasoning_sandbox_task(questions_per_blueprint=20),
-        #model=["anthropic/claude-opus-4-20250514"],  # or any other model
+        # model=["anthropic/claude-opus-4-20250514"],  # or any other model
         model=model,
         limit=2,
         log_dir="../../logs",
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )
 
     # Print some generated questions
@@ -128,7 +133,7 @@ if __name__ == "__main__":
                 print(f"Q: {qa['question']}")
                 print(f"A: {qa['answer']}")
                 print()
-                #if 'metadata' in qa:
+                # if 'metadata' in qa:
                 #    print(f"Metadata: {qa['metadata']}")
 
     # Example 2: Spatial context denoising with code
@@ -139,12 +144,16 @@ if __name__ == "__main__":
         model=model,
         limit=2,
         log_dir="../../logs",
-        hooks=[VQAPairsHook()]
+        hooks=[VQAPairsHook()],
     )
 
     # Print
     for sample in results2[0].samples:
-        queries = sample.metadata['spatial_questions'] if 'spatial_questions' in sample.metadata else []
-        qa_pairs = sample.metadata['qa_pairs'] if 'qa_pairs' in sample.metadata else []
+        queries = (
+            sample.metadata["spatial_questions"]
+            if "spatial_questions" in sample.metadata
+            else []
+        )
+        qa_pairs = sample.metadata["qa_pairs"] if "qa_pairs" in sample.metadata else []
         combined = qa_pairs + queries
         pass

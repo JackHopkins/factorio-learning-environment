@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import sys
 from pathlib import Path
 
@@ -23,9 +22,9 @@ def main():
     base = Path.cwd()  # Current working directory
 
     # Check if we're in the right directory structure
-    if base.name == 'sprites' or base.name == 'data':
+    if base.name == "sprites" or base.name == "data":
         project_root = base.parent.parent.parent.parent.parent
-        if base.name == 'sprites':
+        if base.name == "sprites":
             project_root = base.parent.parent.parent.parent
     else:
         project_root = base.parent.parent.parent.parent.parent
@@ -110,7 +109,9 @@ def main():
     else:
         print(f"Warning: Terrain path not found: {terrain_path}")
 
-    character_path = base_input_path.parent / "character"  # Assuming character folder is at same level as __base__
+    character_path = (
+        base_input_path.parent / "character"
+    )  # Assuming character folder is at same level as __base__
     if character_path.exists():
         print("\n=== Extracting Character Sprites ===")
         character = CharacterSpriteExtractor(str(character_path), str(output_dir))

@@ -4,12 +4,9 @@ Extended sprite extractor for Factorio resources and trees
 Handles both sprite sheet extraction for resources and layer merging for trees
 """
 
-import json
-import os
 import shutil
 from pathlib import Path
 from PIL import Image
-from typing import Dict, List, Optional, Tuple, Any
 
 
 class ResourceSpriteExtractor:
@@ -20,17 +17,22 @@ class ResourceSpriteExtractor:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
 
-        self.output_dir_hr = Path(output_dir+"-hr")
+        self.output_dir_hr = Path(output_dir + "-hr")
         self.output_dir_hr.mkdir(exist_ok=True, parents=True)
 
         # Resource sprite sheet configurations
         self.resource_configs = {
-            'coal': {'columns': 8, 'rows': 8, 'width': 64, 'height': 64},
-            'copper-ore': {'columns': 8, 'rows': 8, 'width': 64, 'height': 64},
-            'iron-ore': {'columns': 8, 'rows': 8, 'width': 64, 'height': 64},
-            'stone': {'columns': 8, 'rows': 8, 'width': 64, 'height': 64},
-            'uranium-ore': {'columns': 8, 'rows': 8, 'width': 64, 'height': 64},
-            'crude-oil': {'columns': 4, 'rows': 1, 'width': 74, 'height': 64},  # Oil is different
+            "coal": {"columns": 8, "rows": 8, "width": 64, "height": 64},
+            "copper-ore": {"columns": 8, "rows": 8, "width": 64, "height": 64},
+            "iron-ore": {"columns": 8, "rows": 8, "width": 64, "height": 64},
+            "stone": {"columns": 8, "rows": 8, "width": 64, "height": 64},
+            "uranium-ore": {"columns": 8, "rows": 8, "width": 64, "height": 64},
+            "crude-oil": {
+                "columns": 4,
+                "rows": 1,
+                "width": 74,
+                "height": 64,
+            },  # Oil is different
         }
 
     def extract_resource_sprites(self, resource_name: str):
@@ -41,42 +43,40 @@ class ResourceSpriteExtractor:
             print(f"Resource directory not found: {resource_dir}")
             return
 
-        config = self.resource_configs.get(resource_name, {
-            'columns': 8, 'rows': 8, 'width': 64, 'height': 64
-        })
+        config = self.resource_configs.get(
+            resource_name, {"columns": 8, "rows": 8, "width": 64, "height": 64}
+        )
 
         # Process both normal and high-res versions
-        for prefix in ['', 'hr-']:
+        for prefix in ["", "hr-"]:
             sprite_sheet_path = resource_dir / f"{prefix}{resource_name}.png"
 
             if not sprite_sheet_path.exists():
                 continue
 
             try:
-                sprite_sheet = Image.open(sprite_sheet_path).convert('RGBA')
+                sprite_sheet = Image.open(sprite_sheet_path).convert("RGBA")
 
                 # Extract each sprite
-                for row in range(config['rows']):
-                    for col in range(config['columns']):
+                for row in range(config["rows"]):
+                    for col in range(config["columns"]):
                         # Calculate position in sprite sheet
-                        x = col * config['width']
-                        y = row * config['height']
+                        x = col * config["width"]
+                        y = row * config["height"]
 
                         # Extract sprite
-                        sprite = sprite_sheet.crop((
-                            x, y,
-                            x + config['width'],
-                            y + config['height']
-                        ))
+                        sprite = sprite_sheet.crop(
+                            (x, y, x + config["width"], y + config["height"])
+                        )
 
                         # Save with naming convention: resource_variant_volume
                         # Row 0 = full volume (8), Row 7 = minimal volume (1)
-                        volume = config['rows'] - row
+                        volume = config["rows"] - row
                         variant = col + 1
 
                         output_name = f"{prefix}{resource_name}_{variant}_{volume}.png"
 
-                        if prefix == 'hr-':
+                        if prefix == "hr-":
                             output_path = self.output_dir_hr / output_name
                         else:
                             output_path = self.output_dir / output_name
@@ -85,28 +85,28 @@ class ResourceSpriteExtractor:
                         print(f"Saved: {output_path}")
 
                 # Also handle glow sprites for uranium
-                if resource_name == 'uranium-ore':
+                if resource_name == "uranium-ore":
                     glow_path = resource_dir / f"{prefix}uranium-ore-glow.png"
                     if glow_path.exists():
-                        glow_sheet = Image.open(glow_path).convert('RGBA')
+                        glow_sheet = Image.open(glow_path).convert("RGBA")
 
-                        for row in range(config['rows']):
-                            for col in range(config['columns']):
-                                x = col * config['width']
-                                y = row * config['height']
+                        for row in range(config["rows"]):
+                            for col in range(config["columns"]):
+                                x = col * config["width"]
+                                y = row * config["height"]
 
-                                glow_sprite = glow_sheet.crop((
-                                    x, y,
-                                    x + config['width'],
-                                    y + config['height']
-                                ))
+                                glow_sprite = glow_sheet.crop(
+                                    (x, y, x + config["width"], y + config["height"])
+                                )
 
-                                volume = config['rows'] - row
+                                volume = config["rows"] - row
                                 variant = col + 1
 
-                                output_name = f"{prefix}uranium-ore-glow_{variant}_{volume}.png"
+                                output_name = (
+                                    f"{prefix}uranium-ore-glow_{variant}_{volume}.png"
+                                )
 
-                                if prefix == 'hr-':
+                                if prefix == "hr-":
                                     output_path = self.output_dir_hr / output_name
                                 else:
                                     output_path = self.output_dir / output_name

@@ -7,7 +7,9 @@ from typing import Union
 from fle.env import EntityGroup
 from fle.env import FactorioInstance
 from fle.env.game_types import prototype_by_name
-from fle.agents.data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
+from fle.agents.data.blueprints_to_policies.models.blueprint_entity import (
+    BlueprintEntity,
+)
 
 
 class BlueprintAnalyzer:
@@ -194,7 +196,7 @@ class BlueprintAnalyzer:
             ")",
             "right_top = Position(",
             f"    x={self.max_x - self.min_x},",
-            f"    y=0",
+            "    y=0",
             ")",
             "center = Position(",
             "    x=(left_top.x + right_bottom.x) / 2,",
@@ -205,8 +207,7 @@ class BlueprintAnalyzer:
             "    left_top=left_top,",
             "    right_bottom=right_bottom,",
             "    left_bottom=left_bottom,",
-            "    right_top=right_top"
-            ")",
+            "    right_top=right_top)",
             "",
             "# Find valid position using nearest_buildable",
             f"origin = {origin_calc}",

@@ -6,30 +6,25 @@ Underground belt renderer
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
-from fle.env.tools.admin.render.constants import DEFAULT_SCALING
 
-RELATIVE_DIRECTIONS = {
-    0: "up",
-    2: "right",
-    4: "down",
-    6: "left"
-}
+RELATIVE_DIRECTIONS = {0: "up", 2: "right", 4: "down", 6: "left"}
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
     """Render underground belt"""
-    belt_type = entity.get('type', 'input')
+    belt_type = entity.get("type", "input")
 
     if not belt_type:
-        belt_type = 'input' if entity.get('is_input') == True else 'output'
+        belt_type = "input" if entity.get("is_input") else "output"
 
-    direction = entity.get('direction', 0)
-    prefix = 'in' if belt_type == 'input' else 'out'
+    direction = entity.get("direction", 0)
+    prefix = "in" if belt_type == "input" else "out"
     return image_resolver(f"{entity['name']}_{prefix}_{RELATIVE_DIRECTIONS[direction]}")
 
 
-
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Underground belts have no shadows"""
     return None
 

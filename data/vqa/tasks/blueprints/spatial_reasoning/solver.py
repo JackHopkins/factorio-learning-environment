@@ -42,13 +42,17 @@ def generate_spatial_reasoning_with_code(questions_per_blueprint: int = 3) -> So
     Generate spatial reasoning questions using Python code written by the agent.
     """
     instance = create_factorio_instance()
+
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         blueprint = state.metadata.get("blueprint", {})
         entities = blueprint.get("entities", [])
 
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
         from data.vqa.image_utils import save_rendered_image
-        image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_reasoning")
+
+        image_id = save_rendered_image(
+            image, blueprint, state.metadata, "spatial_reasoning"
+        )
         state.metadata["image"] = image_id
 
         if len(entities) < 2:
@@ -148,8 +152,8 @@ def generate_spatial_context_with_code() -> Solver:
     Generate spatial context questions for denoising scenarios using sandbox Python execution.
     """
     instance = create_factorio_instance()
-    async def solve(state: TaskState, generate: Generate) -> TaskState:
 
+    async def solve(state: TaskState, generate: Generate) -> TaskState:
         qa_pairs = state.metadata.get("qa_pairs", [])
         if not qa_pairs:
             state.metadata["error"] = "No denoising QA pairs found"
@@ -263,7 +267,10 @@ print(json.dumps(enhanced_pairs, indent=2))
         blueprint = state.metadata.get("blueprint", {})
         image: RenderedImage = instance.namespace._render(blueprint=blueprint)
         from data.vqa.image_utils import save_rendered_image
-        image_id = save_rendered_image(image, blueprint, state.metadata, "spatial_context")
+
+        image_id = save_rendered_image(
+            image, blueprint, state.metadata, "spatial_context"
+        )
         state.metadata["image"] = image_id
 
         return state

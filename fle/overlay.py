@@ -7,45 +7,25 @@ Designed to sit alongside the Factorio client window.
 import argparse
 import asyncio
 import base64
-import random
 import time
 import threading
 import logging
 from collections import deque
-from datetime import datetime
 from pathlib import Path
 from queue import Queue
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 
-import gym
-from nicegui import ui, Client
-from nicegui import events
+from nicegui import ui
 
-from fle.agents.gym_agent import GymAgent
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.commons.db_client import create_db_client
 from fle.env import FactorioInstance
-from fle.env.gym_env.action import Action
-from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
-from fle.env.gym_env.environment import FactorioGymEnv
-from fle.env.gym_env.observation import Observation
-from fle.env.gym_env.observation_formatter import BasicObservationFormatter
-from fle.env.gym_env.registry import get_environment_info, list_available_environments
-from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
-from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
-from fle.env.lua_manager import LuaScriptManager
-from fle.env.tools.agent.get_entities.client import GetEntities
-from fle.eval.algorithms.independent import get_next_version
-from tests.conftest import namespace
+from fle.env.gym_env.registry import get_environment_info
 
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('factorio_overlay.log')
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("factorio_overlay.log")],
 )
 logger = logging.getLogger(__name__)
 
@@ -53,7 +33,12 @@ logger = logging.getLogger(__name__)
 class IconManager:
     """Manages loading and caching of Factorio sprite icons."""
 
-    def __init__(self, sprites_path: Path = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.fle/sprites")):
+    def __init__(
+        self,
+        sprites_path: Path = Path(
+            "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/.fle/sprites"
+        ),
+    ):
         self.sprites_path = sprites_path
         self.icon_cache = {}
         self.base64_cache = {}
@@ -101,7 +86,7 @@ class IconManager:
         try:
             with open(icon_path, "rb") as f:
                 icon_data = f.read()
-                base64_data = base64.b64encode(icon_data).decode('utf-8')
+                base64_data = base64.b64encode(icon_data).decode("utf-8")
                 self.base64_cache[item_name] = f"data:image/png;base64,{base64_data}"
                 return self.base64_cache[item_name]
         except Exception as e:
@@ -120,40 +105,40 @@ class IconManager:
     def get_emoji_fallback(self, item_name: str) -> str:
         """Get emoji fallback for items without sprites."""
         icon_map = {
-            'iron-ore': '🪨',
-            'copper-ore': '🟤',
-            'coal': '⚫',
-            'stone': '🗿',
-            'wood': '🪵',
-            'iron-plate': '🔩',
-            'copper-plate': '🟠',
-            'steel-plate': '⚙️',
-            'electronic-circuit': '💾',
-            'advanced-circuit': '🔌',
-            'processing-unit': '🖥️',
-            'transport-belt': '📦',
-            'inserter': '🦾',
-            'assembling-machine': '🏭',
-            'electric-mining-drill': '⛏️',
-            'furnace': '🔥',
-            'lab': '🧪',
-            'science-pack': '🧬',
-            'pipe': '🚰',
-            'gear-wheel': '⚙️',
-            'automation-science-pack': '🔴',
-            'logistic-science-pack': '🟢',
-            'military-science-pack': '⚫',
-            'chemical-science-pack': '🔵',
-            'production-science-pack': '🟣',
-            'utility-science-pack': '🟡',
-            'coin': '🪙',  # Add coin fallback
+            "iron-ore": "🪨",
+            "copper-ore": "🟤",
+            "coal": "⚫",
+            "stone": "🗿",
+            "wood": "🪵",
+            "iron-plate": "🔩",
+            "copper-plate": "🟠",
+            "steel-plate": "⚙️",
+            "electronic-circuit": "💾",
+            "advanced-circuit": "🔌",
+            "processing-unit": "🖥️",
+            "transport-belt": "📦",
+            "inserter": "🦾",
+            "assembling-machine": "🏭",
+            "electric-mining-drill": "⛏️",
+            "furnace": "🔥",
+            "lab": "🧪",
+            "science-pack": "🧬",
+            "pipe": "🚰",
+            "gear-wheel": "⚙️",
+            "automation-science-pack": "🔴",
+            "logistic-science-pack": "🟢",
+            "military-science-pack": "⚫",
+            "chemical-science-pack": "🔵",
+            "production-science-pack": "🟣",
+            "utility-science-pack": "🟡",
+            "coin": "🪙",  # Add coin fallback
         }
 
         for key, icon in icon_map.items():
             if key in item_name.lower():
                 return icon
 
-        return '📦'
+        return "📦"
 
 
 # class VisualTrajectoryRunner(GymTrajectoryRunner):
@@ -357,23 +342,16 @@ class IconManager:
 #         }
 
 
-import asyncio
-import json
-from queue import Queue
-import threading
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-import websocket
-import json
-
-
 class FactorioControlPanel:
     """Minimal control panel for Factorio agent gameplay."""
 
-    def __init__(self, env_id: str = None,
-                 model: str = None,
-                 mcp_server_path: str = "fle/env/protocols/mcp/server.py",
-                 websocket_url: str = "ws://localhost:8000/ws"):
+    def __init__(
+        self,
+        env_id: str = None,
+        model: str = None,
+        mcp_server_path: str = "fle/env/protocols/mcp/server.py",
+        websocket_url: str = "ws://localhost:8000/ws",
+    ):
         logger.info("Initializing FactorioControlPanel")
 
         self.ws_url = websocket_url
@@ -389,8 +367,8 @@ class FactorioControlPanel:
         self.is_running = False
 
         # Fixed configuration
-        self.env_id = env_id or 'steel_plate_throughput'
-        self.model = model or 'openai/gpt-5-mini'
+        self.env_id = env_id or "steel_plate_throughput"
+        self.model = model or "openai/gpt-5-mini"
         logger.info("Configuration - env_id: %s, model: %s", self.env_id, self.model)
 
         # Initialize icon manager
@@ -405,8 +383,8 @@ class FactorioControlPanel:
 
         # Production chart data
         self.production_history = {
-            'timestamps': deque(maxlen=50),
-            'data': {}  # Will store production outputs
+            "timestamps": deque(maxlen=50),
+            "data": {},  # Will store production outputs
         }
         self.chart = None
 
@@ -428,35 +406,38 @@ class FactorioControlPanel:
         rcon_client, address = FactorioInstance.connect_to_server(ips[0], tcp_ports[0])
         self.rcon_client = rcon_client
 
-
     def update_inventory_display(self):
         """Update the inventory grid display with sprite icons."""
         self.inventory_grid.clear()
 
         with self.inventory_grid:
             # Sort items by count (descending)
-            sorted_items = sorted(self.inventory_items.items(), key=lambda x: x[1], reverse=True)
+            sorted_items = sorted(
+                self.inventory_items.items(), key=lambda x: x[1], reverse=True
+            )
 
             for item_name, count in sorted_items[:20]:  # Show top 20 items
-                with ui.card().classes('w-16 h-16 bg-gray-700 p-1 relative overflow-hidden'):
+                with ui.card().classes(
+                    "w-16 h-16 bg-gray-700 p-1 relative overflow-hidden"
+                ):
                     # Try to get sprite icon
                     icon_data = self.icon_manager.get_icon_base64(item_name)
 
                     if icon_data:
                         # Use actual sprite icon
                         ui.image(icon_data).classes(
-                            'absolute inset-0 w-full h-full object-contain p-1'
+                            "absolute inset-0 w-full h-full object-contain p-1"
                         )
                     else:
                         # Fallback to emoji
                         emoji = self.icon_manager.get_emoji_fallback(item_name)
                         ui.label(emoji).classes(
-                            'text-2xl absolute top-1 left-1/2 transform -translate-x-1/2'
+                            "text-2xl absolute top-1 left-1/2 transform -translate-x-1/2"
                         )
 
                     # Count badge
                     ui.label(str(count)).classes(
-                        'text-sm text-white absolute bottom-0 right-1 bg-gray-900 px-1 rounded font-bold'
+                        "text-sm text-white absolute bottom-0 right-1 bg-gray-900 px-1 rounded font-bold"
                     )
                     # Tooltip with item name
                     ui.tooltip(item_name)
@@ -467,36 +448,36 @@ class FactorioControlPanel:
             return
 
         # Add timestamp
-        self.production_history['timestamps'].append(time.time())
+        self.production_history["timestamps"].append(time.time())
 
         # Track production outputs
-        outputs = production_flows.get('output', {})
+        outputs = production_flows.get("output", {})
         for item, amount in outputs.items():
-            if item not in self.production_history['data']:
-                self.production_history['data'][item] = deque(maxlen=50)
-            self.production_history['data'][item].append(amount)
+            if item not in self.production_history["data"]:
+                self.production_history["data"][item] = deque(maxlen=50)
+            self.production_history["data"][item].append(amount)
 
         # Calculate total economic value for this tick
         total_value = 0
         for item, amount in outputs.items():
-            if item not in self.production_history['data']:
-                self.production_history['data'][item] = deque(maxlen=50)
-            self.production_history['data'][item].append(amount)
+            if item not in self.production_history["data"]:
+                self.production_history["data"][item] = deque(maxlen=50)
+            self.production_history["data"][item].append(amount)
 
             # Add to total value (you might want to weight different items differently)
             total_value += amount
 
         # Track cumulative economic output
-        if 'cumulative_total' not in self.production_history['data']:
-            self.production_history['data']['cumulative_total'] = deque(maxlen=50)
+        if "cumulative_total" not in self.production_history["data"]:
+            self.production_history["data"]["cumulative_total"] = deque(maxlen=50)
             self.cumulative_sum = 0
 
         self.cumulative_sum = total_value
-        self.production_history['data']['cumulative_total'].append(self.cumulative_sum)
+        self.production_history["data"]["cumulative_total"].append(self.cumulative_sum)
 
         # Pad shorter series with zeros
-        max_len = len(self.production_history['timestamps'])
-        for series in self.production_history['data'].values():
+        max_len = len(self.production_history["timestamps"])
+        for series in self.production_history["data"].values():
             while len(series) < max_len:
                 series.appendleft(0)
 
@@ -510,59 +491,54 @@ class FactorioControlPanel:
             return
 
         # Prepare data for ECharts
-        x_data = list(range(len(self.production_history['timestamps'])))
+        x_data = list(range(len(self.production_history["timestamps"])))
 
         # Colors for different production lines
-        colors = [
-            '#FF6384',
-            '#36A2EB',
-            '#FFCE56',
-            '#4BC0C0',
-            '#9966FF',
-            '#FF9F40'
-        ]
+        colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"]
 
         # Add top 5 production items
         top_items = sorted(
-            self.production_history['data'].items(),
+            self.production_history["data"].items(),
             key=lambda x: sum(x[1]) if x[1] else 0,
-            reverse=True
+            reverse=True,
         )[:20]
 
         series = []
         legend_data = []
 
         # First, add the cumulative total as a special series
-        if 'cumulative_total' in self.production_history['data']:
-            cumulative_values = self.production_history['data']['cumulative_total']
-            series.append({
-                'name': 'cumulative_total',
-                'type': 'line',
-                'data': list(cumulative_values),
-                'smooth': True,
-                'lineStyle': {
-                    'color': '#FFD700',  # Gold color for cumulative
-                    'width': 3,  # Thicker line
-                    'type': 'solid'  # Solid line instead of dashed
-                },
-                'itemStyle': {'color': '#FFD700'},
-                # 'areaStyle': {  # Add area fill for cumulative
-                #     'color': {
-                #         'type': 'linear',
-                #         'x': 0,
-                #         'y': 0,
-                #         'x2': 0,
-                #         'y2': 1,
-                #         'colorStops': [
-                #             {'offset': 0, 'color': 'rgba(255, 215, 0, 0.3)'},
-                #             {'offset': 1, 'color': 'rgba(255, 215, 0, 0.05)'}
-                #         ]
-                #     }
-                # },
-                'showSymbol': False,
-                'animationDuration': 30,
-                # 'yAxisIndex': 1  # Use secondary y-axis for cumulative
-            })
+        if "cumulative_total" in self.production_history["data"]:
+            cumulative_values = self.production_history["data"]["cumulative_total"]
+            series.append(
+                {
+                    "name": "cumulative_total",
+                    "type": "line",
+                    "data": list(cumulative_values),
+                    "smooth": True,
+                    "lineStyle": {
+                        "color": "#FFD700",  # Gold color for cumulative
+                        "width": 3,  # Thicker line
+                        "type": "solid",  # Solid line instead of dashed
+                    },
+                    "itemStyle": {"color": "#FFD700"},
+                    # 'areaStyle': {  # Add area fill for cumulative
+                    #     'color': {
+                    #         'type': 'linear',
+                    #         'x': 0,
+                    #         'y': 0,
+                    #         'x2': 0,
+                    #         'y2': 1,
+                    #         'colorStops': [
+                    #             {'offset': 0, 'color': 'rgba(255, 215, 0, 0.3)'},
+                    #             {'offset': 1, 'color': 'rgba(255, 215, 0, 0.05)'}
+                    #         ]
+                    #     }
+                    # },
+                    "showSymbol": False,
+                    "animationDuration": 30,
+                    # 'yAxisIndex': 1  # Use secondary y-axis for cumulative
+                }
+            )
             legend_data.append({"name": "Cumulative Total", "icon": ""})
 
         for i, (item_name, values) in enumerate(top_items):
@@ -572,26 +548,27 @@ class FactorioControlPanel:
             icon_data = self.icon_manager.get_icon_base64(item_name)
             legend_name = item_name[:20]  # Truncate long names
 
-            series.append({
-                'name': legend_name,
-                'type': 'line',
-                'data': list(values),
-                'smooth': True,
-                'lineStyle': {'color': color, 'width': 1, 'type': 'dashed'},
-                'itemStyle': {'color': color},
-                #'symbol': 'circle',
-                #'symbolSize': 6
-                'showSymbol': False,
-                'animationDuration': 30
-            })
+            series.append(
+                {
+                    "name": legend_name,
+                    "type": "line",
+                    "data": list(values),
+                    "smooth": True,
+                    "lineStyle": {"color": color, "width": 1, "type": "dashed"},
+                    "itemStyle": {"color": color},
+                    #'symbol': 'circle',
+                    #'symbolSize': 6
+                    "showSymbol": False,
+                    "animationDuration": 30,
+                }
+            )
 
             # Add to legend with icon if available
             if icon_data:
-                legend_data.append({
-                    'name': legend_name,
-                    'icon': f'image://{icon_data}'
-                })
-            #else:
+                legend_data.append(
+                    {"name": legend_name, "icon": f"image://{icon_data}"}
+                )
+            # else:
             #    legend_data.append({'name': legend_name})
 
         # Update chart options
@@ -599,51 +576,53 @@ class FactorioControlPanel:
             _series = series[:1] + series[2:]
             assert len(_series) == len(legend_data)
             chart_options = {
-                'backgroundColor': 'transparent',
-                'xAxis': {
-                    'type': 'category',
-                    'data': x_data,
-                    'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                    'axisLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.3)'}}
+                "backgroundColor": "transparent",
+                "xAxis": {
+                    "type": "category",
+                    "data": x_data,
+                    "axisLabel": {"color": "rgba(255, 255, 255, 0.7)"},
+                    "axisLine": {"lineStyle": {"color": "rgba(255, 255, 255, 0.3)"}},
                 },
-                'yAxis': {
-                    'type': 'value',
-                    'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                    'splitLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.1)'}}
+                "yAxis": {
+                    "type": "value",
+                    "axisLabel": {"color": "rgba(255, 255, 255, 0.7)"},
+                    "splitLine": {"lineStyle": {"color": "rgba(255, 255, 255, 0.1)"}},
                 },
-                'series': _series,
-                'legend': {
-                    'data': legend_data if isinstance(legend_data[0], str) else [item['name'] for item in legend_data],
-                    'textStyle': {'color': 'rgba(255, 255, 255, 0.7)'},
-                    'itemWidth': 20,
-                    'itemHeight': 20,
-                    'top': 0,
-                    'icon': 'rect'
+                "series": _series,
+                "legend": {
+                    "data": legend_data
+                    if isinstance(legend_data[0], str)
+                    else [item["name"] for item in legend_data],
+                    "textStyle": {"color": "rgba(255, 255, 255, 0.7)"},
+                    "itemWidth": 20,
+                    "itemHeight": 20,
+                    "top": 0,
+                    "icon": "rect",
                 },
-                'grid': {
-                    'left': '5%',
-                    'right': '5%',
-                    'bottom': '5%',
-                    'top': '15%',
-                    'containLabel': True
+                "grid": {
+                    "left": "5%",
+                    "right": "5%",
+                    "bottom": "5%",
+                    "top": "15%",
+                    "containLabel": True,
                 },
-                'tooltip': {
-                    'trigger': 'axis',
-                    'backgroundColor': 'rgba(0, 0, 0, 0.8)',
-                    'borderColor': '#333',
-                    'textStyle': {'color': '#fff'}
-                }
+                "tooltip": {
+                    "trigger": "axis",
+                    "backgroundColor": "rgba(0, 0, 0, 0.8)",
+                    "borderColor": "#333",
+                    "textStyle": {"color": "#fff"},
+                },
             }
         except Exception as e:
             raise e
 
         # Update chart with new options using the update method
-        self.chart.options['series'] = chart_options['series']
-        self.chart.options['xAxis']['data'] = chart_options['xAxis']['data']
-        self.chart.options['legend']['data'] = chart_options['legend']['data']
+        self.chart.options["series"] = chart_options["series"]
+        self.chart.options["xAxis"]["data"] = chart_options["xAxis"]["data"]
+        self.chart.options["legend"]["data"] = chart_options["legend"]["data"]
         try:
             self.chart.update()
-        except Exception as e:
+        except Exception:
             pass
 
     def process_updates(self):
@@ -652,59 +631,65 @@ class FactorioControlPanel:
             update = self.update_queue.get()
 
             # Handle polling state updates
-            if update['type'] == 'state_update':
+            if update["type"] == "state_update":
                 # Update UI with polled game state
-                if 'inventory' in update and update['inventory']:
+                if "inventory" in update and update["inventory"]:
                     # Only update if inventory has changed
-                    if self.inventory_items != update['inventory']:
-                        self.inventory_items = update['inventory']
+                    if self.inventory_items != update["inventory"]:
+                        self.inventory_items = update["inventory"]
                         self.update_inventory_display()
 
-                if 'score' in update:
-                    score_text = f'{update["score"]:.2f}'
+                if "score" in update:
+                    score_text = f"{update['score']:.2f}"
                     self.score_label.set_content(score_text)
 
-                if 'entities_count' in update:
-                    self.entities_label.set_text(f'Entities: {update["entities_count"]}')
+                if "entities_count" in update:
+                    self.entities_label.set_text(
+                        f"Entities: {update['entities_count']}"
+                    )
 
-                if 'game_tick' in update:
-                    self.tick_label.set_text(f'Tick: {update["game_tick"]:,}')
+                if "game_tick" in update:
+                    self.tick_label.set_text(f"Tick: {update['game_tick']:,}")
 
-                if 'research_progress' in update:
-                    research_pct = update['research_progress'] * 100
-                    self.research_label.set_text(f'Research: {research_pct:.1f}%')
+                if "research_progress" in update:
+                    research_pct = update["research_progress"] * 100
+                    self.research_label.set_text(f"Research: {research_pct:.1f}%")
 
-                if 'production_flows' in update:
-                    self.update_production_chart(update['production_flows'])
+                if "production_flows" in update:
+                    self.update_production_chart(update["production_flows"])
 
-                logger.debug(f"Processed state_update at {update.get('timestamp', 'unknown')}")
+                logger.debug(
+                    f"Processed state_update at {update.get('timestamp', 'unknown')}"
+                )
 
-            elif update['type'] == 'init':
-                self.max_steps = update.get('max_steps', 100)
-                self.step_label.set_text(f'Step: 0 / {self.max_steps}')
-                self.status_label.set_text('🟢 Running')
+            elif update["type"] == "init":
+                self.max_steps = update.get("max_steps", 100)
+                self.step_label.set_text(f"Step: 0 / {self.max_steps}")
+                self.status_label.set_text("🟢 Running")
 
                 # Set the coin icon once at initialization
-                coin_icon_data = self.icon_manager.get_icon_base64('coin')
+                coin_icon_data = self.icon_manager.get_icon_base64("coin")
                 if coin_icon_data and self.coin_icon:
                     self.coin_icon.set_source(coin_icon_data)
                 elif self.coin_icon:
                     # Use emoji fallback if no icon found
-                    self.coin_icon.set_source('')
-                    self.coin_icon.classes('hidden')  # Hide image element
+                    self.coin_icon.set_source("")
+                    self.coin_icon.classes("hidden")  # Hide image element
                     # Create emoji fallback (would need to modify UI structure for this)
 
-            elif update['type'] == 'update':
-                self.current_step = update['step']
+            elif update["type"] == "update":
+                self.current_step = update["step"]
                 self.progress_bar.set_value(self.current_step / self.max_steps)
-                self.step_label.set_text(f'Step: {self.current_step} / {self.max_steps}')
+                self.step_label.set_text(
+                    f"Step: {self.current_step} / {self.max_steps}"
+                )
 
                 # Update score with delta
                 new_score = update.get("score", 0)
                 reward = update.get("reward", 0)
 
                 # Build score text with reward indicator
-                score_text = f'{new_score:.2f}'
+                score_text = f"{new_score:.2f}"
 
                 # Add reward indicator (green with + or -)
                 if reward != 0:
@@ -712,146 +697,165 @@ class FactorioControlPanel:
                         reward_text = f'<span style="color: #10b981; font-size: 0.8em; vertical-align: super;">+{reward:.3f}</span>'
                     else:
                         reward_text = f'<span style="color: #ef4444; font-size: 0.8em; vertical-align: super;">{reward:.3f}</span>'
-                    self.score_label.set_content(score_text + ' ' + reward_text)
+                    self.score_label.set_content(score_text + " " + reward_text)
                 else:
                     self.score_label.set_content(score_text)
 
                 self.last_score = new_score
 
-                if 'observation' in update:
-                    obs = update['observation']
-                    self.entities_label.set_text(f'Entities: {obs.get("entities_count", 0)}')
-                    self.tick_label.set_text(f'Tick: {obs.get("game_tick", 0):,}')
+                if "observation" in update:
+                    obs = update["observation"]
+                    self.entities_label.set_text(
+                        f"Entities: {obs.get('entities_count', 0)}"
+                    )
+                    self.tick_label.set_text(f"Tick: {obs.get('game_tick', 0):,}")
                     research_pct = obs.get("research_progress", 0) * 100
-                    self.research_label.set_text(f'Research: {research_pct:.1f}%')
+                    self.research_label.set_text(f"Research: {research_pct:.1f}%")
 
                 # Update inventory
-                if 'inventory' in update and update['inventory']:
-                    self.inventory_items = update['inventory']
+                if "inventory" in update and update["inventory"]:
+                    self.inventory_items = update["inventory"]
                     self.update_inventory_display()
 
                 # Update production chart
-                if 'production_flows' in update:
-                    self.update_production_chart(update['production_flows'])
+                if "production_flows" in update:
+                    self.update_production_chart(update["production_flows"])
 
-            elif update['type'] == 'complete':
+            elif update["type"] == "complete":
                 self.is_running = False
-                status = '✅ Complete' if update.get('success') else '⏹️ Finished'
+                status = "✅ Complete" if update.get("success") else "⏹️ Finished"
                 self.status_label.set_text(status)
 
-            elif update['type'] == 'error':
-                self.status_label.set_text('❌ Error'+f"\n{update['message']}")
+            elif update["type"] == "error":
+                self.status_label.set_text("❌ Error" + f"\n{update['message']}")
                 self.is_running = False
 
     def create_ui(self):
         """Create the minimal control panel interface with production chart on the right."""
         # Prevent duplicate UI creation
-        if hasattr(self, '_ui_created'):
+        if hasattr(self, "_ui_created"):
             logger.warning("UI already created, skipping duplicate creation")
             return
         self._ui_created = True
 
         # Main container with horizontal layout using flexbox
-        with ui.row().classes('w-full h-screen p-4 bg-gray-900 justify-between'):
-
+        with ui.row().classes("w-full h-screen p-4 bg-gray-900 justify-between"):
             # LEFT COLUMN - Control panel and stats
-            with ui.column().classes('w-96 flex-shrink-0'):
+            with ui.column().classes("w-96 flex-shrink-0"):
                 # Header
-                with ui.card().classes('w-full bg-gray-800 text-white'):
-                    ui.label('Factorio Learning Environment').classes('text-xl font-bold text-center')
-                    self.status_label = ui.label('⚪ Initializing...').classes('text-sm text-center')
+                with ui.card().classes("w-full bg-gray-800 text-white"):
+                    ui.label("Factorio Learning Environment").classes(
+                        "text-xl font-bold text-center"
+                    )
+                    self.status_label = ui.label("⚪ Initializing...").classes(
+                        "text-sm text-center"
+                    )
 
                     # Task (readonly)
                     ui.input(
-                        label='Task',
-                        value=self.env_id.split('-')[1] if '-' in self.env_id else self.env_id
-                    ).props('readonly').classes('w-full text-xs')
+                        label="Task",
+                        value=self.env_id.split("-")[1]
+                        if "-" in self.env_id
+                        else self.env_id,
+                    ).props("readonly").classes("w-full text-xs")
 
                     # Model (readonly)
                     ui.input(
-                        label='Model',
-                        value=self.model.split('/')[-1] if '/' in self.model else self.model
-                    ).props('readonly').classes('w-full text-xs')
+                        label="Model",
+                        value=self.model.split("/")[-1]
+                        if "/" in self.model
+                        else self.model,
+                    ).props("readonly").classes("w-full text-xs")
 
                     # Progress
-                    self.progress_bar = ui.linear_progress(value=0).classes('w-full')
-                    with ui.row().classes('w-full justify-between'):
-                        self.step_label = ui.label('Step: 0 / 100').classes('text-xs')
-                        self.tick_label = ui.label('Tick: 0').classes('text-xs')
+                    self.progress_bar = ui.linear_progress(value=0).classes("w-full")
+                    with ui.row().classes("w-full justify-between"):
+                        self.step_label = ui.label("Step: 0 / 100").classes("text-xs")
+                        self.tick_label = ui.label("Tick: 0").classes("text-xs")
 
                     # Camera controls
-                    with ui.row().classes('w-full items-center gap-2 mt-2'):
-                        ui.label('Camera:').classes('text-xs')
-                        ui.switch('Track', value=True).bind_value(self, 'camera_tracking_enabled').classes('text-xs')
-                        ui.slider(min=0.1, max=2.0, step=0.1, value=0.5).bind_value(self, 'camera_zoom_scale').classes('flex-1')
+                    with ui.row().classes("w-full items-center gap-2 mt-2"):
+                        ui.label("Camera:").classes("text-xs")
+                        ui.switch("Track", value=True).bind_value(
+                            self, "camera_tracking_enabled"
+                        ).classes("text-xs")
+                        ui.slider(min=0.1, max=2.0, step=0.1, value=0.5).bind_value(
+                            self, "camera_zoom_scale"
+                        ).classes("flex-1")
 
                 # Stats
-                with ui.card().classes('w-full bg-gray-800 text-white mt-2'):
-                    ui.label('Statistics').classes('text-sm font-bold')
+                with ui.card().classes("w-full bg-gray-800 text-white mt-2"):
+                    ui.label("Statistics").classes("text-sm font-bold")
 
                     # Score with coin icon container
-                    with ui.row().classes('items-center gap-1'):
+                    with ui.row().classes("items-center gap-1"):
                         # Coin icon (will be set during init)
-                        self.coin_icon = ui.image('').classes('w-4 h-4')
+                        self.coin_icon = ui.image("").classes("w-4 h-4")
                         # Score label
-                        self.score_label = ui.html('0.00').classes('text-sm')
+                        self.score_label = ui.html("0.00").classes("text-sm")
 
-                    with ui.row().classes('w-full justify-between text-xs mt-1'):
-                        self.entities_label = ui.label('Entities: 0')
-                        self.research_label = ui.label('Research: 0%')
+                    with ui.row().classes("w-full justify-between text-xs mt-1"):
+                        self.entities_label = ui.label("Entities: 0")
+                        self.research_label = ui.label("Research: 0%")
 
                 # Inventory Grid
-                with ui.card().classes('w-full bg-gray-800 text-white mt-2'):
-                    ui.label('Inventory').classes('text-sm font-bold')
-                    self.inventory_grid = ui.row().classes('w-full flex-wrap gap-3')
+                with ui.card().classes("w-full bg-gray-800 text-white mt-2"):
+                    ui.label("Inventory").classes("text-sm font-bold")
+                    self.inventory_grid = ui.row().classes("w-full flex-wrap gap-3")
                     with self.inventory_grid:
                         # Initial placeholder
-                        ui.label('No items yet').classes('text-xs text-gray-400')
+                        ui.label("No items yet").classes("text-xs text-gray-400")
 
             # MIDDLE SPACE - Empty area for Factorio window
-            ui.element('div').classes('flex-1')  # This creates the empty middle space
+            ui.element("div").classes("flex-1")  # This creates the empty middle space
 
             # RIGHT COLUMN - Production Chart
-            with ui.column().classes('w-[500px] flex-shrink-0'):
-                with ui.card().classes('w-full h-full bg-gray-800 text-white'):
-                    ui.label('Production Output').classes('text-sm font-bold mb-2')
+            with ui.column().classes("w-[500px] flex-shrink-0"):
+                with ui.card().classes("w-full h-full bg-gray-800 text-white"):
+                    ui.label("Production Output").classes("text-sm font-bold mb-2")
                     # Create chart container with ECharts
-                    self.chart = ui.echart({
-                        'backgroundColor': 'transparent',
-                        'xAxis': {
-                            'type': 'category',
-                            'data': [],
-                            'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                            'axisLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.3)'}}
-                        },
-                        'yAxis': {
-                            'type': 'log',  # Changed to logarithmic scale
-                            'logBase': 10,  # Base 10 logarithm
-                            'axisLabel': {'color': 'rgba(255, 255, 255, 0.7)'},
-                            'splitLine': {'lineStyle': {'color': 'rgba(255, 255, 255, 0.1)'}},
-                            'min': 1  # Minimum value to avoid log(0) issues
-                        },
-                        'series': [],
-                        'legend': {
-                            'data': [],
-                            'textStyle': {'color': 'rgba(255, 255, 255, 0.7)'},
-                            'itemWidth': 20,
-                            'itemHeight': 20
-                        },
-                        'grid': {
-                            'left': '5%',
-                            'right': '5%',
-                            'bottom': '5%',
-                            'top': '15%',
-                            'containLabel': True
-                        },
-                        'tooltip': {
-                            'trigger': 'axis',
-                            'backgroundColor': 'rgba(0, 0, 0, 0.8)',
-                            'borderColor': '#333',
-                            'textStyle': {'color': '#fff'}
+                    self.chart = ui.echart(
+                        {
+                            "backgroundColor": "transparent",
+                            "xAxis": {
+                                "type": "category",
+                                "data": [],
+                                "axisLabel": {"color": "rgba(255, 255, 255, 0.7)"},
+                                "axisLine": {
+                                    "lineStyle": {"color": "rgba(255, 255, 255, 0.3)"}
+                                },
+                            },
+                            "yAxis": {
+                                "type": "log",  # Changed to logarithmic scale
+                                "logBase": 10,  # Base 10 logarithm
+                                "axisLabel": {"color": "rgba(255, 255, 255, 0.7)"},
+                                "splitLine": {
+                                    "lineStyle": {"color": "rgba(255, 255, 255, 0.1)"}
+                                },
+                                "min": 1,  # Minimum value to avoid log(0) issues
+                            },
+                            "series": [],
+                            "legend": {
+                                "data": [],
+                                "textStyle": {"color": "rgba(255, 255, 255, 0.7)"},
+                                "itemWidth": 20,
+                                "itemHeight": 20,
+                            },
+                            "grid": {
+                                "left": "5%",
+                                "right": "5%",
+                                "bottom": "5%",
+                                "top": "15%",
+                                "containLabel": True,
+                            },
+                            "tooltip": {
+                                "trigger": "axis",
+                                "backgroundColor": "rgba(0, 0, 0, 0.8)",
+                                "borderColor": "#333",
+                                "textStyle": {"color": "#fff"},
+                            },
                         }
-                    }).classes('w-full h-[500px]')
+                    ).classes("w-full h-[500px]")
 
         # Set up periodic updates
         ui.timer(0.5, self.process_updates)
@@ -875,18 +879,15 @@ class FactorioControlPanel:
         logger.info("start_run() called - is_running: %s", self.is_running)
         if not self.is_running:
             self.is_running = True
-            self.status_label.set_text('🟡 Starting...')
+            self.status_label.set_text("🟡 Starting...")
             self.current_step = 0
             self.cumulative_score = 0  # Reset cumulative score
-            if hasattr(self, 'score_history'):
+            if hasattr(self, "score_history"):
                 self.score_history.clear()  # Clear score history
             else:
                 self.score_history = deque(maxlen=50)  # Initialize if not exists
             self.inventory_items = {}
-            self.production_history = {
-                'timestamps': deque(maxlen=50),
-                'data': {}
-            }
+            self.production_history = {"timestamps": deque(maxlen=50), "data": {}}
             self.cumulative_sum = 0  # Track cumulative economic output
             logger.info("Starting trajectory runner thread")
 
@@ -894,7 +895,10 @@ class FactorioControlPanel:
             self.runner_thread = threading.Thread(target=self._run_trajectory)
             self.runner_thread.daemon = True
             self.runner_thread.start()
-            logger.info("Trajectory runner thread started - thread alive: %s", self.runner_thread.is_alive())
+            logger.info(
+                "Trajectory runner thread started - thread alive: %s",
+                self.runner_thread.is_alive(),
+            )
         else:
             logger.warning("start_run() called but already running")
 
@@ -907,10 +911,12 @@ class FactorioControlPanel:
             logger.info("_async_run_trajectory completed successfully")
         except Exception as e:
             logger.error("Exception in _run_trajectory: %s", e, exc_info=True)
-            self.update_queue.put({
-                'type': 'error',
-                'message': str(e),
-            })
+            self.update_queue.put(
+                {
+                    "type": "error",
+                    "message": str(e),
+                }
+            )
 
     async def start_polling(self):
         """Start polling for game state updates continuously."""
@@ -925,7 +931,7 @@ class FactorioControlPanel:
                 logger.debug(f"Polling iteration {poll_count} at {time.time()}")
 
                 # Get the current game state from the Factorio instance
-                if hasattr(self, 'gym_env') and self.gym_env:
+                if hasattr(self, "gym_env") and self.gym_env:
                     # Update camera viewport to follow agent
                     await self._update_camera_viewport()
 
@@ -942,7 +948,7 @@ class FactorioControlPanel:
                     # }
 
                     # Put update in queue for UI processing
-                    #self.update_queue.put(update)
+                    # self.update_queue.put(update)
                     logger.debug(f"Polling update {poll_count} sent to queue")
 
                 await asyncio.sleep(3.0)  # Poll every second
@@ -963,15 +969,14 @@ class FactorioControlPanel:
             return
 
         try:
-
             # Use zoom_to_world to focus on agent character
-            #camera_cmd = f"/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].zoom_to_world(global.agent_characters[1].position, {self.camera_zoom_scale}, global.agent_characters[1]) end"
-            camera_cmd = f"/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].teleport(global.agent_characters[1].position) end"
+            # camera_cmd = f"/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].zoom_to_world(global.agent_characters[1].position, {self.camera_zoom_scale}, global.agent_characters[1]) end"
+            camera_cmd = "/sc if game.players[1] and global.agent_characters and global.agent_characters[1] then game.players[1].teleport(global.agent_characters[1].position) end"
             self.rcon_client.send_command(camera_cmd)
             logger.debug("Camera viewport updated to follow agent character")
 
-            #logger.info("Setting spectator mode")
-            #self.rcon_client.send_command("/sc game.players[1].spectator=false")
+            # logger.info("Setting spectator mode")
+            # self.rcon_client.send_command("/sc game.players[1].spectator=false")
 
             self.last_camera_update = current_time
 
@@ -985,8 +990,7 @@ class FactorioControlPanel:
 
         try:
             # Get the RCON client from the Factorio instance
-            #instance = gym_env_unwrapped.instance
-
+            # instance = gym_env_unwrapped.instance
 
             # 0. View all map
             logger.info("Show all map")
@@ -1001,14 +1005,14 @@ class FactorioControlPanel:
             enemy_cleanup_cmd = '/c local surface=game.players[1].surface for key, entity in pairs(surface.find_entities_filtered({force="enemy"})) do entity.destroy() end'
             self.rcon_client.send_command(enemy_cleanup_cmd)
 
-
         except Exception as e:
-            logger.error("Error during overlay session initialization: %s", e, exc_info=True)
+            logger.error(
+                "Error during overlay session initialization: %s", e, exc_info=True
+            )
             # Don't raise the exception - continue with monitoring even if initialization fails
-            self.update_queue.put({
-                'type': 'error',
-                'message': f'Initialization warning: {str(e)}'
-            })
+            self.update_queue.put(
+                {"type": "error", "message": f"Initialization warning: {str(e)}"}
+            )
 
     async def _async_run_trajectory(self):
         """Setup monitoring connection without running trajectory."""
@@ -1020,10 +1024,12 @@ class FactorioControlPanel:
             env_info = get_environment_info(self.env_id)
             if not env_info:
                 logger.error("Could not get environment info for %s", self.env_id)
-                self.update_queue.put({
-                    'type': 'error',
-                    'message': f'Could not get environment info for {self.env_id}'
-                })
+                self.update_queue.put(
+                    {
+                        "type": "error",
+                        "message": f"Could not get environment info for {self.env_id}",
+                    }
+                )
                 return
             logger.info("Environment info retrieved successfully")
 
@@ -1039,19 +1045,23 @@ class FactorioControlPanel:
             await self._initialize_overlay_session()
 
             # Send initialization message
-            self.update_queue.put({
-                'type': 'init',
-                'task': self.env_id,
-                'max_steps': 100,  # Just for display
-                'num_agents': 1
-            })
+            self.update_queue.put(
+                {
+                    "type": "init",
+                    "task": self.env_id,
+                    "max_steps": 100,  # Just for display
+                    "num_agents": 1,
+                }
+            )
 
             # Update status
-            self.update_queue.put({
-                'type': 'update',
-                'step': 0,
-                'output': 'Monitoring mode - use Claude Code to control Factorio'
-            })
+            self.update_queue.put(
+                {
+                    "type": "update",
+                    "step": 0,
+                    "output": "Monitoring mode - use Claude Code to control Factorio",
+                }
+            )
 
             # Start polling task and keep it running
             logger.info("Starting monitoring polling")
@@ -1060,10 +1070,9 @@ class FactorioControlPanel:
 
         except Exception as e:
             logger.error("Fatal error in monitoring setup: %s", e, exc_info=True)
-            self.update_queue.put({
-                'type': 'error',
-                'message': f'Fatal error: {str(e)}'
-            })
+            self.update_queue.put(
+                {"type": "error", "message": f"Fatal error: {str(e)}"}
+            )
             raise
 
 
@@ -1071,21 +1080,34 @@ def main():
     """Main entry point for minimal control panel."""
     logger.info("=== Starting Factorio Control Panel ===")
 
-    parser = argparse.ArgumentParser(description='Minimal control panel for Factorio Learning Environment')
-    parser.add_argument('--port', type=int, default=8080, help='Port for web interface')
-    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host for web interface')
-    parser.add_argument('--env', type=str, default='steel_plate_throughput', help='Environment ID')
-    parser.add_argument('--model', type=str, default='openai/gpt-5-mini', help='Model to use')
+    parser = argparse.ArgumentParser(
+        description="Minimal control panel for Factorio Learning Environment"
+    )
+    parser.add_argument("--port", type=int, default=8080, help="Port for web interface")
+    parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Host for web interface"
+    )
+    parser.add_argument(
+        "--env", type=str, default="steel_plate_throughput", help="Environment ID"
+    )
+    parser.add_argument(
+        "--model", type=str, default="openai/gpt-5-mini", help="Model to use"
+    )
     args = parser.parse_args()
 
-    logger.info("Command line args - host: %s, port: %d, env: %s, model: %s",
-                args.host, args.port, args.env, args.model)
+    logger.info(
+        "Command line args - host: %s, port: %d, env: %s, model: %s",
+        args.host,
+        args.port,
+        args.env,
+        args.model,
+    )
 
     # Create control panel with specified configuration
     panel = FactorioControlPanel(env_id=args.env, model=args.model)
     logger.info("FactorioControlPanel instance created")
 
-    @ui.page('/')
+    @ui.page("/")
     def index():
         logger.info("Index page accessed")
         # Set dark theme and compact layout
@@ -1098,10 +1120,10 @@ def main():
     ui.run(
         host=args.host,
         port=args.port,
-        title='Factorio Monitor',
-        favicon='🏭',
+        title="Factorio Monitor",
+        favicon="🏭",
         dark=True,
-        reload=False
+        reload=False,
     )
 
 

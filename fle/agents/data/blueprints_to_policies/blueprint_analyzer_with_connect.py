@@ -7,7 +7,9 @@ from typing import Union
 from fle.env import EntityGroup
 from fle.env import FactorioInstance
 from fle.env.game_types import prototype_by_name
-from fle.agents.data.blueprints_to_policies.models.blueprint_entity import BlueprintEntity
+from fle.agents.data.blueprints_to_policies.models.blueprint_entity import (
+    BlueprintEntity,
+)
 
 
 class BlueprintAnalyzerWithConnect:

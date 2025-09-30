@@ -8,19 +8,18 @@ import sys
 import os
 
 # Add parent directory to Python path to ensure imports work
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))))
+sys.path.insert(
+    0,
+    os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    ),
+)
 
-from fle.env.protocols._mcp import mcp
+
 # Import all tools to register them with decorators
-from fle.env.protocols._mcp.tools import *
-from fle.env.protocols._mcp.resources import *
-from fle.env.protocols._mcp.version_control import *
-from fle.env.protocols._mcp.unix_tools import *
 
 # Import the lifespan setup
-from fle.env.protocols._mcp import *
+from fle.env.protocols._mcp import mcp
 
 if __name__ == "__main__":
-
     mcp.run()
-

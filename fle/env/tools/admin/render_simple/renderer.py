@@ -19,13 +19,19 @@ from fle.env.tools.admin.render_simple.utils.entity_categoriser import EntityCat
 from fle.env.tools.admin.render_simple.utils.colour_manager import ColourManager
 from fle.env.tools.admin.render_simple.utils.shape_renderer import ShapeRenderer
 from fle.env.tools.admin.render_simple.utils.legend_renderer import LegendRenderer
-from fle.env.tools.admin.render_simple.utils.connection_renderer import ConnectionRenderer
+from fle.env.tools.admin.render_simple.utils.connection_renderer import (
+    ConnectionRenderer,
+)
 from fle.env.tools.admin.render_simple.utils.image_calculator import ImageCalculator
 
 
 # Import layer renderers
-from fle.env.tools.admin.render_simple.layers.grid_layer_renderer import GridLayerRenderer
-from fle.env.tools.admin.render_simple.layers.water_layer_renderer import WaterLayerRenderer
+from fle.env.tools.admin.render_simple.layers.grid_layer_renderer import (
+    GridLayerRenderer,
+)
+from fle.env.tools.admin.render_simple.layers.water_layer_renderer import (
+    WaterLayerRenderer,
+)
 from fle.env.tools.admin.render_simple.layers.natural_layer_renderer import (
     NaturalLayerRenderer,
 )

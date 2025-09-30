@@ -2,15 +2,14 @@
 """
 Transport belt renderer
 """
+
 import random
 from typing import Dict, Tuple, Optional, Callable
 
 from PIL import Image
 
-from fle.env import EntityCore, Entity
-from ..constants import NORTH, SOUTH, EAST, WEST, VERTICAL, HORIZONTAL, DEFAULT_SCALING
-from ..profiler import profiler, profile_function
-
+from ..constants import NORTH, SOUTH, EAST, WEST, VERTICAL, HORIZONTAL
+from ..profiler import profile_function
 
 
 @profile_function("transport_belt.render", include_args=True)
@@ -19,13 +18,12 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
 
     around = get_around(entity, grid)
     count = sum(around)
-    direction = entity.get('direction', 0)
+    direction = entity.get("direction", 0)
     if not isinstance(direction, int):
         direction = direction.value
     degree_offset = 90
 
     image = None
-
 
     if count in [0, 2, 3]:
         if direction in VERTICAL:
@@ -70,7 +68,9 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
                 image = image_resolver(f"{entity['name']}_bend_left")
                 degree_offset = -180
             elif direction == SOUTH:
-                image = image_resolver(f"{entity['name']}_bend_right")  # Changed from bend_right
+                image = image_resolver(
+                    f"{entity['name']}_bend_right"
+                )  # Changed from bend_right
                 degree_offset = 90
                 # Keep default degree_offset = 90
 
@@ -85,20 +85,24 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     return image
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Transport belts have no shadows"""
     return None
 
 
 @profile_function("transport_belt.render_inventory", include_args=True)
-def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_inventory(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Transport belts display their contents on them"""
-    inventory = entity.get('inventory', {})
-    if not inventory or (not inventory.get('left') and not inventory.get('right')):
+    inventory = entity.get("inventory", {})
+    if not inventory or (not inventory.get("left") and not inventory.get("right")):
         return None
 
     # Get belt direction
-    direction = entity.get('direction', 0)
+    direction = entity.get("direction", 0)
     if not isinstance(direction, int):
         direction = direction.value
 
@@ -107,65 +111,65 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
     import math
 
     # Determine belt type and rotation using the same logic as render()
-    from ..constants import VERTICAL, HORIZONTAL, EAST, WEST, NORTH, SOUTH
+    from ..constants import VERTICAL, EAST, WEST, NORTH, SOUTH
 
     around = get_around(entity, grid)
     count = sum(around)
     degree_offset = 90
-    belt_type = 'straight'  # Default
+    belt_type = "straight"  # Default
 
     # Determine belt configuration
     if count == 1:
         if around[0] == 1:  # South
             if direction == EAST:
-                belt_type = 'bend_left'
+                belt_type = "bend_left"
                 degree_offset = 180
             elif direction == WEST:
-                belt_type = 'bend_right'
+                belt_type = "bend_right"
                 degree_offset = 90
             elif direction in VERTICAL:
-                belt_type = 'vertical'
+                belt_type = "vertical"
                 degree_offset = -90
         elif around[1] == 1:  # West
             if direction == NORTH:
-                belt_type = 'bend_right'
+                belt_type = "bend_right"
                 degree_offset = 90
             elif direction == SOUTH:
-                belt_type = 'bend_left'
+                belt_type = "bend_left"
                 degree_offset = -180
             else:
-                belt_type = 'horizontal'
+                belt_type = "horizontal"
         elif around[2] == 1:  # North
             if direction == EAST:
-                belt_type = 'bend_right'
+                belt_type = "bend_right"
                 degree_offset = 90
             elif direction == WEST:
-                belt_type = 'bend_left'
+                belt_type = "bend_left"
                 degree_offset = 180
             elif direction in VERTICAL:
-                belt_type = 'vertical'
+                belt_type = "vertical"
                 degree_offset = -90
         elif around[3] == 1:  # East
             if direction == NORTH:
-                belt_type = 'bend_left'
+                belt_type = "bend_left"
                 degree_offset = -180
             elif direction == SOUTH:
-                belt_type = 'bend_right'
+                belt_type = "bend_right"
                 degree_offset = 90
             else:
-                belt_type = 'horizontal'
+                belt_type = "horizontal"
     else:  # count in [0, 2, 3]
         if direction in VERTICAL:
-            belt_type = 'vertical'
+            belt_type = "vertical"
             degree_offset = -90
         else:
-            belt_type = 'horizontal'
+            belt_type = "horizontal"
 
     # Calculate final rotation
     rotation = (direction * 45) - degree_offset
 
     # Create overlay (64x64 to match sprite size)
-    overlay = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
+    overlay = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
 
     # Item configuration
     item_size = 16  # Larger items since we have more space
@@ -173,7 +177,6 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
 
     # Center offset - belt content is centered in 64x64 sprite
     center = 32  # Center of the 64x64 image
-    belt_half_width = 16  # Roughly half of the 32x32 belt content
 
     def place_items_on_lane(items_dict, is_left_lane):
         """Place items on a specific lane"""
@@ -183,7 +186,7 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
         item_name = list(items_dict.keys())[0]
         item_count = min(items_dict[item_name], max_items_per_lane)
 
-        choice = random.choice([1,2,3])
+        choice = random.choice([1, 2, 3])
         item_icon = image_resolver(f"icon_{item_name}-{choice}", False)
         if not item_icon:
             item_icon = image_resolver(f"icon_{item_name}", False)
@@ -197,7 +200,7 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
         positions = []
         spacing = 8
 
-        if belt_type in ('horizontal', 'vertical'):
+        if belt_type in ("horizontal", "vertical"):
             for i in range(item_count):
                 offset = -12 + (i * spacing)
                 if direction in VERTICAL:
@@ -228,7 +231,7 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
                         y = center + 6  # Bottom lane
                 positions.append((x, y))
 
-        elif belt_type == 'bend_left':
+        elif belt_type == "bend_left":
             # Actually curves from bottom to RIGHT (naming is confusing!)
             # Left lane is outer curve, right lane is inner curve
             for i in range(item_count):
@@ -238,7 +241,10 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
                     # Outer curve - larger radius (this is working correctly)
                     angle = t * math.pi / 2  # 0 to 90 degrees
                     radius = 18
-                    center_x, center_y = center - 10, center + 10  # Curve center on left
+                    center_x, center_y = (
+                        center - 10,
+                        center + 10,
+                    )  # Curve center on left
 
                     # Calculate position on arc (curving right)
                     x = center_x + radius * math.cos(angle)
@@ -256,7 +262,7 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
 
                 positions.append((int(x), int(y)))
 
-        elif belt_type == 'bend_right':
+        elif belt_type == "bend_right":
             # Actually curves from bottom to LEFT (naming is confusing!)
             # Left lane is inner curve, right lane is outer curve
             for i in range(item_count):
@@ -290,11 +296,15 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
             paste_x = x - item_size // 2
             paste_y = y - item_size // 2
 
-            overlay.paste(item_icon, (paste_x, paste_y), item_icon if item_icon.mode == 'RGBA' else None)
+            overlay.paste(
+                item_icon,
+                (paste_x, paste_y),
+                item_icon if item_icon.mode == "RGBA" else None,
+            )
 
     # Process both lanes
-    place_items_on_lane(inventory.get('left', {}), True)
-    place_items_on_lane(inventory.get('right', {}), False)
+    place_items_on_lane(inventory.get("left", {}), True)
+    place_items_on_lane(inventory.get("right", {}), False)
 
     # Apply rotation to match belt sprite
     if rotation != 0:
@@ -302,28 +312,31 @@ def render_inventory(entity: Dict, grid, image_resolver: Callable) -> Optional[I
 
     return overlay
 
-def render_inventory2(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+
+def render_inventory2(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Transport belts display their contents on them"""
-    inventory = entity.get('inventory', {})
+    inventory = entity.get("inventory", {})
     if not inventory:
         return None
 
     # Get belt direction
-    direction = entity.get('direction', 0)
+    direction = entity.get("direction", 0)
     if not isinstance(direction, int):
         direction = direction.value
 
     # Import required modules
-    from PIL import Image, ImageDraw
+    from PIL import Image
     import math
 
     # Create a transparent image to overlay items on
     # Start with a larger canvas to handle rotation
     canvas_size = 64
-    overlay = Image.new('RGBA', (canvas_size, canvas_size), (0, 0, 0, 0))
+    overlay = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
 
     # Determine belt type using the same logic as render()
-    from ..constants import VERTICAL, HORIZONTAL, EAST, WEST, NORTH, SOUTH
+    from ..constants import VERTICAL, EAST, WEST, NORTH, SOUTH
 
     # Get surrounding connections
     around = get_around(entity, grid)
@@ -338,42 +351,42 @@ def render_inventory2(entity: Dict, grid, image_resolver: Callable) -> Optional[
         if around[0] == 1:  # South
             if direction == EAST:
                 is_bend = True
-                bend_type = 'left'
+                bend_type = "left"
                 degree_offset = 180
             elif direction == WEST:
                 is_bend = True
-                bend_type = 'right'
+                bend_type = "right"
                 degree_offset = 90
             elif direction in VERTICAL:
                 degree_offset = -90
         elif around[1] == 1:  # West
             if direction == NORTH:
                 is_bend = True
-                bend_type = 'right'
+                bend_type = "right"
                 degree_offset = 90
             elif direction == SOUTH:
                 is_bend = True
-                bend_type = 'left'
+                bend_type = "left"
                 degree_offset = -180
         elif around[2] == 1:  # North
             if direction == EAST:
                 is_bend = True
-                bend_type = 'right'
+                bend_type = "right"
                 degree_offset = 90
             elif direction == WEST:
                 is_bend = True
-                bend_type = 'left'
+                bend_type = "left"
                 degree_offset = 180
             elif direction in VERTICAL:
                 degree_offset = -90
         elif around[3] == 1:  # East
             if direction == NORTH:
                 is_bend = True
-                bend_type = 'left'
+                bend_type = "left"
                 degree_offset = -180
             elif direction == SOUTH:
                 is_bend = True
-                bend_type = 'right'
+                bend_type = "right"
                 degree_offset = 90
     elif count in [0, 2, 3]:
         if direction in VERTICAL:
@@ -407,12 +420,14 @@ def render_inventory2(entity: Dict, grid, image_resolver: Callable) -> Optional[
                 t = (i + 0.5) / 4.0  # Parameter from 0 to 1, offset to center items
 
                 # Determine if this lane is on the inside or outside of the curve
-                is_inside = (bend_type == 'left' and is_left_lane) or (bend_type == 'right' and not is_left_lane)
+                is_inside = (bend_type == "left" and is_left_lane) or (
+                    bend_type == "right" and not is_left_lane
+                )
 
                 # Lane offset from center line
                 lane_offset = 6
 
-                if bend_type == 'left':
+                if bend_type == "left":
                     # Left turn: bottom to left
                     # Use a simple quarter circle arc
                     angle = t * math.pi / 2  # 0 to 90 degrees
@@ -491,11 +506,15 @@ def render_inventory2(entity: Dict, grid, image_resolver: Callable) -> Optional[
             # Place the item
             x_pos = int(x - item_size / 2)
             y_pos = int(y - item_size / 2)
-            overlay.paste(item_icon, (x_pos, y_pos), item_icon if item_icon.mode == 'RGBA' else None)
+            overlay.paste(
+                item_icon,
+                (x_pos, y_pos),
+                item_icon if item_icon.mode == "RGBA" else None,
+            )
 
     # Process both lanes
-    place_items_on_path(inventory.get('left', {}), True)
-    place_items_on_path(inventory.get('right', {}), False)
+    place_items_on_path(inventory.get("left", {}), True)
+    place_items_on_path(inventory.get("right", {}), False)
 
     # Apply the same rotation as the belt sprite
     if rotation != 0:
@@ -511,7 +530,7 @@ def render_inventory2(entity: Dict, grid, image_resolver: Callable) -> Optional[
         overlay = overlay.crop((left, top, right, bottom))
 
     # Return the overlay if we added any items
-    if inventory.get('left') or inventory.get('right'):
+    if inventory.get("left") or inventory.get("right"):
         return overlay
 
     return None
@@ -691,21 +710,18 @@ def get_key(entity: Dict, grid) -> str:
 def get_around(entity: Dict, grid) -> list:
     """Check surrounding connections"""
     return [
-        is_transport_belt(grid.get_relative(0, -1), SOUTH) or
-        is_splitter(grid.get_relative(0.5, -1), SOUTH) or
-        is_splitter(grid.get_relative(-0.5, -1), SOUTH),
-
-        is_transport_belt(grid.get_relative(1, 0), WEST) or
-        is_splitter(grid.get_relative(1, 0.5), WEST) or
-        is_splitter(grid.get_relative(1, -0.5), WEST),
-
-        is_transport_belt(grid.get_relative(0, 1),  NORTH) or
-        is_splitter(grid.get_relative(0.5, 1), NORTH) or
-        is_splitter(grid.get_relative(-0.5, 1), NORTH),
-
-        is_transport_belt(grid.get_relative(-1, 0), EAST) or
-        is_splitter(grid.get_relative(-1, 0.5), EAST) or
-        is_splitter(grid.get_relative(-1, -0.5), EAST)
+        is_transport_belt(grid.get_relative(0, -1), SOUTH)
+        or is_splitter(grid.get_relative(0.5, -1), SOUTH)
+        or is_splitter(grid.get_relative(-0.5, -1), SOUTH),
+        is_transport_belt(grid.get_relative(1, 0), WEST)
+        or is_splitter(grid.get_relative(1, 0.5), WEST)
+        or is_splitter(grid.get_relative(1, -0.5), WEST),
+        is_transport_belt(grid.get_relative(0, 1), NORTH)
+        or is_splitter(grid.get_relative(0.5, 1), NORTH)
+        or is_splitter(grid.get_relative(-0.5, 1), NORTH),
+        is_transport_belt(grid.get_relative(-1, 0), EAST)
+        or is_splitter(grid.get_relative(-1, 0.5), EAST)
+        or is_splitter(grid.get_relative(-1, -0.5), EAST),
     ]
 
 
@@ -714,19 +730,27 @@ def is_transport_belt(entity: Optional[Dict], direction: int) -> int:
     if entity is None:
         return 0
 
-    belt_types = ['transport-belt', 'fast-transport-belt', 'express-transport-belt']
-    underground_types = ['underground-belt', 'fast-underground-belt', 'express-underground-belt']
+    belt_types = ["transport-belt", "fast-transport-belt", "express-transport-belt"]
+    underground_types = [
+        "underground-belt",
+        "fast-underground-belt",
+        "express-underground-belt",
+    ]
 
-    if entity['name'] in belt_types:
-        if entity['direction'] == direction or (
-                entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+    if entity["name"] in belt_types:
+        if entity["direction"] == direction or (
+            entity["direction"].value == direction
+            if not isinstance(entity["direction"], int)
+            else 0
         ):
             return 1
 
-    if entity['name'] in underground_types:
-        if entity['type'] == 'output':
-            if entity['direction'] == direction or (
-                    entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+    if entity["name"] in underground_types:
+        if entity["type"] == "output":
+            if entity["direction"] == direction or (
+                entity["direction"].value == direction
+                if not isinstance(entity["direction"], int)
+                else 0
             ):
                 return 1
 
@@ -738,11 +762,13 @@ def is_splitter(entity: Optional[Dict], direction: int) -> int:
     if entity is None:
         return 0
 
-    splitter_types = ['splitter', 'fast-splitter', 'express-splitter']
+    splitter_types = ["splitter", "fast-splitter", "express-splitter"]
 
-    if entity['name'] in splitter_types:
-        if entity['direction'] == direction or (
-                entity['direction'].value == direction if not isinstance(entity['direction'], int) else 0
+    if entity["name"] in splitter_types:
+        if entity["direction"] == direction or (
+            entity["direction"].value == direction
+            if not isinstance(entity["direction"], int)
+            else 0
         ):
             return 1
 

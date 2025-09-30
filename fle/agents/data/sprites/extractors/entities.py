@@ -5,15 +5,15 @@ Handles complex sprite extraction including multi-layer sprites, rotations, and 
 """
 
 import json
-import math
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from PIL import Image, ImageDraw,ImageChops
-from typing import Dict, List, Optional, Tuple, Any
+from PIL import Image, ImageChops
+from typing import Dict, Optional, Any
 
 TILE_PX = 32
+
 
 class EntitySpritesheetExtractor:
     """Extract and process Factorio sprites from game data"""
@@ -28,18 +28,17 @@ class EntitySpritesheetExtractor:
         self.cache_dir.mkdir(exist_ok=True)
 
         # Load game data
-        with open(self.data_path / "data.json", 'r') as f:
+        with open(self.data_path / "data.json", "r") as f:
             full_data = json.load(f)
             # Handle both 'raw' and 'entities' formats
             # if 'items' in full_data:
             #     self.data = full_data['items']
-            if 'entities' in full_data:
-               self.data = full_data['entities']
+            if "entities" in full_data:
+                self.data = full_data["entities"]
             else:
                 self.data = full_data
 
-        self.directions = ['north', 'east', 'south', 'west']
-
+        self.directions = ["north", "east", "south", "west"]
 
     def get_file(self, path: str) -> Image.Image:
         """Load image file from path"""
@@ -56,24 +55,24 @@ class EntitySpritesheetExtractor:
 
         # First, check if the file exists as-is (could be .png or .basis)
         if file_path.exists():
-            if file_path.suffix == '.basis':
+            if file_path.suffix == ".basis":
                 return self._load_basis_file(file_path)
             else:
-                return Image.open(file_path).convert('RGBA')
+                return Image.open(file_path).convert("RGBA")
 
         # If no extension, try .basis first, then .png
-        if file_path.suffix == '':
-            basis_path = file_path.with_suffix('.basis')
+        if file_path.suffix == "":
+            basis_path = file_path.with_suffix(".basis")
             if basis_path.exists():
                 return self._load_basis_file(basis_path)
 
-            png_path = file_path.with_suffix('.png')
+            png_path = file_path.with_suffix(".png")
             if png_path.exists():
-                return Image.open(png_path).convert('RGBA')
+                return Image.open(png_path).convert("RGBA")
 
         # If the original path has .png extension but doesn't exist, try .basis
-        if file_path.suffix == '.png' and not file_path.exists():
-            basis_path = file_path.with_suffix('.basis')
+        if file_path.suffix == ".png" and not file_path.exists():
+            basis_path = file_path.with_suffix(".basis")
             if basis_path.exists():
                 return self._load_basis_file(basis_path)
 
@@ -82,7 +81,7 @@ class EntitySpritesheetExtractor:
     def _load_basis_file(self, basis_path: Path) -> Image.Image:
         """Load a basis file, transcoding if necessary"""
         # Check cache first
-        cache_key = str(basis_path).replace('/', '_').replace('.basis', '')
+        cache_key = str(basis_path).replace("/", "_").replace(".basis", "")
         cached_png = self.cache_dir / f"{cache_key}.png"
 
         if not cached_png.exists():
@@ -90,7 +89,7 @@ class EntitySpritesheetExtractor:
             if not self._transcode_basis_to_png(basis_path, cached_png):
                 raise FileNotFoundError(f"Failed to transcode: {basis_path}")
 
-        return Image.open(cached_png).convert('RGBA')
+        return Image.open(cached_png).convert("RGBA")
 
     def _transcode_basis_to_png(self, basis_path: Path, output_path: Path) -> bool:
         """
@@ -111,10 +110,7 @@ class EntitySpritesheetExtractor:
                 # Run basisu transcoder
                 cmd = ["basisu", "-unpack", str(basis_path)]
                 result = subprocess.run(
-                    cmd,
-                    cwd=temp_path,
-                    capture_output=True,
-                    text=True
+                    cmd, cwd=temp_path, capture_output=True, text=True
                 )
 
                 if result.returncode != 0:
@@ -160,7 +156,7 @@ class EntitySpritesheetExtractor:
         width = max(first.width, second.width)
         height = max(first.height, second.height)
 
-        result = Image.new('RGBA', (width, height), (0, 0, 0, 0))
+        result = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
         # Center first image - use floor division to match JavaScript Math.floor
         x1 = (width - first.width) // 2
@@ -179,68 +175,86 @@ class EntitySpritesheetExtractor:
         # PIL rotates counter-clockwise, canvas rotates clockwise, so negate
         return image.rotate(-degrees, expand=False, fillcolor=(0, 0, 0, 0))
 
-    def extend_canvas(self, image: Image.Image, up: int = 0, right: int = 0,
-                      down: int = 0, left: int = 0) -> Image.Image:
+    def extend_canvas(
+        self,
+        image: Image.Image,
+        up: int = 0,
+        right: int = 0,
+        down: int = 0,
+        left: int = 0,
+    ) -> Image.Image:
         """Extend canvas in specified directions"""
         new_width = image.width + right + left
         new_height = image.height + up + down
 
-        result = Image.new('RGBA', (new_width, new_height), (0, 0, 0, 0))
+        result = Image.new("RGBA", (new_width, new_height), (0, 0, 0, 0))
         result.paste(image, (left, up), image)
 
         return result
 
-    def crop_image(self, image: Image.Image, x: int, y: int,
-                   width: int, height: int) -> Image.Image:
+    def crop_image(
+        self, image: Image.Image, x: int, y: int, width: int, height: int
+    ) -> Image.Image:
         """Crop image to specified rectangle"""
         return image.crop((x, y, x + width, y + height))
 
-    def process_picture(self, picture: Dict, x_offset: int = 0, y_offset: int = 0,
-                        width_x: Optional[int] = None, height_y: Optional[int] = None) -> Optional[Image.Image]:
+    def process_picture(
+        self,
+        picture: Dict,
+        x_offset: int = 0,
+        y_offset: int = 0,
+        width_x: Optional[int] = None,
+        height_y: Optional[int] = None,
+    ) -> Optional[Image.Image]:
         """Process a picture definition from game data"""
         if picture is None:
             return None
 
         # Skip runtime tint and filenames (animated)
-        if picture.get('apply_runtime_tint') is not None or picture.get('filenames') is not None:
+        if (
+            picture.get("apply_runtime_tint") is not None
+            or picture.get("filenames") is not None
+        ):
             return None
 
-        if 'filename' not in picture:
+        if "filename" not in picture:
             return None
 
         try:
-            image = self.get_file(picture['filename'])
+            image = self.get_file(picture["filename"])
         except FileNotFoundError:
             print(f"Warning: Could not load {picture['filename']}")
             return None
 
         # Get dimensions
-        width = width_x or picture.get('width', image.width)
-        height = height_y or picture.get('height', image.height)
+        width = width_x or picture.get("width", image.width)
+        height = height_y or picture.get("height", image.height)
 
         # Calculate center position
         center_x = width / 2
         center_y = height / 2
 
         # Apply shift if specified - match JavaScript calculation exactly
-        if 'shift' in picture:
-            center_x = round(abs((picture['shift'][0] - width / 64) * 32))
-            center_y = round(abs((picture['shift'][1] - height / 64) * 32))
+        if "shift" in picture:
+            center_x = round(abs((picture["shift"][0] - width / 64) * 32))
+            center_y = round(abs((picture["shift"][1] - height / 64) * 32))
 
         # Calculate canvas size
         canvas_width = width + abs(width / 2 - center_x)
         canvas_height = height + abs(height / 2 - center_y)
 
         # Create result canvas
-        result = Image.new('RGBA', (int(canvas_width), int(canvas_height)), (0, 0, 0, 0))
+        result = Image.new(
+            "RGBA", (int(canvas_width), int(canvas_height)), (0, 0, 0, 0)
+        )
 
         # Calculate position to draw at
         delta_x = round(canvas_width / 2) - center_x
         delta_y = round(canvas_height / 2) - center_y
 
         # Extract the specified region from source image
-        src_x = x_offset or picture.get('x', 0)
-        src_y = y_offset or picture.get('y', 0)
+        src_x = x_offset or picture.get("x", 0)
+        src_y = y_offset or picture.get("y", 0)
 
         if src_x + width <= image.width and src_y + height <= image.height:
             cropped = image.crop((src_x, src_y, src_x + width, src_y + height))
@@ -255,27 +269,32 @@ class EntitySpritesheetExtractor:
             return
 
         if isinstance(picture, dict):
-            if 'filename' in picture:
+            if "filename" in picture:
                 # Single sprite
                 result_name = name + suffix
-                if picture.get('draw_as_shadow'):
+                if picture.get("draw_as_shadow"):
                     result_name += "_shadow"
 
                 canvas = self.process_picture(picture)
                 if canvas:
                     self.save_canvas(f"{result_name}.png", canvas)
 
-            elif 'north' in picture:
+            elif "north" in picture:
                 # Directional sprites
                 for direction in self.directions:
                     if direction in picture:
-                        self.extract_from_picture(name, picture[direction],
-                                                  suffix + "_" + direction)
+                        self.extract_from_picture(
+                            name, picture[direction], suffix + "_" + direction
+                        )
 
-            elif 'layers' in picture:
+            elif "layers" in picture:
                 # Layered sprites
-                layers = picture['layers']
-                if len(layers) == 2 and len(layers) > 1 and layers[1].get('draw_as_shadow'):
+                layers = picture["layers"]
+                if (
+                    len(layers) == 2
+                    and len(layers) > 1
+                    and layers[1].get("draw_as_shadow")
+                ):
                     # Main + shadow
                     self.extract_from_picture(name, layers[0], suffix)
                     self.extract_from_picture(name, layers[1], suffix)
@@ -295,9 +314,9 @@ class EntitySpritesheetExtractor:
     # Entity-specific extraction methods
     def transport_belt(self, entity: str, data: Dict):
         """Extract transport belt sprites"""
-        animations = data.get('animations')
+        animations = data.get("animations")
         if not animations:
-            animations = data.get('belt_animation_set', {}).get('animation_set', [])
+            animations = data.get("belt_animation_set", {}).get("animation_set", [])
 
         # Horizontal
         img = self.process_picture(animations)
@@ -305,26 +324,26 @@ class EntitySpritesheetExtractor:
             self.save_canvas(f"{entity}_horizontal.png", img)
 
         # Vertical
-        img = self.process_picture(animations, 0, animations.get('height', 0))
+        img = self.process_picture(animations, 0, animations.get("height", 0))
         if img:
             self.save_canvas(f"{entity}_vertical.png", img)
 
         # Bend right
-        img = self.process_picture(animations, 0, 8 * animations.get('height', 0))
+        img = self.process_picture(animations, 0, 8 * animations.get("height", 0))
         if img:
             self.save_canvas(f"{entity}_bend_right.png", img)
 
         # Bend left
-        img = self.process_picture(animations, 0, 9 * animations.get('height', 0))
+        img = self.process_picture(animations, 0, 9 * animations.get("height", 0))
         if img:
             self.save_canvas(f"{entity}_bend_left.png", img)
 
     def underground_belt(self, entity: str, data: Dict):
         """Extract underground belt sprites"""
-        structure = data.get('structure', {})
+        structure = data.get("structure", {})
 
         # Get belt animations from the correct location
-        belt_animation = data.get('belt_animation_set', {}).get('animation_set')
+        belt_animation = data.get("belt_animation_set", {}).get("animation_set")
         if not belt_animation:
             print(f"Warning: No belt animation found for {entity}")
             return
@@ -335,26 +354,30 @@ class EntitySpritesheetExtractor:
             print(f"Warning: No structure found for {entity}")
             return
 
-        out_sprites = structure.get('direction_out', {})
-        in_sprites = structure.get('direction_in', {})
+        out_sprites = structure.get("direction_out", {})
+        in_sprites = structure.get("direction_in", {})
 
         # The belt animation contains all directions in one sheet
         # We need to process it similarly to transport_belt to get horizontal and vertical
 
         # First, let's get the belt animations for different orientations
         belt_h = self.process_picture(belt_animation)  # Horizontal belt
-        belt_v = self.process_picture(belt_animation, 0, belt_animation.get('height', 0))  # Vertical belt
+        belt_v = self.process_picture(
+            belt_animation, 0, belt_animation.get("height", 0)
+        )  # Vertical belt
 
         if not belt_h or not belt_v:
             print(f"Warning: Could not process belt animations for {entity}")
             return
 
         # Output sprites
-        if out_sprites.get('sheet'):
-            sheet = out_sprites['sheet']
+        if out_sprites.get("sheet"):
+            sheet = out_sprites["sheet"]
 
             # Down
-            belt = self.process_picture(belt_animation, 0, belt_animation.get('height', 0) + 40, 40, 20)
+            belt = self.process_picture(
+                belt_animation, 0, belt_animation.get("height", 0) + 40, 40, 20
+            )
             if belt:
                 belt = self.rotate_canvas(belt, 180)
                 belt = self.extend_canvas(belt, 20, 0, 0, 1)
@@ -364,14 +387,14 @@ class EntitySpritesheetExtractor:
                     self.save_canvas(f"{entity}_out_down.png", combined)
 
             # Left
-            out_img = self.process_picture(sheet, sheet.get('width', 0), 0)
+            out_img = self.process_picture(sheet, sheet.get("width", 0), 0)
             if belt_h and out_img:
                 combined = self.combine_canvas(belt_h, out_img)
                 self.save_canvas(f"{entity}_out_left.png", combined)
 
             # Up
             belt = self.extend_canvas(belt_v, 0, 0, 0, 1)
-            out_img = self.process_picture(sheet, 2 * sheet.get('width', 0), 0)
+            out_img = self.process_picture(sheet, 2 * sheet.get("width", 0), 0)
             if belt and out_img:
                 combined = self.combine_canvas(belt, out_img)
                 self.save_canvas(f"{entity}_out_up.png", combined)
@@ -380,18 +403,20 @@ class EntitySpritesheetExtractor:
             belt = self.process_picture(belt_animation, 20, 0, 20, 40)
             if belt:
                 belt = self.extend_canvas(belt, 0, 0, 0, 21)
-                out_img = self.process_picture(sheet, 3 * sheet.get('width', 0), 0)
+                out_img = self.process_picture(sheet, 3 * sheet.get("width", 0), 0)
                 if out_img:
                     combined = self.combine_canvas(belt, out_img)
                     self.save_canvas(f"{entity}_out_right.png", combined)
 
         # Input sprites
-        if in_sprites.get('sheet'):
-            sheet = in_sprites['sheet']
-            sheet_h = sheet.get('height', 0)
+        if in_sprites.get("sheet"):
+            sheet = in_sprites["sheet"]
+            sheet_h = sheet.get("height", 0)
 
             # Up
-            belt = self.process_picture(belt_animation, 0, belt_animation.get('height', 0) + 60, 40, 20)
+            belt = self.process_picture(
+                belt_animation, 0, belt_animation.get("height", 0) + 60, 40, 20
+            )
             if belt:
                 belt = self.extend_canvas(belt, 20, 0, 0, 1)
                 in_img = self.process_picture(sheet, 0, sheet_h)
@@ -403,17 +428,19 @@ class EntitySpritesheetExtractor:
             belt = self.process_picture(belt_animation, 0, 0, 19, 40)
             if belt:
                 belt = self.extend_canvas(belt, 0, 20, 0, 0)
-                in_img = self.process_picture(sheet, sheet.get('width', 0), sheet_h)
+                in_img = self.process_picture(sheet, sheet.get("width", 0), sheet_h)
                 if in_img:
                     combined = self.combine_canvas(belt, in_img)
                     self.save_canvas(f"{entity}_in_right.png", combined)
 
             # Down
-            belt = self.process_picture(belt_animation, 0, belt_animation.get('height', 0))
+            belt = self.process_picture(
+                belt_animation, 0, belt_animation.get("height", 0)
+            )
             if belt:
                 belt = self.rotate_canvas(belt, 180)
                 belt = self.extend_canvas(belt, 0, 0, 0, 1)
-                in_img = self.process_picture(sheet, 2 * sheet.get('width', 0), sheet_h)
+                in_img = self.process_picture(sheet, 2 * sheet.get("width", 0), sheet_h)
                 if in_img:
                     combined = self.combine_canvas(belt, in_img)
                     self.save_canvas(f"{entity}_in_down.png", combined)
@@ -423,7 +450,7 @@ class EntitySpritesheetExtractor:
             if belt:
                 belt = self.rotate_canvas(belt, 180)
                 belt = self.extend_canvas(belt, 0, 0, 0, 20)
-                in_img = self.process_picture(sheet, 3 * sheet.get('width', 0), sheet_h)
+                in_img = self.process_picture(sheet, 3 * sheet.get("width", 0), sheet_h)
                 if in_img:
                     combined = self.combine_canvas(belt, in_img)
                     self.save_canvas(f"{entity}_in_left.png", combined)
@@ -476,7 +503,9 @@ class EntitySpritesheetExtractor:
             top, bottom = (dy, 0) if dy > 0 else (0, -dy)
             return self.extend_canvas(img, left, top, right, bottom)
 
-        def composite(base: Image.Image | None, top: Image.Image, mode: str) -> Image.Image:
+        def composite(
+            base: Image.Image | None, top: Image.Image, mode: str
+        ) -> Image.Image:
             """
             Composite *top* onto *base* using *mode*.
             """
@@ -508,7 +537,11 @@ class EntitySpritesheetExtractor:
                     shadows.append(img)  # postpone until after everything else
                     continue
 
-                blend = "additive" if lyr.get("blend_mode") == "additive" or lyr.get("draw_as_light") else "normal"
+                blend = (
+                    "additive"
+                    if lyr.get("blend_mode") == "additive" or lyr.get("draw_as_light")
+                    else "normal"
+                )
                 base = composite(base, img, blend)
 
             # 2b. shadows go on top, normal blend
@@ -555,10 +588,7 @@ class EntitySpritesheetExtractor:
         if not structure:
             return
 
-        anim_set = (
-            data.get("belt_animation_set", {})
-            .get("animation_set")
-        )
+        anim_set = data.get("belt_animation_set", {}).get("animation_set")
         if not anim_set:
             return
 
@@ -664,16 +694,16 @@ class EntitySpritesheetExtractor:
     def pipe_to_ground(self, entity: str, data: Dict):
         """Extract pipe-to-ground sprites - similar to underground belt"""
         # Just use standard extraction for pipe-to-ground
-        if 'pictures' in data:
-            self.extract_from_picture(entity, data['pictures'])
-        elif 'picture' in data:
-            self.extract_from_picture(entity, data['picture'])
+        if "pictures" in data:
+            self.extract_from_picture(entity, data["pictures"])
+        elif "picture" in data:
+            self.extract_from_picture(entity, data["picture"])
 
     def inserter(self, entity: str, data: Dict):
         """Extract inserter sprites"""
-        platform = data.get('platform_picture', {}).get('sheet')
-        hand_open = data.get('hand_open_picture')
-        hand_base = data.get('hand_base_picture')
+        platform = data.get("platform_picture", {}).get("sheet")
+        hand_open = data.get("hand_open_picture")
+        hand_base = data.get("hand_base_picture")
 
         if not all([platform, hand_open, hand_base]):
             return
@@ -687,7 +717,7 @@ class EntitySpritesheetExtractor:
             self.save_canvas(f"{entity}_north.png", combined)
 
         # East
-        plat = self.process_picture(platform, 3 * platform['width'], 0)
+        plat = self.process_picture(platform, 3 * platform["width"], 0)
         if plat and hand_base and hand_open:
             base = self.process_picture(hand_base)
             hand = self.process_picture(hand_open)
@@ -705,7 +735,7 @@ class EntitySpritesheetExtractor:
                 self.save_canvas(f"{entity}_east.png", combined)
 
         # South
-        plat = self.process_picture(platform, 2 * platform['width'], 0)
+        plat = self.process_picture(platform, 2 * platform["width"], 0)
         hand = self.process_picture(hand_open)
         if plat and hand:
             hand = self.rotate_canvas(hand, 180)
@@ -714,7 +744,7 @@ class EntitySpritesheetExtractor:
             self.save_canvas(f"{entity}_south.png", combined)
 
         # West
-        plat = self.process_picture(platform, 1 * platform['width'], 0)
+        plat = self.process_picture(platform, 1 * platform["width"], 0)
         if plat and hand_base and hand_open:
             base = self.process_picture(hand_base)
             hand = self.process_picture(hand_open)
@@ -733,9 +763,9 @@ class EntitySpritesheetExtractor:
 
     def long_handed_inserter(self, entity: str, data: Dict):
         """Extract long-handed inserter sprites"""
-        platform = data.get('platform_picture', {}).get('sheet')
-        hand_open = data.get('hand_open_picture')
-        hand_base = data.get('hand_base_picture')
+        platform = data.get("platform_picture", {}).get("sheet")
+        hand_open = data.get("hand_open_picture")
+        hand_base = data.get("hand_base_picture")
 
         if not all([platform, hand_open, hand_base]):
             return
@@ -752,7 +782,7 @@ class EntitySpritesheetExtractor:
             self.save_canvas(f"{entity}_north.png", combined)
 
         # East
-        plat = self.process_picture(platform, 3 * platform['width'], 0)
+        plat = self.process_picture(platform, 3 * platform["width"], 0)
         if plat and hand_base and hand_open:
             base = self.process_picture(hand_base)
             hand = self.process_picture(hand_open)
@@ -770,7 +800,7 @@ class EntitySpritesheetExtractor:
                 self.save_canvas(f"{entity}_east.png", combined)
 
         # South
-        plat = self.process_picture(platform, 2 * platform['width'], 0)
+        plat = self.process_picture(platform, 2 * platform["width"], 0)
         hand = self.process_picture(hand_open)
         base = self.process_picture(hand_base)
         if plat and hand and base:
@@ -783,7 +813,7 @@ class EntitySpritesheetExtractor:
             self.save_canvas(f"{entity}_south.png", combined)
 
         # West
-        plat = self.process_picture(platform, 1 * platform['width'], 0)
+        plat = self.process_picture(platform, 1 * platform["width"], 0)
         if plat and hand_base and hand_open:
             base = self.process_picture(hand_base)
             hand = self.process_picture(hand_open)
@@ -805,14 +835,16 @@ class EntitySpritesheetExtractor:
         grid = [
             ["empty", "plus", "minus", "multiply", "divide", "modulo"],
             ["power", "left_shift", "right_shift", "and", "or", "xor"],
-            ["gt", "lt", "eq", "neq", "lte", "gte"]
+            ["gt", "lt", "eq", "neq", "lte", "gte"],
         ]
 
         width = 15
         height = 11
 
         try:
-            image = self.get_file("__base__/graphics/entity/combinator/combinator-displays.png")
+            image = self.get_file(
+                "__base__/graphics/entity/combinator/combinator-displays.png"
+            )
         except FileNotFoundError:
             print("Warning: Could not find combinator displays")
             return
@@ -824,11 +856,11 @@ class EntitySpritesheetExtractor:
 
     def roboport(self, entity: str, data: Dict):
         """Extract roboport sprites"""
-        base = self.process_picture(data.get('base'))
-        base_patch = self.process_picture(data.get('base_patch'))
-        door_up = self.process_picture(data.get('door_animation_up'))
-        door_down = self.process_picture(data.get('door_animation_down'))
-        base_anim = self.process_picture(data.get('base_animation'))
+        base = self.process_picture(data.get("base"))
+        base_patch = self.process_picture(data.get("base_patch"))
+        door_up = self.process_picture(data.get("door_animation_up"))
+        door_down = self.process_picture(data.get("door_animation_down"))
+        base_anim = self.process_picture(data.get("base_animation"))
 
         result = base
         if base_patch:
@@ -845,13 +877,25 @@ class EntitySpritesheetExtractor:
 
     def heat_pipe(self, entity: str, data: Dict):
         """Extract heat pipe sprites"""
-        sprites = data.get('connection_sprites', {})
+        sprites = data.get("connection_sprites", {})
 
         sprite_names = [
-            'single', 'straight_horizontal', 'ending_right', 'corner_right_up',
-            't_left', 't_down', 'ending_up', 't_right', 't_up', 'ending_left',
-            'ending_down', 'straight_vertical', 'corner_right_down', 'cross',
-            'corner_left_down', 'corner_left_up'
+            "single",
+            "straight_horizontal",
+            "ending_right",
+            "corner_right_up",
+            "t_left",
+            "t_down",
+            "ending_up",
+            "t_right",
+            "t_up",
+            "ending_left",
+            "ending_down",
+            "straight_vertical",
+            "corner_right_down",
+            "cross",
+            "corner_left_down",
+            "corner_left_up",
         ]
 
         for sprite_name in sprite_names:
@@ -862,26 +906,26 @@ class EntitySpritesheetExtractor:
 
     def stone_wall(self, entity: str, data: Dict):
         """Extract stone wall sprites"""
-        pics = data.get('pictures', {})
+        pics = data.get("pictures", {})
 
         # Regular sprites
-        if 'single' in pics and 'layers' in pics['single']:
-            img = self.process_picture(pics['single']['layers'][0])
+        if "single" in pics and "layers" in pics["single"]:
+            img = self.process_picture(pics["single"]["layers"][0])
             if img:
                 self.save_canvas(f"{entity}_single.png", img)
-            img = self.process_picture(pics['single']['layers'][1])
+            img = self.process_picture(pics["single"]["layers"][1])
             if img:
                 self.save_canvas(f"{entity}_single_shadow.png", img)
 
         # Other wall types
         wall_types = [
-            ('straight_horizontal', 0),
-            ('ending_right', None),
-            ('t_up', None),
-            ('ending_left', None),
-            ('straight_vertical', 0),
-            ('corner_right_down', None),
-            ('corner_left_down', None)
+            ("straight_horizontal", 0),
+            ("ending_right", None),
+            ("t_up", None),
+            ("ending_left", None),
+            ("straight_vertical", 0),
+            ("corner_right_down", None),
+            ("corner_left_down", None),
         ]
 
         for wall_type, index in wall_types:
@@ -890,54 +934,62 @@ class EntitySpritesheetExtractor:
                 if index is not None and isinstance(pic_data, list):
                     pic_data = pic_data[index]
 
-                if 'layers' in pic_data:
-                    img = self.process_picture(pic_data['layers'][0])
+                if "layers" in pic_data:
+                    img = self.process_picture(pic_data["layers"][0])
                     if img:
                         self.save_canvas(f"{entity}_{wall_type}.png", img)
-                    img = self.process_picture(pic_data['layers'][1])
+                    img = self.process_picture(pic_data["layers"][1])
                     if img:
                         self.save_canvas(f"{entity}_{wall_type}_shadow.png", img)
 
     def assembling_machine(self, entity: str, data: Dict):
         """Extract assembling machine sprites"""
-        if 'animation' in data and 'layers' in data['animation']:
-            img = self.process_picture(data['animation']['layers'][0])
+        if "animation" in data and "layers" in data["animation"]:
+            img = self.process_picture(data["animation"]["layers"][0])
             if img:
                 self.save_canvas(f"{entity}.png", img)
-            if len(data['animation']['layers']) > 1:
-                img = self.process_picture(data['animation']['layers'][1])
+            if len(data["animation"]["layers"]) > 1:
+                img = self.process_picture(data["animation"]["layers"][1])
                 if img:
                     self.save_canvas(f"{entity}_shadow.png", img)
 
         # Pipe connections - try to load directly
-        for direction in ['N', 'E', 'S', 'W']:
+        for direction in ["N", "E", "S", "W"]:
             try:
-                img = self.get_file(f"__base__/graphics/entity/{entity}/{entity}-pipe-{direction}.png")
-                if direction == 'N':
+                img = self.get_file(
+                    f"__base__/graphics/entity/{entity}/{entity}-pipe-{direction}.png"
+                )
+                if direction == "N":
                     img = self.extend_canvas(img, 0, 0, 100, 5)
-                elif direction == 'E':
+                elif direction == "E":
                     img = self.extend_canvas(img, 0, 0, 0, 80)
-                elif direction == 'S':
+                elif direction == "S":
                     img = self.extend_canvas(img, 70, 0, 0, 0)
-                elif direction == 'W':
+                elif direction == "W":
                     img = self.extend_canvas(img, 0, 77, 0, 0)
-                self.save_canvas(f"{entity}_pipe_{direction.lower()}orth.png" if direction == 'N' else
-                                 f"{entity}_pipe_{direction.lower()}ast.png" if direction == 'E' else
-                                 f"{entity}_pipe_{direction.lower()}outh.png" if direction == 'S' else
-                                 f"{entity}_pipe_{direction.lower()}est.png", img)
+                self.save_canvas(
+                    f"{entity}_pipe_{direction.lower()}orth.png"
+                    if direction == "N"
+                    else f"{entity}_pipe_{direction.lower()}ast.png"
+                    if direction == "E"
+                    else f"{entity}_pipe_{direction.lower()}outh.png"
+                    if direction == "S"
+                    else f"{entity}_pipe_{direction.lower()}est.png",
+                    img,
+                )
             except:
                 pass
 
     def rocket_silo(self, entity: str, data: Dict):
         """Extract rocket silo sprites"""
-        door_back = self.process_picture(data.get('door_back_sprite'))
-        base_day = self.process_picture(data.get('base_day_sprite'))
+        door_back = self.process_picture(data.get("door_back_sprite"))
+        base_day = self.process_picture(data.get("base_day_sprite"))
 
         # Door front needs special handling
         door_front = None
-        if 'door_front_sprite' in data and 'filename' in data['door_front_sprite']:
+        if "door_front_sprite" in data and "filename" in data["door_front_sprite"]:
             try:
-                door_front = self.get_file(data['door_front_sprite']['filename'])
+                door_front = self.get_file(data["door_front_sprite"]["filename"])
                 door_front = self.extend_canvas(door_front, 130, 0, 0, 0)
             except:
                 pass
@@ -951,17 +1003,17 @@ class EntitySpritesheetExtractor:
         if result:
             self.save_canvas(f"{entity}.png", result)
 
-        shadow = self.process_picture(data.get('shadow_sprite'))
+        shadow = self.process_picture(data.get("shadow_sprite"))
         if shadow:
             self.save_canvas(f"{entity}_shadow.png", shadow)
 
     def nuclear_reactor(self, entity: str, data: Dict):
         """Extract nuclear reactor sprites"""
-        lower = self.process_picture(data.get('lower_layer_picture'))
+        lower = self.process_picture(data.get("lower_layer_picture"))
         upper = None
 
-        if 'picture' in data and 'layers' in data['picture']:
-            upper = self.process_picture(data['picture']['layers'][0])
+        if "picture" in data and "layers" in data["picture"]:
+            upper = self.process_picture(data["picture"]["layers"][0])
 
         if lower and upper:
             result = self.combine_canvas(lower, upper)
@@ -971,26 +1023,34 @@ class EntitySpritesheetExtractor:
         elif upper:
             self.save_canvas(f"{entity}.png", upper)
 
-        if 'picture' in data and 'layers' in data['picture'] and len(data['picture']['layers']) > 1:
-            shadow = self.process_picture(data['picture']['layers'][1])
+        if (
+            "picture" in data
+            and "layers" in data["picture"]
+            and len(data["picture"]["layers"]) > 1
+        ):
+            shadow = self.process_picture(data["picture"]["layers"][1])
             if shadow:
                 self.save_canvas(f"{entity}_shadow.png", shadow)
 
     def storage_tank(self, entity: str, data: Dict):
         """Extract storage tank sprites"""
-        if 'pictures' in data and 'picture' in data['pictures'] and 'sheet' in data['pictures']['picture']:
-            sheet = data['pictures']['picture']['sheet']
+        if (
+            "pictures" in data
+            and "picture" in data["pictures"]
+            and "sheet" in data["pictures"]["picture"]
+        ):
+            sheet = data["pictures"]["picture"]["sheet"]
             img = self.process_picture(sheet)
             if img:
                 self.save_canvas(f"{entity}_north.png", img)
-            img = self.process_picture(sheet, sheet.get('width', 0), 0)
+            img = self.process_picture(sheet, sheet.get("width", 0), 0)
             if img:
                 self.save_canvas(f"{entity}_east.png", img)
 
     def beacon(self, entity: str, data: Dict):
         """Extract beacon sprites"""
-        base = self.process_picture(data.get('base_picture'))
-        animation = self.process_picture(data.get('animation'))
+        base = self.process_picture(data.get("base_picture"))
+        animation = self.process_picture(data.get("animation"))
 
         if base and animation:
             result = self.combine_canvas(base, animation)
@@ -1002,8 +1062,8 @@ class EntitySpritesheetExtractor:
 
     def centrifuge(self, entity: str, data: Dict):
         """Extract centrifuge sprites"""
-        if 'idle_animation' in data and 'layers' in data['idle_animation']:
-            layers = data['idle_animation']['layers']
+        if "idle_animation" in data and "layers" in data["idle_animation"]:
+            layers = data["idle_animation"]["layers"]
 
             # Main sprite
             if len(layers) >= 5:
@@ -1037,15 +1097,15 @@ class EntitySpritesheetExtractor:
 
     def flamethrower_turret(self, entity: str, data: Dict):
         """Extract flamethrower turret sprites"""
-        pipe_pics = data.get('fluid_box', {}).get('pipe_picture', {})
-        base_pics = data.get('base_picture', {})
-        folded_anim = data.get('folded_animation', {})
+        pipe_pics = data.get("fluid_box", {}).get("pipe_picture", {})
+        base_pics = data.get("base_picture", {})
+        folded_anim = data.get("folded_animation", {})
 
         # Process each direction
         for direction in self.directions:
             if direction in base_pics and direction in folded_anim:
-                base_layers = base_pics[direction].get('layers', [])
-                folded_layers = folded_anim[direction].get('layers', [])
+                base_layers = base_pics[direction].get("layers", [])
+                folded_layers = folded_anim[direction].get("layers", [])
 
                 if base_layers and folded_layers:
                     # Main sprite
@@ -1053,30 +1113,30 @@ class EntitySpritesheetExtractor:
                     folded = self.process_picture(folded_layers[0])
 
                     # Add pipes based on direction
-                    if direction == 'north':
-                        pipe_e = self.process_picture(pipe_pics.get('east'))
-                        pipe_w = self.process_picture(pipe_pics.get('west'))
+                    if direction == "north":
+                        pipe_e = self.process_picture(pipe_pics.get("east"))
+                        pipe_w = self.process_picture(pipe_pics.get("west"))
                         if pipe_e:
                             pipe_e = self.extend_canvas(pipe_e, 64, 0, 0, 32)
                         if pipe_w:
                             pipe_w = self.extend_canvas(pipe_w, 64, 32, 0, 0)
-                    elif direction == 'east':
-                        pipe_n = self.process_picture(pipe_pics.get('north'))
-                        pipe_s = self.process_picture(pipe_pics.get('south'))
+                    elif direction == "east":
+                        pipe_n = self.process_picture(pipe_pics.get("north"))
+                        pipe_s = self.process_picture(pipe_pics.get("south"))
                         if pipe_n:
                             pipe_n = self.extend_canvas(pipe_n, 0, 64, 32, 0)
                         if pipe_s:
                             pipe_s = self.extend_canvas(pipe_s, 32, 64, 0, 0)
-                    elif direction == 'south':
-                        pipe_e = self.process_picture(pipe_pics.get('east'))
-                        pipe_w = self.process_picture(pipe_pics.get('west'))
+                    elif direction == "south":
+                        pipe_e = self.process_picture(pipe_pics.get("east"))
+                        pipe_w = self.process_picture(pipe_pics.get("west"))
                         if pipe_e:
                             pipe_e = self.extend_canvas(pipe_e, 0, 0, 64, 32)
                         if pipe_w:
                             pipe_w = self.extend_canvas(pipe_w, 0, 32, 64, 0)
-                    elif direction == 'west':
-                        pipe_n = self.process_picture(pipe_pics.get('north'))
-                        pipe_s = self.process_picture(pipe_pics.get('south'))
+                    elif direction == "west":
+                        pipe_n = self.process_picture(pipe_pics.get("north"))
+                        pipe_s = self.process_picture(pipe_pics.get("south"))
                         if pipe_n:
                             pipe_n = self.extend_canvas(pipe_n, 0, 0, 32, 64)
                         if pipe_s:
@@ -1085,18 +1145,36 @@ class EntitySpritesheetExtractor:
                     # Combine all elements
                     result = base
                     if folded:
-                        result = self.combine_canvas(result, folded) if result else folded
+                        result = (
+                            self.combine_canvas(result, folded) if result else folded
+                        )
 
-                    if direction in ['north', 'south']:
-                        if 'pipe_e' in locals() and pipe_e:
-                            result = self.combine_canvas(pipe_e, result) if result else pipe_e
-                        if 'pipe_w' in locals() and pipe_w:
-                            result = self.combine_canvas(pipe_w, result) if result else pipe_w
+                    if direction in ["north", "south"]:
+                        if "pipe_e" in locals() and pipe_e:
+                            result = (
+                                self.combine_canvas(pipe_e, result)
+                                if result
+                                else pipe_e
+                            )
+                        if "pipe_w" in locals() and pipe_w:
+                            result = (
+                                self.combine_canvas(pipe_w, result)
+                                if result
+                                else pipe_w
+                            )
                     else:
-                        if 'pipe_n' in locals() and pipe_n:
-                            result = self.combine_canvas(pipe_n, result) if result else pipe_n
-                        if 'pipe_s' in locals() and pipe_s:
-                            result = self.combine_canvas(pipe_s, result) if result else pipe_s
+                        if "pipe_n" in locals() and pipe_n:
+                            result = (
+                                self.combine_canvas(pipe_n, result)
+                                if result
+                                else pipe_n
+                            )
+                        if "pipe_s" in locals() and pipe_s:
+                            result = (
+                                self.combine_canvas(pipe_s, result)
+                                if result
+                                else pipe_s
+                            )
 
                     if result:
                         self.save_canvas(f"{entity}_{direction}.png", result)
@@ -1108,7 +1186,11 @@ class EntitySpritesheetExtractor:
 
                         shadow = base_shadow
                         if folded_shadow:
-                            shadow = self.combine_canvas(shadow, folded_shadow) if shadow else folded_shadow
+                            shadow = (
+                                self.combine_canvas(shadow, folded_shadow)
+                                if shadow
+                                else folded_shadow
+                            )
 
                         if shadow:
                             self.save_canvas(f"{entity}_{direction}_shadow.png", shadow)
@@ -1119,16 +1201,16 @@ class EntitySpritesheetExtractor:
         folded = None
         shadow = None
 
-        if 'base_picture' in data and 'layers' in data['base_picture']:
-            base = self.process_picture(data['base_picture']['layers'][0])
+        if "base_picture" in data and "layers" in data["base_picture"]:
+            base = self.process_picture(data["base_picture"]["layers"][0])
 
-        if 'folded_animation' in data and 'layers' in data['folded_animation']:
-            folded = self.process_picture(data['folded_animation']['layers'][0])
+        if "folded_animation" in data and "layers" in data["folded_animation"]:
+            folded = self.process_picture(data["folded_animation"]["layers"][0])
             # Try to find shadow in different positions
-            if len(data['folded_animation']['layers']) > 1:
-                shadow = self.process_picture(data['folded_animation']['layers'][1])
-            if not shadow and len(data['folded_animation']['layers']) > 2:
-                shadow = self.process_picture(data['folded_animation']['layers'][2])
+            if len(data["folded_animation"]["layers"]) > 1:
+                shadow = self.process_picture(data["folded_animation"]["layers"][1])
+            if not shadow and len(data["folded_animation"]["layers"]) > 2:
+                shadow = self.process_picture(data["folded_animation"]["layers"][2])
 
         result = base
         if folded:
@@ -1142,12 +1224,14 @@ class EntitySpritesheetExtractor:
 
     def pumpjack(self, entity: str, data: Dict):
         """Extract pumpjack sprites"""
-        base_sheet = data.get('base_picture', {}).get('sheet')
-        animations = data.get('animations', {}).get('north')
+        base_sheet = data.get("base_picture", {}).get("sheet")
+        animations = data.get("animations", {}).get("north")
 
         if base_sheet and animations:
             for i, direction in enumerate(self.directions):
-                base = self.process_picture(base_sheet, i * base_sheet.get('width', 0), 0)
+                base = self.process_picture(
+                    base_sheet, i * base_sheet.get("width", 0), 0
+                )
                 anim = self.process_picture(animations)
 
                 if base and anim:
@@ -1156,72 +1240,93 @@ class EntitySpritesheetExtractor:
 
     def straight_rail(self, entity: str, data: Dict):
         """Extract straight rail sprites"""
-        pics = data.get('pictures', {})
+        pics = data.get("pictures", {})
 
         # Horizontal rails
-        h_rail = pics.get('straight_rail_horizontal', {})
-        for i, component in enumerate(['stone_path_background', 'stone_path', 'ties', 'backplates', 'metals']):
-            if component in h_rail and 'sheet' in h_rail[component]:
-                img = self.process_picture(h_rail[component]['sheet'])
+        h_rail = pics.get("straight_rail_horizontal", {})
+        for i, component in enumerate(
+            ["stone_path_background", "stone_path", "ties", "backplates", "metals"]
+        ):
+            if component in h_rail and "sheet" in h_rail[component]:
+                img = self.process_picture(h_rail[component]["sheet"])
                 if img:
                     self.save_canvas(f"{entity}_horizontal_pass_{i + 1}.png", img)
 
         # Vertical rails
-        v_rail = pics.get('straight_rail_vertical', {})
-        for i, component in enumerate(['stone_path_background', 'stone_path', 'ties', 'backplates', 'metals']):
-            if component in v_rail and 'sheet' in v_rail[component]:
-                img = self.process_picture(v_rail[component]['sheet'])
+        v_rail = pics.get("straight_rail_vertical", {})
+        for i, component in enumerate(
+            ["stone_path_background", "stone_path", "ties", "backplates", "metals"]
+        ):
+            if component in v_rail and "sheet" in v_rail[component]:
+                img = self.process_picture(v_rail[component]["sheet"])
                 if img:
                     self.save_canvas(f"{entity}_vertical_pass_{i + 1}.png", img)
 
         # Diagonal rails
-        for diagonal in ['diagonal_left_bottom', 'diagonal_right_bottom', 'diagonal_left_top', 'diagonal_right_top']:
-            d_rail = pics.get(f'straight_rail_{diagonal}', {})
-            for i, component in enumerate(['stone_path_background', 'stone_path', 'ties', 'backplates', 'metals']):
-                if component in d_rail and 'sheet' in d_rail[component]:
-                    img = self.process_picture(d_rail[component]['sheet'])
+        for diagonal in [
+            "diagonal_left_bottom",
+            "diagonal_right_bottom",
+            "diagonal_left_top",
+            "diagonal_right_top",
+        ]:
+            d_rail = pics.get(f"straight_rail_{diagonal}", {})
+            for i, component in enumerate(
+                ["stone_path_background", "stone_path", "ties", "backplates", "metals"]
+            ):
+                if component in d_rail and "sheet" in d_rail[component]:
+                    img = self.process_picture(d_rail[component]["sheet"])
                     if img:
                         self.save_canvas(f"{entity}_{diagonal}_pass_{i + 1}.png", img)
 
     def curved_rail(self, entity: str, data: Dict):
         """Extract curved rail sprites"""
-        pics = data.get('pictures', {})
+        pics = data.get("pictures", {})
 
         # All curved rail variants
         variants = [
-            'vertical_left_top', 'vertical_left_bottom', 'vertical_right_top', 'vertical_right_bottom',
-            'horizontal_left_top', 'horizontal_left_bottom', 'horizontal_right_top', 'horizontal_right_bottom'
+            "vertical_left_top",
+            "vertical_left_bottom",
+            "vertical_right_top",
+            "vertical_right_bottom",
+            "horizontal_left_top",
+            "horizontal_left_bottom",
+            "horizontal_right_top",
+            "horizontal_right_bottom",
         ]
 
         for variant in variants:
-            rail = pics.get(f'curved_rail_{variant}', {})
-            for i, component in enumerate(['stone_path_background', 'stone_path', 'ties', 'backplates', 'metals']):
-                if component in rail and 'sheet' in rail[component]:
-                    img = self.process_picture(rail[component]['sheet'])
+            rail = pics.get(f"curved_rail_{variant}", {})
+            for i, component in enumerate(
+                ["stone_path_background", "stone_path", "ties", "backplates", "metals"]
+            ):
+                if component in rail and "sheet" in rail[component]:
+                    img = self.process_picture(rail[component]["sheet"])
                     if img:
                         self.save_canvas(f"{entity}_{variant}_pass_{i + 1}.png", img)
 
     def rail_signal(self, entity: str, data: Dict):
         """Extract rail signal sprites"""
-        animation = data.get('animation')
-        rail_piece = data.get('rail_piece')
+        animation = data.get("animation")
+        rail_piece = data.get("rail_piece")
 
         if animation:
             for i in range(8):
-                img = self.process_picture(animation, 0, i * animation.get('height', 0))
+                img = self.process_picture(animation, 0, i * animation.get("height", 0))
                 if img:
                     self.save_canvas(f"{entity}_{i}.png", img)
 
         if rail_piece:
             for i in range(8):
-                img = self.process_picture(rail_piece, i * rail_piece.get('width', 0), 0)
+                img = self.process_picture(
+                    rail_piece, i * rail_piece.get("width", 0), 0
+                )
                 if img:
                     self.save_canvas(f"{entity}_rail_{i}.png", img)
 
     def rail_chain_signal(self, entity: str, data: Dict):
         """Extract rail chain signal sprites"""
-        anim = data.get('animation')
-        rail = data.get('rail_piece')
+        anim = data.get("animation")
+        rail = data.get("rail_piece")
 
         # Different orientations with extensions
         extensions = [
@@ -1232,18 +1337,18 @@ class EntitySpritesheetExtractor:
             (0, 128, 0, 0),  # 4
             (0, 64, 64, 0),  # 5
             (0, 0, 128, 0),  # 6
-            (0, 0, 64, 64)  # 7
+            (0, 0, 64, 64),  # 7
         ]
 
         for i, (up, right, down, left) in enumerate(extensions):
             if anim:
-                img = self.process_picture(anim, 0, i * anim.get('height', 0))
+                img = self.process_picture(anim, 0, i * anim.get("height", 0))
                 if img:
                     img = self.extend_canvas(img, up, right, down, left)
                     self.save_canvas(f"{entity}_{i}.png", img)
 
             if rail:
-                img = self.process_picture(rail, i * rail.get('width', 0), 0)
+                img = self.process_picture(rail, i * rail.get("width", 0), 0)
                 if img:
                     img = self.extend_canvas(img, up, right, down, left)
                     self.save_canvas(f"{entity}_rail_{i}.png", img)
@@ -1286,7 +1391,7 @@ class EntitySpritesheetExtractor:
             "gun-turret": self.normal_turret,
             "rail-signal": self.rail_signal,
             "rail-chain-signal": self.rail_chain_signal,
-            "pipe-to-ground": self.pipe_to_ground  # Added missing handler
+            "pipe-to-ground": self.pipe_to_ground,  # Added missing handler
         }
 
         # Find entity data
@@ -1308,19 +1413,35 @@ class EntitySpritesheetExtractor:
 
         # Generic extraction
         sprite_properties = [
-            'picture', 'pictures', 'idle_animation', 'animation',
-            'animations', 'structure', 'off_animation',
-            'vertical_animation', 'horizontal_animation',
-            'picture_off', 'power_on_animation', 'sprite',
-            'sprites', 'connection_sprites'
+            "picture",
+            "pictures",
+            "idle_animation",
+            "animation",
+            "animations",
+            "structure",
+            "off_animation",
+            "vertical_animation",
+            "horizontal_animation",
+            "picture_off",
+            "power_on_animation",
+            "sprite",
+            "sprites",
+            "connection_sprites",
         ]
 
         extracted = False
         for prop in sprite_properties:
             if prop in entity_data:
-                if prop == 'vertical_animation' and 'horizontal_animation' in entity_data:
-                    self.extract_from_picture(entity_name, entity_data['vertical_animation'], "_vertical")
-                    self.extract_from_picture(entity_name, entity_data['horizontal_animation'], "_horizontal")
+                if (
+                    prop == "vertical_animation"
+                    and "horizontal_animation" in entity_data
+                ):
+                    self.extract_from_picture(
+                        entity_name, entity_data["vertical_animation"], "_vertical"
+                    )
+                    self.extract_from_picture(
+                        entity_name, entity_data["horizontal_animation"], "_horizontal"
+                    )
                 else:
                     self.extract_from_picture(entity_name, entity_data[prop])
                 extracted = True
@@ -1334,12 +1455,6 @@ class EntitySpritesheetExtractor:
     def extract_all(self):
         """Extract all entities"""
         # Complete skip categories list to match JavaScript
-        skip_categories = [
-            'technology', 'item-subgroup', 'tutorial', 'simple-entity',
-            'unit', 'simple-entity-with-force', 'rail-remnants', 'item-group',
-            'particle', 'car', 'font', 'character-corpse', 'cargo-wagon',
-            'ammo-category', 'ambient-sound', 'smoke', 'tree', 'corpse'
-        ]
 
         # for category_name, category_data in self.data.items():
         #     if category_name in skip_categories or category_name.endswith('achievement'):
@@ -1353,14 +1468,14 @@ class EntitySpritesheetExtractor:
                 continue
 
             # Skip hidden entities
-            flags = entity_data.get('flags', [])
-            if flags and 'hidden' in flags:
+            flags = entity_data.get("flags", [])
+            if flags and "hidden" in flags:
                 continue
 
             # Extract icon
-            if 'icon' in entity_data:
+            if "icon" in entity_data:
                 try:
-                    icon = self.get_file(entity_data['icon'])
+                    icon = self.get_file(entity_data["icon"])
                     self.save_canvas(f"icon_{entity_name}.png", icon)
                 except Exception:
                     pass
@@ -1370,7 +1485,9 @@ class EntitySpritesheetExtractor:
             #     continue
 
             # Check flags more strictly to match JavaScript
-            if flags and ('player-creation' not in flags or 'placeable-off-grid' in flags):
+            if flags and (
+                "player-creation" not in flags or "placeable-off-grid" in flags
+            ):
                 continue
 
             print(f"Processing {entity_name}...")
@@ -1386,7 +1503,6 @@ class EntitySpritesheetExtractor:
 
 def main():
     """Main entry point"""
-    import sys
 
     # if len(sys.argv) < 2:
     #     print("Usage: python spritesheet_extractor.py <data_path> [output_dir]")

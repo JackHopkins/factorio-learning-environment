@@ -7,13 +7,14 @@ from typing import Dict, List, Any
 
 from huggingface_hub import HfApi
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
 def load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
     """Load a JSONL file and return list of dictionaries."""
     data = []
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         for line in f:
             if line.strip():
                 data.append(json.loads(line.strip()))
@@ -22,67 +23,73 @@ def load_jsonl(file_path: Path) -> List[Dict[str, Any]]:
 
 def get_task_type(filename: str) -> str:
     """Extract task type from filename."""
-    name = filename.replace('.jsonl', '')
-    
+    name = filename.replace(".jsonl", "")
+
     # Remove date suffix
-    if '_2025-' in name:
-        name = name.split('_2025-')[0]
-    elif '_mc_2025-' in name:
-        name = name.split('_mc_2025-')[0]
-    
+    if "_2025-" in name:
+        name = name.split("_2025-")[0]
+    elif "_mc_2025-" in name:
+        name = name.split("_mc_2025-")[0]
+
     # Categorize into main types
-    if 'terrain' in name:
-        return 'terrain'
-    elif 'factory' in name:
-        return 'factory'
-    elif 'blueprints' in name or name in ['entity_name', 'position_finding', 'entity_counting', 
-                                           'entity_direction', 'denoising', 'contrastive_alignment_title',
-                                           'contrastive_alignment_purpose']:
-        return 'blueprints'
+    if "terrain" in name:
+        return "terrain"
+    elif "factory" in name:
+        return "factory"
+    elif "blueprints" in name or name in [
+        "entity_name",
+        "position_finding",
+        "entity_counting",
+        "entity_direction",
+        "denoising",
+        "contrastive_alignment_title",
+        "contrastive_alignment_purpose",
+    ]:
+        return "blueprints"
     else:
-        return 'other'
+        return "other"
 
 
 def generate_dataset_card(dataset_dir: Path) -> str:
     """Generate a comprehensive dataset card from JSONL files."""
-    
+
     # Find all JSONL files
     jsonl_files = list(dataset_dir.glob("*.jsonl"))
-    
+
     # Collect statistics and examples
     stats = {
-        'total_samples': 0,
-        'splits': {},
-        'task_types': defaultdict(int),
-        'question_types': defaultdict(int)
+        "total_samples": 0,
+        "splits": {},
+        "task_types": defaultdict(int),
+        "question_types": defaultdict(int),
     }
-    
+
     examples = {}
-    
+
     for jsonl_file in sorted(jsonl_files):
         split_name = jsonl_file.stem
         data = load_jsonl(jsonl_file)
-        
+
         if not data:
             continue
-        
+
         # Collect stats
-        stats['total_samples'] += len(data)
-        stats['splits'][split_name] = len(data)
-        
+        stats["total_samples"] += len(data)
+        stats["splits"][split_name] = len(data)
+
         # Get task type
         task_type = get_task_type(jsonl_file.name)
-        stats['task_types'][task_type] += len(data)
-        
+        stats["task_types"][task_type] += len(data)
+
         # Count question types
         for item in data:
-            q_type = item.get('question_type', 'unknown')
-            stats['question_types'][q_type] += 1
-        
+            q_type = item.get("question_type", "unknown")
+            stats["question_types"][q_type] += 1
+
         # Store first example
         if data:
             examples[split_name] = data[0]
-    
+
     # Generate the dataset card with YAML frontmatter
     card = f"""---
 license: mit
@@ -110,32 +117,32 @@ This dataset contains visual question-answering pairs for the Factorio Learning 
 
 ### Dataset Summary
 
-- **Total Samples**: {stats['total_samples']:,}
-- **Number of Splits**: {len(stats['splits'])}
-- **Task Categories**: {len(stats['task_types'])}
+- **Total Samples**: {stats["total_samples"]:,}
+- **Number of Splits**: {len(stats["splits"])}
+- **Task Categories**: {len(stats["task_types"])}
 - **Languages**: English
 - **License**: MIT
-- **Created**: {datetime.now().strftime('%Y-%m-%d')}
+- **Created**: {datetime.now().strftime("%Y-%m-%d")}
 
 ### Task Distribution
 
 | Task Category | Samples |
 |--------------|---------|
 """
-    
-    for task_type, count in sorted(stats['task_types'].items()):
+
+    for task_type, count in sorted(stats["task_types"].items()):
         card += f"| {task_type.capitalize()} | {count:,} |\n"
-    
-    card += f"""
+
+    card += """
 ### Question Types
 
 | Type | Count |
 |------|-------|
 """
-    
-    for q_type, count in sorted(stats['question_types'].items()):
+
+    for q_type, count in sorted(stats["question_types"].items()):
         card += f"| {q_type} | {count:,} |\n"
-    
+
     card += """
 ## Dataset Structure
 
@@ -146,29 +153,29 @@ Each JSONL file represents a different split focused on specific task types:
 | Split Name | Samples | Description |
 |------------|---------|-------------|
 """
-    
+
     # Define task descriptions
     task_descriptions = {
-        'terrain_nearest_entity': 'Find nearest entities in terrain views',
-        'terrain_nearest_resource': 'Find nearest resources in terrain views',
-        'factory_nearest_entity': 'Find nearest entities in factory setups',
-        'factory_entity_status': 'Identify entity statuses in factories',
-        'entity_name': 'Identify entity names from blueprints',
-        'position_finding': 'Find entity positions in blueprints',
-        'entity_counting': 'Count entities in blueprints',
-        'entity_direction': 'Determine entity facing directions',
-        'denoising': 'Identify missing entities (denoising)',
-        'contrastive_alignment_title': 'Match blueprints to titles',
-        'contrastive_alignment_purpose': 'Match blueprints to purposes'
+        "terrain_nearest_entity": "Find nearest entities in terrain views",
+        "terrain_nearest_resource": "Find nearest resources in terrain views",
+        "factory_nearest_entity": "Find nearest entities in factory setups",
+        "factory_entity_status": "Identify entity statuses in factories",
+        "entity_name": "Identify entity names from blueprints",
+        "position_finding": "Find entity positions in blueprints",
+        "entity_counting": "Count entities in blueprints",
+        "entity_direction": "Determine entity facing directions",
+        "denoising": "Identify missing entities (denoising)",
+        "contrastive_alignment_title": "Match blueprints to titles",
+        "contrastive_alignment_purpose": "Match blueprints to purposes",
     }
-    
-    for split_name, count in sorted(stats['splits'].items()):
-        base_name = split_name.split('_2025-')[0].replace('_mc', '')
-        desc = task_descriptions.get(base_name, 'Visual question answering task')
-        if '_mc' in split_name:
-            desc += ' (multiple choice)'
+
+    for split_name, count in sorted(stats["splits"].items()):
+        base_name = split_name.split("_2025-")[0].replace("_mc", "")
+        desc = task_descriptions.get(base_name, "Visual question answering task")
+        if "_mc" in split_name:
+            desc += " (multiple choice)"
         card += f"| {split_name} | {count:,} | {desc} |\n"
-    
+
     card += """
 ### Data Fields
 
@@ -184,48 +191,48 @@ All entries contain these common fields:
 Here are examples from different task types:
 
 """
-    
+
     # Add a few diverse examples
     example_splits = [
-        'terrain_task',
-        'terrain_task_mc',
-        'factory_task',
-        'factory_task_mc',
-        'position_task',
-        'position_task_mc',
-        'entity_name_task',
-        'entity_name_task_mc',
-        'contrastive_alignment_title',
-        'counting_task',
-        'counting_task_mc',
-        'direction_task',
-        'simple_denoising_blueprint_task',
-        'entity_counting',
-        'denoising_mc',
-        'contrastive_alignment_purpose'
+        "terrain_task",
+        "terrain_task_mc",
+        "factory_task",
+        "factory_task_mc",
+        "position_task",
+        "position_task_mc",
+        "entity_name_task",
+        "entity_name_task_mc",
+        "contrastive_alignment_title",
+        "counting_task",
+        "counting_task_mc",
+        "direction_task",
+        "simple_denoising_blueprint_task",
+        "entity_counting",
+        "denoising_mc",
+        "contrastive_alignment_purpose",
     ]
-    
+
     for split in example_splits:
         split_match = None
         for split_name in examples:
             if split in split_name:
                 split_match = split_name
                 break
-        
+
         if split_match and split_match in examples:
             example = examples[split_match]
             card += f"""#### {split}
 ```json
 {{
-  "question": "{example['question']}",
-  "answer": "{example['answer']}",
+  "question": "{example["question"]}",
+  "answer": "{example["answer"]}",
   "image": "/blueprints/{{id}}.png"",
-  "question_type": "{example.get('question_type', 'unknown')}"
+  "question_type": "{example.get("question_type", "unknown")}"
 }}
 ```
 
 """
-    
+
     card += """## Dataset Creation
 
 ### Generation Process
@@ -289,24 +296,26 @@ If you use this dataset, please cite:
 }
 ```
 """
-    
+
     return card
 
 
 def main():
     """Generate dataset card and upload to HuggingFace."""
-    dataset_dir = Path("/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/vqa/dataset")
-    
+    dataset_dir = Path(
+        "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/vqa/dataset"
+    )
+
     # Generate dataset card
     print("Generating dataset card...")
     dataset_card = generate_dataset_card(dataset_dir)
-    
+
     # Save dataset card
     readme_path = dataset_dir / "README.md"
-    with open(readme_path, 'w') as f:
+    with open(readme_path, "w") as f:
         f.write(dataset_card)
     print(f"Dataset card saved to {readme_path}")
-    
+
     # Upload to HuggingFace
     print("\nUploading to HuggingFace...")
     api = HfApi(token=os.getenv("HF_TOKEN"))

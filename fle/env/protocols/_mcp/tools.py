@@ -1,19 +1,13 @@
-from typing import Dict, List
-import importlib.resources
-
 from mcp.server.fastmcp import Image
 from mcp.types import ImageContent
 
 from fle.env.entities import Position
 from fle.commons.models.game_state import GameState
-from fle.env.gym_env.action import Action
-from fle.env.gym_env.observation_formatter import BasicObservationFormatter
-from fle.env.utils.controller_loader.system_prompt_generator import (
-    SystemPromptGenerator,
-)
 
 from fle.env.protocols._mcp.init import state, initialize_session
 from fle.env.protocols._mcp import mcp
+
+
 #
 @mcp.tool()
 async def render(center_x: float = 0, center_y: float = 0) -> ImageContent:
@@ -32,10 +26,13 @@ async def render(center_x: float = 0, center_y: float = 0) -> ImageContent:
     try:
         img = instance.namespace._render(position=Position(center_x, center_y))
         if img is None:
-            raise Exception("Failed to render: Game state not properly initialized or player entity invalid")
+            raise Exception(
+                "Failed to render: Game state not properly initialized or player entity invalid"
+            )
         return Image(data=img._repr_png_(), format="png").to_image_content()
     except Exception as e:
         raise Exception(f"Error rendering: {str(e)}")
+
 
 @mcp.tool()
 async def execute(code: str) -> str:
@@ -52,7 +49,9 @@ async def execute(code: str) -> str:
         code: Python code to execute
     """
     if not state.active_server:
-        await initialize_session(None)#"No active Factorio server connection. Use connect first."
+        await initialize_session(
+            None
+        )  # "No active Factorio server connection. Use connect first."
 
     vcs = state.get_vcs()
     if not vcs:
@@ -80,10 +79,11 @@ async def execute(code: str) -> str:
 
         import json
         from pathlib import Path
+
         state_file = Path("/tmp/factorio_game_state.json")
-        with open(state_file, 'w') as f:
+        with open(state_file, "w") as f:
             json.dump(game_state_data, f, default=str)
-    except Exception as e:
+    except Exception:
         # Don't fail the whole execution just because state file update failed
         pass
 
@@ -96,13 +96,13 @@ async def execute(code: str) -> str:
     #     observation = str(e)
     #
     # lines = response.split("\b")
-    res=''
     return f"[commit {commit_id[:8]}] - stdio:\n{response}\n"
 
 
 # ============== CONVENIENCE TOOLS ==============
 # These are tools that could be resources but are kept as tools for backward compatibility
 # or because they might perform initialization in some cases
+
 
 @mcp.tool()
 async def reconnect() -> str:
@@ -124,6 +124,7 @@ async def reconnect() -> str:
         )
     else:
         return "Connected to Factorio server"
+
 
 # @mcp.tool()
 # async def render(center_x: float = 0, center_y: float = 0) -> ImageContent:

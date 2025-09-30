@@ -2,30 +2,33 @@
 """
 Inserter renderer
 """
-from enum import Enum
+
 from typing import Dict, Tuple, Optional, Callable, Union
 from PIL import Image
 
-from fle.env import EntityCore
 from ..constants import DIRECTIONS
 
 
-def render(entity: Union[Dict], grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render(
+    entity: Union[Dict], grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Render inserter"""
-    direction = entity.get('direction', 0)
+    direction = entity.get("direction", 0)
     if not isinstance(direction, int):
         direction = direction.value
     return image_resolver(f"{entity['name']}_{DIRECTIONS[direction]}")
 
 
-def render_shadow(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
+def render_shadow(
+    entity: Dict, grid, image_resolver: Callable
+) -> Optional[Image.Image]:
     """Inserters have no shadows"""
     return None
 
 
 def get_key(entity: Dict, grid) -> str:
     """Get cache key"""
-    return str(entity.get('direction', 0))
+    return str(entity.get("direction", 0))
 
 
 def get_size(entity: Dict) -> Tuple[float, float]:

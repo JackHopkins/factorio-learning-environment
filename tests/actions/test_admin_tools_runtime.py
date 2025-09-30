@@ -103,3 +103,161 @@ def test_admin_tools_toggle_multiple_times(namespace):
 
         namespace.enable_admin_tools_in_runtime(False)
         assert namespace.is_admin_tools_enabled() is False
+
+
+def test_admin_tools_persist_after_reset(namespace):
+    """Test that admin tools state persists after namespace reset."""
+    # Enable admin tools
+    namespace.enable_admin_tools_in_runtime(True)
+    assert namespace.is_admin_tools_enabled() is True
+
+    # Verify admin tools are exposed
+    exposed_tools = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" in exposed_tools, (
+        "Admin tools should be exposed before reset"
+    )
+
+    # Reset the namespace
+    namespace.reset()
+
+    # Check that admin tools state is preserved
+    assert namespace.is_admin_tools_enabled() is True, (
+        "Admin tools should still be enabled after reset"
+    )
+
+    # Check that admin tools are still exposed after reset
+    exposed_tools_after_reset = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" in exposed_tools_after_reset, (
+        "Admin tools should still be exposed after reset"
+    )
+
+
+def test_admin_tools_disabled_persist_after_reset(namespace):
+    """Test that disabled admin tools state persists after namespace reset."""
+    # Ensure admin tools are disabled
+    namespace.enable_admin_tools_in_runtime(False)
+    assert namespace.is_admin_tools_enabled() is False
+
+    # Verify admin tools are hidden
+    exposed_tools = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" not in exposed_tools, (
+        "Admin tools should be hidden before reset"
+    )
+
+    # Reset the namespace
+    namespace.reset()
+
+    # Check that admin tools state is preserved
+    assert namespace.is_admin_tools_enabled() is False, (
+        "Admin tools should still be disabled after reset"
+    )
+
+    # Check that admin tools are still hidden after reset
+    exposed_tools_after_reset = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" not in exposed_tools_after_reset, (
+        "Admin tools should still be hidden after reset"
+    )
+
+
+def test_admin_tools_reset_with_construction_enabled(configure_game):
+    """Test that admin tools enabled at construction persist through reset."""
+    # Create instance with admin tools enabled
+    instance = FactorioInstance(
+        address="localhost",
+        tcp_port=27000,
+        fast=True,
+        cache_scripts=True,
+        peaceful=True,
+        enable_admin_tools_in_runtime=True,
+    )
+
+    namespace = instance.first_namespace
+    assert namespace.is_admin_tools_enabled() is True
+
+    # Verify admin tools are exposed
+    exposed_tools = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" in exposed_tools, (
+        "Admin tools should be exposed before reset"
+    )
+
+    # Reset the namespace
+    namespace.reset()
+
+    # Check that admin tools state is preserved
+    assert namespace.is_admin_tools_enabled() is True, (
+        "Admin tools should still be enabled after reset"
+    )
+
+    # Check that admin tools are still exposed after reset
+    exposed_tools_after_reset = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" in exposed_tools_after_reset, (
+        "Admin tools should still be exposed after reset"
+    )
+
+    # Cleanup
+    instance.cleanup()
+
+
+def test_admin_tools_reset_preserves_agent_variables(namespace):
+    """Test that reset preserves agent variables and admin tools state."""
+    # Enable admin tools
+    namespace.enable_admin_tools_in_runtime(True)
+    assert namespace.is_admin_tools_enabled() is True
+
+    # Create some agent variables
+    namespace.eval_with_timeout("my_variable = 42")
+    namespace.eval_with_timeout("my_list = [1, 2, 3]")
+
+    # Verify variables exist by checking if they're in the namespace
+    assert hasattr(namespace, "my_variable"), "Agent variable should exist before reset"
+    assert hasattr(namespace, "my_list"), "Agent variable should exist before reset"
+
+    # Reset the namespace
+    namespace.reset()
+
+    # Check that admin tools state is preserved
+    assert namespace.is_admin_tools_enabled() is True, (
+        "Admin tools should still be enabled after reset"
+    )
+
+    # Check that admin tools are still exposed
+    exposed_tools = [
+        attr
+        for attr in dir(namespace)
+        if not attr.startswith("_") and not attr.startswith("__")
+    ]
+    assert "get_elapsed_ticks" in exposed_tools, (
+        "Admin tools should still be exposed after reset"
+    )
+
+    # Check that agent variables are preserved (namespace reset doesn't clear persistent_vars)
+    assert getattr(namespace, "my_variable", "NOT_FOUND") == 42, (
+        "Agent variable should be preserved after reset"
+    )
+    assert getattr(namespace, "my_list", "NOT_FOUND") == [1, 2, 3], (
+        "Agent variable should be preserved after reset"
+    )

@@ -268,7 +268,7 @@ def test_entities_with_cliffs(clear_terrain):
     )
 
     image = game._render(position=Position(x=5, y=0), radius=20, layers=Layer.ALL)
-    # image.show()
+    image.show()
     assert image is not None
 
 

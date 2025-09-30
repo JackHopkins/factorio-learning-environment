@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Union, Any
 
 from PIL import Image, ImageDraw
 
-from fle.env import Entity, UndergroundBelt, EntityStatus
+from fle.env import Entity, UndergroundBelt, EntityStatus, Position
 from fle.env.tools.admin.render.constants import (
     BACKGROUND_COLOR,
     DEFAULT_ROCK_VARIANTS,
@@ -667,7 +667,13 @@ class Renderer:
                 # output
                 output = copy.deepcopy(entity)
                 output.is_input = False
-                output.position = output.output_position
+                # output.position = output.output_position
+
+                output.position = Position(
+                    x=output.output_position.x - self.offset_x,
+                    y=output.output_position.y - self.offset_y,
+                )
+
                 entities.append(output)
             else:
                 entities.append(entity)

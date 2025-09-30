@@ -473,31 +473,14 @@
                 <li>Trajectories are run for 64 program-level actions (reduced from 128).</li>
                 <li>Reasoning is enabled at default settings for all models (previously was without reasoning).</li>
             </ul>
-            <p style="font-size: 110%;">
-                Model performance across tasks sorted by tech tree complexity. This visualization shows how model success correlates with the number of prerequisite technology nodes required.
-            </p>
 
             <div class="heatmap-container">
                 <img src="../assets/images/fle_0_3_0_combined_dependency_sorted_heatmap.png?v=5"
                      alt="FLE 0.3.0 Combined Model Performance Heatmap"
                      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
             </div>
-
-            <div class="feature-box">
-                <h4 class="title is-5">📊 Key Observations</h4>
-                <ul style="font-size: 110%;">
-                    <li><strong>Complexity Correlation:</strong> Model success rates generally decrease as task complexity increases</li>
-                    <li><strong>Basic Tasks:</strong> Most models achieve success on low-complexity tasks (1-3 nodes)</li>
-                    <li><strong>Advanced Challenges:</strong> High-complexity tasks (15+ nodes) show significant performance gaps between models</li>
-                    <li><strong>Model Ranking:</strong> Performance hierarchy emerges clearly when tasks are sorted by dependency complexity</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="container is-max-widescreen">
-            <h2 class="title is-3"><span class="dvima">Discussion</span></h2>
+            </br>
+            <h3 class="subtitle is-4"><span class="dvima">Discussion</span></h3>
             <p style="font-size: 110%;">
                 We tested with a basic agent harness to assess the models themselves. In our previous release we implemented a backtracking agent which achieved better results due to having a cleaned context. We encourage the community to create agent harnesses which improve upon the baseline model performance.
             </p>
@@ -517,33 +500,10 @@
                 <li><strong>Inventory Management:</strong> insert_item not having enough in the inventory - not reasoning correctly about game state</li>
             </ul>
             </br>
-            <h4 class="title is-5">Future Work</h4>
-            <ul style="font-size: 110%;">
-                <li><strong>Human Baseline:</strong> Establishing human performance benchmarks</li>
-                <li><strong>METR Task Scaling:</strong> Setting up task scaling charts for systematic evaluation</li>
-                <li><strong>Open Play Testing:</strong> We didn't run open play as this is prohibitively expensive to test for each model. However, we DID run open play on our best performing model, Claude.</li>
-            </ul>
-
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="container is-max-widescreen">
-            <h2 class="title is-3"><span class="dvima">Limitations</span></h2>
-            <p style="font-size: 110%;">
-                Our evaluation revealed several key limitations in current model performance:
-            </p>
-            </br>
-            <ul style="font-size: 110%;">
-                <li><strong>Spatial Reasoning Challenges:</strong> Spatial reasoning is the biggest challenge for the base models. Models don't pick up enough things off the map when they're misplaced. This causes cascading errors and exacerbates issues with spatial reasoning. Agents struggle to maintain accurate mental models of the factory layout and frequently make placement errors.</li>
-                </br>
-                <li><strong>Limited Tool Extension:</strong> Models don't define their own functions and classes - instead relying on the out-of-the-box tools that are part of core FLE. Despite having access to a Python namespace for defining helper functions, agents rarely leverage this capability to build abstractions that could simplify complex tasks.</li>
-                </br>
-                <li><strong>Reward Hacking Behavior:</strong> Models reward-hack to avoid full automation. Despite being told to strive for full automation, continued progress towards the production targets reinforces the model's reliance on 'shuttling' resources around, which is easier than building functional logistics chains. This creates a local optimum where agents prefer manual intervention over proper factory design.</li>
-                </br>
-                <li><strong>Craft Item Overuse:</strong> Agents use craft_item liberally to create intermediate goods instead of assembly machines when the target item has a lot of dependencies (see Claude's partial success on production science pack). Since craft_item is run in fast mode with no real time cost, agents exploit this as a shortcut rather than building proper production infrastructure.</li>
-            </ul>
-
+            <strong>Spatial Reasoning Challenges:</strong> Spatial reasoning is the biggest challenge for the base models. Models don't pick up enough things off the map when they're misplaced. This causes cascading errors and exacerbates issues with spatial reasoning. Agents struggle to maintain accurate mental models of the factory layout and frequently make placement errors.
+        </br>
+        <strong>Limited Tool Extension:</strong> Models don't define their own functions and classes - instead relying on the out-of-the-box tools that are part of core FLE. Despite having access to a Python namespace for defining helper functions, agents rarely leverage this capability to build abstractions that could simplify complex tasks.
+        </br>
         </div>
     </section>
 
@@ -1021,6 +981,28 @@ Target achieved!</code></pre>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Limitations and Future Work</span></h2>
+            <p style="font-size: 110%;">
+                Our evaluation revealed several key limitations in current model performance:
+            </p>
+            </br>
+            <ul style="font-size: 110%;">
+                <li><strong>Reward Hacking Behavior:</strong> Models reward-hack to avoid full automation. Despite being told to strive for full automation, continued progress towards the production targets reinforces the model's reliance on 'shuttling' resources around, which is easier than building functional logistics chains. This creates a local optimum where agents prefer manual intervention over proper factory design.</li>
+                </br>
+                <li><strong>Craft Item Overuse:</strong> Agents use craft_item liberally to create intermediate goods instead of assembly machines when the target item has a lot of dependencies (see Claude's partial success on production science pack). Since craft_item is run in fast mode with no real time cost, agents exploit this as a shortcut rather than building proper production infrastructure.</li>
+                </br>
+                <li><strong>Human Baseline:</strong> Establishing human performance benchmarks</li>
+                </br>
+                <li><strong>METR Task Scaling:</strong> Setting up task scaling charts for systematic evaluation</li>
+                </br>
+                <li><strong>Open Play Testing:</strong> We didn't run open play as this is prohibitively expensive to test for each model. However, we DID run open play on our best performing model, Claude.</li>
+            </ul>
+
         </div>
     </section>
 

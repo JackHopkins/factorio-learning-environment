@@ -55,7 +55,7 @@ class LoopContext:
 
 
 class FactorioNamespace:
-    def __init__(self, instance, agent_index):
+    def __init__(self, instance, agent_index, enable_admin_tools_in_runtime=False):
         self.logging_results = {}
         self.line_value = 0
         self.persistent_vars = {}
@@ -68,6 +68,7 @@ class FactorioNamespace:
         self.agent_index = agent_index
         self.agent_id = str(agent_index)
         self.loop_context = LoopContext()
+        self._admin_tools_enabled = enable_admin_tools_in_runtime
 
         # Add all builtins to the namespace
         for name in dir(builtins):
@@ -1122,6 +1123,41 @@ class FactorioNamespace:
 
     def load_messages(self, messages: List[Dict]):
         pass
+
+    @property
+    def enable_admin_tools_in_runtime(self):
+        """Get whether admin tools are enabled in runtime namespace"""
+        return self._admin_tools_enabled
+
+    def set_admin_tools_in_runtime(self, enable: bool):
+        """Dynamically enable/disable admin tools in runtime namespace"""
+        self._admin_tools_enabled = enable
+        self._update_admin_tools_visibility(enable)
+
+    def _update_admin_tools_visibility(self, enable: bool):
+        """Update the visibility of admin tools in the namespace"""
+        # Get list of admin tools from the instance
+        from fle.env.tools import get_admin_tools
+
+        admin_tools = get_admin_tools()
+
+        for tool_name in admin_tools:
+            tool_key = tool_name.lower()
+            admin_tool = getattr(self, f"_{tool_key}", None)
+
+            if admin_tool:
+                if enable:
+                    # Expose admin tool without underscore
+                    setattr(self, tool_key, admin_tool)
+                else:
+                    # Hide admin tool (remove from namespace)
+                    if hasattr(self, tool_key):
+                        delattr(self, tool_key)
+
+    def setup_admin_tools_if_enabled(self):
+        """Set up admin tools if they should be enabled (call after tools are loaded)"""
+        if self._admin_tools_enabled:
+            self._update_admin_tools_visibility(True)
 
 
 def wrap_for_serialization(value):

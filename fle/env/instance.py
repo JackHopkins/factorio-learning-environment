@@ -167,6 +167,7 @@ class FactorioInstance:
         num_agents=1,
         reset_speed=10,
         reset_paused=False,
+        enable_admin_tools_in_runtime=False,
         **kwargs,
     ):
         self.id = str(uuid.uuid4())[:8]
@@ -179,7 +180,11 @@ class FactorioInstance:
         self._is_initialised = False
 
         self.peaceful = peaceful
-        self.namespaces = [self.namespace_class(self, i) for i in range(num_agents)]
+        self.enable_admin_tools_in_runtime = enable_admin_tools_in_runtime
+        self.namespaces = [
+            self.namespace_class(self, i, enable_admin_tools_in_runtime)
+            for i in range(num_agents)
+        ]
 
         # Create GameControl instance with render_message tool
         render_message_tool = None
@@ -203,6 +208,10 @@ class FactorioInstance:
         # Load the python controllers that correspond to the Lua scripts
         self.lua_script_manager.load_init_into_game("initialise")
         self.lua_script_manager.setup_tools(self)
+
+        # Set up admin tools if they should be enabled
+        for namespace in self.namespaces:
+            namespace.setup_admin_tools_if_enabled()
 
         if inventory is None:
             inventory = {}

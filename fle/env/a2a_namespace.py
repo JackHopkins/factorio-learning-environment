@@ -11,10 +11,10 @@ from fle.env.protocols.a2a.handler import A2AProtocolHandler
 class A2AFactorioNamespace(FactorioNamespace):
     """A FactorioNamespace with A2A (Agent-to-Agent) communication support."""
 
-    def __init__(self, instance, agent_index):
+    def __init__(self, instance, agent_index, enable_admin_tools_in_runtime=False):
         self.a2a_handler: Optional[A2AProtocolHandler] = None
         self.called_setup = False
-        super().__init__(instance, agent_index)
+        super().__init__(instance, agent_index, enable_admin_tools_in_runtime)
         logging.info(f"Namespace {self.agent_id}: Initializing A2A namespace")
 
     async def async_setup_default_a2a_handler(

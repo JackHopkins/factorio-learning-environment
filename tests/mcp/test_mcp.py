@@ -19,12 +19,12 @@ from fle.env.protocols._mcp.resources import (
     render_at,
     entities,
     inventory,
-    entity_names,
     position,
     recipe,
     manual,
     schema,
     status,
+    prototypes,
 )
 from fle.env.protocols._mcp.tools import reconnect
 from fle.env.protocols._mcp.init import state, initialize_session
@@ -214,7 +214,7 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Create resource - no parameters needed
-        resource = entity_names  # .create_resource('fle://entity-names', {})
+        resource = prototypes  # .create_resource('fle://entity-names', {})
 
         result = await resource.read()
         result = json.loads(result)
@@ -231,7 +231,7 @@ class TestMCPResources:
         await reconnect.run({})
 
         # First get available recipes
-        names_resource = entity_names
+        names_resource = prototypes
         available_names = await names_resource.read()
         available_names = json.loads(available_names)
 
@@ -402,7 +402,7 @@ class TestMCPResources:
         await reconnect.run({})
 
         # Get all available recipe names
-        names_resource = entity_names  # .create_resource('fle://entity-names', {})
+        names_resource = prototypes  # .create_resource('fle://entity-names', {})
         names = await names_resource.read()
         names = json.loads(names)
         assert names is not None
@@ -429,7 +429,7 @@ class TestMCPResources:
         no_param_resources = [
             (inventory, "fle://inventory", dict),
             (position, "fle://position", dict),
-            (entity_names, "fle://entity-names", list),
+            (prototypes, "fle://prototypes", list),
             (schema, "fle://api/schema", str),
             (status, "fle://status", str),
         ]
@@ -462,7 +462,7 @@ class TestMCPResources:
         assert render_result is not None
 
         # Test recipe with path param
-        names_resource = await entity_names.create_resource("fle://entity-names", {})
+        names_resource = await prototypes.create_resource("fle://prototypes", {})
         names = await names_resource.read()
         if names:
             recipe_resource = await recipe.create_resource(

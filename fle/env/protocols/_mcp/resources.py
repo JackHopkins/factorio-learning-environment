@@ -207,8 +207,8 @@ async def warnings() -> list:
     return warnings
 
 
-@mcp.resource("fle://render/{center_x}/{center_y}")
-async def render_at(center_x: str, center_y: str) -> ImageContent:
+@mcp.resource("fle://render/{center_x}/{center_y}/{radius}")
+async def render_at(center_x: str, center_y: str, radius: int = 32) -> ImageContent:
     """
     Get a rendered image of the current factory state as a base64-encoded PNG.
 
@@ -228,7 +228,7 @@ async def render_at(center_x: str, center_y: str) -> ImageContent:
         cx = float(center_x)
         cy = float(center_y)
 
-        img = instance.namespace._render(position=Position(cx, cy))
+        img = instance.namespace._render(position=Position(cx, cy), radius=radius)
         if img is None:
             raise Exception(
                 "Failed to render: Game state not properly initialized or player entity invalid"

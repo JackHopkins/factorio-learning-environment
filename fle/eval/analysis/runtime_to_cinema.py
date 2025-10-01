@@ -29,13 +29,22 @@ from dotenv import load_dotenv
 
 from fle.env import FactorioInstance
 from fle.env.tools.admin.cutscene.client import Cutscene
-from fle.eval.analysis.cinematographer import CameraPrefs, Cinematographer, GameClock
+from fle.eval.analysis.cinematographer import ShotLib, ShotPolicy, ShotTemplate, Var, new_plan
 from fle.eval.analysis.ast_actions import parse_actions
 from fle.commons.models.program import Program
 from fle.eval.tasks.task_factory import TaskFactory
 
+# Import Cinematographer and related classes
+from fle.eval.analysis.cinematographer import Cinematographer, CameraPrefs, GameClock
+
 
 load_dotenv()
+
+
+# --- Module-level defaults -------------------------------------------------
+
+# Default shot policy for runtime cinema generation
+POLICY = ShotPolicy()  # use defaults
 
 
 # --- DB helpers ------------------------------------------------------------
@@ -110,6 +119,7 @@ def create_instance_and_task(
                 fast=True,
                 cache_scripts=True,
                 peaceful=True,
+                enable_admin_tools_in_runtime=True,
             )
             instance.set_speed_and_unpause(1.0)
             task.setup(instance)
@@ -121,240 +131,266 @@ def create_instance_and_task(
 # --- Cinematography -------------------------------------------------------
 
 
+def build_runtime_prelude() -> str:
+    """Build the runtime prelude code that sets up cinema infrastructure."""
+    return r'''
+# === CINEMA PRELUDE (auto-injected) ===
+# Note: This code runs in the Factorio namespace context where variables are available directly
+if "_cinema_shots" not in globals():
+    _cinema_shots = []
+
+def _cinema_emit(intent):
+    # Intent must already match server.lua schema
+    _cinema_shots.append(intent)
+
+def _bbox_two_points(p1, p2, pad):
+    if not p1 or not p2: 
+        return [[player_location.x-20, player_location.y-20],
+                [player_location.x+20, player_location.y+20]]
+    x1,y1 = p1[0], p1[1]
+    x2,y2 = p2[0], p2[1]
+    lo_x, hi_x = (x1 if x1<x2 else x2) - pad, (x2 if x2>x1 else x1) + pad
+    lo_y, hi_y = (y1 if y1<y2 else y2) - pad, (y2 if y2>y1 else y1) + pad
+    return [[lo_x, lo_y], [hi_x, hi_y]]
+
+def _resolve_entity_pos(e):
+    try:
+        if hasattr(e, "position"):
+            return [e.position.x, e.position.y]
+        # group-like fallbacks (best-effort)
+        if hasattr(e, "poles") and e.poles:
+            return [e.poles[0].position.x, e.poles[0].position.y]
+        if hasattr(e, "pipes") and e.pipes:
+            return [e.pipes[0].position.x, e.pipes[0].position.y]
+        if hasattr(e, "drop_position"):
+            return [e.drop_position.x, e.drop_position.y]
+    except Exception:
+        pass
+    return [player_location.x, player_location.y]
+
+def _emit_focus_pos(pos, pan_ms, dwell_ms, zoom, id_prefix, tick=None, tags=None):
+    t = _get_elapsed_ticks() if tick is None else tick
+    intent = {
+        "id": f"{id_prefix}-{t}",
+        "pri": 10,
+        "when": {"start_tick": t},
+        "kind": {"type": "focus_position", "pos": pos},
+        "pan_ms": pan_ms, "dwell_ms": dwell_ms
+    }
+    if zoom is not None:
+        intent["zoom"] = zoom
+    if tags:
+        intent["tags"] = tags
+    _cinema_emit(intent)
+
+def _emit_zoom_to_fit_bbox(bbox, pan_ms, dwell_ms, zoom, id_prefix, tick=None, tags=None):
+    t = _get_elapsed_ticks() if tick is None else tick
+    intent = {
+        "id": f"{id_prefix}-{t}",
+        "pri": 8,
+        "when": {"start_tick": t},
+        "kind": {"type": "zoom_to_fit", "bbox": bbox},
+        "pan_ms": pan_ms, "dwell_ms": dwell_ms
+    }
+    if zoom is not None:
+        intent["zoom"] = zoom
+    if tags:
+        intent["tags"] = tags
+    _cinema_emit(intent)
+# === /CINEMA PRELUDE ===
+'''
+
+
+def build_runtime_trailer() -> str:
+    """Build the runtime trailer code that flushes cinema shots."""
+    return r'''
+# === CINEMA FLUSH (auto-injected) ===
+if "_cinema_shots" in globals() and _cinema_shots:
+    _cutscene({"player": 1, "shots": _cinema_shots})
+    _cinema_shots = []
+# === /CINEMA FLUSH ===
+'''
+
+
+def render_pre_snippets_for_site(site, policy: ShotPolicy) -> list[str]:
+    """
+    Return a list of Python code strings to inject BEFORE the action line.
+    MVP: only PRE snippets (no POST, no movement debouncer yet).
+    """
+    pre = []
+    # MOVE_TO: pre-arrival cut (if enabled)
+    if site.kind == "move_to" and policy.pre_arrival_cut:
+        tpl = ShotLib.cut_to_pos(zoom=0.9)
+        # pos_expr_src: new field provided by ast_actions for the first arg (string as it appears in code)
+        pos_src = site.args.get("pos_src")  # e.g., "coords.center" or "Position(x=15, y=-3)"
+        # Use template constants with our runtime helper
+        pre.append(
+            f'''_emit_focus_pos({pos_src}, {tpl.pan_ms}, {tpl.dwell_ms}, {tpl.zoom if tpl.zoom is not None else 'None'}, "cut")'''
+        )
+
+    # CONNECT_ENTITIES: pre zoom-to-fit on endpoints
+    if site.kind == "connect_entities":
+        tpl_pre, tpl_post = ShotLib.connection_two_point(padding=policy.connection_padding_tiles)
+        a_src = site.args.get("a_src")  # identifier/expr text from AST
+        b_src = site.args.get("b_src")
+        # runtime compute positions + bbox, then emit zoom-to-fit using template timings/zoom
+        pre.append(
+            f'''_emit_zoom_to_fit_bbox(_bbox_two_points(_resolve_entity_pos({a_src}), _resolve_entity_pos({b_src}), {policy.connection_padding_tiles}), {tpl_pre.pan_ms}, {tpl_pre.dwell_ms}, {tpl_pre.zoom if tpl_pre.zoom is not None else 'None'}, "conn-pre")'''
+        )
+
+    # PLACE_ENTITY: simple pre reveal is usually unnecessary; skip in MVP.
+    return pre
+
+
+def build_runtime_prelude() -> str:
+    """Build the runtime prelude code that sets up cinema infrastructure."""
+    return r'''
+# === CINEMA PRELUDE (auto-injected) ===
+# Note: This code runs in the Factorio namespace context where variables are available directly
+if "_cinema_shots" not in globals():
+    _cinema_shots = []
+
+def _cinema_emit(intent):
+    # Intent must already match server.lua schema
+    _cinema_shots.append(intent)
+
+def _bbox_two_points(p1, p2, pad):
+    if not p1 or not p2: 
+        return [[player_location.x-20, player_location.y-20],
+                [player_location.x+20, player_location.y+20]]
+    x1,y1 = p1[0], p1[1]
+    x2,y2 = p2[0], p2[1]
+    lo_x, hi_x = (x1 if x1<x2 else x2) - pad, (x2 if x2>x1 else x1) + pad
+    lo_y, hi_y = (y1 if y1<y2 else y2) - pad, (y2 if y2>y1 else y1) + pad
+    return [[lo_x, lo_y], [hi_x, hi_y]]
+
+def _resolve_entity_pos(e):
+    try:
+        if hasattr(e, "position"):
+            return [e.position.x, e.position.y]
+        # group-like fallbacks (best-effort)
+        if hasattr(e, "poles") and e.poles:
+            return [e.poles[0].position.x, e.poles[0].position.y]
+        if hasattr(e, "pipes") and e.pipes:
+            return [e.pipes[0].position.x, e.pipes[0].position.y]
+        if hasattr(e, "drop_position"):
+            return [e.drop_position.x, e.drop_position.y]
+    except Exception:
+        pass
+    return [player_location.x, player_location.y]
+
+def _emit_focus_pos(pos, pan_ms, dwell_ms, zoom, id_prefix, tick=None, tags=None):
+    t = _get_elapsed_ticks() if tick is None else tick
+    intent = {
+        "id": f"{id_prefix}-{t}",
+        "pri": 10,
+        "when": {"start_tick": t},
+        "kind": {"type": "focus_position", "pos": pos},
+        "pan_ms": pan_ms, "dwell_ms": dwell_ms
+    }
+    if zoom is not None:
+        intent["zoom"] = zoom
+    if tags:
+        intent["tags"] = tags
+    _cinema_emit(intent)
+
+def _emit_zoom_to_fit_bbox(bbox, pan_ms, dwell_ms, zoom, id_prefix, tick=None, tags=None):
+    t = _get_elapsed_ticks() if tick is None else tick
+    intent = {
+        "id": f"{id_prefix}-{t}",
+        "pri": 8,
+        "when": {"start_tick": t},
+        "kind": {"type": "zoom_to_fit", "bbox": bbox},
+        "pan_ms": pan_ms, "dwell_ms": dwell_ms
+    }
+    if zoom is not None:
+        intent["zoom"] = zoom
+    if tags:
+        intent["tags"] = tags
+    _cinema_emit(intent)
+# === /CINEMA PRELUDE ===
+'''
+
+
+def build_runtime_trailer() -> str:
+    """Build the runtime trailer code that flushes cinema shots."""
+    return r'''
+# === CINEMA FLUSH (auto-injected) ===
+if "_cinema_shots" in globals() and _cinema_shots:
+    _cutscene({"player": 1, "shots": _cinema_shots})
+    _cinema_shots = []
+# === /CINEMA FLUSH ===
+'''
+
+
+def render_pre_snippets_for_site(site, policy: ShotPolicy) -> list[str]:
+    """
+    Return a list of Python code strings to inject BEFORE the action line.
+    MVP: only PRE snippets (no POST, no movement debouncer yet).
+    """
+    pre = []
+    # MOVE_TO: pre-arrival cut (if enabled)
+    if site.kind == "move_to" and policy.pre_arrival_cut:
+        tpl = ShotLib.cut_to_pos(zoom=0.9)
+        # pos_expr_src: new field provided by ast_actions for the first arg (string as it appears in code)
+        pos_src = site.args.get("pos_src")  # e.g., "coords.center" or "Position(x=15, y=-3)"
+        # Use template constants with our runtime helper
+        pre.append(
+            f'''_emit_focus_pos({pos_src}, {tpl.pan_ms}, {tpl.dwell_ms}, {tpl.zoom if tpl.zoom is not None else 'None'}, "cut")'''
+        )
+
+    # CONNECT_ENTITIES: pre zoom-to-fit on endpoints
+    if site.kind == "connect_entities":
+        tpl_pre, tpl_post = ShotLib.connection_two_point(padding=policy.connection_padding_tiles)
+        a_src = site.args.get("a_src")  # identifier/expr text from AST
+        b_src = site.args.get("b_src")
+        # runtime compute positions + bbox, then emit zoom-to-fit using template timings/zoom
+        pre.append(
+            f'''_emit_zoom_to_fit_bbox(_bbox_two_points(_resolve_entity_pos({a_src}), _resolve_entity_pos({b_src}), {policy.connection_padding_tiles}), {tpl_pre.pan_ms}, {tpl_pre.dwell_ms}, {tpl_pre.zoom if tpl_pre.zoom is not None else 'None'}, "conn-pre")'''
+        )
+
+    # PLACE_ENTITY: simple pre reveal is usually unnecessary; skip in MVP.
+    return pre
+
+
 def parse_program_actions(code: str) -> List[Dict[str, Any]]:
     """Parse a program's code to extract Factorio actions using AST.
 
     Returns:
         List of action dictionaries with type, args, and line_no.
     """
-    action_sites = parse_actions(code)
+    # Keep signature for callers like debug tool
+    return [  # normalize ActionSite -> dict for pretty-print
+        {"type": s.kind, "args": s.args, "line_span": s.line_span}
+        for s in parse_actions(code)
+    ]
 
-    # Convert ActionSite objects to the expected dictionary format
-    actions = []
+
+# Removed old manual implementations - now using AST-based template system
+def splice_cinema_code(original_code: str, action_sites: list, policy: ShotPolicy = POLICY) -> str:
+    """Splice cinema code between actions in the original program using AST integration."""
+    lines = original_code.splitlines()
+    insertions_before: dict[int, list[str]] = {}
+
     for site in action_sites:
-        action_dict = {
-            "type": site.type,
-            "args": site.args,
-            "line_no": site.line_no,
-        }
-        actions.append(action_dict)
+        pre_snips = render_pre_snippets_for_site(site, policy)
+        if pre_snips:
+            # use site.line_span[0] as 1-based start line; convert to 0-based index
+            idx0 = max(0, (site.line_span[0]-1))
+            insertions_before.setdefault(idx0, []).extend(pre_snips)
 
-    return actions
-
-
-def generate_runtime_shot_code(
-    action_type: str, action_data: dict, shot_id: str
-) -> str:
-    """Generate runtime code to capture positions and create shots dynamically."""
-
-    if action_type == "move_to":
-        # For movement, implement buffering to avoid excessive camera transitions
-        return f'''
-# CINEMA: Movement buffering for {shot_id}
-if not hasattr(namespace, '_cinema_last_pos'):
-    namespace._cinema_last_pos = None
-    namespace._cinema_movement_buffer = []
-
-current_pos = namespace.player_location
-current_tick = get_elapsed_ticks()
-
-# Calculate distance from last recorded position
-if namespace._cinema_last_pos:
-    distance = ((current_pos.x - namespace._cinema_last_pos.x) ** 2 + 
-                (current_pos.y - namespace._cinema_last_pos.y) ** 2) ** 0.5
-else:
-    distance = 0
-
-# Only create movement shots for significant movements (>15 tiles)
-if distance >= 15:
-    print(f"CINEMA: Significant movement detected: {{distance:.1f}} tiles")
-    
-    # Add to movement buffer
-    namespace._cinema_movement_buffer.append({{
-        "position": [current_pos.x, current_pos.y],
-        "tick": current_tick,
-        "distance": distance
-    }})
-    
-    # Keep only last 3 movements in buffer
-    if len(namespace._cinema_movement_buffer) > 3:
-        namespace._cinema_movement_buffer.pop(0)
-    
-    # Create movement shot with buffered data
-    if len(namespace._cinema_movement_buffer) >= 2:
-        start_pos = namespace._cinema_movement_buffer[0]["position"]
-        end_pos = namespace._cinema_movement_buffer[-1]["position"]
-        
-        # Calculate bounding box for the movement path
-        min_x = min(pos["position"][0] for pos in namespace._cinema_movement_buffer)
-        max_x = max(pos["position"][0] for pos in namespace._cinema_movement_buffer)
-        min_y = min(pos["position"][1] for pos in namespace._cinema_movement_buffer)
-        max_y = max(pos["position"][1] for pos in namespace._cinema_movement_buffer)
-        
-        # Add padding
-        padding = 20
-        movement_bbox = [
-            [min_x - padding, min_y - padding],
-            [max_x + padding, max_y + padding]
-        ]
-        
-        cinema_shot = {{
-            "id": "{shot_id}",
-            "type": "player_movement", 
-            "position": [current_pos.x, current_pos.y],
-            "start_position": start_pos,
-            "end_position": end_pos,
-            "movement_bbox": movement_bbox,
-            "total_distance": sum(pos["distance"] for pos in namespace._cinema_movement_buffer),
-            "timestamp": current_tick
-        }}
-        print(f"CINEMA: Generated buffered movement shot: {{cinema_shot}}")
-    
-    # Update last position
-    namespace._cinema_last_pos = current_pos
-else:
-    print(f"CINEMA: Small movement ignored: {{distance:.1f}} tiles")
-'''
-
-    elif action_type == "place_entity":
-        # For entity placement, capture the entity position after placement
-        return f'''
-# CINEMA: Entity placement shot for {shot_id}
-# Get the most recently placed entity of this type
-recent_entities = get_entities(position=namespace.player_location, radius=20)
-if recent_entities:
-    latest_entity = max(recent_entities, key=lambda e: getattr(e, 'tick', 0))
-    entity_pos = [latest_entity.position.x, latest_entity.position.y]
-    print(f"CINEMA: Entity placed at {{entity_pos}}")
-    cinema_shot = {{
-        "id": "{shot_id}",
-        "type": "entity_placed",
-        "position": entity_pos,
-        "entity_type": latest_entity.name,
-        "timestamp": get_elapsed_ticks()
-    }}
-    print(f"CINEMA: Generated placement shot: {{cinema_shot}}")
-'''
-
-    elif action_type == "connect_entities":
-        # For connections, we need to extract the entity variables from the function call
-        # This will be handled by the splicing logic that parses the actual function call
-        return f"""
-# CINEMA: Connection shot will be generated by parsing the actual connect_entities call
-# This placeholder will be replaced with actual entity-specific code
-print(f"CINEMA: Placeholder for connect_entities shot {shot_id}")
-"""
-
-    return ""
-
-
-def generate_connect_entities_cinema_code(action_data: dict, shot_id: str) -> str:
-    """Generate cinema code for connect_entities using AST-parsed action data."""
-
-    # Extract entity expressions and prototype from the action data
-    a_expr = action_data.get("a_expr", "entity1")
-    b_expr = action_data.get("b_expr", "entity2")
-    prototype_name = action_data.get("proto_name", "Unknown")
-
-    return f'''
-# CINEMA: Connection shot for {shot_id}
-# Focus on the two entities being connected: {a_expr} and {b_expr}
-try:
-    entity1 = {a_expr}
-    entity2 = {b_expr}
-    
-    if hasattr(entity1, 'position') and hasattr(entity2, 'position'):
-        pos1 = [entity1.position.x, entity1.position.y]
-        pos2 = [entity2.position.x, entity2.position.y]
-        
-        # Calculate bounding box to encompass both entities
-        min_x = min(pos1[0], pos2[0])
-        max_x = max(pos1[0], pos2[0])
-        min_y = min(pos1[1], pos2[1])
-        max_y = max(pos1[1], pos2[1])
-        
-        # Add padding for better framing
-        padding = 20
-        connection_bbox = [
-            [min_x - padding, min_y - padding],
-            [max_x + padding, max_y + padding]
-        ]
-        
-        print(f"CINEMA: Connecting {{entity1.name}} to {{entity2.name}} with {prototype_name}")
-        
-        # Create connection shot: zoom out to show both entities
-        connection_shot = {{
-            "id": "{shot_id}",
-            "type": "zoom_to_fit",
-            "bbox": connection_bbox,
-            "zoom": 0.7,  # Zoom out to show both entities
-            "pan_ms": 1500,
-            "dwell_ms": 2000,
-            "timestamp": get_elapsed_ticks()
-        }}
-        print(f"CINEMA: Generated connection shot: {{connection_shot}}")
-    else:
-        print(f"CINEMA: Entities {a_expr} or {b_expr} don't have position attributes")
-except Exception as e:
-    print(f"CINEMA: Error generating connection shot: {{e}}")
-'''
-
-
-def splice_cinema_code(original_code: str, actions: list) -> str:
-    """Splice cinema code between actions in the original program."""
-    lines = original_code.split("\n")
-    new_lines = []
-
-    action_index = 0
-
+    out = []
+    injected_prelude = False
     for i, line in enumerate(lines):
-        # Check if this line contains an action we want to capture
-        if action_index < len(actions):
-            action = actions[action_index]
+        if not injected_prelude:
+            out.append(build_runtime_prelude())
+            injected_prelude = True
+        if i in insertions_before:
+            out.extend(insertions_before[i])
+        out.append(line)
 
-            # Look for the action in this line
-            if (
-                (action["type"] == "move_to" and "move_to(" in line)
-                or (action["type"] == "place_entity" and "place_entity(" in line)
-                or (
-                    action["type"] == "connect_entities" and "connect_entities(" in line
-                )
-            ):
-                # Generate shot ID
-                shot_id = f"{action['type']}_{i}_{action_index}"
-
-                # For connect_entities, use the AST-parsed action data
-                if action["type"] == "connect_entities":
-                    cinema_code = generate_connect_entities_cinema_code(
-                        action["args"], shot_id
-                    )
-                    if cinema_code.strip():
-                        new_lines.append(cinema_code)
-                else:
-                    # Generate runtime cinema code for other actions
-                    cinema_code = generate_runtime_shot_code(
-                        action["type"], action, shot_id
-                    )
-
-                # Add the actual action line
-                new_lines.append(line)
-
-                # For move_to and place_entity, add cinema code AFTER the action
-                if (
-                    action["type"] in ["move_to", "place_entity"]
-                    and cinema_code.strip()
-                ):
-                    new_lines.append(cinema_code)
-
-                action_index += 1
-            else:
-                # Regular line, add as-is
-                new_lines.append(line)
-        else:
-            # No more actions to process, add line as-is
-            new_lines.append(line)
-
-    return "\n".join(new_lines)
+    out.append(build_runtime_trailer())
+    return "\n".join(out)
 
 
 def detect_game_events(
@@ -646,7 +682,8 @@ def process_programs(
     conn,
     max_steps: int,
 ) -> Dict[str, Any]:
-    cutscene_tool = Cutscene(instance.lua_script_manager, instance.first_namespace)
+    # Note: cutscene tool is now available directly in the runtime namespace
+    # No need for external cutscene_tool instance
 
     print(
         f"Processing version {version} with {len(list(programs))} programs (max {max_steps} steps)"
@@ -660,7 +697,6 @@ def process_programs(
 
     # Track game state for event detection
     previous_state = None
-    active_cutscene_plans: List[str] = []
     total_events_detected = 0
 
     for idx, (program_id, created_at) in enumerate(programs):
@@ -682,14 +718,20 @@ def process_programs(
             instance.reset(program.state)
 
         # Parse actions and splice cinema code
-        actions = parse_program_actions(program.code) if program.code else []
-        cinema_code = splice_cinema_code(program.code, actions)
+        action_sites = parse_actions(program.code) if program.code else []
+        cinema_code = splice_cinema_code(program.code, action_sites, POLICY)
 
         print("Executing program with cinema code...")
         print(f"Original code length: {len(program.code)}")
         print(f"Cinema-spliced code length: {len(cinema_code)}")
 
+        # Enable admin tools in the namespace for cinema functionality
+        instance.first_namespace.enable_admin_tools_in_runtime(True)
+
         response = instance.eval(cinema_code)
+        
+        # Disable admin tools after execution to maintain security
+        instance.first_namespace.enable_admin_tools_in_runtime(False)
 
         # Log execution results
         if response[2]:  # errors
@@ -702,7 +744,7 @@ def process_programs(
                 "program_id": program_id,
                 "code": program.code,
                 "cinema_code": cinema_code,
-                "actions": actions,
+                "actions": parse_program_actions(program.code),
                 "prints": response[1],
                 "errors": response[2],
                 "created_at": str(created_at),
@@ -754,188 +796,23 @@ def process_programs(
             "prints": response[1] or "",
         }
 
-        # Create individual cutscene shots for each significant event immediately
-        for event_type, delta in events:
-            if event_type in [
-                "power_setup",
-                "mining_setup",
-                "smelting_setup",
-                "assembly_setup",
-                "research_setup",
-                "belt_connection",
-                "power_connection",
-                "fluid_connection",
-                "infrastructure_connection",
-                "player_movement",
-            ]:
-                # Create an immediate cutscene shot for this event
-                event_pos = delta.get("position", pos)
-                factory_bbox = delta.get("factory_bbox")
-                connection_bbox = delta.get("connection_bbox")
-                movement_bbox = delta.get("movement_bbox")
+        # Note: Cutscenes are now handled directly in the spliced code
+        # No need for external cutscene management here
 
-                # Create a single-shot plan for immediate execution
-                shot_kind = {}
-                # Priority: connection_bbox > movement_bbox > factory_bbox > focus position
-                if connection_bbox:
-                    shot_kind = {"type": "zoom_to_fit", "bbox": connection_bbox}
-                elif movement_bbox:
-                    shot_kind = {"type": "zoom_to_fit", "bbox": movement_bbox}
-                elif factory_bbox:
-                    shot_kind = {"type": "zoom_to_fit", "bbox": factory_bbox}
-                else:
-                    shot_kind = {"type": "focus_position", "pos": event_pos}
-
-                immediate_plan = {
-                    "player": 1,
-                    "start_zoom": 1.0,
-                    "shots": [
-                        {
-                            "id": f"{event_type}-{current_tick}",
-                            "pri": 10,
-                            "when": {"start_tick": 0},  # Start immediately
-                            "kind": shot_kind,
-                            "pan_ms": 1500,
-                            "dwell_ms": 2000,
-                            "zoom": (
-                                0.8
-                                if event_type
-                                in [
-                                    "belt_connection",
-                                    "power_connection",
-                                    "fluid_connection",
-                                    "infrastructure_connection",
-                                ]
-                                else 0.9
-                                if event_type == "player_movement"
-                                else 1.2
-                                if event_type == "power_setup"
-                                else 1.5
-                            ),
-                            "tags": [event_type],
-                        }
-                    ],
-                }
-
-                print(f"\nCreating immediate cutscene for {event_type} at {event_pos}")
-
-                queue_response = cutscene_tool.queue_plan(immediate_plan)
-                print(
-                    f"Queue response type: {type(queue_response)}, value: {queue_response}"
-                )
-
-                if isinstance(queue_response, dict) and queue_response.get("ok"):
-                    plan_id = queue_response.get("plan_id")
-
-                    # Start the plan immediately
-                    start_response = cutscene_tool.start_plan(plan_id, 1)
-                    if start_response.get("ok"):
-                        print(
-                            f"Started immediate cutscene '{plan_id}' for {event_type}"
-                        )
-                        active_cutscene_plans.append(plan_id)
-
-                        # Wait for the cutscene to complete
-                        import time
-
-                        time.sleep(3.5)  # Wait for pan + dwell time
-
-                        # Check if cutscene finished
-                        status_response = cutscene_tool.fetch_report(plan_id, 1)
-                        if status_response.get("ok"):
-                            report = status_response.get("report", {})
-                            print(f"Cutscene status: {report.get('state', 'unknown')}")
-                    else:
-                        print(f"Failed to start immediate cutscene: {start_response}")
-                else:
-                    print(f"Failed to queue immediate cutscene: {queue_response}")
-
-    # Create a final comprehensive plan with all remaining events
-    final_plan = cin.build_plan(player=1)
-
-    # If no shots were generated, create a default overview plan
-    if not final_plan["shots"]:
-        print("\nNo shots generated from events, creating default overview plan...")
-        player_pos = getattr(instance, "namespace", None)
-        if player_pos and hasattr(player_pos, "player_location"):
-            location = player_pos.player_location
-            pos = [location.x, location.y]
-        else:
-            pos = [0, 0]
-
-        final_plan = {
-            "player": 1,
-            "start_zoom": 1.0,
-            "shots": [
-                {
-                    "id": "intro-overview",
-                    "pri": 10,
-                    "when": {"start_tick": 0},
-                    "kind": {
-                        "type": "focus_position",
-                        "pos": [pos[0] - 30, pos[1] - 20],
-                    },
-                    "pan_ms": 2500,
-                    "dwell_ms": 1000,
-                    "zoom": 0.8,
-                },
-                {
-                    "id": "factory-center",
-                    "pri": 9,
-                    "when": {"start_tick": 3500},
-                    "kind": {"type": "focus_position", "pos": pos},
-                    "pan_ms": 2000,
-                    "dwell_ms": 1500,
-                    "zoom": 1.0,
-                },
-                {
-                    "id": "close-up",
-                    "pri": 8,
-                    "when": {"start_tick": 7000},
-                    "kind": {
-                        "type": "focus_position",
-                        "pos": [pos[0] + 10, pos[1] + 10],
-                    },
-                    "pan_ms": 1500,
-                    "dwell_ms": 2000,
-                    "zoom": 1.5,
-                },
-            ],
-        }
-
-    print(f"\nFinal plan contains {len(final_plan['shots'])} shots")
-
-    # Queue and start the final plan
-    final_response = cutscene_tool.queue_plan(final_plan)
-    print(f"Final response type: {type(final_response)}, value: {final_response}")
-
-    if not isinstance(final_response, dict) or not final_response.get("ok"):
-        print(f"Warning: Failed to queue final plan: {final_response}")
-    else:
-        final_plan_id = final_response.get("plan_id")
-        print(f"Queued final plan '{final_plan_id}'")
-
-        # Start the final plan
-        start_response = cutscene_tool.start_plan(final_plan_id, 1)
-        if start_response.get("ok"):
-            print(f"Started final cutscene plan '{final_plan_id}'")
-        else:
-            print(f"Failed to start final cutscene plan: {start_response}")
+    # Note: All cutscenes are now handled directly in the spliced code
+    # No need for external cutscene plan management
 
     print("\nProcessing complete:")
     print(f"  - Total programs processed: {min(len(programs), max_steps)}")
     print(f"  - Total events detected: {total_events_detected}")
-    print(f"  - Active cutscene plans: {len(active_cutscene_plans)}")
-    print(f"  - Final plan shots: {len(final_plan['shots'])}")
+    print("  - Cutscenes handled directly in runtime context")
 
     return {
-        "plan": final_plan,
-        "enqueue": final_response,
         "programs": screenshot_sequences,
         "stats": {
             "programs_processed": min(len(programs), max_steps),
             "events_detected": total_events_detected,
-            "cutscene_plans": active_cutscene_plans,
+            "cutscenes_in_runtime": True,
         },
     }
 

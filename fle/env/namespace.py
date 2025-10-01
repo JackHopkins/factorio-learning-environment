@@ -198,6 +198,18 @@ class FactorioNamespace:
             if not callable(getattr(self, attr)) and not attr.startswith("__")
         ]
 
+    def enable_admin_tools_in_runtime(self, enable: bool = True):
+        """Enable or disable admin tools in the agent runtime.
+
+        This allows admin tools like _cutscene, _get_elapsed_ticks, etc. to be
+        available in the agent runtime for special use cases like cinema generation.
+
+        Args:
+            enable: Whether to enable admin tools (default: True)
+        """
+        self._admin_tools_enabled = enable
+        self._update_admin_tools_visibility(enable)
+
     def get_functions(self) -> List[SerializableFunction]:
         """
         Gets all defined functions mapped from their attribute name in the namespace.
@@ -1110,6 +1122,17 @@ class FactorioNamespace:
                 if isinstance(value, SerializableFunction):
                     eval_dict[key] = value.bind(self)
 
+            # Re-add admin tools after persistent_vars update (they get overridden)
+            if self._admin_tools_enabled:
+                admin_tools = {
+                    name: getattr(self, name)
+                    for name in dir(self)
+                    if name.startswith("_")
+                    and not name.startswith("__")
+                    and callable(getattr(self, name))
+                }
+                eval_dict.update(admin_tools)
+
         score, goal = self.score()
         result_output = parse_result_into_str(self.logging_results)
 
@@ -1123,11 +1146,6 @@ class FactorioNamespace:
 
     def load_messages(self, messages: List[Dict]):
         pass
-
-    def enable_admin_tools_in_runtime(self, enable: bool):
-        """Dynamically enable/disable admin tools in runtime namespace"""
-        self._admin_tools_enabled = enable
-        self._update_admin_tools_visibility(enable)
 
     def is_admin_tools_enabled(self):
         """Check if admin tools are enabled in runtime namespace"""

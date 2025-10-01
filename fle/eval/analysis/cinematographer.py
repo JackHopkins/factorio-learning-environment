@@ -1,27 +1,202 @@
-"""Phase 3 cinematographer heuristics.
+"""Clean templating system for Factorio cinematography.
 
-This module listens to replay events and emits ShotIntent dictionaries that the
-admin cutscene tool understands.  The first revision focuses on a minimal set of
-heuristics: "firsts" (first fuel, first electricity, first lab online) and
-factory-scale changes.  Later iterations can build on this scaffolding with more
-advanced scoring or shot budgeting.
+This module provides a template-based system for creating cinematic shots that can be
+rendered with concrete values from AST-extracted variables. The system is designed to
+work with the new AST parser and runtime detection pipeline.
+
+Key components:
+- Var: Placeholder class for symbolic fields
+- ShotTemplate: Template for shots with Var placeholders
+- ShotLib: Library of common shot templates
+- ShotPolicy: Tunable defaults for shot behavior
 """
 
 from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 
-# ShotIntent / plan schemas -------------------------------------------------
+# Core types ----------------------------------------------------------------
 
 ShotIntent = Dict[str, Any]
 
 
+class Var:
+    """Placeholder class for symbolic fields in shot templates.
+    
+    Used to mark fields that should be replaced with concrete values during rendering.
+    The name attribute is used as the key in the context dictionary.
+    """
+    
+    def __init__(self, name: str):
+        self.name = name
+    
+    def __repr__(self) -> str:
+        return f"Var('{self.name}')"
+
+
+@dataclass
+class ShotTemplate:
+    """Template for creating shots with symbolic placeholders.
+    
+    Contains Var placeholders that get replaced with concrete values during rendering.
+    The render method produces a ShotIntent dict ready for server.lua.
+    """
+    
+    id_prefix: str
+    kind: Dict[str, Any]
+    pan_ms: int
+    dwell_ms: int
+    zoom: Optional[float] = None
+    tags: List[str] = field(default_factory=list)
+    
+    def render(self, tick: int, **ctx) -> ShotIntent:
+        """Replace Var placeholders with concrete values from context.
+        
+        Args:
+            tick: Game tick when shot should start
+            **ctx: Context dictionary with values for Var placeholders
+            
+        Returns:
+            ShotIntent dict ready for server.lua
+        """
+        # Create a copy of the kind dict to avoid modifying the template
+        rendered_kind = {}
+        for key, value in self.kind.items():
+            if isinstance(value, Var):
+                rendered_kind[key] = ctx[value.name]
+            else:
+                rendered_kind[key] = value
+        
+        # Generate unique shot ID
+        shot_id = f"{self.id_prefix}-{tick}"
+        
+        return {
+            "id": shot_id,
+            "when": {"start_tick": tick},
+            "kind": rendered_kind,
+            "pan_ms": self.pan_ms,
+            "dwell_ms": self.dwell_ms,
+            "zoom": self.zoom,
+            "tags": self.tags.copy(),
+        }
+
+
+@dataclass
+class ShotPolicy:
+    """Tunable defaults for shot behavior and timing."""
+    
+    movement_min_distance_tiles: float = 15
+    movement_window_n: int = 3
+    connection_padding_tiles: float = 25
+    pre_arrival_cut: bool = True
+
+
+# Shot library --------------------------------------------------------------
+
+class ShotLib:
+    """Library of common shot templates with Var placeholders."""
+    
+    @staticmethod
+    def cut_to_pos(zoom: float = 0.9) -> ShotTemplate:
+        """Instant cut to a position with optional zoom."""
+        return ShotTemplate(
+            id_prefix="cut-pos",
+            kind={"type": "focus_position", "pos": Var("pos")},
+            pan_ms=0,  # Instant cut
+            dwell_ms=0,
+            zoom=zoom,
+            tags=["cut", "position"]
+        )
+    
+    @staticmethod
+    def focus_pos(pan_ms: int = 1600, dwell_ms: int = 900, zoom: float = 1.0) -> ShotTemplate:
+        """Smooth pan to focus on a position."""
+        return ShotTemplate(
+            id_prefix="focus-pos",
+            kind={"type": "focus_position", "pos": Var("pos")},
+            pan_ms=pan_ms,
+            dwell_ms=dwell_ms,
+            zoom=zoom,
+            tags=["focus", "position"]
+        )
+    
+    @staticmethod
+    def zoom_to_bbox(pan_ms: int = 2200, dwell_ms: int = 1600, zoom: Optional[float] = None) -> ShotTemplate:
+        """Zoom to fit a bounding box with optional zoom level."""
+        return ShotTemplate(
+            id_prefix="zoom-bbox",
+            kind={"type": "zoom_to_fit", "bbox": Var("bbox")},
+            pan_ms=pan_ms,
+            dwell_ms=dwell_ms,
+            zoom=zoom,
+            tags=["zoom", "bbox", "overview"]
+        )
+    
+    @staticmethod
+    def follow_entity(duration_ms: int, dwell_ms: int = 1200, zoom: float = 1.0) -> ShotTemplate:
+        """Follow an entity for a specified duration."""
+        return ShotTemplate(
+            id_prefix="follow-entity",
+            kind={"type": "follow_entity", "entity_uid": Var("entity_uid")},
+            pan_ms=duration_ms,
+            dwell_ms=dwell_ms,
+            zoom=zoom,
+            tags=["follow", "entity"]
+        )
+    
+    @staticmethod
+    def orbit_entity(duration_ms: int, radius_tiles: int, degrees: int, dwell_ms: int, zoom: float) -> ShotTemplate:
+        """Orbit around an entity with specified parameters."""
+        return ShotTemplate(
+            id_prefix="orbit-entity",
+            kind={
+                "type": "orbit_entity",
+                "entity_uid": Var("entity_uid"),
+                "radius_tiles": radius_tiles,
+                "degrees": degrees
+            },
+            pan_ms=duration_ms,
+            dwell_ms=dwell_ms,
+            zoom=zoom,
+            tags=["orbit", "entity"]
+        )
+    
+    @staticmethod
+    def connection_two_point(padding: int = 25) -> List[ShotTemplate]:
+        """Create a two-shot sequence for connecting two points.
+        
+        Returns a list with [pre_zoom_to_fit_template, post_focus_template].
+        """
+        # Pre-shot: zoom to fit both points with padding
+        pre_template = ShotTemplate(
+            id_prefix="connection-pre",
+            kind={"type": "zoom_to_fit", "bbox": Var("connection_bbox")},
+            pan_ms=2200,
+            dwell_ms=800,
+            zoom=0.7,
+            tags=["connection", "pre", "overview"]
+        )
+        
+        # Post-shot: focus on the connection point
+        post_template = ShotTemplate(
+            id_prefix="connection-post",
+            kind={"type": "focus_position", "pos": Var("center")},
+            pan_ms=1600,
+            dwell_ms=1200,
+            zoom=1.0,
+            tags=["connection", "post", "focus"]
+        )
+        
+        return [pre_template, post_template]
+
+
+# Utility functions ---------------------------------------------------------
+
 def new_plan(player: int = 1, plan_id: Optional[str] = None) -> Dict[str, Any]:
     """Create a new plan dictionary with sensible defaults."""
-
     return {
         "plan_id": plan_id or f"auto-{uuid.uuid4().hex[:8]}",
         "player": player,
@@ -30,273 +205,51 @@ def new_plan(player: int = 1, plan_id: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
-# Camera heuristics ---------------------------------------------------------
-
+# Placeholder classes for runtime_to_cinema.py compatibility -----------------
 
 @dataclass
 class CameraPrefs:
-    """Collection of tunable preferences for the cinematographer."""
-
-    focus_pan_ms: int = 1600
-    focus_dwell_ms: int = 900
-    zoom_pan_ms: int = 2200
-    zoom_dwell_ms: int = 1600
-    follow_duration_ms: int = 5000
-    follow_dwell_ms: int = 1200
-    default_zoom: float = 1.0
-    overview_zoom: float = 0.6
+    """Placeholder for camera preferences."""
+    pass
 
 
 @dataclass
 class GameClock:
-    """Adaptor over replay ticks to typed fields."""
-
-    tick: int = 0
-
-    def advance(self, by: int) -> None:
-        self.tick += by
+    """Placeholder for game clock."""
+    pass
 
 
-# World observation ---------------------------------------------------------
-
-
-@dataclass
-class EventBookmark:
-    tick: int
-    position: Optional[tuple] = None
-    entity_name: Optional[str] = None
-    label: str = ""
-
-
-@dataclass
-class FirstsTracker:
-    seen_fuel: bool = False
-    seen_electricity: bool = False
-    seen_lab_online: bool = False
-
-
-@dataclass
 class Cinematographer:
-    prefs: CameraPrefs
-    clock: GameClock
-    events: List[ShotIntent] = field(default_factory=list)
-    firsts: FirstsTracker = field(default_factory=FirstsTracker)
-
-    def observe(self, event: Dict[str, Any], delta: Dict[str, Any]) -> None:
-        """Consume replay event + world delta.
-
-        The exact schema will depend on the replay pipeline; for now we rely on
-        a few well-known keys and gracefully ignore the rest.
-        """
-
-        tick = event.get("tick", self.clock.tick)
-        self.clock.tick = tick
-
-        kind = event.get("event") or event.get("type")
-
-        # Handle power-related events (first time detection)
-        if kind == "power_setup" and not self.firsts.seen_electricity:
-            self.firsts.seen_electricity = True
-            shot = self._zoom_to_fit(delta, label="first-power-setup")
-            self.events.append(shot)
-            print(f"  Created first-power-setup shot at tick {tick}")
-        elif kind == "power_online" and not self.firsts.seen_electricity:
-            self.firsts.seen_electricity = True
-            shot = self._zoom_to_fit(delta, label="first-electricity")
-            self.events.append(shot)
-            print(f"  Created first-electricity shot at tick {tick}")
-
-        # Handle fuel-related events
-        elif kind == "fuel_inserter" and not self.firsts.seen_fuel:
-            self.firsts.seen_fuel = True
-            shot = self._focus(event, label="first-fuel")
-            self.events.append(shot)
-            print(f"  Created first-fuel shot at tick {tick}")
-
-        # Handle research/lab events
-        elif kind == "research_setup" and not self.firsts.seen_lab_online:
-            self.firsts.seen_lab_online = True
-            shot = self._zoom_to_fit(delta, label="first-research-setup")
-            self.events.append(shot)
-            print(f"  Created first-research-setup shot at tick {tick}")
-        elif kind == "lab_online" and not self.firsts.seen_lab_online:
-            self.firsts.seen_lab_online = True
-            shot = self._focus(event, label="first-lab")
-            self.events.append(shot)
-            print(f"  Created first-lab shot at tick {tick}")
-
-        # Handle mining operations
-        elif kind == "mining_setup":
-            shot = self._focus(event, label="mining-setup")
-            self.events.append(shot)
-            print(f"  Created mining-setup shot at tick {tick}")
-        elif kind == "mining_started":
-            shot = self._focus(event, label="mining")
-            self.events.append(shot)
-            print(f"  Created mining shot at tick {tick}")
-
-        # Handle smelting operations
-        elif kind == "smelting_setup":
-            shot = self._zoom_to_fit(delta, label="smelting-setup")
-            self.events.append(shot)
-            print(f"  Created smelting-setup shot at tick {tick}")
-
-        # Handle assembly operations
-        elif kind == "assembly_setup":
-            shot = self._zoom_to_fit(delta, label="assembly-setup")
-            self.events.append(shot)
-            print(f"  Created assembly-setup shot at tick {tick}")
-
-        # Handle infrastructure connections
-        elif kind == "infrastructure_connection":
-            shot = self._zoom_to_fit(delta, label="infrastructure")
-            self.events.append(shot)
-            print(f"  Created infrastructure shot at tick {tick}")
-
-        # Handle specific connection types with better framing
-        elif kind == "belt_connection":
-            # For belt connections, use connection_bbox if available, otherwise factory_bbox
-            bbox = delta.get("connection_bbox") or delta.get("factory_bbox")
-            if bbox:
-                shot = self._zoom_to_fit(delta, label="belt-connection", bbox=bbox)
-                self.events.append(shot)
-                print(f"  Created belt-connection shot at tick {tick}")
-
-        elif kind == "power_connection":
-            # For power connections, show the full connection with padding
-            bbox = delta.get("connection_bbox") or delta.get("factory_bbox")
-            if bbox:
-                shot = self._zoom_to_fit(delta, label="power-connection", bbox=bbox)
-                self.events.append(shot)
-                print(f"  Created power-connection shot at tick {tick}")
-
-        elif kind == "fluid_connection":
-            # For fluid connections, show the full pipe network
-            bbox = delta.get("connection_bbox") or delta.get("factory_bbox")
-            if bbox:
-                shot = self._zoom_to_fit(delta, label="fluid-connection", bbox=bbox)
-                self.events.append(shot)
-                print(f"  Created fluid-connection shot at tick {tick}")
-
-        # Handle production milestones
-        elif kind == "production_milestone":
-            shot = self._zoom_to_fit(delta, label="production-milestone")
-            self.events.append(shot)
-            print(f"  Created production-milestone shot at tick {tick}")
-
-        # Handle general building placement
-        elif kind == "building_placed":
-            bbox = delta.get("factory_bbox")
-            if bbox:
-                shot = self._zoom_to_fit(delta, label="building")
-                self.events.append(shot)
-                print(f"  Created building shot at tick {tick}")
-
-        # Handle player movement (only for significant moves)
-        elif kind == "player_movement":
-            # Create shots for significant player movements
-            current_pos = event.get("position", [0, 0])
-            movement_distance = delta.get("movement_distance", 0)
-
-            # Ensure current_pos is a list/tuple with at least 2 elements
-            if current_pos and len(current_pos) >= 2:
-                # Use movement_bbox if available for better framing
-                if "movement_bbox" in delta:
-                    shot = self._zoom_to_fit(
-                        delta, label="player-movement", bbox=delta["movement_bbox"]
-                    )
-                    shot["zoom"] = 0.9  # Slightly zoomed out to show movement context
-                    shot["pan_ms"] = 2000  # Slower pan for movement shots
-                    shot["dwell_ms"] = 1500  # Shorter dwell for movement
-                else:
-                    shot = self._focus(event, label="player-movement")
-
-                self.events.append(shot)
-                print(
-                    f"  Created player-movement shot at tick {tick} (distance: {movement_distance:.1f})"
-                )
-                self._last_movement_pos = current_pos
-
-        # Handle legacy events for backwards compatibility
-        elif kind == "large_factory_change":
-            bbox = delta.get("factory_bbox")
-            if bbox:
-                shot = self._zoom_to_fit(delta, label="factory-scale")
-                self.events.append(shot)
-                print(f"  Created factory-scale shot at tick {tick}")
-        elif kind == "crafting_started":
-            shot = self._focus(event, label="crafting")
-            self.events.append(shot)
-            print(f"  Created crafting shot at tick {tick}")
-        elif kind == "print":
-            # For debugging - create a simple focus shot
-            shot = self._focus(event, label="debug")
-            self.events.append(shot)
-            print(f"  Created debug shot at tick {tick}")
-
-    # --- shot constructors -------------------------------------------------
-    def _focus(self, event: Dict[str, Any], label: str) -> ShotIntent:
-        position = event.get("position") or (0, 0)
-        if isinstance(position, dict):
-            pos = [position.get("x", 0), position.get("y", 0)]
-        else:
-            pos = list(position)
-
-        return {
-            "id": f"focus-{label}-{self.clock.tick}",
-            "pri": 10,
-            "when": {"start_tick": self.clock.tick},
-            "kind": {"type": "focus_position", "pos": pos},
-            "pan_ms": self.prefs.focus_pan_ms,
-            "dwell_ms": self.prefs.focus_dwell_ms,
-            "zoom": self.prefs.default_zoom,
-            "tags": [label],
-        }
-
-    def _zoom_to_fit(
-        self,
-        delta: Dict[str, Any],
-        label: str,
-        bbox: Optional[List[List[float]]] = None,
-    ) -> ShotIntent:
-        # Use provided bbox, or fall back to factory_bbox, or default
-        if bbox is None:
-            bbox = (
-                delta.get("factory_bbox")
-                or delta.get("connection_bbox")
-                or [[-40, -40], [40, 40]]
-            )
-
-        return {
-            "id": f"zoom-{label}-{self.clock.tick}",
-            "pri": 8,
-            "when": {"start_tick": self.clock.tick + 30},
-            "kind": {
-                "type": "zoom_to_fit",
-                "bbox": bbox,
-            },
-            "pan_ms": self.prefs.zoom_pan_ms,
-            "dwell_ms": self.prefs.zoom_dwell_ms,
-            "zoom": self.prefs.overview_zoom,
-            "tags": [label, "overview"],
-        }
-
-    # --- output ------------------------------------------------------------
-    def flush(self) -> List[ShotIntent]:
-        shots = self.events
+    """Placeholder for cinematographer class."""
+    
+    def __init__(self, camera_prefs: CameraPrefs, game_clock: GameClock):
+        self.camera_prefs = camera_prefs
+        self.game_clock = game_clock
         self.events = []
-        return shots
+    
+    def observe(self, event: dict, delta: dict):
+        """Placeholder for event observation."""
+        self.events.append((event, delta))
+    
+    def build_plan(self, player: int = 1) -> dict:
+        """Placeholder for plan building."""
+        return {
+            "player": player,
+            "start_zoom": 1.0,
+            "shots": []
+        }
 
-    def build_plan(self, player: int = 1) -> Dict[str, Any]:
-        plan = new_plan(player)
-        plan["shots"] = self.flush()
-        return plan
 
+# Module exports ------------------------------------------------------------
 
 __all__ = [
     "ShotIntent",
-    "CameraPrefs",
-    "GameClock",
-    "Cinematographer",
+    "Var",
+    "ShotTemplate", 
+    "ShotLib",
+    "ShotPolicy",
     "new_plan",
+    "Cinematographer",
+    "CameraPrefs", 
+    "GameClock",
 ]

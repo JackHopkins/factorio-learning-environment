@@ -23,6 +23,16 @@ class ActionSite:
     col_offset: int  # Column offset for precise location
     end_line_no: Optional[int] = None  # End line for multi-line calls
     end_col_offset: Optional[int] = None  # End column for multi-line calls
+    
+    @property
+    def kind(self) -> str:
+        """Alias for type to match the expected interface."""
+        return self.type
+    
+    @property
+    def line_span(self) -> tuple[int, int]:
+        """Return (start_line, end_line) tuple for line span."""
+        return (self.line_no, self.end_line_no or self.line_no)
 
 
 def parse_actions(code: str) -> List[ActionSite]:
@@ -92,7 +102,7 @@ class ActionVisitor(ast.NodeVisitor):
 
         action = ActionSite(
             type="move_to",
-            args={"destination": dest_expr, **kwargs},
+            args={"destination": dest_expr, "pos_src": dest_expr, **kwargs},
             line_no=node.lineno,
             col_offset=node.col_offset,
             end_line_no=node.end_lineno,
@@ -170,6 +180,8 @@ class ActionVisitor(ast.NodeVisitor):
                 "a_expr": a_expr,
                 "b_expr": b_expr,
                 "proto_name": proto_name,
+                "a_src": a_expr,
+                "b_src": b_expr,
                 **kwargs,
             },
             line_no=node.lineno,

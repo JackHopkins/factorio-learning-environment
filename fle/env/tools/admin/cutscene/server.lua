@@ -17,18 +17,16 @@ including payload validation, waypoint compilation, and lifecycle hooks per `cin
 ]]
 
 local serpent = serpent
-local CAPTURE_PATH_PREFIX = "cinema"
+local CAPTURE_PATH_PREFIX = nil  -- disabled: write to script-output root
 local CUTSCENE_VERSION = "1.1.110"
 
-local DEFAULT_CAPTURE = {
-    cadence = "once"
-}
+local DEFAULT_CAPTURE = nil
 
 local DEFAULT_CAPTURE_GLOBALS = {
     resolution = {1920, 1080},
     show_gui = false,
     quality = 100,
-    wait_for_finish = false
+    wait_for_finish = true
 }
 
 local runtime = {
@@ -500,8 +498,12 @@ local function handle_capture(player_index, plan_id, waypoint_index, waypoint, c
     local resolution = defaults.resolution or DEFAULT_CAPTURE_GLOBALS.resolution
     local quality = defaults.quality or DEFAULT_CAPTURE_GLOBALS.quality
     local show_gui = defaults.show_gui
+    local wait_for_finish = (capture_defaults and capture_defaults.wait_for_finish) or DEFAULT_CAPTURE_GLOBALS.wait_for_finish
 
-    local path = string.format("%s/%s/%06d.png", CAPTURE_PATH_PREFIX, plan_id or "plan", runtime.screenshot_counter)
+    -- Write directly to script-output root, no parent directory
+    local safe_plan = tostring(plan_id or "plan"):gsub("[^%w%-%._]", "_")
+    local path = string.format("%s_%06d.png", safe_plan, runtime.screenshot_counter)
+    -- Note: no directory components; files go to script-output/<path>
     runtime.screenshot_counter = runtime.screenshot_counter + 1
 
     local position = waypoint.position
@@ -518,6 +520,7 @@ local function handle_capture(player_index, plan_id, waypoint_index, waypoint, c
         path = path,
         force_render = true,
         allow_in_replay = true,
+        wait_for_finish = wait_for_finish,
     }
 
     if position then

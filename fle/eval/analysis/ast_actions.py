@@ -4,6 +4,10 @@ AST-based action parsing for Factorio programs.
 This module provides robust parsing of Factorio action calls using Python's AST
 module, supporting move_to, place_entity, place_entity_next_to, connect_entities,
 and insert_item actions.
+
+STATELESS EXTRACTOR: This module only extracts and normalizes actions. It does NOT
+decide camera shots or emit any cinema code. All shot decisions are made by the
+Cinematographer module.
 """
 
 from __future__ import annotations
@@ -15,7 +19,11 @@ from typing import Any, List, Optional
 
 @dataclass
 class ActionSite:
-    """Represents a detected action call in the code."""
+    """Represents a detected action call in the code.
+
+    This is the canonical representation of a Factorio action extracted from AST.
+    All field names are normalized to snake_case for consistency.
+    """
 
     type: str  # Action type: move_to, place_entity, etc.
     args: dict[str, Any]  # Parsed arguments specific to action type
@@ -23,24 +31,40 @@ class ActionSite:
     col_offset: int  # Column offset for precise location
     end_line_no: Optional[int] = None  # End line for multi-line calls
     end_col_offset: Optional[int] = None  # End column for multi-line calls
-    
+    program_id: Optional[str] = None  # Optional program identifier for ordering
+    created_at: Optional[float] = None  # Optional timestamp for ordering
+
     @property
     def kind(self) -> str:
         """Alias for type to match the expected interface."""
         return self.type
-    
+
     @property
     def line_span(self) -> tuple[int, int]:
         """Return (start_line, end_line) tuple for line span."""
         return (self.line_no, self.end_line_no or self.line_no)
 
+    def to_action_event(self) -> dict[str, Any]:
+        """Convert to normalized ActionEvent for Cinematographer consumption."""
+        return {
+            "type": self.type,
+            "args": self.args,
+            "line_span": self.line_span,
+            "program_id": self.program_id,
+            "created_at": self.created_at,
+        }
 
-def parse_actions(code: str) -> List[ActionSite]:
+
+def parse_actions(
+    code: str, program_id: Optional[str] = None, created_at: Optional[float] = None
+) -> List[ActionSite]:
     """
     Parse Factorio actions from Python code using AST.
 
     Args:
         code: Python code string to parse
+        program_id: Optional program identifier for ordering
+        created_at: Optional timestamp for ordering
 
     Returns:
         List of ActionSite objects representing detected actions
@@ -49,10 +73,62 @@ def parse_actions(code: str) -> List[ActionSite]:
         tree = ast.parse(code)
         visitor = ActionVisitor()
         visitor.visit(tree)
+
+        # Add metadata to all actions
+        for action in visitor.actions:
+            action.program_id = program_id
+            action.created_at = created_at
+
         return visitor.actions
     except SyntaxError:
         # If code has syntax errors, return empty list
         return []
+
+
+def normalize_prototype_name(prototype: str) -> str:
+    """Normalize prototype names to snake_case for consistency.
+
+    Args:
+        prototype: Raw prototype name from code
+
+    Returns:
+        Normalized snake_case prototype name
+    """
+    if not prototype:
+        return prototype
+
+    # Handle common variations
+    normalized = prototype.lower()
+
+    # Handle specific known variations
+    variations = {
+        "steamengine": "steam_engine",
+        "burnerminingdrill": "burner_mining_drill",
+        "electricminingdrill": "electric_mining_drill",
+        "stonefurnace": "stone_furnace",
+        "steelfurnace": "steel_furnace",
+        "electricfurnace": "electric_furnace",
+        "assemblymachine1": "assembly_machine_1",
+        "assemblymachine2": "assembly_machine_2",
+        "assemblymachine3": "assembly_machine_3",
+        "offshorepump": "offshore_pump",
+    }
+
+    return variations.get(normalized, normalized)
+
+
+def create_action_stream(actions: List[ActionSite]) -> List[dict[str, Any]]:
+    """Create a normalized ActionStream from ActionSite objects.
+
+    This is the canonical data contract for action data flowing to Cinematographer.
+
+    Args:
+        actions: List of ActionSite objects
+
+    Returns:
+        List of normalized action event dictionaries
+    """
+    return [action.to_action_event() for action in actions]
 
 
 class ActionVisitor(ast.NodeVisitor):
@@ -111,7 +187,7 @@ class ActionVisitor(ast.NodeVisitor):
         self.actions.append(action)
 
     def _parse_place_entity(self, node: ast.Call) -> None:
-        """Parse place_entity(prototype, **kwargs) calls."""
+        """Parse place_entity(prototype, position, **kwargs) calls."""
         if not node.args:
             return
 
@@ -119,12 +195,22 @@ class ActionVisitor(ast.NodeVisitor):
         prototype_arg = node.args[0]
         prototype_name = self._extract_prototype_name(prototype_arg)
 
+        # Get the position argument (second positional arg, if present)
+        position_expr = None
+        if len(node.args) >= 2:
+            position_expr = self._stringify_expression(node.args[1])
+
         # Extract keyword arguments
         kwargs = self._extract_keywords(node)
 
+        # Build args dict
+        args = {"prototype": prototype_name, **kwargs}
+        if position_expr:
+            args["position"] = position_expr
+
         action = ActionSite(
             type="place_entity",
-            args={"prototype": prototype_name, **kwargs},
+            args=args,
             line_no=node.lineno,
             col_offset=node.col_offset,
             end_line_no=node.end_lineno,
@@ -133,7 +219,7 @@ class ActionVisitor(ast.NodeVisitor):
         self.actions.append(action)
 
     def _parse_place_entity_next_to(self, node: ast.Call) -> None:
-        """Parse place_entity_next_to(prototype, target, **kwargs) calls."""
+        """Parse place_entity_next_to(prototype, target, position, **kwargs) calls."""
         if len(node.args) < 2:
             return
 
@@ -144,12 +230,22 @@ class ActionVisitor(ast.NodeVisitor):
         prototype_name = self._extract_prototype_name(prototype_arg)
         target_expr = self._stringify_expression(target_arg)
 
+        # Get the position argument (third positional arg, if present)
+        position_expr = None
+        if len(node.args) >= 3:
+            position_expr = self._stringify_expression(node.args[2])
+
         # Extract keyword arguments
         kwargs = self._extract_keywords(node)
 
+        # Build args dict
+        args = {"prototype": prototype_name, "target": target_expr, **kwargs}
+        if position_expr:
+            args["position"] = position_expr
+
         action = ActionSite(
             type="place_entity_next_to",
-            args={"prototype": prototype_name, "target": target_expr, **kwargs},
+            args=args,
             line_no=node.lineno,
             col_offset=node.col_offset,
             end_line_no=node.end_lineno,
@@ -192,7 +288,7 @@ class ActionVisitor(ast.NodeVisitor):
         self.actions.append(action)
 
     def _parse_insert_item(self, node: ast.Call) -> None:
-        """Parse insert_item(prototype, **kwargs) calls."""
+        """Parse insert_item(prototype, position, **kwargs) calls."""
         if not node.args:
             return
 
@@ -200,12 +296,22 @@ class ActionVisitor(ast.NodeVisitor):
         prototype_arg = node.args[0]
         prototype_name = self._extract_prototype_name(prototype_arg)
 
+        # Get the position argument (second positional arg, if present)
+        position_expr = None
+        if len(node.args) >= 2:
+            position_expr = self._stringify_expression(node.args[1])
+
         # Extract keyword arguments
         kwargs = self._extract_keywords(node)
 
+        # Build args dict
+        args = {"prototype": prototype_name, **kwargs}
+        if position_expr:
+            args["position"] = position_expr
+
         action = ActionSite(
             type="insert_item",
-            args={"prototype": prototype_name, **kwargs},
+            args=args,
             line_no=node.lineno,
             col_offset=node.col_offset,
             end_line_no=node.end_lineno,
@@ -269,16 +375,20 @@ class ActionVisitor(ast.NodeVisitor):
 
     def _extract_prototype_name(self, node: ast.AST) -> str:
         """Extract prototype name from Prototype.Name or similar patterns."""
+        raw_name = ""
         if isinstance(node, ast.Attribute):
             if isinstance(node.value, ast.Name) and node.value.id == "Prototype":
-                return node.attr
+                raw_name = node.attr
             else:
                 # Handle nested attributes like obj.Prototype.Name
-                return self._stringify_expression(node)
+                raw_name = self._stringify_expression(node)
         elif isinstance(node, ast.Name):
-            return node.id
+            raw_name = node.id
         else:
-            return self._stringify_expression(node)
+            raw_name = self._stringify_expression(node)
+
+        # Normalize the prototype name
+        return normalize_prototype_name(raw_name)
 
     def _extract_keywords(self, node: ast.Call) -> dict[str, Any]:
         """Extract keyword arguments from a function call."""

@@ -888,24 +888,7 @@ local function record_event(player_index, plan_id, event_type, payload)
     end
 end
 
-local function handle_capture(player_index, plan_id, waypoint_index, waypoint, defaults)
-    -- Simple implementation - just return a dummy path
-    return string.format("cinema_%d_%d_%d.png", player_index, plan_id, waypoint_index)
-end
-
-local function append_capture_to_waypoints(waypoints, capture)
-    -- Simple implementation - no capture for now
-end
-
-local function build_follow_segment(entity, duration_ms)
-    -- Simple implementation - return empty waypoints
-    return {}
-end
-
-local function build_orbit_segment(entity, duration_ms, radius_tiles, degrees)
-    -- Simple implementation - return empty waypoints  
-    return {}
-end
+-- Removed duplicate stubbed implementations - proper implementations exist above
 
 -- Runtime function assignments
 Runtime.ensure_player_state = ensure_player_state

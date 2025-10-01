@@ -137,26 +137,99 @@ class ShotPolicy:
     def build_move_establishments(
         self, action_stream: List[dict], world_context: dict
     ) -> List[ShotIntent]:
-        """Return establishing shots for move_to actions only (does not mutate state)."""
+        """Return pre-arrival establishing shots for move_to immediately preceding an anchor.
+
+        This is invoked *before* program execution by runtime_to_cinema when
+        PRE_ESTABLISH_MOVES is enabled. We only emit a shot when a `move_to`
+        is followed by an anchor action (place/connect/meaningful insert), and
+        only if the jump is large enough to matter. The shot frames the
+        destination *before* the teleport lands, so the viewer is oriented.
+        """
         shots: List[ShotIntent] = []
         if not self.establish_before_move:
             return shots
-        # Use sequence numbers for ordering instead of ticks
+
+        if not action_stream:
+            return shots
+
+        # Lightweight helpers from world context
+        player_pos = world_context.get("player_position", [0, 0])
+        resolve_pos = world_context.get("resolve_position")
+        bbox_two_points = world_context.get("bbox_two_points")
+
+        def _resolve(expr, fallback):
+            if callable(resolve_pos):
+                try:
+                    return resolve_pos(expr)
+                except Exception:
+                    pass
+            # Fallback to built-in resolver on cinematographer class (static-ish)
+            return Cinematographer._resolve_position(self, expr, fallback)
+
+        # Anchors we care about (arrival attaches to these)
+        ANCHORS = {
+            "place_entity",
+            "place_entity_next_to",
+            "connect_entities",
+            "insert_item",
+        }
+
         seq = 0
-        for action in action_stream:
-            if action.get("type") != "move_to":
+        for i, a in enumerate(action_stream):
+            if a.get("type") != "move_to":
                 continue
-            args = action.get("args", {})
-            dest = args.get("destination") or args.get("pos_src")
-            # Resolve destination using world resolvers or fallback
-            player_pos = world_context.get("player_position", [0, 0])
-            resolve_pos = world_context.get("resolve_position")
-            pos = resolve_pos(dest) if callable(resolve_pos) else player_pos
-            tpl = ShotLib.focus_pos(pan_ticks=84, dwell_ticks=42, zoom=1.0)
-            shot = tpl.render(seq=seq, pos=pos)
-            shot["tags"] = ["movement", "establish"]
+            # Look ahead to next non-move action within a tiny window
+            j = i + 1
+            next_anchor = None
+            while j < len(action_stream) and j <= i + self.movement_window_n:
+                t = action_stream[j].get("type")
+                if t != "move_to":
+                    if t in ANCHORS:
+                        next_anchor = action_stream[j]
+                    break
+                j += 1
+
+            if not next_anchor:
+                continue
+
+            dest_expr = (
+                a.get("args", {}).get("destination")
+                or a.get("args", {}).get("pos_src")
+                or a.get("args", {}).get("pos")
+                or player_pos
+            )
+            dest = _resolve(dest_expr, player_pos)
+
+            # Distance gate to avoid spam
+            dx, dy = dest[0] - player_pos[0], dest[1] - player_pos[1]
+            dist = (dx * dx + dy * dy) ** 0.5
+            if dist < self.movement_min_distance_tiles:
+                continue
+
+            # Choose a simple grammar without new knobs:
+            #  - far jump: quick overview bbox from current -> dest
+            #  - near/medium: arrival focus at dest
+            # We consider "far" as 2x the min-distance to avoid new policy fields.
+            FAR = self.movement_min_distance_tiles * 2.0
+
+            if dist >= FAR and callable(bbox_two_points):
+                bbox = bbox_two_points(
+                    player_pos, dest, pad=self.connection_padding_tiles
+                )
+                tpl = ShotLib.zoom_to_bbox(pan_ticks=96, dwell_ticks=54, zoom=None)
+                shot = tpl.render(seq=seq, bbox=bbox)
+                shot["tags"] = ["movement", "pre", "overview"]
+            else:
+                tpl = ShotLib.focus_pos(pan_ticks=84, dwell_ticks=48, zoom=1.0)
+                shot = tpl.render(seq=seq, pos=dest)
+                shot["tags"] = ["movement", "pre", "arrival"]
+
             shots.append(shot)
             seq += 1
+
+            # Update the local player_pos so multiple moves in a row are measured cumulatively
+            player_pos = dest
+
         return shots
 
 

@@ -22,6 +22,7 @@ class GymEnvironmentSpec:
     task_config_path: str
     description: str
     num_agents: int
+    enable_vision: bool = False
 
 
 class FactorioGymRegistry:
@@ -59,6 +60,7 @@ class FactorioGymRegistry:
         task_config_path: str,
         description: str,
         num_agents: int,
+        enable_vision: bool = False,
     ) -> None:
         """Register a new gym environment"""
         spec = GymEnvironmentSpec(
@@ -66,6 +68,7 @@ class FactorioGymRegistry:
             task_config_path=task_config_path,
             description=description,
             num_agents=num_agents,
+            enable_vision=enable_vision,
         )
 
         self._environments[task_key] = spec
@@ -139,7 +142,9 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         task.setup(instance)
 
         # Create and return the gym environment
-        env = FactorioGymEnv(instance=instance, task=task)
+        env = FactorioGymEnv(
+            instance=instance, task=task, enable_vision=spec.enable_vision
+        )
 
         return env
 

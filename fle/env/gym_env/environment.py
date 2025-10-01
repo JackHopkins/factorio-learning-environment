@@ -214,6 +214,7 @@ class FactorioGymEnv(gym.Env):
         task: Optional[TaskABC] = None,
         error_penalty: float = 0.0,
         pause_after_action: bool = True,
+        enable_vision: bool = False,
     ):
         super().__init__()
 
@@ -222,6 +223,7 @@ class FactorioGymEnv(gym.Env):
         self.error_penalty = error_penalty
         self.instance_speed = instance.get_speed()
         self.pause_after_action = pause_after_action
+        self.enable_vision = enable_vision
 
         # Define action space - a dictionary containing agent index and code
         self.action_space = spaces.Dict(
@@ -239,6 +241,8 @@ class FactorioGymEnv(gym.Env):
             {
                 # Raw text output from the last action
                 "raw_text": ObsSpaces.LONG_TEXT,
+                # Base64 encoded PNG image of the map (empty string if vision disabled)
+                "map_image": ObsSpaces.VERY_LONG_TEXT,
                 # Entities on the map - now as text representations
                 "entities": spaces.Sequence(
                     ObsSpaces.LONG_TEXT
@@ -275,6 +279,12 @@ class FactorioGymEnv(gym.Env):
     ) -> Observation:
         """Convert the current game state into a gym observation"""
         namespace = self.instance.namespaces[agent_idx]
+
+        # Render map image if vision is enabled
+        map_image = ""
+        if self.enable_vision:
+            map_image = namespace._render().to_base64()
+
         # Get entity observations
         entities = namespace.get_entities()
         entity_obs = [str(e) for e in entities]
@@ -354,6 +364,7 @@ class FactorioGymEnv(gym.Env):
 
         observation = Observation(
             raw_text=response.response if response else "",
+            map_image=map_image,  # Base64 encoded PNG or empty string
             entities=entity_obs,  # Convert entities to strings
             inventory=inventory_obs,
             research=research_obs,
@@ -422,7 +433,7 @@ class FactorioGymEnv(gym.Env):
 
         production_score, _ = namespace.score()
         # Calculate reward
-        if REWARD_OVERRIDE_KEY in task_success.meta:
+        if task_success and REWARD_OVERRIDE_KEY in task_success.meta:
             reward = task_success.meta[REWARD_OVERRIDE_KEY]
         else:
             reward = production_score - initial_score

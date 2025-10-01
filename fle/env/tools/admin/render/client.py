@@ -97,13 +97,7 @@ class Render(Tool):
         radius = min(radius, max_tiles_from_total)
 
         if position is None and bounding_box is None:
-            # Get player position from game state
-            position = Position(0, 0)  # Default fallback
-            player_data = self.game_state.get("player", {})
-            if "position" in player_data:
-                position = Position(
-                    player_data["position"]["x"], player_data["position"]["y"]
-                )
+            position = self.game_state.player_location
 
         # Ensure radius doesn't exceed max_tiles
         radius = min(radius, max_tiles)

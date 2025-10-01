@@ -253,21 +253,22 @@ local function compile_shot(player, plan, shot, defaults)
     local capture = shot.capture or defaults.capture
     local zoom = shot.zoom
 
+    -- Prefer explicit tick fields for timing if present (pan_ticks, dwell_ticks)
     if kind.type == "focus_entity" then
         local entity = entity_from_descriptor(kind)
         if entity and entity.valid then
             table.insert(waypoints, {
                 target = entity,
-                transition_time = ticks_from_ms(shot.pan_ms),
-                time_to_wait = ticks_from_ms(shot.dwell_ms),
+                transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
+                time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
                 zoom = zoom
             })
         else
             local fallback = position_from_kind(player, {type = "focus_position", pos = {player.position.x, player.position.y}})
             table.insert(waypoints, {
                 position = fallback,
-                transition_time = ticks_from_ms(shot.pan_ms),
-                time_to_wait = ticks_from_ms(shot.dwell_ms),
+                transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
+                time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
                 zoom = zoom
             })
         end
@@ -275,8 +276,8 @@ local function compile_shot(player, plan, shot, defaults)
         local pos = position_from_kind(player, kind)
         table.insert(waypoints, {
             position = pos,
-            transition_time = ticks_from_ms(shot.pan_ms),
-            time_to_wait = ticks_from_ms(shot.dwell_ms),
+            transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
+            time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
             zoom = zoom
         })
     elseif kind.type == "zoom_to_fit" then
@@ -284,8 +285,8 @@ local function compile_shot(player, plan, shot, defaults)
         local fit_zoom = compute_zoom_for_bbox(kind.bbox, plan.capture_defaults and plan.capture_defaults.resolution)
         table.insert(waypoints, {
             position = pos,
-            transition_time = ticks_from_ms(shot.pan_ms),
-            time_to_wait = ticks_from_ms(shot.dwell_ms),
+            transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
+            time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
             zoom = zoom or fit_zoom
         })
     elseif kind.type == "follow_entity" then
@@ -298,7 +299,8 @@ local function compile_shot(player, plan, shot, defaults)
                 end
             end
             if #waypoints > 0 then
-                waypoints[#waypoints].time_to_wait = ticks_from_ms(shot.dwell_ms)
+                -- Prefer explicit dwell_ticks if present
+                waypoints[#waypoints].time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms))
             end
         end
     elseif kind.type == "orbit_entity" then
@@ -311,7 +313,7 @@ local function compile_shot(player, plan, shot, defaults)
                 end
             end
             if #waypoints > 0 then
-                waypoints[#waypoints].time_to_wait = ticks_from_ms(shot.dwell_ms)
+                waypoints[#waypoints].time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms))
             end
         end
     end
@@ -654,6 +656,16 @@ local function on_cutscene_finished(event)
         Runtime.set_cooldown(event.player_index)
         local queue = ensure_queue(event.player_index)
         queue:set_active(nil)
+        -- Attempt to start the next queued plan immediately (without waiting for tick worker)
+        local next_entry = queue:pop()
+        if next_entry and Runtime.cooldown_ready(event.player_index) then
+            local ok2, err2 = start_plan(event.player_index, next_entry.plan)
+            if ok2 then
+                queue:set_active(next_entry)
+            else
+                record_event(event.player_index, next_entry.plan.plan_id or ("plan-" .. event.tick), "note", {tick = event.tick, message = err2 or "failed to start next plan"})
+            end
+        end
     end
 end
 

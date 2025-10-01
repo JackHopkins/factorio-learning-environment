@@ -33,6 +33,20 @@ local runtime = {
     screenshot_counter = 0
 }
 
+-- === Lightweight continuous frame capture state ===
+local frame_capture = {
+    active = false,
+    player_index = nil,
+    nth = 6,
+    dir = "cinema_seq",
+    res = {1920, 1080},
+    quality = 100,
+    show_gui = false,
+    frame = 0,
+    last_tick = 0,
+}
+
+
 local DEFAULT_COOLDOWN_TICKS = 120
 local MERGE_WINDOW_TICKS = 30
 local ENTITY_INVALIDATION_EVENTS = {
@@ -487,6 +501,74 @@ local function record_event(player_index, plan_id, event_type, payload)
     end
 end
 
+-- === Lightweight continuous capture from the player's current view ===
+local function start_frame_capture(opts)
+    opts = opts or {}
+    frame_capture.active = true
+    frame_capture.player_index = opts.player_index or frame_capture.player_index or 1
+    frame_capture.nth = math.max(1, opts.nth or frame_capture.nth or 6)
+    frame_capture.dir = tostring(opts.dir or frame_capture.dir or "cinema_seq")
+    frame_capture.res = opts.res or frame_capture.res or {1920, 1080}
+    frame_capture.quality = opts.quality or frame_capture.quality or 100
+    frame_capture.show_gui = opts.show_gui == true
+    frame_capture.frame = 0
+    frame_capture.last_tick = 0
+end
+
+local function stop_frame_capture()
+    if not frame_capture.active then return end
+    frame_capture.active = false
+    local ok, err = pcall(function()
+        if game and game.set_wait_for_screenshots_to_finish then
+            game.set_wait_for_screenshots_to_finish()
+        end
+    end)
+    if not ok then
+        -- Avoid crashes on headless or older builds; just note it.
+        if game and game.write_file then
+            game.write_file("cinema_capture.log", "flush failed: " .. tostring(err) .. "\n", true)
+        end
+    end
+end
+
+script.on_nth_tick(1, function(e)
+    if not frame_capture.active then return end
+    if e.tick - (frame_capture.last_tick or 0) < (frame_capture.nth or 6) then return end
+    frame_capture.last_tick = e.tick
+
+    local p = game.get_player(frame_capture.player_index or 1)
+    if not (p and p.valid) then return end
+    -- Optional: only record while in cutscene controller
+    if p.controller_type ~= defines.controllers.cutscene then return end
+
+    local path = string.format("%s/%06d.png", frame_capture.dir, frame_capture.frame)
+    frame_capture.frame = frame_capture.frame + 1
+
+    game.take_screenshot{
+        player = p,            -- capture exactly what the player sees
+        by_player = p.index,   -- only that peer writes to disk
+        path = path,
+        resolution = {frame_capture.res[1], frame_capture.res[2]},
+        quality = frame_capture.quality,
+        show_gui = frame_capture.show_gui,
+        force_render = true,
+        allow_in_replay = true,
+        wait_for_finish = false,
+    }
+end)
+
+-- Auto-stop when cutscene ends, so we always flush any remaining writes
+script.on_event(defines.events.on_cutscene_finished, function(event)
+    if frame_capture.active and event.player_index == (frame_capture.player_index or 1) then
+        stop_frame_capture()
+    end
+end)
+script.on_event(defines.events.on_cutscene_cancelled, function(event)
+    if frame_capture.active and event.player_index == (frame_capture.player_index or 1) then
+        stop_frame_capture()
+    end
+end)
+
 local function handle_capture(player_index, plan_id, waypoint_index, waypoint, capture_defaults)
     local capture = waypoint.capture
     if not capture then return nil end
@@ -675,6 +757,10 @@ local function on_cutscene_finished(event)
         Runtime.set_cooldown(event.player_index)
         local queue = ensure_queue(event.player_index)
         queue:set_active(nil)
+        -- Ensure continuous capture is stopped for this player
+        if frame_capture.active and (frame_capture.player_index == event.player_index) then
+            stop_frame_capture()
+        end
         -- Attempt to start the next queued plan immediately (without waiting for tick worker)
         local next_entry = queue:pop()
         if next_entry and Runtime.cooldown_ready(event.player_index) then
@@ -947,3 +1033,37 @@ for _, ev in ipairs(ENTITY_INVALIDATION_EVENTS) do
 end
 
 
+-- === Remote interface registration (allows re-binding after reloads) ===
+local function _register_cinema_interfaces()
+    -- Rebind capture interface to current closures
+    pcall(function() remote.remove_interface("cinema_capture") end)
+    remote.add_interface("cinema_capture", {
+        start = function(opts)
+            -- opts may include: player_index, nth, dir, res, quality, show_gui
+            start_frame_capture(opts or {})
+        end,
+        stop = function()
+            stop_frame_capture()
+        end,
+    })
+
+    -- Admin interface to rehook without full restart
+    pcall(function() remote.remove_interface("cinema_admin") end)
+    remote.add_interface("cinema_admin", {
+        rehook = function()
+            _register_cinema_interfaces()
+            return {ok = true, tick = game.tick}
+        end,
+        flush = function()
+            -- Force a stop+flush if active
+            stop_frame_capture()
+            return {ok = true}
+        end,
+        ping = function()
+            return {version = CUTSCENE_VERSION, tick = game.tick, active = frame_capture.active}
+        end,
+    })
+end
+
+-- Register on load
+_register_cinema_interfaces()

@@ -31,6 +31,9 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+import time
+from datetime import datetime
+
 import psycopg2
 from dotenv import load_dotenv
 
@@ -45,6 +48,51 @@ from fle.eval.analysis.cinematographer import Cinematographer, CameraPrefs, Game
 
 
 load_dotenv()
+
+
+# --- Remote (RCON) helpers for screenshot capture --------------------------
+
+
+def _lua_bool(b: bool) -> str:
+    return "true" if b else "false"
+
+
+def _start_frame_capture(
+    instance: FactorioInstance,
+    *,
+    player_index: int = 1,
+    nth: int = 6,
+    dir_prefix: str = "cinema_seq",
+    res: tuple[int, int] = (1920, 1080),
+    quality: int = 100,
+    show_gui: bool = False,
+    subdir: str | None = None,
+) -> None:
+    """Tell the mod-side remote interface to start continuous capture on a rendering client.
+    This captures the *player's current view* (cutscene camera), so we don't need to pass zoom/position.
+    """
+    w, h = res
+    # Build directory path inside client's script-output. Factorio will create nested dirs.
+    if subdir:
+        full_dir = f"{dir_prefix}/{subdir}"
+    else:
+        full_dir = dir_prefix
+    cmd = (
+        'remote.call("cinema_capture","start", '
+        f'{{player_index={player_index}, nth={nth}, dir="{full_dir}", res={{{w},{h}}}, quality={quality}, show_gui={_lua_bool(show_gui)}}})'
+    )
+    try:
+        instance.rcon_client.send_command(f"/c {cmd}")
+    except Exception as e:
+        print(f"[capture] start failed: {e}")
+
+
+def _stop_frame_capture(instance: FactorioInstance) -> None:
+    cmd = 'remote.call("cinema_capture","stop")'
+    try:
+        instance.rcon_client.send_command(f"/c {cmd}")
+    except Exception as e:
+        print(f"[capture] stop failed: {e}")
 
 
 # --- Module-level defaults -------------------------------------------------
@@ -336,6 +384,7 @@ def process_programs(
     programs: Iterable[tuple[int, Any]],
     conn,
     max_steps: int,
+    capture_opts: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Process programs and generate cinema shots using clean orchestration.
 
@@ -343,6 +392,7 @@ def process_programs(
     1. Extracts normalized actions using ast_actions
     2. Provides world context to Cinematographer
     3. Executes the resulting plan
+    Handles screenshot capture lifecycle if enabled via capture_opts.
     """
 
     print(
@@ -353,6 +403,16 @@ def process_programs(
     instance.reset()
     print("Environment reset complete")
     instance.first_namespace.enable_admin_tools_in_runtime(True)
+
+    capture_opts = capture_opts or {}
+    cap_enabled = capture_opts.get("enabled", True)
+    cap_player = int(capture_opts.get("player_index", 1))
+    cap_nth = int(capture_opts.get("nth", 6))
+    cap_dir_prefix = str(capture_opts.get("dir_prefix", "cinema_seq"))
+    cap_res = tuple(capture_opts.get("res", (1920, 1080)))
+    cap_quality = int(capture_opts.get("quality", 100))
+    cap_show_gui = bool(capture_opts.get("show_gui", False))
+    run_slug = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     screenshot_sequences: List[Dict[str, Any]] = []
     total_actions_processed = 0
@@ -527,20 +587,31 @@ def process_programs(
                 print(
                     f"\nExecuting cutscene after program {idx + 1} with {len(cin.shots)} shots (cadence={EXECUTE_EVERY_N})..."
                 )
-                try:
-                    plan = cin.build_plan(player=1)
-                    cutscene_result = instance.first_namespace.cutscene(plan)
-                    print(f"Cutscene execution result: {cutscene_result}")
+                plan = cin.build_plan(player=1)
+                # Start client-side continuous capture bound to this cutscene lifecycle
+                if cap_enabled:
+                    subdir = f"v{version}/batch_{(idx + 1) // EXECUTE_EVERY_N:04d}_{run_slug}"
+                    _start_frame_capture(
+                        instance,
+                        player_index=cap_player,
+                        nth=cap_nth,
+                        dir_prefix=cap_dir_prefix,
+                        res=cap_res,
+                        quality=cap_quality,
+                        show_gui=cap_show_gui,
+                        subdir=subdir,
+                    )
+                cutscene_result = instance.first_namespace.cutscene(plan)
+                print(f"Cutscene execution result: {cutscene_result}")
+                # Do not stop here; Lua auto-stops on on_cutscene_finished
+                # Give the event loop a moment to flush any remaining frames
+                time.sleep(0.5)
 
-                    # Clear shots after execution to avoid duplicates
-                    cin.shots = []
+                # Clear shots after execution to avoid duplicates
+                cin.shots = []
 
-                    # Small delay to make cutscenes more visible
-                    import time
-
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"Error executing cutscene: {e}")
+                # Small delay to make cutscenes more visible
+                time.sleep(2)
 
     # Build final plan from cinematographer
     plan = cin.build_plan(player=1)
@@ -550,8 +621,21 @@ def process_programs(
     if plan.get("shots"):
         print(f"\nExecuting final cutscene with {len(plan['shots'])} shots...")
         try:
+            if cap_enabled:
+                subdir = f"v{version}/final_{run_slug}"
+                _start_frame_capture(
+                    instance,
+                    player_index=cap_player,
+                    nth=cap_nth,
+                    dir_prefix=cap_dir_prefix,
+                    res=cap_res,
+                    quality=cap_quality,
+                    show_gui=cap_show_gui,
+                    subdir=subdir,
+                )
             cutscene_result = instance.first_namespace.cutscene(plan)
             print(f"Cutscene execution result: {cutscene_result}")
+            time.sleep(0.5)
         except Exception as e:
             print(f"Error executing cutscene: {e}")
 
@@ -596,6 +680,40 @@ def main():
         type=int,
         default=int(os.getenv("FACTORIO_SERVER_PORT", "27000")),
     )
+    parser.add_argument(
+        "--no-capture",
+        action="store_true",
+        help="Disable screenshot capture via remote interface",
+    )
+    parser.add_argument(
+        "--capture-nth",
+        type=int,
+        default=int(os.getenv("CINEMA_CAPTURE_NTH", "6")),
+        help="Capture every Nth tick (lower = more frames)",
+    )
+    parser.add_argument(
+        "--capture-dir",
+        default=os.getenv("CINEMA_CAPTURE_DIR", "cinema_seq"),
+        help="Base directory under client's script-output for frames",
+    )
+    parser.add_argument(
+        "--capture-width",
+        type=int,
+        default=int(os.getenv("CINEMA_CAPTURE_WIDTH", "1920")),
+    )
+    parser.add_argument(
+        "--capture-height",
+        type=int,
+        default=int(os.getenv("CINEMA_CAPTURE_HEIGHT", "1080")),
+    )
+    parser.add_argument(
+        "--capture-quality",
+        type=int,
+        default=int(os.getenv("CINEMA_CAPTURE_QUALITY", "100")),
+    )
+    parser.add_argument(
+        "--capture-show-gui", action="store_true", help="Include GUI in captured frames"
+    )
     args = parser.parse_args()
 
     output_base = Path(args.output_dir)
@@ -615,8 +733,17 @@ def main():
             instance.set_speed_and_unpause(1.0)
             instance.set_speed(1.0)
             cin = Cinematographer(CameraPrefs(), GameClock())
+            capture_opts = {
+                "enabled": not args.no_capture,
+                "player_index": 1,
+                "nth": args.capture_nth,
+                "dir_prefix": args.capture_dir,
+                "res": (args.capture_width, args.capture_height),
+                "quality": args.capture_quality,
+                "show_gui": args.capture_show_gui,
+            }
             report = process_programs(
-                version, cin, instance, programs, conn, args.max_steps
+                version, cin, instance, programs, conn, args.max_steps, capture_opts
             )
 
             out_dir = output_base / str(version)

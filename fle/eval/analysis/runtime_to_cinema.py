@@ -29,6 +29,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -103,7 +104,7 @@ def _stop_frame_capture(instance: FactorioInstance) -> None:
 POLICY = ShotPolicy()  # use defaults
 
 # Environment toggle for pre-establish move shots
-PRE_ESTABLISH_MOVES = os.getenv("PRE_ESTABLISH_MOVES", "0") in (
+PRE_ESTABLISH_MOVES = os.getenv("PRE_ESTABLISH_MOVES", "1") in (
     "1",
     "true",
     "TRUE",
@@ -540,6 +541,26 @@ def process_programs(
                 except Exception as e:
                     print(f"[warn] pre-establish cutscene failed: {e}")
 
+        # Create normalized action stream and world context before execution
+        action_stream = create_action_stream(action_sites)
+        world_context = build_world_context(instance, program)
+        world_context["pre_connect_done"] = pre_connect_done
+
+        # Give the cinematographer a chance to stage pre-program opening shots
+        cin.observe_action_stream(action_stream, world_context)
+
+        if idx == 0 and cin.shots:
+            opening_plan = cin.build_plan(player=1)
+            if opening_plan.get("shots"):
+                print(
+                    f"\nExecuting opening shots ({len(opening_plan['shots'])}) before replay..."
+                )
+                try:
+                    instance.first_namespace.cutscene(opening_plan)
+                except Exception as e:
+                    print(f"[warn] opening cutscene failed: {e}")
+                cin.reset_plan()
+
         # Execute the original program (no cinema code injection)
         print("Executing program...")
         response = instance.eval(program.code)
@@ -550,11 +571,11 @@ def process_programs(
         if response[1]:  # prints
             print(f"Program output: {response[1]}")
 
-        # Build world context for Cinematographer
+        # Refresh world context (positions may have changed after execution)
         world_context = build_world_context(instance, program)
         world_context["pre_connect_done"] = pre_connect_done
 
-        # Create normalized action stream
+        # Recreate normalized action stream (consistent with program results)
         action_stream = create_action_stream(action_sites)
 
         # Feed actions + world context to Cinematographer (the single brain)
@@ -610,7 +631,7 @@ def process_programs(
                 time.sleep(0.5)
 
                 # Clear shots after execution to avoid duplicates
-                cin.shots = []
+                cin.reset_plan()
 
                 # Small delay to make cutscenes more visible
                 time.sleep(2)
@@ -732,6 +753,53 @@ def _move_png_tree(src_root: Path, dest_root: Path) -> dict:
     return {"moved": moved, "dirs_created": created_dirs}
 
 
+def _render_video_from_frames(
+    frames_dir: Path,
+    output_dir: Path,
+    *,
+    script: Optional[Path] = None,
+    extra_args: Optional[List[str]] = None,
+) -> dict:
+    """Invoke the shell helper to turn a frame tree into MP4 artifacts."""
+
+    if not frames_dir.exists():
+        return {"ok": False, "error": f"frames dir {frames_dir} missing"}
+
+    if not any(frames_dir.rglob("*.png")):
+        return {"ok": False, "error": "no png frames"}
+
+    script_path = (
+        script or Path(__file__).resolve().parents[3] / "process_cinema_frames.sh"
+    )
+    if not script_path.exists():
+        return {"ok": False, "error": f"script {script_path} not found"}
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    cmd = ["bash", str(script_path), "--output", str(output_dir)]
+    if extra_args:
+        cmd.extend(extra_args)
+    cmd.append(str(frames_dir))
+
+    try:
+        result = subprocess.run(
+            cmd,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        return {"ok": False, "error": f"failed to invoke script: {exc}"}
+
+    return {
+        "ok": result.returncode == 0,
+        "returncode": result.returncode,
+        "stdout": result.stdout.strip(),
+        "stderr": result.stderr.strip(),
+        "command": cmd,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Replay programs with cinematics")
     parser.add_argument("versions", nargs="+", type=int)
@@ -783,6 +851,17 @@ def main():
         "--script-output-dir",
         default=os.getenv("FACTORIO_SCRIPT_OUTPUT", None),
         help="Override Factorio script-output directory (defaults to OS-specific path)",
+    )
+    parser.add_argument(
+        "--no-render",
+        action="store_true",
+        help="Skip running process_cinema_frames.sh after moving frames",
+    )
+    parser.add_argument(
+        "--render-arg",
+        action="append",
+        default=[],
+        help="Additional arguments to forward to process_cinema_frames.sh",
     )
     args = parser.parse_args()
 
@@ -844,6 +923,22 @@ def main():
                 print(
                     f"Moved {report_move['moved']} PNGs into {frames_out} and removed {src_version_root}"
                 )
+                if not args.no_render:
+                    videos_out = out_dir / "videos"
+                    render_report = _render_video_from_frames(
+                        frames_out, videos_out, extra_args=args.render_arg
+                    )
+                    if render_report.get("ok"):
+                        print(
+                            f"Rendered video(s) to {videos_out} using {render_report['command']}"
+                        )
+                    else:
+                        print(
+                            f"[warn] video render skipped/failed: {render_report.get('error', 'unknown')}"
+                        )
+                        stderr = render_report.get("stderr")
+                        if stderr:
+                            print(f"[render stderr]\n{stderr}")
             else:
                 print(
                     f"[info] no frames found under {src_version_root} (nothing to move)"

@@ -1,39 +1,25 @@
 --[[
-Cutscene Admin Tool wiring (Phase 0 discovery)
+Cutscene Admin Tool — minimal runtime for Factorio 1.1.110
 
-- During instance bootstrap `LuaScriptManager.load_tool_into_game("cutscene")` loads this file,
-  registering `global.actions.cutscene` in Factorio's runtime alongside the other admin tools.
-- Python callers will mirror the existing reset tool: `Controller.execute(...)` wraps a
-  `/silent-command` that invokes `global.actions.cutscene(plan_json, ...)`.  Via
-  `FactorioInstance.lua_script_manager.setup_tools` the admin controller is exposed on each
-  namespace as `_cutscene(...)`, so CLI/tests can trigger plans with
-  `instance.first_namespace._cutscene(plan_payload)`.
-- Replay pipelines already in FLE (e.g. `fle.eval.analysis.run_to_mp4`) drive programs through a
-  gym environment; Phase 3 will submit generated shot plans through the same `_cutscene`
-  controller while the Factorio runtime executes replays.
+This runtime focuses on a small, predictable surface:
+  * Python submits an ordered list of shot intents.
+  * We translate the intents into Factorio cutscene waypoints verbatim.
+  * Lifecycle events (started/waypoint/finished/cancelled) are recorded so the
+    caller can poll for status.
+  * A lightweight remote interface toggles screenshot capture on demand.
 
-Implementation note: this stub will be replaced with the full Cutscene action in Phase 1,
-including payload validation, waypoint compilation, and lifecycle hooks per `cinema.md`.
+Higher-level policies (debouncing, ordering, merging) live in Python. The Lua
+side deliberately avoids re-sorting or mutating the shot sequence.
 ]]
 
 local serpent = serpent
-local CAPTURE_PATH_PREFIX = nil  -- disabled: write to script-output root
 local CUTSCENE_VERSION = "1.1.110"
-
-local DEFAULT_CAPTURE = nil
-
-local DEFAULT_CAPTURE_GLOBALS = {
-    resolution = {1920, 1080},
-    show_gui = false,
-    quality = 100,
-    wait_for_finish = true
-}
 
 local runtime = {
     screenshot_counter = 0
 }
 
--- === Lightweight continuous frame capture state ===
+-- === Continuous frame capture state =====================================
 local frame_capture = {
     active = false,
     player_index = nil,
@@ -46,33 +32,28 @@ local frame_capture = {
     last_tick = 0,
 }
 
-
-local DEFAULT_COOLDOWN_TICKS = 120
-local MERGE_WINDOW_TICKS = 30
-local ENTITY_INVALIDATION_EVENTS = {
-    defines.events.on_entity_died,
-    defines.events.on_player_mined_entity,
-    defines.events.on_robot_mined_entity,
-    defines.events.script_raised_destroy,
-}
-
-local Runtime = {}
-
+-- === Globals =============================================================
 local function ensure_global()
     global.cinema = global.cinema or {}
     local g = global.cinema
-
     g.version = g.version or CUTSCENE_VERSION
-    g.capture_defaults = g.capture_defaults or DEFAULT_CAPTURE_GLOBALS
-    g.plans_by_player = g.plans_by_player or {}
-    g.queue_by_player = g.queue_by_player or {}
     g.active_plan_by_player = g.active_plan_by_player or {}
     g.reports_by_player = g.reports_by_player or {}
-    g.waypoint_captures = g.waypoint_captures or {}
     g.entity_cache = g.entity_cache or {}
     g.player_state = g.player_state or {}
+    return g
 end
 
+local function ensure_player_state(player_index)
+    local g = ensure_global()
+    g.player_state[player_index] = g.player_state[player_index] or {
+        last_zoom = nil,
+        last_position = nil,
+    }
+    return g.player_state[player_index]
+end
+
+-- === Utility helpers =====================================================
 local function deep_copy(value)
     if type(value) ~= "table" then return value end
     local copy = {}
@@ -129,9 +110,8 @@ local function resolve_player(player_ref)
         end
     end
 
-    -- Fallback to first connected player
     for _, player in pairs(game.players) do
-        if player and player.valid then
+        if player.valid then
             return player
         end
     end
@@ -140,9 +120,8 @@ end
 
 local function entity_from_uid(uid)
     if not uid then return nil end
-
-    ensure_global()
-    local cache = global.cinema.entity_cache
+    local g = ensure_global()
+    local cache = g.entity_cache
     local cached = cache[uid]
     if cached and cached.valid then
         return cached
@@ -158,7 +137,6 @@ local function entity_from_uid(uid)
             end
         end
     end
-
     return nil
 end
 
@@ -194,7 +172,7 @@ local function position_from_kind(player, kind)
     if kind.type == "focus_position" then
         return {x = kind.pos[1], y = kind.pos[2]}
     elseif kind.type == "focus_entity" or kind.type == "follow_entity" or kind.type == "orbit_entity" then
-    local entity = entity_from_descriptor(kind)
+        local entity = entity_from_descriptor(kind)
         if entity and entity.valid then
             return {x = entity.position.x, y = entity.position.y}
         end
@@ -251,36 +229,28 @@ local function build_orbit_segment(entity, duration_ms, radius_tiles, degrees)
     return waypoints
 end
 
-local function append_capture_to_waypoints(waypoints, capture)
-    if not capture then return waypoints end
-    for _, wp in ipairs(waypoints) do
-        wp.capture = capture
-    end
-    return waypoints
-end
-
-local function compile_shot(player, plan, shot, defaults)
+local function compile_shot(player, plan, shot)
     local waypoints = {}
     local kind = shot.kind
-    local capture = shot.capture or defaults.capture
     local zoom = shot.zoom
 
-    -- Prefer explicit tick fields for timing if present (pan_ticks, dwell_ticks)
     if kind.type == "focus_entity" then
         local entity = entity_from_descriptor(kind)
+        local transition = shot.pan_ticks or ticks_from_ms(shot.pan_ms)
+        local dwell = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)
         if entity and entity.valid then
             table.insert(waypoints, {
                 target = entity,
-                transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
-                time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
+                transition_time = transition,
+                time_to_wait = dwell,
                 zoom = zoom
             })
         else
             local fallback = position_from_kind(player, {type = "focus_position", pos = {player.position.x, player.position.y}})
             table.insert(waypoints, {
                 position = fallback,
-                transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
-                time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
+                transition_time = transition,
+                time_to_wait = dwell,
                 zoom = zoom
             })
         end
@@ -288,8 +258,8 @@ local function compile_shot(player, plan, shot, defaults)
         local pos = position_from_kind(player, kind)
         table.insert(waypoints, {
             position = pos,
-            transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
-            time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
+            transition_time = shot.pan_ticks or ticks_from_ms(shot.pan_ms),
+            time_to_wait = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms),
             zoom = zoom
         })
     elseif kind.type == "zoom_to_fit" then
@@ -297,8 +267,8 @@ local function compile_shot(player, plan, shot, defaults)
         local fit_zoom = compute_zoom_for_bbox(kind.bbox, plan.capture_defaults and plan.capture_defaults.resolution)
         table.insert(waypoints, {
             position = pos,
-            transition_time = (shot.pan_ticks or ticks_from_ms(shot.pan_ms)),
-            time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)),
+            transition_time = shot.pan_ticks or ticks_from_ms(shot.pan_ms),
+            time_to_wait = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms),
             zoom = zoom or fit_zoom
         })
     elseif kind.type == "follow_entity" then
@@ -311,8 +281,7 @@ local function compile_shot(player, plan, shot, defaults)
                 end
             end
             if #waypoints > 0 then
-                -- Prefer explicit dwell_ticks if present
-                waypoints[#waypoints].time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms))
+                waypoints[#waypoints].time_to_wait = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)
             end
         end
     elseif kind.type == "orbit_entity" then
@@ -325,86 +294,46 @@ local function compile_shot(player, plan, shot, defaults)
                 end
             end
             if #waypoints > 0 then
-                waypoints[#waypoints].time_to_wait = (shot.dwell_ticks or ticks_from_ms(shot.dwell_ms))
+                waypoints[#waypoints].time_to_wait = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms)
             end
         end
     end
 
-    append_capture_to_waypoints(waypoints, capture)
     return waypoints
 end
 
 local function compile_plan(player, plan)
     local waypoints = {}
-    local defaults = {capture = plan.capture_defaults or DEFAULT_CAPTURE}
+    local last_zoom = plan.start_zoom or ensure_player_state(player.index).last_zoom or player.zoom
 
-    -- Sort shots by sequence number if present, otherwise by insertion order
-    table.sort(plan.shots, function(a, b)
-        local seq_a = a.seq or a._seq or 0
-        local seq_b = b.seq or b._seq or 0
-        if seq_a == seq_b then
-            return (a.pri or 0) > (b.pri or 0)
-        end
-        return seq_a < seq_b
-    end)
-
-    local state = Runtime.ensure_player_state(player.index)
-    state.pending_segments = {}
     for _, shot in ipairs(plan.shots) do
-        Runtime.merge_with_previous(state, shot)
-    end
-
-    local merged_shots = state.pending_segments
-
-    local last_zoom = plan.start_zoom or state.last_zoom or player.zoom
-    for _, shot in ipairs(merged_shots) do
-        local shot_waypoints = compile_shot(player, plan, shot, defaults)
+        local shot_waypoints = compile_shot(player, plan, shot)
         for _, wp in ipairs(shot_waypoints) do
             if not wp.zoom then
                 wp.zoom = last_zoom
             else
+                wp.zoom = clamp_zoom(wp.zoom)
                 last_zoom = wp.zoom
             end
             table.insert(waypoints, wp)
+            if wp.position then
+                ensure_player_state(player.index).last_position = wp.position
+            elseif wp.target and wp.target.valid then
+                ensure_player_state(player.index).last_position = {x = wp.target.position.x, y = wp.target.position.y}
+            end
         end
     end
 
     return waypoints
 end
 
+-- === Validation ==========================================================
 local function validate_shot_intent(shot)
     if type(shot) ~= "table" then
         return false, "shot must be table"
     end
     if type(shot.id) ~= "string" then
         return false, "shot missing id"
-    end
-    if shot.when and shot.when.start_tick and type(shot.when.start_tick) ~= "number" then
-        return false, "when.start_tick must be number if present"
-    end
-    -- Either pan_ms/pan_ticks must be provided
-    if shot.pan_ms and type(shot.pan_ms) ~= "number" then
-        return false, "pan_ms must be number if present"
-    end
-    if shot.pan_ticks and type(shot.pan_ticks) ~= "number" then
-        return false, "pan_ticks must be number if present"
-    end
-    if not shot.pan_ms and not shot.pan_ticks then
-        return false, "either pan_ms or pan_ticks must be provided"
-    end
-    
-    -- Either dwell_ms/dwell_ticks must be provided
-    if shot.dwell_ms and type(shot.dwell_ms) ~= "number" then
-        return false, "dwell_ms must be number if present"
-    end
-    if shot.dwell_ticks and type(shot.dwell_ticks) ~= "number" then
-        return false, "dwell_ticks must be number if present"
-    end
-    if not shot.dwell_ms and not shot.dwell_ticks then
-        return false, "either dwell_ms or dwell_ticks must be provided"
-    end
-    if shot.zoom and type(shot.zoom) ~= "number" then
-        return false, "zoom must be number"
     end
     if type(shot.kind) ~= "table" or type(shot.kind.type) ~= "string" then
         return false, "kind.type required"
@@ -433,16 +362,13 @@ local function validate_shot_intent(shot)
         return false, "orbit requires radius_tiles and degrees"
     end
 
-    if shot.capture ~= nil then
-        if type(shot.capture) ~= "table" then
-            return false, "capture must be object"
-        end
-        if shot.capture.cadence and type(shot.capture.cadence) ~= "string" then
-            return false, "capture cadence must be string"
-        end
-        if shot.capture.n_ticks and type(shot.capture.n_ticks) ~= "number" then
-            return false, "capture n_ticks must be number"
-        end
+    local has_pan = shot.pan_ms or shot.pan_ticks
+    local has_dwell = shot.dwell_ms or shot.dwell_ticks
+    if not has_pan then return false, "timing.pan required" end
+    if not has_dwell then return false, "timing.dwell required" end
+
+    if shot.zoom and type(shot.zoom) ~= "number" then
+        return false, "zoom must be number"
     end
 
     return true
@@ -465,43 +391,53 @@ local function validate_plan(plan)
             return false, string.format("shot %s invalid: %s", shot.id or "<unknown>", err)
         end
     end
-
-    if plan.capture_defaults and type(plan.capture_defaults) ~= "table" then
-        return false, "capture_defaults must be table"
-    end
-
     return true
 end
 
-local function record_event(player_index, plan_id, event_type, payload)
-    ensure_global()
-    local reports = global.cinema.reports_by_player
-    reports[player_index] = reports[player_index] or {}
-    reports[player_index][plan_id] = reports[player_index][plan_id] or {
-        plan_id = plan_id,
-        player = player_index,
-        started_tick = nil,
-        finished = false,
-        cancelled = false,
-        waypoints = {},
-        notes = {}
-    }
-    local report = reports[player_index][plan_id]
+-- === Reporting ===========================================================
+local function ensure_report(player_index, plan_id)
+    local g = ensure_global()
+    g.reports_by_player[player_index] = g.reports_by_player[player_index] or {}
+    local reports = g.reports_by_player[player_index]
 
-    if event_type == "started" then
-        report.started_tick = payload.tick
-    elseif event_type == "finished" then
-        report.finished = true
-    elseif event_type == "cancelled" then
-        report.cancelled = true
-    elseif event_type == "waypoint" then
-        table.insert(report.waypoints, payload)
-    elseif event_type == "note" then
-        table.insert(report.notes, payload)
-    end
+    reports[plan_id] = reports[plan_id] or {
+        plan_id = plan_id,
+        state = "queued",
+        started_tick = nil,
+        finished_tick = nil,
+        cancelled_tick = nil,
+        waypoints = {},
+        notes = {},
+    }
+
+    return reports[plan_id]
 end
 
--- === Lightweight continuous capture from the player's current view ===
+local function record_event(player_index, plan_id, event_type, payload)
+    local report = ensure_report(player_index, plan_id)
+    payload = payload or {}
+
+    if event_type == "started" then
+        report.state = "running"
+        report.started_tick = payload.tick or game.tick
+    elseif event_type == "finished" then
+        report.state = "finished"
+        report.finished_tick = payload.tick or game.tick
+    elseif event_type == "cancelled" then
+        report.state = "cancelled"
+        report.cancelled_tick = payload.tick or game.tick
+    elseif event_type == "waypoint" then
+        table.insert(report.waypoints, payload)
+        return
+    elseif event_type == "note" then
+        table.insert(report.notes, payload)
+        return
+    end
+
+    table.insert(report.notes, {type = event_type, payload = deep_copy(payload), tick = game.tick})
+end
+
+-- === Frame capture =======================================================
 local function start_frame_capture(opts)
     opts = opts or {}
     frame_capture.active = true
@@ -524,7 +460,6 @@ local function stop_frame_capture()
         end
     end)
     if not ok then
-        -- Avoid crashes on headless or older builds; just note it.
         if game and game.write_file then
             game.write_file("cinema_capture.log", "flush failed: " .. tostring(err) .. "\n", true)
         end
@@ -538,15 +473,14 @@ script.on_nth_tick(1, function(e)
 
     local p = game.get_player(frame_capture.player_index or 1)
     if not (p and p.valid) then return end
-    -- Optional: only record while in cutscene controller
     if p.controller_type ~= defines.controllers.cutscene then return end
 
     local path = string.format("%s/%06d.png", frame_capture.dir, frame_capture.frame)
     frame_capture.frame = frame_capture.frame + 1
 
     game.take_screenshot{
-        player = p,            -- capture exactly what the player sees
-        by_player = p.index,   -- only that peer writes to disk
+        player = p,
+        by_player = p.index,
         path = path,
         resolution = {frame_capture.res[1], frame_capture.res[2]},
         quality = frame_capture.quality,
@@ -557,67 +491,21 @@ script.on_nth_tick(1, function(e)
     }
 end)
 
--- Auto-stop when cutscene ends, so we always flush any remaining writes
-script.on_event(defines.events.on_cutscene_finished, function(event)
-    if frame_capture.active and event.player_index == (frame_capture.player_index or 1) then
-        stop_frame_capture()
-    end
-end)
-script.on_event(defines.events.on_cutscene_cancelled, function(event)
-    if frame_capture.active and event.player_index == (frame_capture.player_index or 1) then
-        stop_frame_capture()
-    end
-end)
-
-local function handle_capture(player_index, plan_id, waypoint_index, waypoint, capture_defaults)
-    local capture = waypoint.capture
-    if not capture then return nil end
-
-    local player = game.players[player_index]
-    if not player or not player.valid then return nil end
-
-    local defaults = capture_defaults or DEFAULT_CAPTURE_GLOBALS
-    local resolution = defaults.resolution or DEFAULT_CAPTURE_GLOBALS.resolution
-    local quality = defaults.quality or DEFAULT_CAPTURE_GLOBALS.quality
-    local show_gui = defaults.show_gui
-    local wait_for_finish = (capture_defaults and capture_defaults.wait_for_finish) or DEFAULT_CAPTURE_GLOBALS.wait_for_finish
-
-    -- Write directly to script-output root, no parent directory
-    local safe_plan = tostring(plan_id or "plan"):gsub("[^%w%-%._]", "_")
-    local path = string.format("%s_%06d.png", safe_plan, runtime.screenshot_counter)
-    -- Note: no directory components; files go to script-output/<path>
-    runtime.screenshot_counter = runtime.screenshot_counter + 1
-
-    local position = waypoint.position
-    if waypoint.target and waypoint.target.valid then
-        position = waypoint.target.position
-    end
-
-    local params = {
-        player = player.index,
-        resolution = {resolution[1], resolution[2]},
-        zoom = waypoint.zoom,
-        show_gui = show_gui,
-        quality = quality,
-        path = path,
-        force_render = true,
-        allow_in_replay = true,
-        wait_for_finish = wait_for_finish,
-    }
-
-    if position then
-        params.position = position
-    end
-
-    game.take_screenshot(params)
-    return path
+local function resolve_plan_id(plan)
+    if plan.plan_id then return plan.plan_id end
+    return string.format("plan_%d", game.tick)
 end
 
+-- === Plan execution ======================================================
 local function start_plan(player_index, plan)
-    ensure_global()
+    local g = ensure_global()
     local player = game.players[player_index]
-    if not player then
+    if not (player and player.valid) then
         return false, "player missing"
+    end
+
+    if g.active_plan_by_player[player_index] then
+        return false, "plan already running"
     end
 
     local waypoints = compile_plan(player, plan)
@@ -626,7 +514,7 @@ local function start_plan(player_index, plan)
     end
 
     plan.__compiled = waypoints
-    global.cinema.active_plan_by_player[player_index] = plan
+    g.active_plan_by_player[player_index] = plan
 
     player.set_controller{
         type = defines.controllers.cutscene,
@@ -639,152 +527,43 @@ local function start_plan(player_index, plan)
         disable_camera_movements = false,
     }
 
-    record_event(player_index, plan.plan_id or ("plan-" .. game.tick), "started", {tick = game.tick})
-    Runtime.remember_view(player_index, waypoints[#waypoints])
-    Runtime.set_cooldown(player_index)
+    record_event(player_index, plan.plan_id, "started", {tick = game.tick})
+    ensure_player_state(player_index).last_zoom = waypoints[#waypoints].zoom
     return true
 end
 
-
-local MinimalQueue = {}
-MinimalQueue.__index = MinimalQueue
-
-function MinimalQueue.new()
-    return setmetatable({items = {}, active = nil, started_tick = nil}, MinimalQueue)
-end
-
-function MinimalQueue:push(plan)
-    table.insert(self.items, plan)
-end
-
-function MinimalQueue:pop()
-    if #self.items == 0 then return nil end
-    return table.remove(self.items, 1)
-end
-
-function MinimalQueue:peek()
-    return self.items[1]
-end
-
-function MinimalQueue:set_active(plan)
-    self.active = plan
-    self.started_tick = plan and plan.plan.start_tick or game.tick
-end
-
-function MinimalQueue:is_idle()
-    return self.active == nil
-end
-
-local function ensure_queue(player_index)
-    ensure_global()
-    local queue = global.cinema.queue_by_player[player_index]
-    if not queue or getmetatable(queue) ~= MinimalQueue then
-        queue = MinimalQueue.new()
-        global.cinema.queue_by_player[player_index] = queue
-    end
-    return queue
-end
-
-
-local function enqueue_plan(player_index, plan)
-    local queue = ensure_queue(player_index)
-    queue:push({
-        plan = plan,
-        enqueued_tick = game.tick,
-    })
-
-    if not global.cinema.active_plan_by_player[player_index] and Runtime.cooldown_ready(player_index) then
-        local candidate = queue:pop()
-        if candidate then
-            local ok, err = start_plan(player_index, candidate.plan)
-            if not ok then
-                return false, err
-            end
-            queue:set_active(candidate)
-            return true, nil
-        end
+local function cancel_active(player_index)
+    local g = ensure_global()
+    local plan = g.active_plan_by_player[player_index]
+    if not plan then
+        return {ok = false, error = "no active plan"}
     end
 
-    return true, nil
-end
-
-local function poll_queue(player_index)
-    ensure_global()
-    local queue = global.cinema.queue_by_player[player_index]
-    if not queue or #queue == 0 then
-        return nil
+    local player = game.players[player_index]
+    if player and player.valid then
+        player.exit_cutscene()
     end
-    return table.remove(queue, 1)
+
+    g.active_plan_by_player[player_index] = nil
+    record_event(player_index, plan.plan_id, "cancelled", {tick = game.tick})
+    stop_frame_capture()
+    return {ok = true, plan_id = plan.plan_id}
 end
 
-local function tick_worker()
-    ensure_global()
-    for player_index, queue in pairs(global.cinema.queue_by_player) do
-        queue = ensure_queue(player_index)
-        if queue:peek() then
-            local player = game.players[player_index]
-            if player and player.valid then
-                local active = global.cinema.active_plan_by_player[player_index]
-                if not active and Runtime.cooldown_ready(player_index) then
-                    local next_entry = queue:pop()
-                    if next_entry then
-                        local ok, err = start_plan(player_index, next_entry.plan)
-                        if ok then
-                            queue:set_active(next_entry)
-                        else
-                            record_event(player_index, next_entry.plan.plan_id or ("plan-" .. game.tick), "note", {tick = game.tick, message = err})
-                        end
-                    end
-                end
-            end
-        end
+local function fetch_report(plan_id, player_index)
+    local g = ensure_global()
+    local reports = g.reports_by_player[player_index]
+    if not reports then
+        return {ok = false, error = "no reports"}
     end
-end
-
-script.on_event(defines.events.on_tick, tick_worker)
-
-local function on_cutscene_started(event)
-    record_event(event.player_index, "cutscene", "started", {tick = event.tick})
-end
-
-local function on_cutscene_finished(event)
-    ensure_global()
-    local plan = global.cinema.active_plan_by_player[event.player_index]
-    if plan then
-        record_event(event.player_index, plan.plan_id or ("plan-" .. event.tick), "finished", {tick = event.tick})
-        global.cinema.active_plan_by_player[event.player_index] = nil
-        Runtime.remember_view(event.player_index, {zoom = plan.__compiled[#plan.__compiled].zoom, position = plan.__compiled[#plan.__compiled].position})
-        Runtime.set_cooldown(event.player_index)
-        local queue = ensure_queue(event.player_index)
-        queue:set_active(nil)
-        -- Ensure continuous capture is stopped for this player
-        if frame_capture.active and (frame_capture.player_index == event.player_index) then
-            stop_frame_capture()
-        end
-        -- Attempt to start the next queued plan immediately (without waiting for tick worker)
-        local next_entry = queue:pop()
-        if next_entry and Runtime.cooldown_ready(event.player_index) then
-            local ok2, err2 = start_plan(event.player_index, next_entry.plan)
-            if ok2 then
-                queue:set_active(next_entry)
-            else
-                record_event(event.player_index, next_entry.plan.plan_id or ("plan-" .. event.tick), "note", {tick = event.tick, message = err2 or "failed to start next plan"})
-            end
-        end
+    local report = reports[plan_id]
+    if not report then
+        return {ok = false, error = "plan not found"}
     end
+    return {ok = true, report = report}
 end
 
-local function on_cutscene_cancelled(event)
-    ensure_global()
-    local plan = global.cinema.active_plan_by_player[event.player_index]
-    if plan then
-        record_event(event.player_index, plan.plan_id or ("plan-" .. event.tick), "cancelled", {tick = event.tick})
-        global.cinema.active_plan_by_player[event.player_index] = nil
-        Runtime.set_cooldown(event.player_index)
-        ensure_queue(event.player_index):set_active(nil)
-    end
-end
-
+-- === Event handlers ======================================================
 local function normalise_waypoint_index(event)
     if event.waypoint_index ~= nil then
         return event.waypoint_index
@@ -798,34 +577,61 @@ local function normalise_waypoint_index(event)
     return 0
 end
 
-local function on_cutscene_waypoint(event)
-    ensure_global()
-    local plan = global.cinema.active_plan_by_player[event.player_index]
-    if not plan then
-        return
+local function on_cutscene_started(event)
+    local g = ensure_global()
+    local plan = g.active_plan_by_player[event.player_index]
+    if plan then
+        record_event(event.player_index, plan.plan_id, "started", {tick = event.tick})
     end
+end
+
+local function on_cutscene_finished(event)
+    local g = ensure_global()
+    local plan = g.active_plan_by_player[event.player_index]
+    if not plan then return end
+
+    record_event(event.player_index, plan.plan_id, "finished", {tick = event.tick})
+    ensure_player_state(event.player_index).last_zoom = plan.__compiled[#plan.__compiled].zoom
+    ensure_player_state(event.player_index).last_position = plan.__compiled[#plan.__compiled].position
+    g.active_plan_by_player[event.player_index] = nil
+
+    if frame_capture.active and frame_capture.player_index == event.player_index then
+        stop_frame_capture()
+    end
+end
+
+local function on_cutscene_cancelled(event)
+    cancel_active(event.player_index)
+end
+
+local function on_cutscene_waypoint(event)
+    local g = ensure_global()
+    local plan = g.active_plan_by_player[event.player_index]
+    if not plan then return end
 
     local idx = normalise_waypoint_index(event)
     local wp = plan.__compiled[idx + 1]
-    if not wp then
-        return
-    end
+    if not wp then return end
 
-    if wp.target and (not wp.target.valid) then
+    if wp.target and not wp.target.valid then
         wp.target = nil
-        wp.position = Runtime.ensure_player_state(event.player_index).last_position or {x = 0, y = 0}
+        wp.position = ensure_player_state(event.player_index).last_position or {x = 0, y = 0}
     end
 
-    local capture_defaults = plan.capture_defaults or global.cinema.capture_defaults
-    local path = handle_capture(event.player_index, plan.plan_id, idx, wp, capture_defaults)
-
-    record_event(event.player_index, plan.plan_id or ("plan-" .. event.tick), "waypoint", {
+    record_event(event.player_index, plan.plan_id, "waypoint", {
         index = idx,
         tick = event.tick,
-        captured = path and {path} or {}
     })
 
-    Runtime.remember_view(event.player_index, wp)
+    if wp.position then
+        ensure_player_state(event.player_index).last_position = wp.position
+    elseif wp.target and wp.target.valid then
+        ensure_player_state(event.player_index).last_position = {x = wp.target.position.x, y = wp.target.position.y}
+    end
+
+    if wp.zoom then
+        ensure_player_state(event.player_index).last_zoom = wp.zoom
+    end
 end
 
 script.on_event(defines.events.on_cutscene_started, on_cutscene_started)
@@ -833,6 +639,7 @@ script.on_event(defines.events.on_cutscene_finished, on_cutscene_finished)
 script.on_event(defines.events.on_cutscene_cancelled, on_cutscene_cancelled)
 script.on_event(defines.events.on_cutscene_waypoint_reached, on_cutscene_waypoint)
 
+-- === Payload handling ====================================================
 local function parse_payload(payload)
     if type(payload) == "table" then
         return payload
@@ -849,70 +656,30 @@ local function parse_payload(payload)
     end
 end
 
-local function resolve_plan_id(plan)
-    if plan.plan_id then
-        return plan.plan_id
+local function handle_plan_submission(plan)
+    local ok, err = validate_plan(plan)
+    if not ok then
+        return {ok = false, error = err}
     end
-    return string.format("plan_%d", game.tick)
-end
 
-local function queue_plan(plan)
     local player = resolve_player(plan.player)
     if not player then
         return {ok = false, error = "player not found"}
     end
 
-    local plan_id = resolve_plan_id(plan)
-    plan.plan_id = plan_id
-
-    local ok, err = enqueue_plan(player.index, plan)
-    if not ok then
-        return {ok = false, error = err or "failed to start plan"}
+    plan.plan_id = resolve_plan_id(plan)
+    local started, reason = start_plan(player.index, plan)
+    if not started then
+        return {ok = false, error = reason}
     end
 
-    return {ok = true, plan_id = plan_id, queued = true}
-end
-
-local function fetch_report(plan_id, player_index)
-    ensure_global()
-    local reports = global.cinema.reports_by_player[player_index]
-    if not reports then return {ok = false, error = "no reports"} end
-    local report = reports[plan_id]
-    if not report then return {ok = false, error = "plan not found"} end
-    return {ok = true, report = report}
-end
-
-local function cancel_active(player_index)
-    ensure_global()
-    local plan = global.cinema.active_plan_by_player[player_index]
-    if not plan then
-        return {ok = false, error = "no active plan"}
-    end
-
-    local player = game.players[player_index]
-    if player and player.valid then
-        player.exit_cutscene()
-        record_event(player_index, plan.plan_id, "cancelled", {tick = game.tick})
-    end
-    global.cinema.active_plan_by_player[player_index] = nil
-    return {ok = true}
-end
-
-
-local function dump_table(tbl)
-    return serpent.line(tbl, {comment = false})
+    return {ok = true, plan_id = plan.plan_id, started = true}
 end
 
 local function handle_action(payload)
-    local mode = payload.mode or "queue"
-
-    if mode == "queue" then
-        local plan = payload
-        local ok, err = validate_plan(plan)
-        if not ok then
-            return {ok = false, error = err}
-        end
-        return queue_plan(plan)
+    local mode = payload.mode or "play"
+    if mode == "play" or mode == "queue" then
+        return handle_plan_submission(payload)
     elseif mode == "report" then
         if not payload.plan_id or not payload.player then
             return {ok = false, error = "plan_id and player required"}
@@ -928,136 +695,46 @@ local function handle_action(payload)
             return {ok = false, error = "player not found"}
         end
         return cancel_active(player.index)
-    else
-        return {ok = false, error = "unknown mode"}
     end
+    return {ok = false, error = "unknown mode"}
 end
 
+global.actions = global.actions or {}
 global.actions.cutscene = function(raw_payload)
     ensure_global()
     local payload, err = parse_payload(raw_payload)
     if not payload then
         return {ok = false, error = err}
     end
-
-    local result = handle_action(payload)
-    return result
+    return handle_action(payload)
 end
 
-local function ensure_player_state(player_index)
-    ensure_global()
-    local g = global.cinema
-    g.player_state[player_index] = g.player_state[player_index] or {
-        cooldown_until = 0,
-        last_zoom = nil,
-        last_position = nil,
-        pending_segments = {},
-    }
-    return g.player_state[player_index]
-end
-
-local function set_cooldown(player_index)
-    local state = ensure_player_state(player_index)
-    state.cooldown_until = game.tick + DEFAULT_COOLDOWN_TICKS
-end
-
-local function cooldown_ready(player_index)
-    local state = ensure_player_state(player_index)
-    return game.tick >= (state.cooldown_until or 0)
-end
-
-local function remember_view(player_index, waypoint)
-    local state = ensure_player_state(player_index)
-    if waypoint.position then
-        state.last_position = waypoint.position
-    end
-    if waypoint.zoom then
-        state.last_zoom = waypoint.zoom
-    end
-end
-
-local function merge_with_previous(state, shot)
-    -- Simple implementation - just add to pending segments
-    table.insert(state.pending_segments, shot)
-end
-
-local function record_event(player_index, plan_id, event_type, payload)
-    ensure_global()
-    local g = global.cinema
-    g.reports_by_player[player_index] = g.reports_by_player[player_index] or {}
-    local reports = g.reports_by_player[player_index]
-    reports[plan_id] = reports[plan_id] or {
-        events = {},
-        state = "queued"
-    }
-    
-    local report = reports[plan_id]
-    table.insert(report.events, {
-        type = event_type,
-        tick = game.tick,
-        payload = payload or {}
-    })
-    
-    if event_type == "started" then
-        report.state = "running"
-    elseif event_type == "finished" or event_type == "cancelled" then
-        report.state = event_type
-    end
-end
-
--- Removed duplicate stubbed implementations - proper implementations exist above
-
--- Runtime function assignments
-Runtime.ensure_player_state = ensure_player_state
-Runtime.cooldown_ready = cooldown_ready
-Runtime.set_cooldown = set_cooldown
-Runtime.remember_view = remember_view
-Runtime.merge_with_previous = merge_with_previous
-
-local function on_entity_invalidated(event)
-    ensure_global()
-    for player_index, plan in pairs(global.cinema.active_plan_by_player) do
-        if plan and plan.__compiled then
-            for _, wp in ipairs(plan.__compiled) do
-                if wp.target and wp.target == event.entity then
-                    wp.target = nil
-                    wp.position = Runtime.ensure_player_state(player_index).last_position or {x = event.entity.position.x, y = event.entity.position.y}
-                end
-            end
-        end
-    end
-end
-
-for _, ev in ipairs(ENTITY_INVALIDATION_EVENTS) do
-    script.on_event(ev, on_entity_invalidated)
-end
-
-
--- === Remote interface registration (allows re-binding after reloads) ===
+-- === Remote interface ====================================================
 local function _register_cinema_interfaces()
-    -- Rebind capture interface to current closures
     pcall(function() remote.remove_interface("cinema_capture") end)
     remote.add_interface("cinema_capture", {
         start = function(opts)
-            -- opts may include: player_index, nth, dir, res, quality, show_gui
             start_frame_capture(opts or {})
+            return {ok = true}
         end,
         stop = function()
             stop_frame_capture()
+            return {ok = true}
+        end,
+        status = function()
+            return {
+                active = frame_capture.active,
+                player_index = frame_capture.player_index,
+                frame = frame_capture.frame,
+            }
         end,
     })
 
-    -- Admin interface to rehook without full restart
     pcall(function() remote.remove_interface("cinema_admin") end)
     remote.add_interface("cinema_admin", {
         rehook = function()
             _register_cinema_interfaces()
             return {ok = true, tick = game.tick}
-        end,
-        flush = function()
-            -- Force a stop+flush if active
-            stop_frame_capture()
-            return {ok = true}
         end,
         ping = function()
             return {version = CUTSCENE_VERSION, tick = game.tick, active = frame_capture.active}
@@ -1065,5 +742,4 @@ local function _register_cinema_interfaces()
     })
 end
 
--- Register on load
 _register_cinema_interfaces()

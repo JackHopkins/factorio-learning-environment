@@ -20,7 +20,9 @@ local serpent = serpent
 local CAPTURE_PATH_PREFIX = "cinema"
 local CUTSCENE_VERSION = "1.1.110"
 
-local DEFAULT_CAPTURE = nil
+local DEFAULT_CAPTURE = {
+    cadence = "once"
+}
 
 local DEFAULT_CAPTURE_GLOBALS = {
     resolution = {1920, 1080},
@@ -499,7 +501,6 @@ local function handle_capture(player_index, plan_id, waypoint_index, waypoint, c
     local quality = defaults.quality or DEFAULT_CAPTURE_GLOBALS.quality
     local show_gui = defaults.show_gui
 
-    -- Only create path and increment counter if we're actually going to take a screenshot
     local path = string.format("%s/%s/%06d.png", CAPTURE_PATH_PREFIX, plan_id or "plan", runtime.screenshot_counter)
     runtime.screenshot_counter = runtime.screenshot_counter + 1
 
@@ -523,18 +524,8 @@ local function handle_capture(player_index, plan_id, waypoint_index, waypoint, c
         params.position = position
     end
 
-    -- Only take screenshot if we have valid capture settings
-    local success, result = pcall(function()
-        return game.take_screenshot(params)
-    end)
-    
-    if success then
-        return path
-    else
-        -- If screenshot failed, decrement counter to avoid gaps
-        runtime.screenshot_counter = runtime.screenshot_counter - 1
-        return nil
-    end
+    game.take_screenshot(params)
+    return path
 end
 
 local function start_plan(player_index, plan)
@@ -737,10 +728,7 @@ local function on_cutscene_waypoint(event)
     end
 
     local capture_defaults = plan.capture_defaults or global.cinema.capture_defaults
-    local path = nil
-    if wp.capture then
-        path = handle_capture(event.player_index, plan.plan_id, idx, wp, capture_defaults)
-    end
+    local path = handle_capture(event.player_index, plan.plan_id, idx, wp, capture_defaults)
 
     record_event(event.player_index, plan.plan_id or ("plan-" .. event.tick), "waypoint", {
         index = idx,

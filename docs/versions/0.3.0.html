@@ -143,6 +143,12 @@
             gap: 25px;
             margin-top: 20px;
         }
+        .example-grid-single {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-top: 20px;
+        }
         @media (max-width: 768px) {
             .example-grid {
                 grid-template-columns: 1fr;
@@ -370,14 +376,14 @@
                         <div class="columns">
                             <div class="column has-text-left video-column">
                                 <div class="video-container">
-                                    <img src="../assets/videos/task_demo_1.gif" alt="Task Demo 1" width="100%">
+                                    <img src="../assets/0.3.0_vids/task_demos/task_demo_1.gif" alt="Task Demo 1" width="100%">
                                     <div class="video-overlay"><span>Agent Building Factory</span></div>
                                 </div>
                             </div>
 
                             <div class="column has-text-left video-column">
                                 <div class="video-container">
-                                    <img src="../assets/videos/task_demo_2.gif" alt="Task Demo 2" width="100%">
+                                    <img src="../assets/0.3.0_vids/task_demos/task_demo_2.gif" alt="Task Demo 2" width="100%">
                                     <div class="video-overlay"><span>Resource Extraction</span></div>
                                 </div>
                             </div>
@@ -385,14 +391,14 @@
                         <div class="columns">
                             <div class="column has-text-left video-column">
                                 <div class="video-container">
-                                    <img src="../assets/videos/task_demo_3.gif" alt="Task Demo 3" width="100%">
+                                    <img src="../assets/0.3.0_vids/task_demos/task_demo_3.gif" alt="Task Demo 3" width="100%">
                                     <div class="video-overlay"><span>Automated Production</span></div>
                                 </div>
                             </div>
 
                             <div class="column has-text-left video-column">
                                 <div class="video-container">
-                                    <img src="../assets/videos/task_demo_1.gif" alt="Task Demo 4" width="100%">
+                                    <img src="../assets/0.3.0_vids/task_demos/task_demo_1.gif" alt="Task Demo 4" width="100%">
                                     <div class="video-overlay"><span>Complex Logistics</span></div>
                                 </div>
                             </div>
@@ -461,17 +467,349 @@
 
     <section class="section">
         <div class="container is-max-widescreen">
+            <h2 class="title is-3"><span class="dvima">Environment Dynamics and Trajectory Example</span></h2>
+            <p style="font-size: 110%;">
+                Illustrative example of an agent building an automatic iron gear wheel factory. The agent iteratively debugs and refines its factory design through programmatic interaction with the game environment.
+            </p>
+
+            </br>
+
+            <div class="examples-section">
+                <div class="tabs-container">
+                    <button class="tab-button active" onclick="switchTab(event, 'example1')">Initial Mining Setup</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example2')">Assembling Machine Setup</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example3')">Logistics Attempt</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example4')">Final Success</button>
+                </div>
+
+                <div id="example1" class="tab-content active">
+                    <h3 class="title is-4">Initial Mining Setup</h3>
+                    <p>The agent sets up electric mining drills on an iron ore patch and connects them to electric furnaces for automated iron plate production.</p>
+
+                    <div class="example-grid">
+                        <div class="example-card">
+                            <h4>🎮 Game State (Before)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/15_17_engine_setup.gif" alt="Before state" class="example-image">
+                        </div>
+
+                        <div class="example-card">
+                            <h4>🎬 Game State (After)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/34_36_furnaces.gif" alt="After animation" class="example-image">
+                        </div>
+                    </div>
+
+                    <div class="example-grid-single">
+                        <div class="example-card">
+                            <h4>⚡ Action Program</h4>
+                            <pre><code class="language-python"># Find iron ore and setup mining
+iron_pos = <span class="hljs-built_in">nearest</span>(Resource.IronOre)
+<span class="hljs-built_in">print</span>(f"Found iron ore at {iron_pos}")
+
+steam_engine = <span class="hljs-built_in">get_entity</span>(Prototype.SteamEngine, <span class="hljs-built_in">Position</span>(x=2.5, y=8.5))
+# Create mining area - need 2 electric mining drills for enough iron throughput
+# Iron gear wheels need 2 iron plates each, and we need 16 per minute
+# So we need 32 iron plates per minute
+# Electric mining drill mines 30 ore per 60 seconds, so 2 drills = 60 ore/min
+drill_area_box = BuildingBox(
+    width=2 * Prototype.ElectricMiningDrill.WIDTH + 2,
+    height=Prototype.ElectricMiningDrill.HEIGHT + Prototype.ElectricFurnace.HEIGHT + 4
+)
+drill_coords = nearest_buildable(Prototype.ElectricMiningDrill, drill_area_box, iron_pos)
+print(f"Found buildable area for drills at {drill_coords.center}")
+
+# Place 2 electric mining drills in a line
+move_to(drill_coords.left_top)
+
+# Place 2 electric mining drills
+drills = []
+for i in range(2):
+    drill_pos = <span class="hljs-built_in">Position</span>(x=drill_coords.left_top.x + Prototype.ElectricMiningDrill.WIDTH * i, y=drill_coords.left_top.y)
+    drill = <span class="hljs-built_in">place_entity</span>(Prototype.ElectricMiningDrill, position=drill_pos, direction=Direction.DOWN)
+    drills.append(drill)
+
+    # Place furnace below each drill
+    furnace = <span class="hljs-built_in">place_entity_next_to</span>(Prototype.ElectricFurnace, drill.position, direction=Direction.DOWN)
+
+    # Connect to power
+    <span class="hljs-built_in">connect_entities</span>(steam_engine, drill, Prototype.MediumElectricPole)
+    <span class="hljs-built_in">connect_entities</span>(steam_engine, furnace, Prototype.MediumElectricPole)</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="example2" class="tab-content">
+                    <h3 class="title is-4">Assembling Machine Setup</h3>
+                    <p>The agent places an assembler to create iron gear wheels in the vicinity of the mining setup and hooks it up to power while the mining operation collects iron plates in chests.</p>
+
+                    <div class="example-grid">
+                        <div class="example-card">
+                            <h4>🎮 Game State (Before)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/48_50_furnaces.gif" alt="Before state" class="example-image">
+                        </div>
+
+                        <div class="example-card">
+                            <h4>🎬 Game State (After)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/68_70_assembler_inserters.gif" alt="After animation" class="example-image">
+                        </div>
+                    </div>
+
+                    <div class="example-grid-single">
+                        <div class="example-card">
+                            <h4>⚡ Action Program</h4>
+                            <pre><code class="language-python"># Need to place assembling machines away from the mining area
+# Iron gear wheels need 2 iron plates each, and we need 16 per minute
+# Assembling machine 2 crafts 90 iron gear wheels per 60 seconds, so 1 machine is enough
+
+# Find a position away from the mining setup (at least 20 tiles away)
+assembly_position = Position(x=15.5, y=90.0)  # 20+ tiles south of furnaces
+
+# Define building area for assembler with space for inserters
+assembly_box = BuildingBox(
+    width=Prototype.AssemblingMachine2.WIDTH + 2 * Prototype.Inserter.WIDTH + 4,
+    height=Prototype.AssemblingMachine2.HEIGHT + 4
+)
+assembly_coords = nearest_buildable(Prototype.AssemblingMachine2, assembly_box, assembly_position)
+
+# Place assembling machine
+move_to(assembly_coords.center)
+assembler = place_entity(Prototype.AssemblingMachine2, position=assembly_coords.center, direction=Direction.DOWN)
+print(f"Placed assembling machine at {assembler.position}")
+
+# Set recipe to iron gear wheels
+assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
+print(f"Set recipe to iron gear wheels")
+
+# Connect assembler to power
+steam_engine = get_entity(Prototype.SteamEngine, Position(x=2.5, y=8.5))
+poles = connect_entities(steam_engine, assembler, Prototype.MediumElectricPole)
+print(f"Connected assembler to power network")
+
+# Place input inserter on the right side
+input_inserter = place_entity_next_to(Prototype.Inserter, assembler.position, direction=Direction.RIGHT, spacing=0)
+input_inserter = rotate_entity(input_inserter, Direction.LEFT)
+print(f"Placed input inserter at {input_inserter.position}")
+
+# Place output inserter on the left side
+output_inserter = place_entity_next_to(Prototype.Inserter, assembler.position, direction=Direction.LEFT, spacing=0)
+print(f"Placed output inserter at {output_inserter.position}")
+
+# Connect inserters to power
+poles = connect_entities(steam_engine, input_inserter, Prototype.MediumElectricPole)
+poles = connect_entities(steam_engine, output_inserter, Prototype.MediumElectricPole)
+print(f"Connected inserters to power")</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="example3" class="tab-content">
+                    <h3 class="title is-4">Attempting to Connect Mining to Assembler</h3>
+                    <p>After trying to directly connect the mining output inserters to the assembler, the agent realizes that the chests are blocking the belts and removes them. This program below again produces an error because the agent did not also remove the chest being used as an input buffer at the assembler.</p>
+
+                    <div class="example-grid">
+                        <div class="example-card">
+                            <h4>🎮 Game State (Before)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/68_70_assembler_inserters.gif" alt="Before state" class="example-image">
+                        </div>
+
+                        <div class="example-card">
+                            <h4>🎬 Game State (After)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/86_88_inserter_nochests.gif" alt="After animation" class="example-image">
+                        </div>
+                    </div>
+
+                    <div class="example-grid-single">
+                        <div class="example-card">
+                            <h4>⚡ Action Program</h4>
+                            <pre><code># Let me remove the iron plate storage chests and connect belts directly from furnace inserters
+
+# First, pickup the chests that are blocking
+chest1 = get_entity(Prototype.WoodenChest, Position(x=15.5, y=76.5))
+chest2 = get_entity(Prototype.WoodenChest, Position(x=18.5, y=76.5))
+
+# Extract iron plates from chests before removing them
+move_to(chest1.position)
+extracted1 = extract_item(Prototype.IronPlate, chest1, quantity=351)
+print(f"Extracted {extracted1} iron plates from chest 1")
+
+move_to(chest2.position)
+extracted2 = extract_item(Prototype.IronPlate, chest2, quantity=351)
+print(f"Extracted {extracted2} iron plates from chest 2")
+
+# Pickup the chests
+pickup_entity(chest1)
+print(f"Removed chest at {chest1.position}")
+
+pickup_entity(chest2)
+print(f"Removed chest at {chest2.position}")
+
+# Now connect the furnace output inserters to the assembler input inserter with belts
+output_inserter1 = get_entity(Prototype.Inserter, Position(x=15.5, y=75.5))
+output_inserter2 = get_entity(Prototype.Inserter, Position(x=18.5, y=75.5))
+assembler_input_inserter = get_entity(Prototype.Inserter, Position(x=22.5, y=93.5))
+
+# Connect first inserter to assembler input
+belts1 = connect_entities(
+    output_inserter1,
+    assembler_input_inserter,
+    Prototype.TransportBelt
+)
+print(f"Connected first furnace output to assembler input: {belts1}")
+
+# Connect second inserter to main belt
+belts2 = connect_entities(
+    output_inserter2,
+    belts1,
+    Prototype.TransportBelt
+)
+print(f"Connected second furnace output to belt line: {belts2}")</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="example4" class="tab-content">
+                    <h3 class="title is-4">Final Success</h3>
+                    <p>The agent removes the problematic input buffer chest and connects the transport belt-based logistics network from miner to assembler, resulting in an automated iron gear wheel system which achieves the target throughput.</p>
+
+                    <div class="example-grid">
+                        <div class="example-card">
+                            <h4>🎮 Game State (Before)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/86_88_inserter_nochests.gif" alt="Before state" class="example-image">
+                        </div>
+
+                        <div class="example-card">
+                            <h4>🎬 Game State (After)</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/95_97_running.gif" alt="After animation" class="example-image">
+                        </div>
+                    </div>
+
+                    <div class="example-grid-single">
+                        <div class="example-card">
+                            <h4>⚡ Action Program</h4>
+                            <pre><code># The assembler input chest is also blocking. Let me remove it too and rethink the setup
+# I need to place belts first, then the input chest on the belt line
+
+# Remove the assembler input chest
+assembler_input_chest = get_entity(Prototype.WoodenChest, Position(x=23.5, y=93.5))
+move_to(assembler_input_chest.position)
+pickup_entity(assembler_input_chest)
+print(f"Removed input chest at {assembler_input_chest.position}")
+
+# Now connect the furnace output inserters to the assembler input inserter with belts
+output_inserter1 = get_entity(Prototype.Inserter, Position(x=15.5, y=75.5))
+output_inserter2 = get_entity(Prototype.Inserter, Position(x=18.5, y=75.5))
+assembler_input_inserter = get_entity(Prototype.Inserter, Position(x=22.5, y=93.5))
+
+print(f"Connecting from inserter 1 at {output_inserter1.position} to assembler input at {assembler_input_inserter.position}")
+
+# Connect first inserter to assembler input
+belts1 = connect_entities(
+    output_inserter1,
+    assembler_input_inserter,
+    Prototype.TransportBelt
+)
+print(f"Connected first furnace output to assembler input: {belts1}")
+
+# Connect second inserter to main belt
+belts2 = connect_entities(
+    output_inserter2,
+    belts1,
+    Prototype.TransportBelt
+)
+print(f"Connected second furnace output to belt line: {belts2}")
+
+# Refuel boiler
+boiler = get_entity(Prototype.Boiler, Position(x=-4.0, y=3.5))
+move_to(boiler.position)
+boiler = insert_item(Prototype.Coal, boiler, quantity=30)
+print(f"Refueled boiler")
+
+print("Belt connections complete - waiting for iron flow")</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            </br>
+            <h4 class="title is-5">Observation Space</h4>
+            <p style="font-size: 110%; line-height: 1.6;">
+                At each step, agents receive a structured <code>Observation</code> object containing comprehensive information about the game state and with fields as described below:
+            </p>
+
+            <table class="table is-striped is-fullwidth" style="font-size: 105%; margin: 20px 0;">
+                <thead>
+                    <tr style="background-color: #2196F3; color: white;">
+                        <th style="padding: 12px; width: 25%;">Field</th>
+                        <th style="padding: 12px;">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>raw_text</code></strong></td>
+                        <td style="padding: 10px;">Standard output and error messages from the last action program execution, annotated with source code line numbers</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>entities</code></strong></td>
+                        <td style="padding: 10px;">List of all entities in the game world with their properties (position, type, orientation, inventory contents, warnings, etc.)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>inventory</code></strong></td>
+                        <td style="padding: 10px;">The agent's personal inventory with item types and quantities</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>research</code></strong></td>
+                        <td style="padding: 10px;">Technology tree state with researched technologies, current research progress, and available technologies with prerequisites and costs</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>game_info</code></strong></td>
+                        <td style="padding: 10px;">Game timing information (tick count, elapsed time, game speed)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>flows</code></strong></td>
+                        <td style="padding: 10px;">Production statistics tracking input/output rates, crafted items, harvested resources, and optional price lists for economic evaluation</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>messages</code></strong></td>
+                        <td style="padding: 10px;">Inter-agent communication messages for multi-agent coordination scenarios</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>task_info</code></strong></td>
+                        <td style="padding: 10px;">Task metadata including goal description, instructions, task identifier, and maximum trajectory length</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>task_verification</code></strong></td>
+                        <td style="padding: 10px;">Task-specific verification results indicating success/failure and metadata about progress toward objectives</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>serialized_functions</code></strong></td>
+                        <td style="padding: 10px;">Previously defined helper functions and abstractions stored in the agent's namespace for reuse across episodes</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;"><strong><code>map_image</code></strong></td>
+                        <td style="padding: 10px;">Base64-encoded PNG rendering of the factory layout for visual agents (optional)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="font-size: 110%; line-height: 1.6;">
+                This rich observation space enables agents to maintain spatial awareness, track production metrics, debug errors, and plan multi-step automation strategies. The combination of structured data and human-readable text provides both programmatic access and interpretability. Agent implementations can utilize and format these fields as needed. The agent harness used for evaluation concatenates these fields into a formatted markdown string.
+            </p>
+            </br>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-widescreen">
             <h2 class="title is-3"><span class="dvima">Benchmark Methodology and Results</span></h2>
             <p style="font-size: 110%;">
-                For this release we replicated the methodology from the original FLE paper for the <b>lab-play</b> setting with some minor modifications.
+                For this release we replicated the methodology from the original FLE paper for the <b>lab-play</b> setting to evaluate the strongest general-purpose proprietary and open source models as of September 2025. The standardized agent harness is minimal: it continuously appends environment interactions to a single conversational history and, when the token budget is nearing exhaustion, invokes the LLM to produce a concise, factual summary that replaces the older history so the agent can continue reasoning with a compressed representation of past interactions. We do not report results for agents with backtracking and/or reflection logic as we did in FLE 0.2.0 and we encourage the community to experiment with more advanced agent designs.
             </p>
             <ul style="font-size: 110%; list-style: disc; margin-left: 40px;">
-                <li>Evaluated the strongest general-purpose proprietary and open source models as of September 2025.</li>
+                <li>System prompts are the same as in FLE 0.2.0, including documentation of the FLE API, Factorio recipes, and a guide describing common patterns.</li>
                 <li>Agents have a starting inventory with useful items for building functional factories.</li>
-                <li>Agent harness is the same as previous versions: no backtracking or reflection logic.</li>
                 <li>The task objective is to achieve production throughput targets: 16 per minute for solid items and 250 per minute for fluids.</li>
-                <li>Trajectories are run for 64 program-level actions (reduced from 128).</li>
-                <li>Reasoning is enabled at default settings for all models (previously was without reasoning).</li>
+                <li>Trajectories are run for 64 program-level actions and models are prompted to make their programs modular and at most 50 lines of code.</li>
+                <li>Success is measured with a pass@8 criteria to control for variance.
+                <li>Results shown are the best performance between reasoning enabled and disabled (there were minimal differences between the two settings across all models).</li>
             </ul>
 
             <div class="heatmap-container">
@@ -482,518 +820,58 @@
             </br>
             <h3 class="subtitle is-4"><span class="dvima">Discussion</span></h3>
             <p style="font-size: 110%;">
-                We tested with a basic agent harness to assess the models themselves. In our previous release we implemented a backtracking agent which achieved better results due to having a cleaned context. We encourage the community to create agent harnesses which improve upon the baseline model performance.
+                The observed performance gap between the strongest and weakest models in the lab-play setting demonstrates that the evaluation is sensitive to meaningful differences in capabilities. Open source models have caught up to the SoTA performance level observed in FLE 0.2.0 with successes in electronic circuits, steel plate, sulfur and plastic production. Meanwhile, the frontier has advanced substantially, with Claude Opus 4.1 completing tasks with over a dozen ingredient dependencies. We also show the cases in which agents managed to produce some of the target entity without meeting the target threshold as partial success, indicating a relatively smooth gradient of difficulty as the target entity resource requirements grow exponentially.
             </p>
             </br>
-            <h4 class="title is-5">Key Findings</h4>
-            <ul style="font-size: 110%;">
-                <li><strong>Throughput vs Automation:</strong> Agents are achieving throughput as per our environment's measurements but it's not really automated for the harder tasks.</li>
-                <li><strong>Success Rate Reporting:</strong> We still report the success rates in order to enable comparisons with previous models and environment releases.</li>
-                <li><strong>Measurement Challenges:</strong> More systematic ways to measure throughput are needed in order to address the buffer problem, unlikely that it can be solved statically.</li>
-            </ul>
+            <p style="font-size: 110%; line-height: 1.6;">
+                While agents achieve throughput according to environment measurements, many rely on semi-manual strategies rather than building robust automation for more complex tasks. Models exhibit reward-hacking tendencies by shuttling resources manually instead of constructing functional logistics chains. Although this achieves progress toward the target, it creates a local optimum where agents avoid the more difficult but necessary step of full automation. Throughput is challenging to measure consistently due to buffering effects—agents can store items in intermediate buffers (like chests or belts) which temporarily satisfy throughput checks without true sustained production. Higher throughput targets would make it impossible to pass with manual logistics, forcing agents to build proper automation. However, we report results with the same settings as v0.2.0 to enable direct comparisons across versions.
+            </p>
             </br>
+            
             <h4 class="title is-5">Error Analysis Breakdown</h4>
-            <p style="font-size: 110%;">Common error patterns by category:</p>
+
+
+            <p style="font-size: 110%;">Common failure patterns can be grouped by type:</p>
             <ul style="font-size: 110%;">
-                <li><strong>Invalid Python:</strong> Can't handle basic instructions</li>
-                <li><strong>Type Errors:</strong> TypeError, AttributeError, ValueError - don't understand tool docs well enough</li>
-                <li><strong>Inventory Management:</strong> insert_item not having enough in the inventory - not reasoning correctly about game state</li>
+                <li><strong>Syntactic and Execution Errors:</strong> Invalid Python code, syntax mistakes, or other execution errors that prevent actions from running at all. These errors represent a major category of failures as the agents did not follow the high-level instructions.</li>
+                <li><strong>API Misunderstandings:</strong> Misuse of FLE commands or tool arguments (e.g., incorrect parameters, misunderstanding documentation), leading to errors in the execution of the action program. These errors imply difficulty to correctly use given context.</li>
+                <li><strong>State Tracking Failures:</strong> Incorrect reasoning about the current game state, such as attempting to insert items that are not present in the inventory. These errors are the most common category of failures as the game state is dynamic and challenging to model implicitly.</li>
+                <li><strong>Planning and Control Errors:</strong> Even when primitives are known, agents fail to chain actions coherently, resulting in inefficient or incomplete trajectories. <em>Note: This category cannot be reliably quantified through automated trajectory analysis, as it requires evaluating higher-level strategic coherence rather than individual error types.</em></li>
             </ul>
             </br>
-            <strong>Spatial Reasoning Challenges:</strong> Spatial reasoning is the biggest challenge for the base models. Models don't pick up enough things off the map when they're misplaced. This causes cascading errors and exacerbates issues with spatial reasoning. Agents struggle to maintain accurate mental models of the factory layout and frequently make placement errors.
-        </br>
-        <strong>Limited Tool Extension:</strong> Models don't define their own functions and classes - instead relying on the out-of-the-box tools that are part of core FLE. Despite having access to a Python namespace for defining helper functions, agents rarely leverage this capability to build abstractions that could simplify complex tasks.
-        </br>
-        </div>
-    </section>
-
-    <section class="section">
-        <div class="container is-max-widescreen">
-            <h2 class="title is-3"><span class="dvima">Agent Trajectory Example</span></h2>
-            <p style="font-size: 110%;">
-                Illustrative example of an agent building an automatic iron gear wheel factory. The agent iteratively debugs and refines its factory design through programmatic interaction with the game environment.
-            </p>
-
-            <div class="examples-section">
-                <div class="tabs-container">
-                    <button class="tab-button active" onclick="switchTab(event, 'example1')">Step 3: Initial Mining Setup</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example2')">Step 5: Power Connection Fix</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example3')">Step 9: Inserter Power Debug</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example4')">Step 10: Belt Connection Error</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example5')">Step 13: Final Success</button>
-                </div>
-
-                <div id="example1" class="tab-content active">
-                    <h3 class="title is-4">Step 3: Initial Mining Setup</h3>
-                    <p>The agent sets up electric mining drills on an iron ore patch and connects them to electric furnaces for automated iron plate production.</p>
-
-                    <div class="example-grid">
-                        <div class="example-card">
-                            <h4>⚡ Action Program</h4>
-                            <pre><code class="language-python"># Find iron ore and setup mining
-iron_pos = <span class="hljs-built_in">nearest</span>(Resource.IronOre)
-<span class="hljs-built_in">print</span>(f"Found iron ore at {iron_pos}")
-
-steam_engine = <span class="hljs-built_in">get_entity</span>(Prototype.SteamEngine,
-                         <span class="hljs-built_in">Position</span>(x=2.5, y=8.5))
-
-# Place 2 electric mining drills
-drills = []
-for i in range(2):
-    drill_pos = <span class="hljs-built_in">Position</span>(
-        x=drill_coords.left_top.x +
-          Prototype.ElectricMiningDrill.WIDTH * i,
-        y=drill_coords.left_top.y
-    )
-    drill = <span class="hljs-built_in">place_entity</span>(Prototype.ElectricMiningDrill,
-                        position=drill_pos,
-                        direction=Direction.DOWN)
-    drills.append(drill)
-
-    # Place furnace below each drill
-    furnace = <span class="hljs-built_in">place_entity_next_to</span>(
-        Prototype.ElectricFurnace,
-        drill.position,
-        direction=Direction.DOWN)
-
-    # Connect to power
-    <span class="hljs-built_in">connect_entities</span>(steam_engine, drill,
-                    Prototype.MediumElectricPole)
-    <span class="hljs-built_in">connect_entities</span>(steam_engine, furnace,
-                    Prototype.MediumElectricPole)</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>📊 Observation Result</h4>
-                            <pre><code>### Inventory
-- transport-belt: 500
-- medium-electric-pole: 491
-- pipe: 481
-- coal: 480
-- electric-mining-drill: 48
-- electric-furnace: 8
-
-### Entities
-- ElectricityGroup: 1
-  - voltage=12838700
-- electric-furnace: 2
-  - position=(15.5, 73.5), status=NO_POWER
-    furnace_source={'iron-ore': 50}
-  - position=(18.5, 73.5), status=NO_POWER
-    furnace_source={'iron-ore': 47}
-- electric-mining-drill: 2
-  - position=(15.5, 70.5), status=WORKING
-  - position=(18.5, 70.5), status=WORKING
-
-### Production Flows (for entire previous step)
-Inputs: coal: 3.00, water: 423.09, steam: 424.46
-Outputs: iron-ore: 97.00, water: 422.10, steam: 423.09
-
-### Game Info
-- Elapsed Time: 0:04:02
-- Ticks: 14569
-
-### Task Status
-⏳ IN PROGRESS
-iron-gear-wheel throughput: 0/60 seconds
-
-### Task Information
-Goal: Create automatic iron-gear-wheel factory
-      producing 16 iron-gear-wheel per 60 seconds
-Task Key: iron_gear_wheel_throughput
-Trajectory Length: 64
-
-### Raw Output
-Found iron ore at x=15.5 y=70.5
-Placed electric mining drill 1 at x=15.5 y=70.5
-Placed electric furnace at x=15.5 y=73.5
-Connected drill 1 to power
-Connected furnace 1 to power
-Placed electric mining drill 2 at x=18.5 y=70.5
-Placed electric furnace at x=18.5 y=73.5
-Connected drill 2 to power
-Connected furnace 2 to power</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
-                            <img src="../assets/images/v6113_iter3_before.png" alt="Before state" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Add screenshot of initial game state</p>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
-                            <img src="../assets/images/v6113_iter3_after.gif" alt="After animation" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Add GIF showing drills and furnaces operating</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="example2" class="tab-content">
-                    <h3 class="title is-4">Step 5: Power Connection Fix</h3>
-                    <p>The agent discovers the furnaces have no power and debugs by placing power poles closer to them, then verifies they start smelting iron ore.</p>
-
-                    <div class="example-grid">
-                        <div class="example-card">
-                            <h4>⚡ Action Program</h4>
-                            <pre><code class="language-python"># Check power pole coverage
-electricity_group = <span class="hljs-built_in">get_entities</span>(
-    {Prototype.MediumElectricPole})
-<span class="hljs-built_in">print</span>(f"Found {len(electricity_group)} power poles")
-
-# Get the furnaces
-furnace1 = <span class="hljs-built_in">get_entity</span>(Prototype.ElectricFurnace,
-                     <span class="hljs-built_in">Position</span>(x=15.5, y=73.5))
-furnace2 = <span class="hljs-built_in">get_entity</span>(Prototype.ElectricFurnace,
-                     <span class="hljs-built_in">Position</span>(x=18.5, y=73.5))
-
-# Place power poles directly next to furnaces
-<span class="hljs-built_in">move_to</span>(furnace1.position)
-pole1 = <span class="hljs-built_in">place_entity_next_to</span>(
-    Prototype.MediumElectricPole,
-    furnace1.position,
-    direction=Direction.LEFT, spacing=1)
-
-<span class="hljs-built_in">move_to</span>(furnace2.position)
-pole2 = <span class="hljs-built_in">place_entity_next_to</span>(
-    Prototype.MediumElectricPole,
-    furnace2.position,
-    direction=Direction.RIGHT, spacing=1)
-
-# Wait for power to flow
-<span class="hljs-built_in">sleep</span>(5)
-
-# Check furnace status
-furnace1 = <span class="hljs-built_in">get_entity</span>(Prototype.ElectricFurnace,
-                     furnace1.position)
-<span class="hljs-built_in">print</span>(f"Furnace 1 status: {furnace1.status}")
-<span class="hljs-built_in">print</span>(f"Furnace 1 energy: {furnace1.energy}")
-
-<span class="hljs-built_in">sleep</span>(10)  # Wait for smelting
-<span class="hljs-built_in">print</span>(f"Furnace 1 plates: "
-      f"{furnace1.furnace_result.get(Prototype.IronPlate)}")</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>📊 Observation Result</h4>
-                            <pre><code>### Inventory
-- transport-belt: 500
-- medium-electric-pole: 489
-- pipe: 481
-- coal: 480
-- electric-mining-drill: 48
-- electric-furnace: 8
-
-### Entities
-- ElectricityGroup: 1
-  - voltage=67556413
-- electric-furnace: 2
-  - electrical_id=340, position=(15.5, 73.5)
-    status=WORKING, energy=3306.7
-    furnace_source={'iron-ore': 94}
-    furnace_result={'iron-plate': 50}
-  - electrical_id=340, position=(18.5, 73.5)
-    status=WORKING, energy=3306.7
-    furnace_source={'iron-ore': 93}
-    furnace_result={'iron-plate': 50}
-- electric-mining-drill: 2
-  - position=(15.5, 70.5), status=WORKING
-  - position=(18.5, 70.5), status=WORKING
-- boiler: 1
-  - fuel=Inventory({}), status=NO_FUEL
-    warnings=['out of fuel']
-
-### Production Flows (for entire previous step)
-Inputs: coal: 2.00, iron-ore: 101.00,
-        water: 349.96, steam: 1424.63
-Outputs: iron-ore: 99.00, iron-plate: 99.00,
-         water: 349.96, steam: 349.96
-
-### Game Info
-- Elapsed Time: 0:06:54
-- Ticks: 24881
-
-### Task Status
-⏳ IN PROGRESS
-iron-gear-wheel throughput: 0/60 seconds
-
-### Task Information
-Goal: Create automatic iron-gear-wheel factory
-      producing 16 iron-gear-wheel per 60 seconds
-Task Key: iron_gear_wheel_throughput
-
-### Raw Output
-Found 9 power poles
-Placed power pole next to furnace 1 at x=12.5 y=73.5
-Placed power pole next to furnace 2 at x=21.5 y=73.5
-Furnace 1 status: EntityStatus.WORKING
-Furnace 1 energy: 3306.67
-Furnace 1 plates: 11
-Furnace 2 plates: 10</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
-                            <img src="../assets/images/v6113_iter5_before.png" alt="Before state" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Unpowered furnaces with NO_POWER status</p>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
-                            <img src="../assets/images/v6113_iter5_after.gif" alt="After animation" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Furnaces actively smelting with power connected</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="example3" class="tab-content">
-                    <h3 class="title is-4">Step 9: Inserter Power Debug</h3>
-                    <p>The agent realizes the assembler's inserters lack power, places poles near them, then sets up input/output chests for the assembling machine.</p>
-
-                    <div class="example-grid">
-                        <div class="example-card">
-                            <h4>⚡ Action Program</h4>
-                            <pre><code># Get inserters at assembler
-input_inserter = get_entity(Prototype.Inserter,
-                           Position(x=22.5, y=93.5))
-output_inserter = get_entity(Prototype.Inserter,
-                             Position(x=18.5, y=93.5))
-
-print(f"Input inserter status: {input_inserter.status}")
-# Output: EntityStatus.NO_POWER
-
-# Place poles near inserters
-move_to(input_inserter.position)
-pole1 = place_entity_next_to(
-    Prototype.MediumElectricPole,
-    input_inserter.position,
-    direction=Direction.UP, spacing=1)
-
-move_to(output_inserter.position)
-pole2 = place_entity_next_to(
-    Prototype.MediumElectricPole,
-    output_inserter.position,
-    direction=Direction.UP, spacing=1)
-
-sleep(3)  # Wait for power
-
-# Place chests for I/O
-move_to(input_inserter.pickup_position)
-input_chest = place_entity(
-    Prototype.WoodenChest,
-    position=input_inserter.pickup_position)
-
-move_to(output_inserter.drop_position)
-output_chest = place_entity(
-    Prototype.WoodenChest,
-    position=output_inserter.drop_position)</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>📊 Observation Result</h4>
-                            <pre><code>### Raw Output
-Input inserter status: EntityStatus.NO_POWER
-Output inserter status: EntityStatus.NO_POWER
-Placed pole near input inserter at x=22.5 y=91.5
-Placed pole near output inserter at x=18.5 y=91.5
-Placed input chest at x=23.5 y=93.5
-Placed output chest at x=17.5 y=93.5
-
-### Entities
-- inserter: 4
-  - status=WAITING_FOR_SOURCE_ITEMS
-    (now powered but no items yet)
-- assembling-machine-2: 1
-  - warnings=['missing resources: iron-plate']
-  - status=ITEM_INGREDIENT_SHORTAGE
-
-### Status
-⏳ IN PROGRESS
-Inserters powered, need to connect iron supply
-iron-gear-wheel throughput: 0/60s</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
-                            <img src="../assets/images/v6113_iter9_before.png" alt="Before state" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Unpowered inserters around assembler</p>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
-                            <img src="../assets/images/v6113_iter9_after.gif" alt="After animation" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Powered inserters with chests placed</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="example4" class="tab-content">
-                    <h3 class="title is-4">Step 10: Belt Connection Error</h3>
-                    <p>The agent attempts to connect belts from furnace outputs to the assembler but encounters an API error about connecting from chest objects.</p>
-
-                    <div class="example-grid">
-                        <div class="example-card">
-                            <h4>⚡ Action Program</h4>
-                            <pre><code># Refuel boiler
-boiler = get_entity(Prototype.Boiler,
-                   Position(x=-4.0, y=3.5))
-move_to(boiler.position)
-boiler = insert_item(Prototype.Coal, boiler, quantity=30)
-
-# Get chests
-iron_chest1 = get_entity(Prototype.WoodenChest,
-                        Position(x=15.5, y=76.5))
-assembler_input_chest = get_entity(
-    Prototype.WoodenChest,
-    Position(x=23.5, y=93.5))
-
-# Get inserters
-output_inserter1 = get_entity(Prototype.Inserter,
-                             Position(x=15.5, y=75.5))
-assembler_input_inserter = get_entity(
-    Prototype.Inserter,
-    Position(x=22.5, y=93.5))
-
-# Try to connect with belts (FAILS!)
-belts1 = connect_entities(
-    output_inserter1.drop_position,  # ERROR!
-    assembler_input_inserter.pickup_position,
-    Prototype.TransportBelt
-)</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>📊 Observation Result</h4>
-                            <pre><code>### Raw Output
-Refueled boiler with 30 coal
-Iron chest 1 has 266 iron plates
-Iron chest 2 has 266 iron plates
-
-### ERROR
-Exception: Transport belts cannot be connected
-directly from a Prototype.WoodenChest object as
-a source. You need to add an inserter that takes
-items from Prototype.WoodenChest and use the
-inserter as a source entity.
-
-### Production Flows
-Inputs: iron-ore: 100.00
-Outputs: iron-plate: 100.00
-
-### Status
-⏳ IN PROGRESS
-API error encountered, need to use inserters
-iron-gear-wheel throughput: 0/60s</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
-                            <img src="../assets/images/v6113_iter10_before.png" alt="Before state" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Chests full of iron, no belt connection</p>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
-                            <img src="../assets/images/v6113_iter10_after.gif" alt="After animation" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Same state, error occurred</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="example5" class="tab-content">
-                    <h3 class="title is-4">Step 13: Final Success</h3>
-                    <p>The agent removes blocking chests and successfully connects inserters with belt lines. Factory achieves 68 iron gears/min, exceeding the 16/min target!</p>
-
-                    <div class="example-grid">
-                        <div class="example-card">
-                            <h4>⚡ Action Program</h4>
-                            <pre><code># Remove the blocking input chest
-assembler_input_chest = get_entity(
-    Prototype.WoodenChest,
-    Position(x=23.5, y=93.5))
-move_to(assembler_input_chest.position)
-pickup_entity(assembler_input_chest)
-
-# Get inserters
-output_inserter1 = get_entity(Prototype.Inserter,
-                             Position(x=15.5, y=75.5))
-output_inserter2 = get_entity(Prototype.Inserter,
-                             Position(x=18.5, y=75.5))
-assembler_input_inserter = get_entity(
-    Prototype.Inserter,
-    Position(x=22.5, y=93.5))
-
-# Connect first inserter to assembler input
-belts1 = connect_entities(
-    output_inserter1,
-    assembler_input_inserter,
-    Prototype.TransportBelt)
-
-# Connect second inserter to main belt
-belts2 = connect_entities(
-    output_inserter2,
-    belts1,
-    Prototype.TransportBelt)
-
-# Refuel boiler
-boiler = get_entity(Prototype.Boiler,
-                   Position(x=-4.0, y=3.5))
-move_to(boiler.position)
-boiler = insert_item(Prototype.Coal, boiler,
-                    quantity=30)</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>📊 Observation Result</h4>
-                            <pre><code>### Raw Output
-Removed input chest at x=23.5 y=93.5
-Connected first furnace output to assembler input
-BeltGroup(inputs=[Belt((x=15.5 y=76.5)->)],
-         outputs=[Belt((x=23.5 y=93.5)->)],
-         inventory={'iron-plate': 2},
-         status=WORKING, belts=[26 belts])
-Connected second furnace output to belt line
-BeltGroup(belts=[55 belts], status=WORKING)
-Refueled boiler
-
-### Production Flows
-Inputs: iron-ore: 185.00, iron-plate: 246.00
-Outputs: iron-plate: 185.00,
-         iron-gear-wheel: 123.00 🎉
-
-### Status
-✅ SUCCESS
-iron-gear-wheel throughput: 68/60s
-Target achieved!</code></pre>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
-                            <img src="../assets/images/v6113_iter13_before.png" alt="Before state" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Partial factory with blocked logistics</p>
-                        </div>
-
-                        <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
-                            <img src="../assets/images/v6113_iter13_after.gif" alt="After animation" class="example-image" style="background: #e0e0e0;">
-                            <p style="text-align: center; margin-top: 10px; font-style: italic; color: #666;">Placeholder: Complete working factory producing gears</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="heatmap-container">
+                <img src="../assets/images/fle_0_3_0_error_types_by_model.png?v=5" alt="Error Category Distribution by Model">
             </div>
+
+            <p style="font-size: 110%;">
+                The chart categorizes errors from trajectory logs across all evaluation tasks for the evaluated proprietary frontier models. Syntactic errors represent iterations where the model failed to generate valid Python code entirely. API misunderstandings are implied by failures which arose from Python exceptions such as TypeError, AttributeError, NameError, etc. when using the functions and objects of the FLE API. Finally, state tracking failures are implied by failures which have error messages being propagated back from the Lua code running in the Factorio game engine as well as AssertionError raises in Python.
+                
+            </p>
+        </br>
+
+            <p style="font-size: 110%;">
+                The distribution reveals notable model-specific patterns. Claude Opus 4.1 stands out with zero syntactic errors and almost entirely state tracking failures (97.7%), indicating strong code generation but difficulties maintaining accurate mental models of game state. All other models—Gemini 2.5 Pro, Grok 4, and GPT-5—exhibit API misunderstandings at noticeable rates (12-17%), suggesting challenges with correctly using the FLE API documentation. Additionally, GPT-5 and Grok 4 show surprisingly high rates of syntactic errors (21% and 17% respectively), failing to generate valid Python code more frequently than expected from frontier models.
+            </p>
+        </br>
+       
+            <h4 class="title is-5">Higher-Level Limitations</h4>
+            <ul style="font-size: 110%;">
+                <li><strong>Spatial Reasoning:</strong> Agents struggle to maintain consistent mental models of the factory layout. Misplacement of entities often cascades into larger failures, since the agent is unable to recover efficiently or reorganize the environment once errors occur.</li>
+                <li><strong>Abstraction and Tool Use:</strong> Although the FLE harness provides a Python namespace for defining helper functions and abstractions, agents rarely leverage this capability. Instead, they rely on primitive, out-of-the-box tools, which limits their ability to scale solutions to more complex tasks.</li>
+            </ul>
+            
         </div>
     </section>
 
+
     <section class="section">
         <div class="container is-max-widescreen">
-            <h2 class="title is-3"><span class="dvima">Limitations and Future Work</span></h2>
+            <h2 class="title is-3"><span class="dvima">Future Work</span></h2>
             <p style="font-size: 110%;">
                 Our evaluation revealed several key limitations in current model performance:
             </p>
             </br>
             <ul style="font-size: 110%;">
-                <li><strong>Reward Hacking Behavior:</strong> Models reward-hack to avoid full automation. Despite being told to strive for full automation, continued progress towards the production targets reinforces the model's reliance on 'shuttling' resources around, which is easier than building functional logistics chains. This creates a local optimum where agents prefer manual intervention over proper factory design.</li>
-                </br>
                 <li><strong>Craft Item Overuse:</strong> Agents use craft_item liberally to create intermediate goods instead of assembly machines when the target item has a lot of dependencies (see Claude's partial success on production science pack). Since craft_item is run in fast mode with no real time cost, agents exploit this as a shortcut rather than building proper production infrastructure.</li>
                 </br>
                 <li><strong>Human Baseline:</strong> Establishing human performance benchmarks</li>

@@ -14,7 +14,7 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    @cached(max_size=16, ttl=1)
+    @cached(max_size=16, ttl=0.1)
     def __call__(
         self,
         entities: Union[Set[Prototype], Prototype] = set(),

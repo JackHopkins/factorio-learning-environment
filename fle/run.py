@@ -6,6 +6,7 @@ from pathlib import Path
 import importlib.resources
 import asyncio
 from fle.env.gym_env.run_eval import main as run_eval
+from fle.agents.data.sprites.download import download_sprites_from_hf, generate_sprites
 
 
 def fle_init():
@@ -51,6 +52,34 @@ def fle_eval(args):
         sys.exit(1)
 
 
+def fle_sprites(args):
+    try:
+        # Download spritemaps from HuggingFace
+        print("Downloading spritemaps...")
+        success = download_sprites_from_hf(
+            output_dir=args.spritemap_dir, force=args.force, num_workers=args.workers
+        )
+
+        if not success:
+            print("Failed to download spritemaps", file=sys.stderr)
+            sys.exit(1)
+
+        # Generate individual sprites from spritemaps
+        print("\nGenerating sprites...")
+        success = generate_sprites(
+            input_dir=args.spritemap_dir, output_dir=args.sprite_dir
+        )
+
+        if not success:
+            print("Failed to generate sprites", file=sys.stderr)
+            sys.exit(1)
+
+        print("\nSprites successfully downloaded and generated!")
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog="fle",
@@ -60,6 +89,7 @@ def main():
 Examples:
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
+  fle sprites [--force] [--workers N]
         """,
     )
     subparsers = parser.add_subparsers(dest="command")
@@ -80,6 +110,31 @@ Examples:
     )
     parser_eval = subparsers.add_parser("eval", help="Run experiment")
     parser_eval.add_argument("--config", required=True, help="Path to run config JSON")
+
+    parser_sprites = subparsers.add_parser(
+        "sprites", help="Download and generate sprites"
+    )
+    parser_sprites.add_argument(
+        "--force", action="store_true", help="Force re-download even if sprites exist"
+    )
+    parser_sprites.add_argument(
+        "--workers",
+        type=int,
+        default=10,
+        help="Number of parallel download workers (default: 10)",
+    )
+    parser_sprites.add_argument(
+        "--spritemap-dir",
+        type=str,
+        default=".fle/spritemaps",
+        help="Directory to save downloaded spritemaps (default: .fle/spritemaps)",
+    )
+    parser_sprites.add_argument(
+        "--sprite-dir",
+        type=str,
+        default=".fle/sprites",
+        help="Directory to save generated sprites (default: .fle/sprites)",
+    )
     args = parser.parse_args()
     if args.command:
         fle_init()
@@ -87,6 +142,8 @@ Examples:
         fle_cluster(args)
     elif args.command == "eval":
         fle_eval(args)
+    elif args.command == "sprites":
+        fle_sprites(args)
     else:
         parser.print_help()
         sys.exit(1)

@@ -53,5 +53,6 @@ def test_connect_without_enough(game):
 
     belts = game.connect_entities(position_1, position_2, Prototype.TransportBelt)
     assert game.inspect_inventory()[Prototype.TransportBelt] < 12
-    assert len(game.get_entities()) != 0
+    entities = game.get_entities()
+    assert len(entities) != 0
     assert len(belts.belts) != 0

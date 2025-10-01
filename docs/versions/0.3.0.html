@@ -517,7 +517,6 @@ drill_area_box = BuildingBox(
 drill_coords = nearest_buildable(Prototype.ElectricMiningDrill, drill_area_box, iron_pos)
 print(f"Found buildable area for drills at {drill_coords.center}")
 
-# Place 2 electric mining drills in a line
 move_to(drill_coords.left_top)
 
 # Place 2 electric mining drills
@@ -620,48 +619,48 @@ print(f"Connected inserters to power")</code></pre>
                     <div class="example-grid-single">
                         <div class="example-card">
                             <h4>⚡ Action Program</h4>
-                            <pre><code># Let me remove the iron plate storage chests and connect belts directly from furnace inserters
+                            <pre><code class="language-python"><span class="hljs-comment"># Let me remove the iron plate storage chests and connect belts directly from furnace inserters</span>
 
-# First, pickup the chests that are blocking
-chest1 = get_entity(Prototype.WoodenChest, Position(x=15.5, y=76.5))
-chest2 = get_entity(Prototype.WoodenChest, Position(x=18.5, y=76.5))
+<span class="hljs-comment"># First, pickup the chests that are blocking</span>
+chest1 = <span class="hljs-built_in">get_entity</span>(Prototype.WoodenChest, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">15.5</span>, y=<span class="hljs-number">76.5</span>))
+chest2 = <span class="hljs-built_in">get_entity</span>(Prototype.WoodenChest, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">18.5</span>, y=<span class="hljs-number">76.5</span>))
 
-# Extract iron plates from chests before removing them
-move_to(chest1.position)
-extracted1 = extract_item(Prototype.IronPlate, chest1, quantity=351)
-print(f"Extracted {extracted1} iron plates from chest 1")
+<span class="hljs-comment"># Extract iron plates from chests before removing them</span>
+<span class="hljs-built_in">move_to</span>(chest1.position)
+extracted1 = <span class="hljs-built_in">extract_item</span>(Prototype.IronPlate, chest1, quantity=<span class="hljs-number">351</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Extracted {extracted1} iron plates from chest 1"</span>)
 
-move_to(chest2.position)
-extracted2 = extract_item(Prototype.IronPlate, chest2, quantity=351)
-print(f"Extracted {extracted2} iron plates from chest 2")
+<span class="hljs-built_in">move_to</span>(chest2.position)
+extracted2 = <span class="hljs-built_in">extract_item</span>(Prototype.IronPlate, chest2, quantity=<span class="hljs-number">351</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Extracted {extracted2} iron plates from chest 2"</span>)
 
-# Pickup the chests
-pickup_entity(chest1)
-print(f"Removed chest at {chest1.position}")
+<span class="hljs-comment"># Pickup the chests</span>
+<span class="hljs-built_in">pickup_entity</span>(chest1)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Removed chest at {chest1.position}"</span>)
 
-pickup_entity(chest2)
-print(f"Removed chest at {chest2.position}")
+<span class="hljs-built_in">pickup_entity</span>(chest2)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Removed chest at {chest2.position}"</span>)
 
-# Now connect the furnace output inserters to the assembler input inserter with belts
-output_inserter1 = get_entity(Prototype.Inserter, Position(x=15.5, y=75.5))
-output_inserter2 = get_entity(Prototype.Inserter, Position(x=18.5, y=75.5))
-assembler_input_inserter = get_entity(Prototype.Inserter, Position(x=22.5, y=93.5))
+<span class="hljs-comment"># Now connect the furnace output inserters to the assembler input inserter with belts</span>
+output_inserter1 = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">15.5</span>, y=<span class="hljs-number">75.5</span>))
+output_inserter2 = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">18.5</span>, y=<span class="hljs-number">75.5</span>))
+assembler_input_inserter = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">22.5</span>, y=<span class="hljs-number">93.5</span>))
 
-# Connect first inserter to assembler input
-belts1 = connect_entities(
+<span class="hljs-comment"># Connect first inserter to assembler input</span>
+belts1 = <span class="hljs-built_in">connect_entities</span>(
     output_inserter1,
     assembler_input_inserter,
     Prototype.TransportBelt
 )
-print(f"Connected first furnace output to assembler input: {belts1}")
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Connected first furnace output to assembler input: {belts1}"</span>)
 
-# Connect second inserter to main belt
-belts2 = connect_entities(
+<span class="hljs-comment"># Connect second inserter to main belt</span>
+belts2 = <span class="hljs-built_in">connect_entities</span>(
     output_inserter2,
     belts1,
     Prototype.TransportBelt
 )
-print(f"Connected second furnace output to belt line: {belts2}")</code></pre>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Connected second furnace output to belt line: {belts2}"</span>)</code></pre>
                         </div>
                     </div>
                 </div>
@@ -685,45 +684,45 @@ print(f"Connected second furnace output to belt line: {belts2}")</code></pre>
                     <div class="example-grid-single">
                         <div class="example-card">
                             <h4>⚡ Action Program</h4>
-                            <pre><code># The assembler input chest is also blocking. Let me remove it too and rethink the setup
-# I need to place belts first, then the input chest on the belt line
+                            <pre><code class="language-python"><span class="hljs-comment"># The assembler input chest is also blocking. Let me remove it too and rethink the setup</span>
+<span class="hljs-comment"># I need to place belts first, then the input chest on the belt line</span>
 
-# Remove the assembler input chest
-assembler_input_chest = get_entity(Prototype.WoodenChest, Position(x=23.5, y=93.5))
-move_to(assembler_input_chest.position)
-pickup_entity(assembler_input_chest)
-print(f"Removed input chest at {assembler_input_chest.position}")
+<span class="hljs-comment"># Remove the assembler input chest</span>
+assembler_input_chest = <span class="hljs-built_in">get_entity</span>(Prototype.WoodenChest, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">23.5</span>, y=<span class="hljs-number">93.5</span>))
+<span class="hljs-built_in">move_to</span>(assembler_input_chest.position)
+<span class="hljs-built_in">pickup_entity</span>(assembler_input_chest)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Removed input chest at {assembler_input_chest.position}"</span>)
 
-# Now connect the furnace output inserters to the assembler input inserter with belts
-output_inserter1 = get_entity(Prototype.Inserter, Position(x=15.5, y=75.5))
-output_inserter2 = get_entity(Prototype.Inserter, Position(x=18.5, y=75.5))
-assembler_input_inserter = get_entity(Prototype.Inserter, Position(x=22.5, y=93.5))
+<span class="hljs-comment"># Now connect the furnace output inserters to the assembler input inserter with belts</span>
+output_inserter1 = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">15.5</span>, y=<span class="hljs-number">75.5</span>))
+output_inserter2 = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">18.5</span>, y=<span class="hljs-number">75.5</span>))
+assembler_input_inserter = <span class="hljs-built_in">get_entity</span>(Prototype.Inserter, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">22.5</span>, y=<span class="hljs-number">93.5</span>))
 
-print(f"Connecting from inserter 1 at {output_inserter1.position} to assembler input at {assembler_input_inserter.position}")
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Connecting from inserter 1 at {output_inserter1.position} to assembler input at {assembler_input_inserter.position}"</span>)
 
-# Connect first inserter to assembler input
-belts1 = connect_entities(
+<span class="hljs-comment"># Connect first inserter to assembler input</span>
+belts1 = <span class="hljs-built_in">connect_entities</span>(
     output_inserter1,
     assembler_input_inserter,
     Prototype.TransportBelt
 )
-print(f"Connected first furnace output to assembler input: {belts1}")
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Connected first furnace output to assembler input: {belts1}"</span>)
 
-# Connect second inserter to main belt
-belts2 = connect_entities(
+<span class="hljs-comment"># Connect second inserter to main belt</span>
+belts2 = <span class="hljs-built_in">connect_entities</span>(
     output_inserter2,
     belts1,
     Prototype.TransportBelt
 )
-print(f"Connected second furnace output to belt line: {belts2}")
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Connected second furnace output to belt line: {belts2}"</span>)
 
-# Refuel boiler
-boiler = get_entity(Prototype.Boiler, Position(x=-4.0, y=3.5))
-move_to(boiler.position)
-boiler = insert_item(Prototype.Coal, boiler, quantity=30)
-print(f"Refueled boiler")
+<span class="hljs-comment"># Refuel boiler</span>
+boiler = <span class="hljs-built_in">get_entity</span>(Prototype.Boiler, <span class="hljs-built_in">Position</span>(x=<span class="hljs-number">-4.0</span>, y=<span class="hljs-number">3.5</span>))
+<span class="hljs-built_in">move_to</span>(boiler.position)
+boiler = <span class="hljs-built_in">insert_item</span>(Prototype.Coal, boiler, quantity=<span class="hljs-number">30</span>)
+<span class="hljs-built_in">print</span>(<span class="hljs-string">f"Refueled boiler"</span>)
 
-print("Belt connections complete - waiting for iron flow")</code></pre>
+<span class="hljs-built_in">print</span>(<span class="hljs-string">"Belt connections complete - waiting for iron flow"</span>)</code></pre>
                         </div>
                     </div>
                 </div>
@@ -844,7 +843,7 @@ print("Belt connections complete - waiting for iron flow")</code></pre>
             </div>
 
             <p style="font-size: 110%;">
-                The chart categorizes errors from trajectory logs across all evaluation tasks for the evaluated proprietary frontier models. Syntactic errors represent iterations where the model failed to generate valid Python code entirely. API misunderstandings are implied by failures which arose from Python exceptions such as TypeError, AttributeError, NameError, etc. when using the functions and objects of the FLE API. Finally, state tracking failures are implied by failures which have error messages being propagated back from the Lua code running in the Factorio game engine as well as AssertionError raises in Python.
+                The chart categorizes errors from trajectory logs across all evaluation tasks for the evaluated proprietary frontier models. Syntactic errors represent iterations where the model failed to generate valid Python code entirely. API misunderstandings are implied by failures which arose from Python exceptions such as TypeError, AttributeError, NameError, etc. when using the functions and objects of the FLE API. Finally, state tracking failures are implied by failures which have error messages being propagated back from the Lua code running in the Factorio game engine as well as AssertionError raises in Python. Examples of state tracking failures include attempting to insert items that are not present in the inventory, placing entities in invalid positions, connecting entities with incompatible types, etc.
                 
             </p>
         </br>

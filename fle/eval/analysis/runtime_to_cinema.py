@@ -28,6 +28,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -667,6 +669,69 @@ def process_programs(
 # --- CLI -----------------------------------------------------------------
 
 
+#
+# --- Filesystem helpers ----------------------------------------------------
+
+
+def _detect_script_output_dir(explicit: Optional[str] = None) -> Path:
+    """Resolve the Factorio script-output directory cross-platform.
+    Precedence: explicit CLI arg -> env FACTORIO_SCRIPT_OUTPUT -> platform default.
+    macOS: ~/Library/Application Support/factorio/script-output
+    Linux: ~/.factorio/script-output or ~/.local/share/factorio/script-output (try both)
+    Windows: %APPDATA%/Factorio/script-output
+    """
+    if explicit:
+        p = Path(explicit).expanduser()
+        return p
+    env_p = os.getenv("FACTORIO_SCRIPT_OUTPUT")
+    if env_p:
+        return Path(env_p).expanduser()
+
+    if sys.platform == "darwin":
+        return (
+            Path.home()
+            / "Library"
+            / "Application Support"
+            / "factorio"
+            / "script-output"
+        )
+    if os.name == "nt":
+        appdata = os.getenv("APPDATA", str(Path.home() / "AppData" / "Roaming"))
+        return Path(appdata) / "Factorio" / "script-output"
+    # Linux / other POSIX
+    candidates = [
+        Path.home() / ".factorio" / "script-output",
+        Path.home() / ".local" / "share" / "factorio" / "script-output",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return candidates[0]
+
+
+def _move_png_tree(src_root: Path, dest_root: Path) -> dict:
+    """Move all .png files from src_root (recursively) into dest_root preserving subtree.
+    Returns a small report dict with counts.
+    """
+    moved = 0
+    created_dirs = 0
+    dest_root.mkdir(parents=True, exist_ok=True)
+    for root, dirs, files in os.walk(src_root):
+        root_path = Path(root)
+        rel = root_path.relative_to(src_root)
+        for fname in files:
+            if not fname.lower().endswith(".png"):
+                continue
+            src_f = root_path / fname
+            dst_dir = dest_root / rel
+            if not dst_dir.exists():
+                dst_dir.mkdir(parents=True, exist_ok=True)
+                created_dirs += 1
+            shutil.move(str(src_f), str(dst_dir / fname))
+            moved += 1
+    return {"moved": moved, "dirs_created": created_dirs}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Replay programs with cinematics")
     parser.add_argument("versions", nargs="+", type=int)
@@ -714,6 +779,11 @@ def main():
     parser.add_argument(
         "--capture-show-gui", action="store_true", help="Include GUI in captured frames"
     )
+    parser.add_argument(
+        "--script-output-dir",
+        default=os.getenv("FACTORIO_SCRIPT_OUTPUT", None),
+        help="Override Factorio script-output directory (defaults to OS-specific path)",
+    )
     args = parser.parse_args()
 
     output_base = Path(args.output_dir)
@@ -760,6 +830,24 @@ def main():
                     "w", encoding="utf-8"
                 ) as fh:
                     json.dump(report["cutscene_result"], fh, indent=2)
+
+            # --- Move captured PNGs to output frames and clean script-output ---
+            script_output_dir = _detect_script_output_dir(args.script_output_dir)
+            src_version_root = script_output_dir / args.capture_dir / f"v{version}"
+            frames_out = out_dir / "frames"
+            if src_version_root.exists():
+                report_move = _move_png_tree(src_version_root, frames_out)
+                try:
+                    shutil.rmtree(src_version_root)
+                except Exception as e:
+                    print(f"[warn] failed to remove {src_version_root}: {e}")
+                print(
+                    f"Moved {report_move['moved']} PNGs into {frames_out} and removed {src_version_root}"
+                )
+            else:
+                print(
+                    f"[info] no frames found under {src_version_root} (nothing to move)"
+                )
 
             print(f"Version {version}: plan written to {out_dir}")
             instance.cleanup()

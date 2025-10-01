@@ -49,8 +49,17 @@ load_dotenv()
 
 # --- Module-level defaults -------------------------------------------------
 
-# Default shot policy for runtime cinema generation
+# Note: connection shots now provide pan_ticks/dwell_ticks; Lua prefers tick timing when present.
 POLICY = ShotPolicy()  # use defaults
+
+# Environment toggle for pre-establish move shots
+PRE_ESTABLISH_MOVES = os.getenv("PRE_ESTABLISH_MOVES", "0") in (
+    "1",
+    "true",
+    "TRUE",
+    "yes",
+    "on",
+)
 
 # Execute cutscene every N programs (override via env CINEMA_EVERY_N)
 EXECUTE_EVERY_N = int(os.getenv("CINEMA_EVERY_N", "1"))
@@ -131,6 +140,7 @@ def create_instance_and_task(
                 enable_admin_tools_in_runtime=True,
             )
             instance.set_speed_and_unpause(1.0)
+            instance.set_speed(1.0)
             task.setup(instance)
             return instance, task
     finally:
@@ -184,6 +194,23 @@ def build_world_context(instance: FactorioInstance, program: Any) -> dict:
                         )
                 except Exception:
                     pass
+            # Fallback: try resolving bare variable names on the namespace
+            try:
+                ent = getattr(instance.first_namespace, expr, None)
+                if ent is not None:
+                    # Entity-like object exposing .position or .x/.y
+                    p = getattr(ent, "position", None)
+                    if p is not None:
+                        if isinstance(p, (list, tuple)):
+                            return [float(p[0]), float(p[1])]
+                        else:
+                            return [float(p.x), float(p.y)]
+                    px = getattr(ent, "x", None)
+                    py = getattr(ent, "y", None)
+                    if px is not None and py is not None:
+                        return [float(px), float(py)]
+            except Exception:
+                pass
         # Fallback to current player position
         return player_position
 
@@ -196,12 +223,83 @@ def build_world_context(instance: FactorioInstance, program: Any) -> dict:
         top, bottom = min(y1, y2) - pad, max(y1, y2) + pad
         return [[left, top], [right, bottom]]
 
+    def _resolve_bbox(expr: Any, pad: float = 0.0) -> list:
+        # Try to resolve single position first
+        try:
+            pos = _resolve_position(expr)
+            if pos is not None:
+                x, y = pos
+                return [[x - pad, y - pad], [x + pad, y + pad]]
+        except Exception:
+            pass
+        # Try to look up an object by name on the namespace (groups, connection results)
+        try:
+            if isinstance(expr, str):
+                obj = getattr(instance.first_namespace, expr, None)
+                if obj is not None:
+                    # If it has a bounding_box
+                    bb = getattr(obj, "bounding_box", None)
+                    if bb and hasattr(bb, "left"):
+                        return [
+                            [float(bb.left), float(bb.top)],
+                            [float(bb.right), float(bb.bottom)],
+                        ]
+                    # If it exposes poles/pipes etc.
+                    for attr in ("poles", "pipes", "entities", "items"):
+                        coll = getattr(obj, attr, None)
+                        if coll:
+                            xs, ys = [], []
+                            for it in coll:
+                                p = getattr(it, "position", None) or getattr(
+                                    it, "pos", None
+                                )
+                                if p is not None:
+                                    if isinstance(p, (list, tuple)):
+                                        xs.append(float(p[0]))
+                                        ys.append(float(p[1]))
+                                    else:
+                                        xs.append(float(p.x))
+                                        ys.append(float(p.y))
+                            if xs and ys:
+                                return [
+                                    [min(xs) - pad, min(ys) - pad],
+                                    [max(xs) + pad, max(ys) + pad],
+                                ]
+                    # If it looks like an (x,y) pair stored on the object
+                    px = getattr(obj, "x", None)
+                    py = getattr(obj, "y", None)
+                    if px is not None and py is not None:
+                        return [
+                            [float(px) - pad, float(py) - pad],
+                            [float(px) + pad, float(py) + pad],
+                        ]
+        except Exception:
+            pass
+        # Fallback to a tiny box around player
+        return [
+            [player_position[0] - pad, player_position[1] - pad],
+            [player_position[0] + pad, player_position[1] + pad],
+        ]
+
+    def _bbox_from_exprs(a_expr: Any, b_expr: Any, pad_outer: float = 25.0) -> list:
+        bb_a = _resolve_bbox(a_expr, 0.0)
+        bb_b = _resolve_bbox(b_expr, 0.0)
+        left = min(bb_a[0][0], bb_b[0][0]) - pad_outer
+        top = min(bb_a[0][1], bb_b[0][1]) - pad_outer
+        right = max(bb_a[1][0], bb_b[1][0]) + pad_outer
+        bottom = max(bb_a[1][1], bb_b[1][1]) + pad_outer
+        return [[left, top], [right, bottom]]
+
+    # Debug hook: uncomment for noisy resolution tracing
+    # print(f"[world] tick={current_tick} player={player_position}")
     return {
         "current_tick": current_tick,
         "player_position": player_position,
         "program_id": getattr(program, "id", None) if program else None,
         "resolve_position": _resolve_position,
         "bbox_two_points": _bbox_two_points,
+        "resolve_bbox": _resolve_bbox,
+        "bbox_from_exprs": _bbox_from_exprs,
     }
 
 
@@ -246,6 +344,7 @@ def process_programs(
 
     instance.reset()
     print("Environment reset complete")
+    instance.first_namespace.enable_admin_tools_in_runtime(True)
 
     screenshot_sequences: List[Dict[str, Any]] = []
     total_actions_processed = 0
@@ -285,6 +384,22 @@ def process_programs(
 
         # Debug: how many shots are currently queued before mapping this program
         print(f"[cinema] queued shots before mapping: {len(cin.shots)}")
+
+        # Optional: play establishing camera moves for move_to before executing the program
+        if PRE_ESTABLISH_MOVES:
+            pre_moves = cin.build_move_establishments(
+                create_action_stream(action_sites),
+                build_world_context(instance, program),
+            )
+            if pre_moves:
+                pre_plan = {"player": 1, "start_zoom": 1.0, "shots": pre_moves}
+                print(
+                    f"\nExecuting pre-establish move plan with {len(pre_moves)} shots..."
+                )
+                try:
+                    instance.first_namespace.cutscene(pre_plan)
+                except Exception as e:
+                    print(f"[warn] pre-establish cutscene failed: {e}")
 
         # Execute the original program (no cinema code injection)
         print("Executing program...")
@@ -334,11 +449,8 @@ def process_programs(
                     f"\nExecuting cutscene after program {idx + 1} with {len(cin.shots)} shots (cadence={EXECUTE_EVERY_N})..."
                 )
                 try:
-                    # Enable admin tools temporarily to execute cutscene
-                    instance.first_namespace.enable_admin_tools_in_runtime(True)
                     plan = cin.build_plan(player=1)
                     cutscene_result = instance.first_namespace.cutscene(plan)
-                    instance.first_namespace.enable_admin_tools_in_runtime(False)
                     print(f"Cutscene execution result: {cutscene_result}")
 
                     # Clear shots after execution to avoid duplicates
@@ -350,7 +462,6 @@ def process_programs(
                     time.sleep(2)
                 except Exception as e:
                     print(f"Error executing cutscene: {e}")
-                    instance.first_namespace.enable_admin_tools_in_runtime(False)
 
     # Build final plan from cinematographer
     plan = cin.build_plan(player=1)
@@ -360,20 +471,21 @@ def process_programs(
     if plan.get("shots"):
         print(f"\nExecuting final cutscene with {len(plan['shots'])} shots...")
         try:
-            # Enable admin tools temporarily to execute cutscene
-            instance.first_namespace.enable_admin_tools_in_runtime(True)
             cutscene_result = instance.first_namespace.cutscene(plan)
-            instance.first_namespace.enable_admin_tools_in_runtime(False)
             print(f"Cutscene execution result: {cutscene_result}")
         except Exception as e:
             print(f"Error executing cutscene: {e}")
-            instance.first_namespace.enable_admin_tools_in_runtime(False)
 
     print("\nProcessing complete:")
     print(f"  - Total programs processed: {min(len(programs), max_steps)}")
     print(f"  - Total actions processed: {total_actions_processed}")
     print(f"  - Shots generated: {len(plan.get('shots', []))}")
     print(f"  - Cutscene executed: {cutscene_result is not None}")
+
+    try:
+        instance.first_namespace.enable_admin_tools_in_runtime(False)
+    except Exception:
+        pass
 
     return {
         "programs": screenshot_sequences,
@@ -422,6 +534,7 @@ def main():
                 version, args.address, args.tcp_port
             )
             instance.set_speed_and_unpause(1.0)
+            instance.set_speed(1.0)
             cin = Cinematographer(CameraPrefs(), GameClock())
             report = process_programs(
                 version, cin, instance, programs, conn, args.max_steps

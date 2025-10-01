@@ -98,6 +98,38 @@ class ShotPolicy:
     movement_window_n: int = 3
     connection_padding_tiles: float = 25
     pre_arrival_cut: bool = False
+    establish_before_move: bool = False
+    # Connection dwell/pan policy (used for connect_entities)
+    connection_pan_ticks: int = 90  # ~1.5s @60 tps
+    connection_min_dwell_ticks: int = 240  # ~4s linger
+    connection_dwell_per_tile: float = 1.5  # add dwell proportional to span
+
+    def build_move_establishments(
+        self, action_stream: List[dict], world_context: dict
+    ) -> List[ShotIntent]:
+        """Return establishing shots for move_to actions only (does not mutate state)."""
+        shots: List[ShotIntent] = []
+        if not self.policy.establish_before_move:
+            return shots
+        # Use a fresh tick base so these run before program execution
+        base_tick = world_context.get("current_tick", 0)
+        t = base_tick
+        for action in action_stream:
+            if action.get("type") != "move_to":
+                continue
+            args = action.get("args", {})
+            dest = args.get("destination") or args.get("pos_src")
+            # Resolve destination using world resolvers or fallback
+            player_pos = world_context.get("player_position", [0, 0])
+            resolve_pos = world_context.get("resolve_position")
+            pos = resolve_pos(dest) if callable(resolve_pos) else player_pos
+            tpl = ShotLib.focus_pos(pan_ms=1400, dwell_ms=700, zoom=1.0)
+            shot = tpl.render(tick=t, pos=pos)
+            shot["tags"] = ["movement", "establish"]
+            shots.append(shot)
+            # advance narrative t in ticks
+            t += ms_to_ticks(tpl.pan_ms + tpl.dwell_ms) + 6
+        return shots
 
 
 # Shot library --------------------------------------------------------------
@@ -529,25 +561,42 @@ class Cinematographer:
     def _handle_connect_entities_action(
         self, action: dict, args: dict, tick: int, player_pos: list
     ):
-        """Handle connect_entities actions - connection overview."""
+        """Handle connect_entities actions - always zoom to bbox of endpoints."""
         a_expr = args.get("a_expr", "")
         b_expr = args.get("b_expr", "")
         proto_name = args.get("proto_name", "")
 
+        # Always compute bbox from the two endpoints' positions
         bbox_fn = self.world_context.get("bbox_two_points")
+        resolve_pos = self.world_context.get("resolve_position")
         if callable(bbox_fn):
             bbox = bbox_fn(a_expr, b_expr, pad=self.policy.connection_padding_tiles)
         else:
-            center = player_pos
-            bbox = self._create_bbox_around_position(center, 30)
+            # Manual fallback: resolve both positions and build bbox
+            a = (
+                resolve_pos(a_expr)
+                if callable(resolve_pos)
+                else self._resolve_position(a_expr, player_pos)
+            )
+            b = (
+                resolve_pos(b_expr)
+                if callable(resolve_pos)
+                else self._resolve_position(b_expr, player_pos)
+            )
+            x1, y1 = a
+            x2, y2 = b
+            pad = self.policy.connection_padding_tiles
+            left, right = min(x1, x2) - pad, max(x1, x2) + pad
+            top, bottom = min(y1, y2) - pad, max(y1, y2) + pad
+            bbox = [[left, top], [right, bottom]]
 
-        shot = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1000, zoom=0.7).render(
-            tick=tick, bbox=bbox
-        )
-        shot["tags"] = ["connection", "infrastructure", proto_name]
+        # Simple bird's-eye with a sensible dwell
+        tpl = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1600, zoom=None)
+        shot = tpl.render(tick=tick, bbox=bbox)
+        shot["tags"] = ["connection", "endpoints", proto_name]
         self.shots.append(shot)
         print(
-            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} tick={shot.get('when', {}).get('start_tick')}"
         )
 
     def _handle_insert_item_action(

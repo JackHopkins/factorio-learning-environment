@@ -61,8 +61,17 @@ PRE_ESTABLISH_MOVES = os.getenv("PRE_ESTABLISH_MOVES", "0") in (
     "on",
 )
 
+# Pre-connection establishing shot toggle
+PRE_CONNECT_ESTABLISH = os.getenv("PRE_CONNECT_ESTABLISH", "1") in (
+    "1",
+    "true",
+    "TRUE",
+    "yes",
+    "on",
+)
+
 # Execute cutscene every N programs (override via env CINEMA_EVERY_N)
-EXECUTE_EVERY_N = int(os.getenv("CINEMA_EVERY_N", "1"))
+EXECUTE_EVERY_N = int(os.getenv("CINEMA_EVERY_N", "4"))
 
 
 # --- DB helpers ------------------------------------------------------------
@@ -380,10 +389,79 @@ def process_programs(
             else []
         )
 
+        # Build a failure-aware filter based on runtime errors
+        error_text = ""
+        # try:
+        #     if response and len(response) >= 3 and response[2]:
+        #         error_text = "\n".join([str(e) for e in response[2]])
+        # except Exception:
+        #     pass
+
+        def _should_keep(site) -> bool:
+            k = getattr(site, "kind", "")
+            if "Could not place" in error_text and k in {
+                "place_entity",
+                "place_entity_next_to",
+            }:
+                return False
+            if "Did not find any valid connections" in error_text and k in {
+                "connect_entities"
+            }:
+                return False
+            return True
+
+        if action_sites:
+            action_sites = [s for s in action_sites if _should_keep(s)]
+
         print(f"Extracted {len(action_sites)} actions from program")
 
         # Debug: how many shots are currently queued before mapping this program
         print(f"[cinema] queued shots before mapping: {len(cin.shots)}")
+
+        # --- Pre-connection establishing shot logic ---
+        pre_connect_done = False
+        has_connect = any(
+            getattr(s, "kind", "") == "connect_entities" for s in action_sites
+        )
+        if has_connect and PRE_CONNECT_ESTABLISH:
+            pre_world = build_world_context(instance, program)
+            first_conn = next(
+                (
+                    s
+                    for s in action_sites
+                    if getattr(s, "kind", "") == "connect_entities"
+                ),
+                None,
+            )
+            if first_conn:
+                a_expr = first_conn.args.get("a_expr")
+                b_expr = first_conn.args.get("b_expr")
+                if callable(pre_world.get("bbox_from_exprs")):
+                    bbox = pre_world["bbox_from_exprs"](a_expr, b_expr, pad_outer=25.0)
+                else:
+                    bbox = pre_world["bbox_two_points"](a_expr, b_expr, pad=25.0)
+                pre_plan = {
+                    "player": 1,
+                    "start_zoom": 1.0,
+                    "shots": [
+                        {
+                            "id": f"pre-conn-{program_id}-{int(pre_world['current_tick'])}",
+                            "when": {"start_tick": pre_world["current_tick"]},
+                            "kind": {"type": "zoom_to_fit", "bbox": bbox},
+                            "pan_ms": 1400,
+                            "dwell_ms": 900,
+                            "zoom": None,
+                            "tags": ["connection", "pre_establish"],
+                        }
+                    ],
+                }
+                try:
+                    instance.first_namespace.cutscene(pre_plan)
+                except Exception as e:
+                    print(f"[warn] pre-connect cutscene failed: {e}")
+                pre_connect_done = True
+        else:
+            pre_connect_done = False
 
         # Optional: play establishing camera moves for move_to before executing the program
         if PRE_ESTABLISH_MOVES:
@@ -413,6 +491,7 @@ def process_programs(
 
         # Build world context for Cinematographer
         world_context = build_world_context(instance, program)
+        world_context["pre_connect_done"] = pre_connect_done
 
         # Create normalized action stream
         action_stream = create_action_stream(action_sites)
@@ -421,6 +500,7 @@ def process_programs(
         cin.observe_action_stream(action_stream, world_context)
 
         # Debug: how many shots were added by this program
+        # Note: "added approx" is an estimate; deduplication may affect the true count.
         print(
             f"[cinema] queued shots after mapping: {len(cin.shots)} (added {len(cin.shots) - (total_actions_processed - len(action_stream))} approx)"
         )

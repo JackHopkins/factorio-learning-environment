@@ -24,6 +24,36 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
+# --- Shot ordering policy --------------------------------------------------
+
+
+def _priority_for_shot(shot: ShotIntent) -> int:
+    tags = set(shot.get("tags", []))
+    kind = shot.get("kind", {}).get("type", "")
+    # Highest priority: connection pre overview, then endpoints, then post focus
+    if {"connection", "pre"}.issubset(tags):
+        return 0
+    if {"connection", "endpoints"}.issubset(tags):
+        return 5
+    if {"connection", "post"}.issubset(tags):
+        return 15
+    # System setups
+    if tags & {"mining", "power", "smelting", "assembly"}:
+        return 20
+    # Generic building beats
+    if "building" in tags:
+        return 30
+    # Inserts and misc.
+    if "insert" in tags:
+        return 40
+    # Fallback by kind type
+    if kind == "zoom_to_fit":
+        return 25
+    if kind == "focus_position":
+        return 35
+    return 50
+
+
 # Core types ----------------------------------------------------------------
 
 ShotIntent = Dict[str, Any]
@@ -109,7 +139,7 @@ class ShotPolicy:
     ) -> List[ShotIntent]:
         """Return establishing shots for move_to actions only (does not mutate state)."""
         shots: List[ShotIntent] = []
-        if not self.policy.establish_before_move:
+        if not self.establish_before_move:
             return shots
         # Use a fresh tick base so these run before program execution
         base_tick = world_context.get("current_tick", 0)
@@ -301,6 +331,10 @@ class Cinematographer:
         self.shots = []
         self.action_stream = []
         self.world_context = {}
+        # Per-program connection shot budget and connect_entities detection
+        self._program_has_connect: Dict[Any, bool] = {}
+        self._program_connect_emitted: Dict[Any, bool] = {}
+        self._program_last_conn_center: Dict[Any, List[float]] = {}
 
     def observe_action_stream(self, action_stream: List[dict], world_context: dict):
         """Observe a stream of normalized actions and generate appropriate shots.
@@ -312,9 +346,23 @@ class Cinematographer:
         self.action_stream.extend(action_stream)
         self.world_context.update(world_context)
 
+        # Per-program connect_entities policy and reset for new program_id
+        pid = world_context.get("program_id")
+        if pid is not None:
+            if pid not in self._program_has_connect:
+                self._program_has_connect[pid] = any(
+                    a.get("type") == "connect_entities" for a in action_stream
+                )
+            # reset per-program connection emitted state for fresh action batches of the same program id
+            self._program_connect_emitted.setdefault(pid, False)
+
         # Process each action in the stream
         for action in action_stream:
             self._map_action_to_shots(action)
+
+    def _bbox_center(self, bbox: list) -> List[float]:
+        (x1, y1), (x2, y2) = bbox[0], bbox[1]
+        return [(x1 + x2) / 2.0, (y1 + y2) / 2.0]
 
     def observe_game_event(self, event: dict, delta: dict):
         """Observe a game event and generate appropriate shots.
@@ -507,7 +555,11 @@ class Cinematographer:
     def _handle_place_entity_next_to_action(
         self, action: dict, args: dict, tick: int, player_pos: list
     ):
-        """Handle place_entity_next_to actions - two-point connection sequence."""
+        """Handle place_entity_next_to actions - emit a single connection bird's-eye shot."""
+        pid = self.world_context.get("program_id")
+        # Suppress connection-like shots if the program has any connect_entities
+        if self._program_has_connect.get(pid, False):
+            return
         prototype = args.get("prototype", "").lower()
         target = args.get("target", "")
         position_expr = args.get("position", player_pos)
@@ -521,47 +573,55 @@ class Cinematographer:
             if callable(resolve_pos)
             else self._resolve_position(position_expr, player_pos)
         )
-        tgt = (
-            resolve_pos(target)
-            if callable(resolve_pos)
-            else self._resolve_position(target, player_pos)
-        )
+        # tgt = (
+        #     resolve_pos(target)
+        #     if callable(resolve_pos)
+        #     else self._resolve_position(target, player_pos)
+        # )
 
-        # Two-shot sequence
-        templates = ShotLib.connection_two_point(
-            padding=self.policy.connection_padding_tiles
-        )
-        # Pre: fit both points
+        # Compute bbox covering both endpoints
         if callable(bbox_fn):
-            connection_bbox = bbox_fn(
+            bbox = bbox_fn(
                 target, position_expr, pad=self.policy.connection_padding_tiles
             )
         else:
             # fallback to padding around placed position
-            connection_bbox = self._create_bbox_around_position(
+            bbox = self._create_bbox_around_position(
                 pos, self.policy.connection_padding_tiles
             )
-        pre_shot = templates[0].render(tick=tick, connection_bbox=connection_bbox)
-        pre_shot["tags"] = ["connection", "pre", "overview", prototype]
-        self.shots.append(pre_shot)
-        print(
-            f"[cinema] add shot: {pre_shot['kind']['type']} tags={pre_shot.get('tags')} tick={pre_shot.get('when', {}).get('start_tick')}"
-        )
 
-        # Post: focus midpoint (or placed position as fallback)
-        center = [(tgt[0] + pos[0]) / 2.0, (tgt[1] + pos[1]) / 2.0]
-        post_tick = tick + pre_shot["pan_ms"] + pre_shot["dwell_ms"]
-        post_shot = templates[1].render(tick=post_tick, center=center)
-        post_shot["tags"] = ["connection", "post", "focus", prototype]
-        self.shots.append(post_shot)
+        # Apply per-program connection shot budget: only one unless far away
+        if pid is not None:
+            if self._program_connect_emitted.get(pid, False):
+                prev = self._program_last_conn_center.get(pid)
+                cur = self._bbox_center(bbox)
+                if prev is not None:
+                    dx, dy = cur[0] - prev[0], cur[1] - prev[1]
+                    if (dx * dx + dy * dy) ** 0.5 <= 60.0:
+                        return
+                # otherwise allow and update
+                self._program_last_conn_center[pid] = cur
+            else:
+                self._program_connect_emitted[pid] = True
+                self._program_last_conn_center[pid] = self._bbox_center(bbox)
+
+        # Emit a single zoom_to_fit shot with connection tags
+        tpl = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1600, zoom=None)
+        shot = tpl.render(tick=tick, bbox=bbox)
+        shot["tags"] = ["connection", "endpoints", prototype]
+        self.shots.append(shot)
         print(
-            f"[cinema] add shot: {post_shot['kind']['type']} tags={post_shot.get('tags')} tick={post_shot.get('when', {}).get('start_tick')}"
+            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} tick={shot.get('when', {}).get('start_tick')}"
         )
 
     def _handle_connect_entities_action(
         self, action: dict, args: dict, tick: int, player_pos: list
     ):
         """Handle connect_entities actions - always zoom to bbox of endpoints."""
+        pid = self.world_context.get("program_id")
+        # If a pre-connect establishing shot already ran for this program, skip post-action shot.
+        if self.world_context.get("pre_connect_done", False):
+            return
         a_expr = args.get("a_expr", "")
         b_expr = args.get("b_expr", "")
         proto_name = args.get("proto_name", "")
@@ -590,6 +650,20 @@ class Cinematographer:
             top, bottom = min(y1, y2) - pad, max(y1, y2) + pad
             bbox = [[left, top], [right, bottom]]
 
+        # Apply per-program connection shot budget: only one unless far away
+        if pid is not None:
+            if self._program_connect_emitted.get(pid, False):
+                prev = self._program_last_conn_center.get(pid)
+                cur = self._bbox_center(bbox)
+                if prev is not None:
+                    dx, dy = cur[0] - prev[0], cur[1] - prev[1]
+                    if (dx * dx + dy * dy) ** 0.5 <= 60.0:
+                        return
+                self._program_last_conn_center[pid] = cur
+            else:
+                self._program_connect_emitted[pid] = True
+                self._program_last_conn_center[pid] = self._bbox_center(bbox)
+
         # Simple bird's-eye with a sensible dwell
         tpl = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1600, zoom=None)
         shot = tpl.render(tick=tick, bbox=bbox)
@@ -602,9 +676,20 @@ class Cinematographer:
     def _handle_insert_item_action(
         self, action: dict, args: dict, tick: int, player_pos: list
     ):
-        """Handle insert_item actions - usually just a quick cut."""
-        prototype = args.get("prototype", "").lower()
-        position = self._resolve_position(args.get("position", player_pos), player_pos)
+        """Handle insert_item actions - restrict to meaningful inserts and resolve with world context."""
+        prototype = (args.get("prototype", "") or "").lower()
+        resolve_pos = self.world_context.get("resolve_position")
+        raw_pos = args.get("position", player_pos)
+        position = (
+            resolve_pos(raw_pos)
+            if callable(resolve_pos)
+            else self._resolve_position(raw_pos, player_pos)
+        )
+
+        # Minimal taste filter: only surface obviously meaningful inserts (e.g., fueling)
+        meaningful = prototype in {"coal"}  # extend as needed with more heuristics
+        if not meaningful:
+            return
 
         shot = ShotLib.cut_to_pos(zoom=1.0).render(tick=tick, pos=position)
         shot["tags"] = ["insert", "item", prototype]
@@ -648,15 +733,25 @@ class Cinematographer:
     def build_plan(self, player: int = 1) -> dict:
         """Build a complete shot plan from observed events and actions.
 
-        This applies deduplication, merging, and narrative timing policies.
+        This applies prioritization, deduplication, and narrative timing policies.
         """
-        # Sort shots by tick to ensure proper ordering
-        sorted_shots = sorted(
-            self.shots, key=lambda s: s.get("when", {}).get("start_tick", 0)
+        # Attach sequence numbers for stability
+        for idx, s in enumerate(self.shots):
+            s.setdefault("_seq", idx)
+            s["pri"] = _priority_for_shot(s)
+
+        # Sort by (priority, original tick, sequence) to get a clean order
+        ordered = sorted(
+            self.shots,
+            key=lambda s: (
+                s.get("pri", 50),
+                s.get("when", {}).get("start_tick", 0),
+                s.get("_seq", 0),
+            ),
         )
 
         # Apply deduplication and merging policies
-        deduplicated_shots = self._apply_deduplication(sorted_shots)
+        deduplicated_shots = self._apply_deduplication(ordered)
 
         # Retime shots to a monotonic narrative clock in ticks so batches don’t explode at once
         if deduplicated_shots:
@@ -664,17 +759,28 @@ class Cinematographer:
             t = base_tick
             retimed = []
             for s in deduplicated_shots:
-                # Compute duration in ticks from ms fields, fall back to 30 ticks if unknown
-                pan_ms = s.get("pan_ms", 0)
-                dwell_ms = s.get("dwell_ms", 0)
-                dur_ticks = ms_to_ticks(pan_ms) + ms_to_ticks(dwell_ms)
+                # Compute duration in ticks from ms fields, or prefer explicit tick fields
+                pan_ticks = s.get("pan_ticks")
+                dwell_ticks = s.get("dwell_ticks")
+                if pan_ticks is None:
+                    pan_ticks = ms_to_ticks(s.get("pan_ms", 0))
+                if dwell_ticks is None:
+                    dwell_ticks = ms_to_ticks(s.get("dwell_ms", 0))
+                dur_ticks = (pan_ticks or 0) + (dwell_ticks or 0)
                 if dur_ticks <= 0:
-                    dur_ticks = 30  # half a second at 60 tps
+                    dur_ticks = 30  # half a second @ 60 tps
                 # Assign start_tick and advance timeline with a tiny gap
                 s.setdefault("when", {})["start_tick"] = t
                 retimed.append(s)
-                t += dur_ticks + 10  # small spacer
+                t += dur_ticks + 10  # spacer between shots
             deduplicated_shots = retimed
+
+        # Clear per-program caches for the current program_id after building the plan
+        pid = self.world_context.get("program_id")
+        if pid in self._program_connect_emitted:
+            del self._program_connect_emitted[pid]
+            self._program_has_connect.pop(pid, None)
+            self._program_last_conn_center.pop(pid, None)
 
         return {"player": player, "start_zoom": 1.0, "shots": deduplicated_shots}
 
@@ -712,7 +818,13 @@ class Cinematographer:
                 continue
             # Round to tile-ish precision to group near-identical frames
             cx, cy, sx, sy = key_tuple
-            fp = (ktype, round(cx, 1), round(cy, 1), round(sx, 1), round(sy, 1))
+            fp = (
+                ktype,
+                round(cx, 1 if ktype == "focus_position" else 0),
+                round(cy, 1 if ktype == "focus_position" else 0),
+                round(sx, 0),
+                round(sy, 0),
+            )
             last_t = recent.get(fp)
             if last_t is None or (t - last_t) >= 240:  # ~4 seconds at 60 tps
                 deduped.append(s)

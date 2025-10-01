@@ -83,16 +83,16 @@ class ShotTemplate:
 
     id_prefix: str
     kind: Dict[str, Any]
-    pan_ms: int
-    dwell_ms: int
+    pan_ticks: int
+    dwell_ticks: int
     zoom: Optional[float] = None
     tags: List[str] = field(default_factory=list)
 
-    def render(self, tick: int, **ctx) -> ShotIntent:
+    def render(self, seq: int, **ctx) -> ShotIntent:
         """Replace Var placeholders with concrete values from context.
 
         Args:
-            tick: Game tick when shot should start
+            seq: Sequence number for shot ordering
             **ctx: Context dictionary with values for Var placeholders
 
         Returns:
@@ -107,14 +107,14 @@ class ShotTemplate:
                 rendered_kind[key] = value
 
         # Generate unique shot ID
-        shot_id = f"{self.id_prefix}-{tick}"
+        shot_id = f"{self.id_prefix}-{seq}"
 
         return {
             "id": shot_id,
-            "when": {"start_tick": tick},
+            "seq": seq,
             "kind": rendered_kind,
-            "pan_ms": self.pan_ms,
-            "dwell_ms": self.dwell_ms,
+            "pan_ticks": self.pan_ticks,
+            "dwell_ticks": self.dwell_ticks,
             "zoom": self.zoom,
             "tags": self.tags.copy(),
         }
@@ -141,9 +141,8 @@ class ShotPolicy:
         shots: List[ShotIntent] = []
         if not self.establish_before_move:
             return shots
-        # Use a fresh tick base so these run before program execution
-        base_tick = world_context.get("current_tick", 0)
-        t = base_tick
+        # Use sequence numbers for ordering instead of ticks
+        seq = 0
         for action in action_stream:
             if action.get("type") != "move_to":
                 continue
@@ -153,12 +152,11 @@ class ShotPolicy:
             player_pos = world_context.get("player_position", [0, 0])
             resolve_pos = world_context.get("resolve_position")
             pos = resolve_pos(dest) if callable(resolve_pos) else player_pos
-            tpl = ShotLib.focus_pos(pan_ms=1400, dwell_ms=700, zoom=1.0)
-            shot = tpl.render(tick=t, pos=pos)
+            tpl = ShotLib.focus_pos(pan_ticks=84, dwell_ticks=42, zoom=1.0)
+            shot = tpl.render(seq=seq, pos=pos)
             shot["tags"] = ["movement", "establish"]
             shots.append(shot)
-            # advance narrative t in ticks
-            t += ms_to_ticks(tpl.pan_ms + tpl.dwell_ms) + 6
+            seq += 1
         return shots
 
 
@@ -174,57 +172,61 @@ class ShotLib:
         return ShotTemplate(
             id_prefix="cut-pos",
             kind={"type": "focus_position", "pos": Var("pos")},
-            pan_ms=0,  # Instant cut
-            dwell_ms=0,
+            pan_ticks=0,  # Instant cut
+            dwell_ticks=0,
             zoom=zoom,
             tags=["cut", "position"],
         )
 
     @staticmethod
     def focus_pos(
-        pan_ms: int = 1600, dwell_ms: int = 900, zoom: float = 1.0
+        pan_ticks: int = 96, dwell_ticks: int = 54, zoom: float = 1.0
     ) -> ShotTemplate:
         """Smooth pan to focus on a position."""
         return ShotTemplate(
             id_prefix="focus-pos",
             kind={"type": "focus_position", "pos": Var("pos")},
-            pan_ms=pan_ms,
-            dwell_ms=dwell_ms,
+            pan_ticks=pan_ticks,
+            dwell_ticks=dwell_ticks,
             zoom=zoom,
             tags=["focus", "position"],
         )
 
     @staticmethod
     def zoom_to_bbox(
-        pan_ms: int = 2200, dwell_ms: int = 1600, zoom: Optional[float] = None
+        pan_ticks: int = 132, dwell_ticks: int = 96, zoom: Optional[float] = None
     ) -> ShotTemplate:
         """Zoom to fit a bounding box with optional zoom level."""
         return ShotTemplate(
             id_prefix="zoom-bbox",
             kind={"type": "zoom_to_fit", "bbox": Var("bbox")},
-            pan_ms=pan_ms,
-            dwell_ms=dwell_ms,
+            pan_ticks=pan_ticks,
+            dwell_ticks=dwell_ticks,
             zoom=zoom,
             tags=["zoom", "bbox", "overview"],
         )
 
     @staticmethod
     def follow_entity(
-        duration_ms: int, dwell_ms: int = 1200, zoom: float = 1.0
+        duration_ticks: int, dwell_ticks: int = 72, zoom: float = 1.0
     ) -> ShotTemplate:
         """Follow an entity for a specified duration."""
         return ShotTemplate(
             id_prefix="follow-entity",
             kind={"type": "follow_entity", "entity_uid": Var("entity_uid")},
-            pan_ms=duration_ms,
-            dwell_ms=dwell_ms,
+            pan_ticks=duration_ticks,
+            dwell_ticks=dwell_ticks,
             zoom=zoom,
             tags=["follow", "entity"],
         )
 
     @staticmethod
     def orbit_entity(
-        duration_ms: int, radius_tiles: int, degrees: int, dwell_ms: int, zoom: float
+        duration_ticks: int,
+        radius_tiles: int,
+        degrees: int,
+        dwell_ticks: int,
+        zoom: float,
     ) -> ShotTemplate:
         """Orbit around an entity with specified parameters."""
         return ShotTemplate(
@@ -235,8 +237,8 @@ class ShotLib:
                 "radius_tiles": radius_tiles,
                 "degrees": degrees,
             },
-            pan_ms=duration_ms,
-            dwell_ms=dwell_ms,
+            pan_ticks=duration_ticks,
+            dwell_ticks=dwell_ticks,
             zoom=zoom,
             tags=["orbit", "entity"],
         )
@@ -251,8 +253,8 @@ class ShotLib:
         pre_template = ShotTemplate(
             id_prefix="connection-pre",
             kind={"type": "zoom_to_fit", "bbox": Var("connection_bbox")},
-            pan_ms=2200,
-            dwell_ms=800,
+            pan_ticks=132,
+            dwell_ticks=48,
             zoom=0.7,
             tags=["connection", "pre", "overview"],
         )
@@ -261,8 +263,8 @@ class ShotLib:
         post_template = ShotTemplate(
             id_prefix="connection-post",
             kind={"type": "focus_position", "pos": Var("center")},
-            pan_ms=1600,
-            dwell_ms=1200,
+            pan_ticks=96,
+            dwell_ticks=72,
             zoom=1.0,
             tags=["connection", "post", "focus"],
         )
@@ -373,7 +375,6 @@ class Cinematographer:
 
         # Generate shots based on event type
         event_type = event.get("event")
-        tick = event.get("tick", 0)
         position = event.get("position", [0, 0])
 
         if event_type == "power_setup":
@@ -385,8 +386,8 @@ class Cinematographer:
                     [position[0] + 15, position[1] + 15],
                 ],
             )
-            shot = ShotLib.zoom_to_bbox(pan_ms=2000, dwell_ms=1500, zoom=0.8).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=120, dwell_ticks=90, zoom=0.8).render(
+                seq=len(self.shots), bbox=bbox
             )
             shot["tags"] = ["power", "setup"]
             self.shots.append(shot)
@@ -400,8 +401,8 @@ class Cinematographer:
                     [position[0] + 10, position[1] + 10],
                 ],
             )
-            shot = ShotLib.zoom_to_bbox(pan_ms=1800, dwell_ms=1200, zoom=0.9).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9).render(
+                seq=len(self.shots), bbox=bbox
             )
             shot["tags"] = ["mining", "setup"]
             self.shots.append(shot)
@@ -409,7 +410,9 @@ class Cinematographer:
         elif event_type == "building_placed":
             # Quick cut to building placement
             entity_type = delta.get("entity_type", "building")
-            shot = ShotLib.cut_to_pos(zoom=1.0).render(tick=tick, pos=position)
+            shot = ShotLib.cut_to_pos(zoom=1.0).render(
+                seq=len(self.shots), pos=position
+            )
             shot["tags"] = ["building", entity_type]
             self.shots.append(shot)
 
@@ -422,8 +425,8 @@ class Cinematographer:
                     [position[0] + 30, position[1] + 30],
                 ],
             )
-            shot = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1000, zoom=0.7).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=132, dwell_ticks=60, zoom=0.7).render(
+                seq=len(self.shots), bbox=bbox
             )
             shot["tags"] = ["connection", "infrastructure"]
             self.shots.append(shot)
@@ -437,8 +440,8 @@ class Cinematographer:
                     [position[0] + 20, position[1] + 20],
                 ],
             )
-            shot = ShotLib.zoom_to_bbox(pan_ms=1500, dwell_ms=800, zoom=0.8).render(
-                tick=tick, bbox=movement_bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=90, dwell_ticks=48, zoom=0.8).render(
+                seq=len(self.shots), bbox=movement_bbox
             )
             shot["tags"] = ["movement", "player"]
             self.shots.append(shot)
@@ -450,22 +453,23 @@ class Cinematographer:
         """
         action_type = action.get("type")
         args = action.get("args", {})
-        tick = self.world_context.get("current_tick", 0)
+        # Use sequence number for ordering instead of current tick
+        seq = len(self.shots)
         player_pos = self.world_context.get("player_position", [0, 0])
 
         if action_type == "move_to":
-            self._handle_move_to_action(action, args, tick, player_pos)
+            self._handle_move_to_action(action, args, seq, player_pos)
         elif action_type == "place_entity":
-            self._handle_place_entity_action(action, args, tick, player_pos)
+            self._handle_place_entity_action(action, args, seq, player_pos)
         elif action_type == "place_entity_next_to":
-            self._handle_place_entity_next_to_action(action, args, tick, player_pos)
+            self._handle_place_entity_next_to_action(action, args, seq, player_pos)
         elif action_type == "connect_entities":
-            self._handle_connect_entities_action(action, args, tick, player_pos)
+            self._handle_connect_entities_action(action, args, seq, player_pos)
         elif action_type == "insert_item":
-            self._handle_insert_item_action(action, args, tick, player_pos)
+            self._handle_insert_item_action(action, args, seq, player_pos)
 
     def _handle_move_to_action(
-        self, action: dict, args: dict, tick: int, player_pos: list
+        self, action: dict, args: dict, seq: int, player_pos: list
     ):
         """Handle move_to actions - usually ignored unless policy says otherwise."""
         if not self.policy.pre_arrival_cut:
@@ -476,15 +480,15 @@ class Cinematographer:
         if destination and destination != str(player_pos):
             # Resolve destination position
             dest_pos = self._resolve_position(destination, player_pos)
-            shot = ShotLib.cut_to_pos(zoom=0.9).render(tick=tick, pos=dest_pos)
+            shot = ShotLib.cut_to_pos(zoom=0.9).render(seq=seq, pos=dest_pos)
             shot["tags"] = ["movement", "pre_arrival"]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
     def _handle_place_entity_action(
-        self, action: dict, args: dict, tick: int, player_pos: list
+        self, action: dict, args: dict, seq: int, player_pos: list
     ):
         """Handle place_entity actions based on entity type."""
         prototype = args.get("prototype", "").lower()
@@ -494,37 +498,37 @@ class Cinematographer:
         if prototype in ["boiler", "steam_engine", "offshore_pump"]:
             # Power setup - zoom to bbox
             bbox = self._create_bbox_around_position(position, 15)
-            shot = ShotLib.zoom_to_bbox(pan_ms=2000, dwell_ms=1500, zoom=0.8).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=120, dwell_ticks=90, zoom=0.8).render(
+                seq=seq, bbox=bbox
             )
             shot["tags"] = ["power", "setup", prototype]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
         elif prototype in ["burner_mining_drill", "electric_mining_drill"]:
             # Mining setup - zoom to bbox
             bbox = self._create_bbox_around_position(position, 10)
-            shot = ShotLib.zoom_to_bbox(pan_ms=1800, dwell_ms=1200, zoom=0.9).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9).render(
+                seq=seq, bbox=bbox
             )
             shot["tags"] = ["mining", "setup", prototype]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
         elif prototype in ["stone_furnace", "steel_furnace", "electric_furnace"]:
             # Smelting setup - zoom to bbox
             bbox = self._create_bbox_around_position(position, 8)
-            shot = ShotLib.zoom_to_bbox(pan_ms=1800, dwell_ms=1200, zoom=0.9).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9).render(
+                seq=seq, bbox=bbox
             )
             shot["tags"] = ["smelting", "setup", prototype]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
         elif prototype in [
@@ -534,26 +538,26 @@ class Cinematographer:
         ]:
             # Assembly setup - zoom to bbox
             bbox = self._create_bbox_around_position(position, 12)
-            shot = ShotLib.zoom_to_bbox(pan_ms=1800, dwell_ms=1200, zoom=0.9).render(
-                tick=tick, bbox=bbox
+            shot = ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9).render(
+                seq=seq, bbox=bbox
             )
             shot["tags"] = ["assembly", "setup", prototype]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
         else:
             # Generic building - quick cut
-            shot = ShotLib.cut_to_pos(zoom=1.0).render(tick=tick, pos=position)
+            shot = ShotLib.cut_to_pos(zoom=1.0).render(seq=seq, pos=position)
             shot["tags"] = ["building", "placed", prototype]
             self.shots.append(shot)
             print(
-                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+                f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
             )
 
     def _handle_place_entity_next_to_action(
-        self, action: dict, args: dict, tick: int, player_pos: list
+        self, action: dict, args: dict, seq: int, player_pos: list
     ):
         """Handle place_entity_next_to actions - emit a single connection bird's-eye shot."""
         pid = self.world_context.get("program_id")
@@ -606,16 +610,16 @@ class Cinematographer:
                 self._program_last_conn_center[pid] = self._bbox_center(bbox)
 
         # Emit a single zoom_to_fit shot with connection tags
-        tpl = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1600, zoom=None)
-        shot = tpl.render(tick=tick, bbox=bbox)
+        tpl = ShotLib.zoom_to_bbox(pan_ticks=132, dwell_ticks=96, zoom=None)
+        shot = tpl.render(seq=seq, bbox=bbox)
         shot["tags"] = ["connection", "endpoints", prototype]
         self.shots.append(shot)
         print(
-            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} tick={shot.get('when', {}).get('start_tick')}"
+            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} seq={shot.get('seq')}"
         )
 
     def _handle_connect_entities_action(
-        self, action: dict, args: dict, tick: int, player_pos: list
+        self, action: dict, args: dict, seq: int, player_pos: list
     ):
         """Handle connect_entities actions - always zoom to bbox of endpoints."""
         pid = self.world_context.get("program_id")
@@ -665,16 +669,16 @@ class Cinematographer:
                 self._program_last_conn_center[pid] = self._bbox_center(bbox)
 
         # Simple bird's-eye with a sensible dwell
-        tpl = ShotLib.zoom_to_bbox(pan_ms=2200, dwell_ms=1600, zoom=None)
-        shot = tpl.render(tick=tick, bbox=bbox)
+        tpl = ShotLib.zoom_to_bbox(pan_ticks=132, dwell_ticks=96, zoom=None)
+        shot = tpl.render(seq=seq, bbox=bbox)
         shot["tags"] = ["connection", "endpoints", proto_name]
         self.shots.append(shot)
         print(
-            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} tick={shot.get('when', {}).get('start_tick')}"
+            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} bbox={bbox} seq={shot.get('seq')}"
         )
 
     def _handle_insert_item_action(
-        self, action: dict, args: dict, tick: int, player_pos: list
+        self, action: dict, args: dict, seq: int, player_pos: list
     ):
         """Handle insert_item actions - restrict to meaningful inserts and resolve with world context."""
         prototype = (args.get("prototype", "") or "").lower()
@@ -691,11 +695,11 @@ class Cinematographer:
         if not meaningful:
             return
 
-        shot = ShotLib.cut_to_pos(zoom=1.0).render(tick=tick, pos=position)
+        shot = ShotLib.cut_to_pos(zoom=1.0).render(seq=seq, pos=position)
         shot["tags"] = ["insert", "item", prototype]
         self.shots.append(shot)
         print(
-            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} tick={shot.get('when', {}).get('start_tick')}"
+            f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} seq={shot.get('seq')}"
         )
 
     def _resolve_position(self, position, fallback: list) -> list:
@@ -737,43 +741,20 @@ class Cinematographer:
         """
         # Attach sequence numbers for stability
         for idx, s in enumerate(self.shots):
-            s.setdefault("_seq", idx)
+            s.setdefault("seq", idx)
             s["pri"] = _priority_for_shot(s)
 
-        # Sort by (priority, original tick, sequence) to get a clean order
+        # Sort by (priority, sequence) to get a clean order - no tick-based sorting
         ordered = sorted(
             self.shots,
             key=lambda s: (
                 s.get("pri", 50),
-                s.get("when", {}).get("start_tick", 0),
-                s.get("_seq", 0),
+                s.get("seq", 0),
             ),
         )
 
         # Apply deduplication and merging policies
         deduplicated_shots = self._apply_deduplication(ordered)
-
-        # Retime shots to a monotonic narrative clock in ticks so batches don’t explode at once
-        if deduplicated_shots:
-            base_tick = self.world_context.get("current_tick", 0)
-            t = base_tick
-            retimed = []
-            for s in deduplicated_shots:
-                # Compute duration in ticks from ms fields, or prefer explicit tick fields
-                pan_ticks = s.get("pan_ticks")
-                dwell_ticks = s.get("dwell_ticks")
-                if pan_ticks is None:
-                    pan_ticks = ms_to_ticks(s.get("pan_ms", 0))
-                if dwell_ticks is None:
-                    dwell_ticks = ms_to_ticks(s.get("dwell_ms", 0))
-                dur_ticks = (pan_ticks or 0) + (dwell_ticks or 0)
-                if dur_ticks <= 0:
-                    dur_ticks = 30  # half a second @ 60 tps
-                # Assign start_tick and advance timeline with a tiny gap
-                s.setdefault("when", {})["start_tick"] = t
-                retimed.append(s)
-                t += dur_ticks + 10  # spacer between shots
-            deduplicated_shots = retimed
 
         # Clear per-program caches for the current program_id after building the plan
         pid = self.world_context.get("program_id")
@@ -785,12 +766,12 @@ class Cinematographer:
         return {"player": player, "start_zoom": 1.0, "shots": deduplicated_shots}
 
     def _apply_deduplication(self, shots: list) -> list:
-        """Apply temporal + spatial deduplication to reduce déjà vu."""
+        """Apply spatial deduplication to reduce déjà vu."""
         if not shots:
             return shots
         deduped = []
-        # Keep a small recent footprint cache: (type, cx, cy, sx, sy) -> last_tick
-        recent = {}
+        # Keep a spatial footprint cache: (type, cx, cy, sx, sy) -> seen
+        seen = set()
 
         def _bbox_center_span(s):
             k = s.get("kind", {})
@@ -805,16 +786,11 @@ class Cinematographer:
             return None
 
         for s in shots:
-            t = s.get("when", {}).get("start_tick", 0)
             ktype = s.get("kind", {}).get("type", "")
             key_tuple = _bbox_center_span(s)
             if key_tuple is None:
-                # No spatial info; apply basic temporal spacing (>=100 ticks)
-                if (
-                    not deduped
-                    or t - deduped[-1].get("when", {}).get("start_tick", 0) >= 100
-                ):
-                    deduped.append(s)
+                # No spatial info; keep all shots
+                deduped.append(s)
                 continue
             # Round to tile-ish precision to group near-identical frames
             cx, cy, sx, sy = key_tuple
@@ -825,12 +801,11 @@ class Cinematographer:
                 round(sx, 0),
                 round(sy, 0),
             )
-            last_t = recent.get(fp)
-            if last_t is None or (t - last_t) >= 240:  # ~4 seconds at 60 tps
+            if fp not in seen:
                 deduped.append(s)
-                recent[fp] = t
+                seen.add(fp)
             else:
-                # Skip near-duplicate shot
+                # Skip duplicate shot
                 continue
         return deduped
 

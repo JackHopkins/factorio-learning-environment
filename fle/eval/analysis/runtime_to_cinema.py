@@ -165,7 +165,7 @@ def build_world_context(instance: FactorioInstance, program: Any) -> dict:
     This provides the minimal world facts that Cinematographer needs to make
     shot decisions. It does NOT emit shots or make camera decisions.
     """
-    current_tick = instance.get_elapsed_ticks()
+    # No longer need current_tick for shot timing
     namespace_pos = (
         instance.namespace.player_location if hasattr(instance, "namespace") else None
     )
@@ -300,9 +300,8 @@ def build_world_context(instance: FactorioInstance, program: Any) -> dict:
         return [[left, top], [right, bottom]]
 
     # Debug hook: uncomment for noisy resolution tracing
-    # print(f"[world] tick={current_tick} player={player_position}")
+    # print(f"[world] player={player_position}")
     return {
-        "current_tick": current_tick,
         "player_position": player_position,
         "program_id": getattr(program, "id", None) if program else None,
         "resolve_position": _resolve_position,
@@ -445,11 +444,11 @@ def process_programs(
                     "start_zoom": 1.0,
                     "shots": [
                         {
-                            "id": f"pre-conn-{program_id}-{int(pre_world['current_tick'])}",
-                            "when": {"start_tick": pre_world["current_tick"]},
+                            "id": f"pre-conn-{program_id}-0",
+                            "seq": 0,
                             "kind": {"type": "zoom_to_fit", "bbox": bbox},
-                            "pan_ms": 1400,
-                            "dwell_ms": 900,
+                            "pan_ticks": 84,
+                            "dwell_ticks": 54,
                             "zoom": None,
                             "tags": ["connection", "pre_establish"],
                         }

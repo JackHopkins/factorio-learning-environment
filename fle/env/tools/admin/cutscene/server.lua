@@ -326,13 +326,14 @@ local function compile_plan(player, plan)
     local waypoints = {}
     local defaults = {capture = plan.capture_defaults or DEFAULT_CAPTURE}
 
+    -- Sort shots by sequence number if present, otherwise by insertion order
     table.sort(plan.shots, function(a, b)
-        local tick_a = (a.when and a.when.start_tick) or 0
-        local tick_b = (b.when and b.when.start_tick) or 0
-        if tick_a == tick_b then
+        local seq_a = a.seq or a._seq or 0
+        local seq_b = b.seq or b._seq or 0
+        if seq_a == seq_b then
             return (a.pri or 0) > (b.pri or 0)
         end
-        return tick_a < tick_b
+        return seq_a < seq_b
     end)
 
     local state = Runtime.ensure_player_state(player.index)
@@ -366,14 +367,29 @@ local function validate_shot_intent(shot)
     if type(shot.id) ~= "string" then
         return false, "shot missing id"
     end
-    if shot.when and type(shot.when.start_tick) ~= "number" then
-        return false, "when.start_tick must be number"
+    if shot.when and shot.when.start_tick and type(shot.when.start_tick) ~= "number" then
+        return false, "when.start_tick must be number if present"
     end
-    if type(shot.pan_ms) ~= "number" then
-        return false, "pan_ms must be number"
+    -- Either pan_ms/pan_ticks must be provided
+    if shot.pan_ms and type(shot.pan_ms) ~= "number" then
+        return false, "pan_ms must be number if present"
     end
-    if type(shot.dwell_ms) ~= "number" then
-        return false, "dwell_ms must be number"
+    if shot.pan_ticks and type(shot.pan_ticks) ~= "number" then
+        return false, "pan_ticks must be number if present"
+    end
+    if not shot.pan_ms and not shot.pan_ticks then
+        return false, "either pan_ms or pan_ticks must be provided"
+    end
+    
+    -- Either dwell_ms/dwell_ticks must be provided
+    if shot.dwell_ms and type(shot.dwell_ms) ~= "number" then
+        return false, "dwell_ms must be number if present"
+    end
+    if shot.dwell_ticks and type(shot.dwell_ticks) ~= "number" then
+        return false, "dwell_ticks must be number if present"
+    end
+    if not shot.dwell_ms and not shot.dwell_ticks then
+        return false, "either dwell_ms or dwell_ticks must be provided"
     end
     if shot.zoom and type(shot.zoom) ~= "number" then
         return false, "zoom must be number"

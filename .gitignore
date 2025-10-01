@@ -29,6 +29,30 @@ CLAUDE.md
 
 # API
 api_keys.json
+/log/
 
-# fle
 .fle/
+
+# Jack's stuff.
+/docker-compose.yml
+/data/plans/factorio_guides/
+/docs/assets/videos/
+/fle/agents/data/blueprints_to_policies/blueprints/
+/fle/eval/open/plots/technology_icons/
+/data/icons/
+/eval/open/plots/
+
+/data/vqa/logs/
+/data/vqa/tasks/spatial_reasoning/.compose.yaml
+/data/vqa/tasks/spatial_reasoning/logs/
+/data/vqa/tasks/logs/
+/data/vqa/images/
+/data/vqa/dataset/images/
+/data/vqa/tasks/basic/logs/
+/data/vqa/tasks/contrastive_alignment/logs/
+/data/vqa/tasks/contrastive_alignment/logs/
+/data/logs/
+/data/logs/
+/.factorio_mcp_repo/
+/.claude-code/
+/claude-code.zip

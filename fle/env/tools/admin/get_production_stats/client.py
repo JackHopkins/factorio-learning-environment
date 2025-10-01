@@ -8,5 +8,5 @@ class GetProductionStats(Tool):
         self.game_state = game_state
 
     def __call__(self, *args, **kwargs):
-        response, execution_time = self.execute(self.player_index, *args, **kwargs)
+        response, execution_time = self.execute(self.player_index, *args)
         return response

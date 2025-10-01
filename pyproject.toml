@@ -54,6 +54,9 @@ dependencies = [
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
     "pytest>=8.4.1",
+    "mcp[cli]>=1.11.0",
+    "black>=25.1.0",
+    "memoization>=0.4.0",
 ]
 
 [project.optional-dependencies]
@@ -142,3 +145,8 @@ publish-url = "https://upload.pypi.org/legacy/"
 name = "testpypi"
 url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
+
+[dependency-groups]
+dev = [
+    "pytest-asyncio>=1.2.0",
+]

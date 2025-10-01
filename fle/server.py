@@ -1,5 +1,5 @@
 # Factorio MCP Server
-from fle.env.protocols.mcp import mcp
+from fle.env.protocols._mcp import mcp
 
 # Command-line interface for the MCP server
 if __name__ == "__main__":

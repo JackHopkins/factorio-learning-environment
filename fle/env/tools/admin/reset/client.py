@@ -24,8 +24,16 @@ class Reset(Tool):
         """
         if inventories is None:
             inventories = {}
+
+        dict_inventories = []
+        for inv in inventories:
+            if not isinstance(inv, dict):
+                dict_inventories.append(inv.__dict__)
+            else:
+                dict_inventories.append(inv)
+
         # Encode to JSON string for Lua
-        inventories_json = json.dumps(inventories)
+        inventories_json = json.dumps(dict_inventories)
 
         response, _ = self.execute(
             inventories_json,

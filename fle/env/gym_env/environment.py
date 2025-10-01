@@ -283,7 +283,7 @@ class FactorioGymEnv(gym.Env):
         # Render map image if vision is enabled
         map_image = ""
         if self.enable_vision:
-            map_image = namespace._render().to_base64()
+            map_image = namespace._render_simple().to_base64()
 
         # Get entity observations
         entities = namespace.get_entities()
@@ -510,7 +510,7 @@ class FactorioGymEnv(gym.Env):
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
         observation = self.get_observation(0).to_dict()
-        return observation, {}  # Return observation for first agent
+        return observation  # Return observation for first agent
 
     def close(self):
         """Clean up resources"""

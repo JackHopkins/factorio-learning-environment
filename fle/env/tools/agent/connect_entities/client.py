@@ -370,7 +370,7 @@ class ConnectEntities(Tool):
         )
         exception_message = str(last_exception)
         if exception_message == "nil,":
-            exception_message = "Failed to connect entitites. Please reposition entities or clear potential blockages"
+            exception_message = "Failed to connect entities. Please reposition entities or clear potential blockages"
 
         raise Exception(
             f"Failed to connect {set([type.name for type in connection_types])} from {source_error_message_addition} to {target_error_message_addition}. "

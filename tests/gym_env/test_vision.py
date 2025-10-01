@@ -12,7 +12,7 @@ def test_vision_disabled_by_default(instance):
     """Test that vision is disabled by default and map_image is empty."""
     instance.reset()
     env = FactorioGymEnv(instance, pause_after_action=False)
-    observation, _ = env.reset()
+    observation = env.reset()
 
     # Verify map_image exists and is empty
     assert "map_image" in observation, "Observation should contain map_image field"
@@ -25,7 +25,7 @@ def test_vision_enabled_produces_base64_image(instance):
     """Test that enabling vision produces a base64 encoded image."""
     instance.reset()
     env = FactorioGymEnv(instance, pause_after_action=False, enable_vision=True)
-    observation, _ = env.reset()
+    observation = env.reset()
 
     # Verify map_image exists and is not empty
     assert "map_image" in observation, "Observation should contain map_image field"
@@ -65,7 +65,7 @@ def test_vision_multimodal_api_format(instance):
     """Test that the base64 image is in the correct format for multimodal APIs."""
     instance.reset()
     env = FactorioGymEnv(instance, pause_after_action=False, enable_vision=True)
-    observation, _ = env.reset()
+    observation = env.reset()
 
     map_image_b64 = observation["map_image"]
 
@@ -106,7 +106,7 @@ def test_vision_persists_across_steps(instance):
     instance.reset()
 
     env = FactorioGymEnv(instance, pause_after_action=False, enable_vision=True)
-    observation1, _ = env.reset()
+    observation1 = env.reset()
 
     # First observation should have an image
     assert observation1["map_image"] != ""

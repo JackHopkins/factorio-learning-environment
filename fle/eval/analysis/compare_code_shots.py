@@ -25,6 +25,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Dict
+
+from dotenv import load_dotenv
 from fle.eval.analysis.cinematographer import (
     CameraPrefs,
     Cinematographer,
@@ -33,6 +35,31 @@ from fle.eval.analysis.cinematographer import (
     ShotPolicy,
     ShotLib,
 )
+from fle.eval.analysis.runtime_to_cinema import (
+    get_db_connection,
+    parse_program_actions,
+)
+
+load_dotenv()
+
+# Connection cache to avoid repeated connection overhead
+_connection_cache = None
+
+
+def _get_cached_connection():
+    """Get a cached database connection to avoid connection overhead"""
+    global _connection_cache
+    if _connection_cache is None or _connection_cache.closed:
+        _connection_cache = get_db_connection()
+    return _connection_cache
+
+
+def _close_cached_connection():
+    """Close the cached connection"""
+    global _connection_cache
+    if _connection_cache and not _connection_cache.closed:
+        _connection_cache.close()
+        _connection_cache = None
 
 
 # Matplotlib gets pulled in indirectly by some optional dependencies; ensure it
@@ -61,6 +88,67 @@ def _load_programs(path: Path) -> list:
         return json.load(fh)
 
 
+def _fetch_programs_from_db(version: int, limit: int = None) -> list:
+    """Fetch programs from database and convert to the same format as programs.json"""
+    import time
+
+    start_time = time.time()
+
+    conn_start = time.time()
+    conn = _get_cached_connection()
+    conn_time = time.time() - conn_start
+    print(
+        f"[db] Connection {'reused' if conn_time < 0.1 else 'established'} in {conn_time:.2f}s"
+    )
+
+    # Optimized query - only fetch essential columns, add limit early
+    query = """
+        SELECT id, created_at, code
+        FROM programs
+        WHERE version = %s
+        AND code IS NOT NULL
+        AND LENGTH(code) > 10
+        ORDER BY created_at ASC
+    """
+    if limit:
+        query += f" LIMIT {limit}"
+
+    print(f"[db] Executing query for version {version}...")
+    query_start = time.time()
+
+    with conn.cursor() as cur:
+        cur.execute(query, (version,))
+        rows = cur.fetchall()
+
+    query_time = time.time() - query_start
+    print(f"[db] Query completed in {query_time:.2f}s, fetched {len(rows)} rows")
+
+    # Process rows
+    parse_start = time.time()
+    result = []
+    for i, row in enumerate(rows):
+        program_id, created_at, code = row
+        if code:
+            # Convert to the same format as programs.json
+            program_data = {
+                "program_id": program_id,
+                "code": code,
+                "actions": parse_program_actions(code),
+                "created_at": str(created_at),
+            }
+            result.append(program_data)
+
+            # Progress indicator for large datasets
+            if (i + 1) % 10 == 0:
+                print(f"[db] Processed {i + 1}/{len(rows)} programs...")
+
+    parse_time = time.time() - parse_start
+    total_time = time.time() - start_time
+    print(f"[db] Parsing completed in {parse_time:.2f}s, total time: {total_time:.2f}s")
+
+    return result
+
+
 def _first_non_empty_line(code: str) -> str:
     for raw in code.splitlines():
         line = raw.strip()
@@ -85,6 +173,17 @@ def _extract_source_lines(code: str, line_span: List[int]) -> str:
         return ""
 
     return "\n".join(lines[start_idx:end_idx])
+
+
+def _find_unmapped_actions(
+    actions: List[dict], action_to_shot_mapping: Dict[int, List[ShotIntent]]
+) -> List[dict]:
+    """Find actions that didn't generate any shots."""
+    unmapped = []
+    for i, action in enumerate(actions):
+        if i not in action_to_shot_mapping:
+            unmapped.append(action)
+    return unmapped
 
 
 def _suppress_cinema_logs():
@@ -196,10 +295,22 @@ def _format_shot(
     source_code: str = "",
     action_index: int = -1,
     show_details: bool = False,
+    line_span: List[int] = None,
 ) -> str:
     kind = shot.get("kind", {}).get("type", "?")
     tags = ", ".join(shot.get("tags", []))
-    result = f"{kind}: [{tags}]"
+
+    # Add line number information if available
+    line_info = ""
+    if line_span and len(line_span) >= 2:
+        start_line = line_span[0]
+        end_line = line_span[1]
+        if start_line == end_line:
+            line_info = f"ln{start_line} "
+        else:
+            line_info = f"ln{start_line}:{end_line} "
+
+    result = f"{line_info}{kind}: [{tags}]"
 
     if show_details:
         # Add critical timing and spatial parameters
@@ -208,23 +319,25 @@ def _format_shot(
         zoom = shot.get("zoom")
         stage = shot.get("stage", "action")
 
-        timing_info = f"pan={pan_ticks}ticks dwell={dwell_ticks}ticks"
+        details = []
+        details.append(f"pan={pan_ticks} ticks")
+        details.append(f"dwell={dwell_ticks} ticks")
         if zoom is not None:
-            timing_info += f" zoom={zoom}"
-        timing_info += f" stage={stage}"
-
-        result += f" ({timing_info})"
+            details.append(f"zoom={zoom}")
+        details.append(f"stage={stage}")
 
         # Add spatial parameters
         kind_obj = shot.get("kind", {})
         if kind_obj.get("type") == "zoom_to_fit" and "bbox" in kind_obj:
             bbox = kind_obj["bbox"]
-            result += f" bbox={bbox}"
+            details.append(f"bbox={bbox}")
         elif kind_obj.get("type") == "focus_position" and "pos" in kind_obj:
             pos = kind_obj["pos"]
-            result += f" pos={pos}"
+            details.append(f"pos={pos}")
         elif "entity_uid" in kind_obj:
-            result += f" entity={kind_obj['entity_uid']}"
+            details.append(f"entity={kind_obj['entity_uid']}")
+
+        result += f"\n    ({', '.join(details)})"
 
     if show_source and source_code.strip():
         result += f"\n```python\n{source_code}\n```"
@@ -293,6 +406,11 @@ def main(argv: list[str] | None = None) -> int:
         dest="show_details",
         help="Hide detailed shot parameters",
     )
+    parser.add_argument(
+        "--show-unmapped",
+        action="store_true",
+        help="Show code lines that didn't generate any shots",
+    )
 
     parsed = parser.parse_args(argv)
 
@@ -304,21 +422,41 @@ def main(argv: list[str] | None = None) -> int:
 
     for version in _iter_versions(parsed):
         programs_path = root / str(version) / "programs.json"
-        if not programs_path.exists():
-            print(f"[warn] {programs_path} missing; skipping version {version}")
-            continue
 
-        programs = _load_programs(programs_path)
-        print(
-            f"\nVersion {version} — displaying up to {limit or len(programs)} programs"
-        )
+        if programs_path.exists():
+            # Use local file if available
+            programs = _load_programs(programs_path)
+            print(
+                f"\nVersion {version} — displaying up to {limit or len(programs)} programs (from local file)"
+            )
+        else:
+            # Fetch from database if local file not available
+            print(f"[info] {programs_path} not found; fetching from database...")
+            try:
+                programs = _fetch_programs_from_db(version, limit)
+                if not programs:
+                    print(
+                        f"[warn] No programs found for version {version} in database; skipping"
+                    )
+                    continue
+                print(
+                    f"\nVersion {version} — displaying up to {len(programs)} programs (from database)"
+                )
+            except Exception as e:
+                print(
+                    f"[error] Failed to fetch programs from database for version {version}: {e}"
+                )
+                continue
 
         count = 0
+        total_programs = len(programs)
         for program in programs:
             summary = _summarize_program(
                 program, suppress_logs=not parsed.show_cinema_logs
             )
-            print(f"\nProgram {summary.program_id}: {summary.first_line}")
+            print(
+                f"\nProgram {count + 1}/{total_programs}, {summary.program_id}: {summary.first_line}"
+            )
             if summary.shots:
                 print(f"  Shots ({len(summary.shots)}):")
 
@@ -340,20 +478,60 @@ def main(argv: list[str] | None = None) -> int:
                 for idx, shot in enumerate(summary.shots, start=1):
                     shot_id = shot.get("id", "")
                     source_code = shot_to_source.get(shot_id, "")
+
+                    # Find the line_span for this shot
+                    shot_line_span = None
+                    for (
+                        action_idx,
+                        action_shots,
+                    ) in summary.action_to_shot_mapping.items():
+                        if any(s.get("id") == shot_id for s in action_shots):
+                            if action_idx < len(actions):
+                                shot_line_span = actions[action_idx].get("line_span")
+                            break
+
                     shot_text = _format_shot(
                         shot,
                         show_source=parsed.show_source,
                         source_code=source_code,
                         show_details=parsed.show_details,
+                        line_span=shot_line_span,
                     )
                     print(f"    {idx:>2}. {shot_text}")
             else:
                 print("  Shots: none (no qualifying actions)")
 
+            # Show unmapped actions if requested
+            if parsed.show_unmapped:
+                unmapped_actions = _find_unmapped_actions(
+                    actions, summary.action_to_shot_mapping
+                )
+                if unmapped_actions:
+                    print(f"  Unmapped actions ({len(unmapped_actions)}):")
+                    for action in unmapped_actions:
+                        action_type = action.get("type", "?")
+                        line_span = action.get("line_span", [])
+                        source_lines = _extract_source_lines(code, line_span)
+                        if source_lines.strip():
+                            start_line = line_span[0] if line_span else "?"
+                            end_line = (
+                                line_span[1] if len(line_span) > 1 else start_line
+                            )
+                            if start_line == end_line:
+                                line_info = f"ln{start_line}"
+                            else:
+                                line_info = f"ln{start_line}:{end_line}"
+                            print(f"    - {line_info} {action_type}:")
+                            print(f"      ```python\n{source_lines}\n      ```")
+                        else:
+                            print(f"    - {action_type} (no source available)")
+
             count += 1
             if limit is not None and count >= limit:
                 break
 
+    # Clean up cached connection
+    _close_cached_connection()
     return 0
 
 

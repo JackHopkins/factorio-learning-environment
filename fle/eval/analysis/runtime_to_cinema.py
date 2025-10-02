@@ -417,6 +417,40 @@ def process_programs(
     cap_show_gui = bool(capture_opts.get("show_gui", False))
     run_slug = datetime.now().strftime("%Y%m%d_%H%M%S")
 
+    def play_cutscene(
+        plan: Dict[str, Any],
+        warn_label: str,
+        *,
+        subdir: Optional[str] = None,
+        linger: float = 0.5,
+    ):
+        if not plan or not plan.get("shots"):
+            return None
+
+        capture_subdir = subdir or f"v{version}/{warn_label}_{run_slug}"
+
+        try:
+            if cap_enabled:
+                _start_frame_capture(
+                    instance,
+                    player_index=cap_player,
+                    nth=cap_nth,
+                    dir_prefix=cap_dir_prefix,
+                    res=cap_res,
+                    quality=cap_quality,
+                    show_gui=cap_show_gui,
+                    subdir=capture_subdir,
+                )
+                time.sleep(0.35)
+
+            result = instance.first_namespace.cutscene(plan)
+            if linger > 0:
+                time.sleep(linger)
+            return result
+        except Exception as e:
+            print(f"[warn] {warn_label} cutscene failed: {e}")
+            return None
+
     screenshot_sequences: List[Dict[str, Any]] = []
     total_actions_processed = 0
 
@@ -517,10 +551,11 @@ def process_programs(
                         }
                     ],
                 }
-                try:
-                    instance.first_namespace.cutscene(pre_plan)
-                except Exception as e:
-                    print(f"[warn] pre-connect cutscene failed: {e}")
+                play_cutscene(
+                    pre_plan,
+                    "pre_connect",
+                    subdir=f"v{version}/preconn_{program_id:07d}_{run_slug}",
+                )
                 pre_connect_done = True
         else:
             pre_connect_done = False
@@ -536,10 +571,11 @@ def process_programs(
                 print(
                     f"\nExecuting pre-establish move plan with {len(pre_moves)} shots..."
                 )
-                try:
-                    instance.first_namespace.cutscene(pre_plan)
-                except Exception as e:
-                    print(f"[warn] pre-establish cutscene failed: {e}")
+                play_cutscene(
+                    pre_plan,
+                    "pre_moves",
+                    subdir=f"v{version}/premoves_{program_id:07d}_{run_slug}",
+                )
 
         # Create normalized action stream and world context before execution
         action_stream = create_action_stream(action_sites)
@@ -555,10 +591,11 @@ def process_programs(
                 print(
                     f"\nExecuting opening shots ({len(opening_plan['shots'])}) before replay..."
                 )
-                try:
-                    instance.first_namespace.cutscene(opening_plan)
-                except Exception as e:
-                    print(f"[warn] opening cutscene failed: {e}")
+                play_cutscene(
+                    opening_plan,
+                    "opening",
+                    subdir=f"v{version}/opening_{program_id:07d}_{run_slug}",
+                )
                 cin.reset_plan()
 
         # Execute the original program (no cinema code injection)
@@ -611,24 +648,16 @@ def process_programs(
                     f"\nExecuting cutscene after program {idx + 1} with {len(cin.shots)} shots (cadence={EXECUTE_EVERY_N})..."
                 )
                 plan = cin.build_plan(player=1)
-                # Start client-side continuous capture bound to this cutscene lifecycle
-                if cap_enabled:
-                    subdir = f"v{version}/batch_{(idx + 1) // EXECUTE_EVERY_N:04d}_{run_slug}"
-                    _start_frame_capture(
-                        instance,
-                        player_index=cap_player,
-                        nth=cap_nth,
-                        dir_prefix=cap_dir_prefix,
-                        res=cap_res,
-                        quality=cap_quality,
-                        show_gui=cap_show_gui,
-                        subdir=subdir,
-                    )
-                cutscene_result = instance.first_namespace.cutscene(plan)
-                print(f"Cutscene execution result: {cutscene_result}")
-                # Do not stop here; Lua auto-stops on on_cutscene_finished
-                # Give the event loop a moment to flush any remaining frames
-                time.sleep(0.5)
+                subdir = (
+                    f"v{version}/batch_{(idx + 1) // EXECUTE_EVERY_N:04d}_{run_slug}"
+                )
+                cutscene_result = play_cutscene(
+                    plan,
+                    "batch",
+                    subdir=subdir,
+                )
+                if cutscene_result is not None:
+                    print(f"Cutscene execution result: {cutscene_result}")
 
                 # Clear shots after execution to avoid duplicates
                 cin.reset_plan()
@@ -643,24 +672,14 @@ def process_programs(
     cutscene_result = None
     if plan.get("shots"):
         print(f"\nExecuting final cutscene with {len(plan['shots'])} shots...")
-        try:
-            if cap_enabled:
-                subdir = f"v{version}/final_{run_slug}"
-                _start_frame_capture(
-                    instance,
-                    player_index=cap_player,
-                    nth=cap_nth,
-                    dir_prefix=cap_dir_prefix,
-                    res=cap_res,
-                    quality=cap_quality,
-                    show_gui=cap_show_gui,
-                    subdir=subdir,
-                )
-            cutscene_result = instance.first_namespace.cutscene(plan)
+        subdir = f"v{version}/final_{run_slug}"
+        cutscene_result = play_cutscene(
+            plan,
+            "final",
+            subdir=subdir,
+        )
+        if cutscene_result is not None:
             print(f"Cutscene execution result: {cutscene_result}")
-            time.sleep(0.5)
-        except Exception as e:
-            print(f"Error executing cutscene: {e}")
 
     print("\nProcessing complete:")
     print(f"  - Total programs processed: {min(len(programs), max_steps)}")

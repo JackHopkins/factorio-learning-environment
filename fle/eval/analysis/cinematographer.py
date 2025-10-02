@@ -482,6 +482,8 @@ class Cinematographer:
         self._program_has_connect: Dict[Any, bool] = {}
         self._program_connect_emitted: Dict[Any, bool] = {}
         self._program_last_conn_center: Dict[Any, List[float]] = {}
+        # Track repeated feature coverage (power/mining/etc.) to avoid soap-opera angles
+        self._program_feature_centroids: Dict[Any, Dict[str, List[List[float]]]] = {}
 
     @property
     def shots(self) -> List[ShotIntent]:
@@ -514,6 +516,7 @@ class Cinematographer:
                 )
             # reset per-program connection emitted state for fresh action batches of the same program id
             self._program_connect_emitted.setdefault(pid, False)
+            self._program_feature_centroids.setdefault(pid, {})
 
         # Process each action in the stream
         for action in action_stream:
@@ -540,8 +543,9 @@ class Cinematographer:
         return self.policy.build_move_establishments(action_stream, world_context)
 
     def reset_plan(self) -> None:
-        """Clear accumulated shots without affecting cached world context."""
+        """Clear accumulated shots and transient per-plan caches."""
         self.plan.clear()
+        self._program_feature_centroids.clear()
 
     def _bbox_center(self, bbox: list) -> List[float]:
         (x1, y1), (x2, y2) = bbox[0], bbox[1]
@@ -677,6 +681,8 @@ class Cinematographer:
         prototype = args.get("prototype", "").lower()
         position = self._resolve_position(args.get("position", player_pos), player_pos)
 
+        pid = self.world_context.get("program_id")
+
         def _log(shot: ShotIntent) -> None:
             print(
                 f"[cinema] add shot: {shot['kind']['type']} tags={shot.get('tags')} order={shot.get('order')}"
@@ -685,6 +691,9 @@ class Cinematographer:
         # Map entity types to shot policies
         if prototype in ["boiler", "steam_engine", "offshore_pump"]:
             bbox = self._create_bbox_around_position(position, 15)
+            center = self._bbox_center(bbox)
+            if not self._should_emit_feature_shot(pid, "power", center, radius=18.0):
+                return
             shot = self.plan.add_template(
                 ShotLib.zoom_to_bbox(pan_ticks=120, dwell_ticks=90, zoom=0.8),
                 stage="action",
@@ -695,6 +704,9 @@ class Cinematographer:
 
         elif prototype in ["burner_mining_drill", "electric_mining_drill"]:
             bbox = self._create_bbox_around_position(position, 10)
+            center = self._bbox_center(bbox)
+            if not self._should_emit_feature_shot(pid, "mining", center, radius=16.0):
+                return
             shot = self.plan.add_template(
                 ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9),
                 stage="action",
@@ -705,6 +717,9 @@ class Cinematographer:
 
         elif prototype in ["stone_furnace", "steel_furnace", "electric_furnace"]:
             bbox = self._create_bbox_around_position(position, 8)
+            center = self._bbox_center(bbox)
+            if not self._should_emit_feature_shot(pid, "smelting", center, radius=14.0):
+                return
             shot = self.plan.add_template(
                 ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9),
                 stage="action",
@@ -719,6 +734,9 @@ class Cinematographer:
             "assembly_machine_3",
         ]:
             bbox = self._create_bbox_around_position(position, 12)
+            center = self._bbox_center(bbox)
+            if not self._should_emit_feature_shot(pid, "assembly", center, radius=16.0):
+                return
             shot = self.plan.add_template(
                 ShotLib.zoom_to_bbox(pan_ticks=108, dwell_ticks=72, zoom=0.9),
                 stage="action",
@@ -735,6 +753,30 @@ class Cinematographer:
                 pos=position,
             )
             _log(shot)
+
+    def _should_emit_feature_shot(
+        self,
+        program_id: Any,
+        feature: str,
+        center: List[float],
+        *,
+        radius: float,
+    ) -> bool:
+        """Return True if a feature shot should be emitted, suppressing near-duplicates."""
+
+        if program_id is None or not feature:
+            return True
+
+        feature_cache = self._program_feature_centroids.setdefault(program_id, {})
+        centers = feature_cache.setdefault(feature, [])
+        for prev in centers:
+            dx = center[0] - prev[0]
+            dy = center[1] - prev[1]
+            if dx * dx + dy * dy <= radius * radius:
+                return False
+
+        centers.append([center[0], center[1]])
+        return True
 
     def _handle_place_entity_next_to_action(
         self, action: dict, args: dict, player_pos: list
@@ -948,6 +990,7 @@ class Cinematographer:
             del self._program_connect_emitted[pid]
             self._program_has_connect.pop(pid, None)
             self._program_last_conn_center.pop(pid, None)
+            self._program_feature_centroids.pop(pid, None)
 
         return {"player": player, "start_zoom": 1.0, "shots": deduplicated_shots}
 
@@ -971,6 +1014,44 @@ class Cinematographer:
                 return x, y, 0.0, 0.0
             return None
 
+        def _normalized_tag_key(tags: List[str]) -> tuple:
+            if not tags:
+                return tuple()
+            essential = {
+                "zoom",
+                "bbox",
+                "overview",
+                "focus",
+                "position",
+                "cut",
+                "movement",
+                "pre",
+                "post",
+                "arrival",
+                "connection",
+                "endpoints",
+                "power",
+                "mining",
+                "smelting",
+                "assembly",
+                "setup",
+                "building",
+                "placed",
+                "insert",
+                "item",
+                "opening",
+                "establish",
+            }
+            filtered = [t for t in tags if t in essential]
+            if not filtered:
+                filtered = [tags[0]]
+            # Preserve stable order while removing duplicates
+            seen_tags = []
+            for t in filtered:
+                if t not in seen_tags:
+                    seen_tags.append(t)
+            return tuple(sorted(seen_tags))
+
         for s in shots:
             ktype = s.get("kind", {}).get("type", "")
             key_tuple = _bbox_center_span(s)
@@ -981,15 +1062,32 @@ class Cinematographer:
             # Round to tile-ish precision to group near-identical frames
             cx, cy, sx, sy = key_tuple
             stage = s.get("stage", "action")
-            tag_key = tuple(sorted(s.get("tags", [])))
+            tag_key = _normalized_tag_key(s.get("tags", []))
+            if ktype == "zoom_to_fit":
+                precision = 8.0
+                cx_key = round(cx / precision) * precision
+                cy_key = round(cy / precision) * precision
+                sx_key = round(sx / 5.0) * 5.0
+                sy_key = round(sy / 5.0) * 5.0
+            elif ktype == "focus_position":
+                precision = 2.0
+                cx_key = round(cx / precision) * precision
+                cy_key = round(cy / precision) * precision
+                sx_key = 0.0
+                sy_key = 0.0
+            else:
+                cx_key = round(cx, 1)
+                cy_key = round(cy, 1)
+                sx_key = round(sx, 0)
+                sy_key = round(sy, 0)
             fp = (
                 ktype,
                 stage,
                 tag_key,
-                round(cx, 1 if ktype == "focus_position" else 0),
-                round(cy, 1 if ktype == "focus_position" else 0),
-                round(sx, 0),
-                round(sy, 0),
+                cx_key,
+                cy_key,
+                sx_key,
+                sy_key,
             )
             if fp not in seen:
                 deduped.append(s)

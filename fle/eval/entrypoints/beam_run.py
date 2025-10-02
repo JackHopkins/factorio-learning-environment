@@ -13,7 +13,7 @@ from fle.commons.db_client import DBClient
 from fle.commons.models import GameState
 from fle.env import FactorioInstance
 
-from .beam_search import ParallelBeamConfig, ParallelBeamSearch
+from fle.eval.algorithms.beam.beam_search import ParallelBeamConfig, ParallelBeamSearch
 
 os.environ.update({"FORCE_COLOR": "1", "TERM": "xterm-256color"})
 load_dotenv()

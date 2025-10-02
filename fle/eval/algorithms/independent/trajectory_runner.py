@@ -1,498 +1,309 @@
-import asyncio
-from itertools import product
-import copy
+import os
 import time
-from dataclasses import dataclass
-from typing import Optional, Dict, List
-import multiprocessing
-from fle.env.a2a_instance import A2AFactorioInstance
-from dotenv import load_dotenv
+from itertools import product
+from typing import Any, List, Dict, Optional, Tuple
 
-from fle.agents import CompletionResult, CompletionReason
-from fle.agents.agent_abc import AgentABC
-from fle.commons.db_client import DBClient, create_db_client
-from fle.eval.algorithms.independent.simple_evaluator import SimpleFactorioEvaluator
+from fle.agents import CompletionReason, CompletionResult
+from fle.agents.gym_agent import GymAgent
+from fle.commons.db_client import DBClient
 from fle.commons.models.conversation import Conversation
-from fle.commons.models.message import Message
+from fle.commons.models.game_state import GameState
 from fle.commons.models.program import Program
-from fle.env import FactorioInstance
-from fle.commons.cluster_ips import get_local_container_ips
-from fle.agents.llm.metrics import timing_tracker, log_metrics
 
-# from fle.commons.models.response import EnvironmentResponse
-from fle.env.namespace import FactorioNamespace
-from fle.env.protocols.a2a.handler import A2AMessage
-from a2a.types import AgentCard
+from fle.env.gym_env.action import Action
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.observation import Observation
+from fle.eval.algorithms.independent.trajectory_logger import TrajectoryLogger
+from fle.eval.algorithms.independent.config import GymEvalConfig
 
-from fle.agents import Response
-from fle.eval.tasks import TaskABC
+try:
+    from fle.eval.analysis import WandBLogger
 
-load_dotenv()
-
-COURTESY_SLEEP = 5
+    WANDB_ANALYSIS_AVAILABLE = True
+except ImportError:
+    WANDB_ANALYSIS_AVAILABLE = False
 
 
-@dataclass
-class EvalConfig:
-    """Configuration for evaluation"""
-
-    agents: list[AgentABC]
-    version: int
-    version_description: str
-    task: Optional[TaskABC] = None
-    agent_cards: Optional[List[AgentCard]] = None
-
-    def __post_init__(self):
-        if self.task is None and hasattr(self.agents[0], "task"):
-            self.task = self.agents[0].task
-
-
-class TrajectoryRunner:
-    """Handles program generation and evaluation for a single trajectory"""
+class GymTrajectoryRunner:
+    """Handles program generation and evaluation for a single trajectory in the gym environment"""
 
     def __init__(
         self,
-        # api_factory: APIFactory,
-        agents: list[AgentABC],
-        db_client: DBClient,
-        evaluator: SimpleFactorioEvaluator,
-        config: EvalConfig,
+        config: GymEvalConfig,
+        gym_env: FactorioGymEnv,
         process_id: int,
+        db_client: Optional[DBClient],
+        log_dir: Optional[str] = None,
+        reset_states: bool = False,
+        wandb_logger: Optional["WandBLogger"] = None,
     ):
-        self.agents = agents
-        self.db = db_client
-        self.evaluator = evaluator
         self.config = config
-        self.iteration_times = []
+        self.agents = config.agents
+        self.gym_env = gym_env
+        self.instance = gym_env.unwrapped.instance  # Get instance from gym environment
+        self.db_client = db_client
         self.process_id = process_id
-        # Track messages for each agent
-        self.agent_messages: Dict[int, List[A2AMessage]] = {
-            i: [] for i in range(len(agents))
-        }
-        # Track the last timestamp we've shown for each agent
-        self.last_message_timestamps: Dict[int, float] = {
-            i: 0.0 for i in range(len(agents))
-        }
-
-    def _is_model_compatible_with_n_samples(self, model):
-        """Check if model supports batch sampling"""
-        return "gpt" in model or "o1" in model or "gemini" in model
-
-    async def _generate_program(
-        self,
-        conversation: Conversation,
-        response: Response,
-        namespace: FactorioNamespace,
-        meta={},
-        instance_param: int = -1,
-    ) -> Program:
-        conversation = copy.deepcopy(conversation)
-        agent_idx = 0 if instance_param == -1 else instance_param
-        try:
-            policy, policy_meta = await self.agents[agent_idx].step(
-                conversation, response, namespace
-            )
-
-            if not policy:
-                raise Exception("Policy not valid Python. Skipping.")
-
-            try:
-                messages = (
-                    policy.input_conversation.model_dump()["messages"]
-                    if policy.input_conversation
-                    else conversation.model_dump()["messages"]
-                )
-            except Exception:
-                messages = (
-                    policy.input_conversation.dict()["messages"]
-                    if policy.input_conversation
-                    else conversation.dict()["messages"]
-                )
-
-            program = Program(
-                code=policy.code,
-                conversation=policy.input_conversation
-                if policy.input_conversation
-                else conversation,
-                response=response.response if response else None,
-                token_usage=policy.meta.total_tokens,
-                completion_token_usage=policy.meta.output_tokens,
-                prompt_token_usage=policy.meta.input_tokens,
-                version=self.config.version,
-                instance=instance_param,  # used to denote agent index for multiagent runs
-                model=self.agents[agent_idx].model,
-                version_description=self.config.version_description,
-                meta={
-                    "model": self.agents[agent_idx].model,
-                    "process_id": self.process_id,
-                },
-                depth=len(messages) - 2,
-            )
-            program.timing_metrics = timing_tracker.get_metrics()
-
-            if meta:
-                program.meta.update(meta)
-            if policy_meta:
-                program.meta.update(policy_meta)
-            return program
-
-        except Exception as e:
-            print(f"Program generation failed: {str(e)}")
-            return []
-
-    def get_eta(self, current_iteration):
-        """Calculate estimated time remaining"""
-        if not self.iteration_times:
-            return "calculating..."
-
-        avg_iteration_time = sum(self.iteration_times) / len(self.iteration_times)
-        remaining_iterations = self.config.task.trajectory_length - current_iteration
-        seconds_remaining = avg_iteration_time * remaining_iterations
-
-        # Convert to hours:minutes:seconds
-        hours = int(seconds_remaining // 3600)
-        minutes = int((seconds_remaining % 3600) // 60)
-        seconds = int(seconds_remaining % 60)
-
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-    def _collect_new_messages(self, agent_idx: int) -> str:
-        """Collect new messages for an agent and format them for display"""
-        new_messages = []
-        latest_timestamp = 0
-
-        # Get new messages from the game state
-        raw_messages = self.evaluator.instance.namespaces[agent_idx].get_messages()
-        for msg in raw_messages:
-            # Create A2AMessage object and check if newer than last shown
-            a2a_msg = A2AMessage(
-                sender=str(msg["sender"]),
-                recipient=str(msg["recipient"]) if msg["recipient"] != -1 else None,
-                content=msg["message"],
-                timestamp=msg["timestamp"],
-                message_type=msg.get("message_type", "text"),
-                metadata=msg.get("metadata", {}),
-                is_new=msg.get("is_new", True),
-            )
-            if a2a_msg.timestamp > self.last_message_timestamps[agent_idx]:
-                new_messages.append(a2a_msg)
-                # Add to agent_messages collection
-                self.agent_messages[agent_idx].append(a2a_msg)
-                latest_timestamp = max(latest_timestamp, a2a_msg.timestamp)
-
-        # Update the last timestamp
-        if new_messages:
-            self.last_message_timestamps[agent_idx] = latest_timestamp
-
-        # Format messages for display
-        if not new_messages:
-            return ""
-
-        formatted_messages = "\n\nMessages received:\n"
-        for msg in new_messages:
-            sender_info = f"Agent {msg.sender}" if msg.sender != "-1" else "Leader"
-            formatted_messages += f"[{sender_info}]: {msg.content}\n"
-
-        return formatted_messages
-
-    async def run(self):
-        """Run a single trajectory"""
-        # Initialize state based on resume or fresh start
-
         self.start_time = time.time()
+        self.reset_states = reset_states  # Whether to reset the state after each step
+        self.wandb_logger = wandb_logger
 
+        # Initialize trajectory logger
+        self.logger = TrajectoryLogger(
+            start_time=self.start_time,
+            trajectory_length=self.config.task.trajectory_length,
+            log_dir=log_dir,
+        )
+
+    def _log_trajectory_state(
+        self,
+        iteration_start: float,
+        agent: GymAgent,
+        agent_idx: int,
+        agent_step: int,
+        production_score: float,
+        program: Program,
+        observation: Observation,
+    ):
+        """Consolidate all trajectory logging operations
+
+        Args:
+            iteration_start: Start time of the iteration
+            agent: The agent instance
+            agent_idx: Index of the agent
+            agent_step: Current step for this agent
+            production_score: Current production score
+            program: The program to log
+            observation: The observation to log
+        """
+        # Record iteration time
+        iteration_time = time.time() - iteration_start
+        self.logger.add_iteration_time(iteration_time)
+
+        # Log progress, observation and program
+        self.logger.log_progress(agent, agent_step, program.value, production_score)
+        self.logger.log_observation_and_program(
+            agent, agent_idx, agent_step, observation, program
+        )
+
+        # Log to WandB if available
+        if self.wandb_logger and WANDB_ANALYSIS_AVAILABLE:
+            try:
+                # Extract task name from version description
+                task_name = "unknown_task"
+                if (
+                    self.config.version_description
+                    and "type:" in self.config.version_description
+                ):
+                    task_name = (
+                        self.config.version_description.split("type:")[1]
+                        .split("\n")[0]
+                        .strip()
+                    )
+
+                elapsed_time = time.time() - self.start_time
+
+                self.wandb_logger.log_trajectory_progress(
+                    version=self.config.version,
+                    instance=self.process_id,
+                    step=agent_step,
+                    reward=program.value,
+                    production_score=production_score,
+                    model=agent.model,
+                    task=task_name,
+                    elapsed_time=elapsed_time,
+                    tokens_used=program.token_usage,
+                )
+
+            except Exception as e:
+                print(f"Warning: Failed to log to WandB: {e}")
+
+    async def create_program_from_policy(
+        self,
+        policy,
+        agent_idx: int,
+        reward: float,
+        response: str,
+        error_occurred: bool,
+        achievements: Dict[str, Any],
+        game_state: GameState,
+        production_score: float,
+    ) -> Program:
+        """Create a Program object from a Policy and environment results
+
+        Args:
+            policy: The Policy object to convert
+            agent_idx: Index of the agent in the multi-agent setup
+            reward: The reward from the environment step
+            response: The raw text response from the environment
+            error_occurred: Whether an error occurred during execution
+            achievements: The achievements dictionary from the environment
+            game_state: The current game state
+            production_score: The production score from the environment
+
+        Returns:
+            Program object with all necessary metadata and results
+        """
+        messages = policy.input_conversation.model_dump()["messages"]
+        depth = len(messages) - 2
+
+        # Create program from policy with environment results
+        program = Program(
+            code=policy.code,
+            conversation=policy.input_conversation,
+            response=response,
+            token_usage=policy.meta.total_tokens,
+            completion_token_usage=policy.meta.output_tokens,
+            prompt_token_usage=policy.meta.input_tokens,
+            version=self.config.version,
+            instance=agent_idx,
+            model=self.agents[agent_idx].model,
+            version_description=self.config.version_description,
+            value=reward,
+            state=game_state,
+            achievements=achievements,
+            meta={
+                "model": self.agents[agent_idx].model,
+                "process_id": self.process_id,
+                "error_occurred": error_occurred,
+                "sweep_id": os.getenv("FLE_SWEEP_ID", "unknown"),
+                "production_score": production_score,
+            },
+            depth=depth,
+        )
+        if self.config.version and self.db_client is not None:
+            saved_program = await self.db_client.create_program(program)
+            program.id = saved_program.id
+
+        return program
+
+    async def _initialize_trajectory_state(self) -> Tuple[GameState, List[int]]:
+        """Initialize trajectory state, either from resume or fresh start
+
+        Returns:
+            Tuple of (current_state, agent_steps)
+        """
         current_state = None
-        current_conversations = [None] * len(self.agents)
-        last_responses = [None] * len(self.agents)
-        agent_step_counter = [0] * len(self.agents)
-        if self.config.version:
+        agent_steps = [0] * len(self.agents)
+
+        if self.config.version and self.db_client is not None:
             for agent_idx in range(len(self.agents)):
                 (
                     current_state,
-                    current_conversations[agent_idx],
+                    agent_conversation,
                     parent_id,
                     depth,
-                ) = await self.db.get_resume_state(
+                ) = await self.db_client.get_resume_state(
                     resume_version=self.config.version,
                     process_id=self.process_id,
                     agent_idx=agent_idx,
                 )
+                if current_state:
+                    agent_steps[agent_idx] = depth
+                    self.agents[agent_idx].reset(agent_conversation)
 
         if not current_state:
             current_state = self.config.task.starting_game_state
-            depth = 0
-            self.evaluator.instance.reset(current_state)
-            entities = self.evaluator.instance.first_namespace.get_entities()
-            for agent_idx in range(len(self.agents)):
-                inventory = current_state.inventories[agent_idx]
 
-                current_conversations[agent_idx] = Conversation(
-                    messages=[
-                        Message(
-                            role="system",
-                            content=self.config.agents[agent_idx].system_prompt,
-                        ),
-                        Message(
-                            role="assistant",
-                            content="```python\nprint(f'Inventory: {inspect_inventory()}')\n"
-                            "print(f'Entities: {get_entities()}')\n```",
-                        ),
-                        Message(
-                            role="user",
-                            content=f"1: ('Inventory: {inventory.__dict__}')\n"
-                            f"2: ('Entities: {entities}')",
-                        ),
-                    ]
-                )
-                parent_id = None
+        self.gym_env.reset(options={"game_state": current_state})
+        # Initialize agent conversations
+        for agent_idx, agent in enumerate(self.agents):
+            conversation = Conversation()
+            initial_obs = self.gym_env.unwrapped.get_observation(agent_idx)
+            formatted_obs = agent.observation_formatter.format(initial_obs).raw_str
+            conversation.add_user_message(formatted_obs)
+            agent.reset(conversation)
+
+        return current_state, agent_steps
+
+    async def run(self):
+        """Run a single trajectory"""
+
+        # Initialize state based on resume or fresh start
+        max_steps = self.config.task.trajectory_length
+        current_state, agent_steps = await self._initialize_trajectory_state()
+
+        # Save system prompts for all agents at the start
+        for agent_idx, agent in enumerate(self.agents):
+            self.logger.save_system_prompt(agent, agent_idx)
 
         # Run trajectory
-        for iteration, agent_idx in product(
-            range(depth, self.config.task.trajectory_length), range(len(self.agents))
-        ):
-            # Check if the agent has steps left
-            if agent_step_counter[agent_idx] >= self.config.task.trajectory_length:
-                print(f"Agent {agent_idx} has no steps left. Skipping.")
-                continue
+        for _, agent_idx in product(range(max_steps), range(len(self.agents))):
+            agent = self.agents[agent_idx]
             iteration_start = time.time()
-            time.sleep(COURTESY_SLEEP)  # courtesy sleep
             agent_completed = False
             try:
-                # Collect new messages for this agent
-                new_messages_text = self._collect_new_messages(agent_idx)
-
-                # Update the conversation with new messages if any
-                if new_messages_text:
-                    # Get the last user message
-                    last_user_message = None
-                    for msg in reversed(current_conversations[agent_idx].messages):
-                        if msg.role == "user":
-                            last_user_message = msg
-                            break
-
-                    if last_user_message:
-                        # Append new messages to the last user message
-                        last_user_message.content += new_messages_text
-
-                instance_param = -1 if len(self.agents) == 1 else agent_idx
-                # loop while the agent is not completed yet
-                while (
-                    not agent_completed
-                    and agent_step_counter[agent_idx]
-                    < self.config.task.trajectory_length
-                ):
-                    program = await self._generate_program(
-                        current_conversations[agent_idx],
-                        last_responses[agent_idx],
-                        self.evaluator.instance.namespaces[agent_idx],
-                        instance_param=instance_param,
-                    )
-                    agent_step_counter[agent_idx] += 1
-                    print(
-                        f"Generated program {multiprocessing.current_process().name} - "
-                        f"Model: {self.config.agents[agent_idx].model} - "
-                        f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length}"
-                    )
-
-                    if not program:
+                # Loop while the agent is not completed yet
+                while not agent_completed and agent_steps[agent_idx] < max_steps:
+                    # Generate policy using agent's method
+                    policy = await agent.generate_policy()
+                    agent_steps[agent_idx] += 1
+                    if not policy:
                         print(
-                            f"Program generation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}"
+                            f"Policy generation failed for agent {agent_idx} at iteration {agent_steps[agent_idx]}"
                         )
                         break
 
-                    if not program.parent_id:
-                        program.parent_id = parent_id
-
-                    # Evaluate program
-                    if current_state.is_multiagent:
-                        update_messages = [
-                            namespace.get_messages()
-                            for namespace in self.evaluator.instance.namespaces
-                        ]
-                        current_state.agent_messages = update_messages
-                    self.evaluator.instance.reset(current_state)
-                    instance_namespace_before_program = (
-                        self.evaluator.instance.namespaces[agent_idx]
-                    )
-                    (
-                        evaluated_program,
-                        task_verification_response,
-                    ) = await self.evaluator.evaluate(
-                        program,
-                        current_state,
-                        self.config.task,
+                    # Execute step in the environment
+                    action = Action(
+                        code=policy.code,
                         agent_idx=agent_idx,
-                        step_statistics={
-                            "current_step_id": agent_step_counter[agent_idx]
-                        },
+                        game_state=current_state if self.reset_states else None,
                     )
-                    print(program.code + "\n" + "=" * 50)
-                    print(
-                        "\033[1m\n".join(
-                            [
-                                ">>>\t" + line
-                                for line in program.response.strip()
-                                .replace("\\n", "\n\t")
-                                .split("\n")
-                            ]
-                        ).strip()
-                        + "\033[0m"
+                    obs_dict, reward, terminated, truncated, info = self.gym_env.step(
+                        action
                     )
-                    print(
-                        f"Evaluated program {multiprocessing.current_process().name} - "
-                        f"Model: {self.config.agents[agent_idx].model} - "
-                        f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
-                        f"Agent #{agent_idx}"
-                    )
+                    observation = Observation.from_dict(obs_dict)
+                    output_game_state = info["output_game_state"]
+                    production_score = info["production_score"]
+                    done = terminated or truncated
 
-                    # Print performance metrics
-                    log_metrics()
-
-                    if not evaluated_program:
-                        print(
-                            f"Evaluation failed for agent {agent_idx} at iteration {agent_step_counter[agent_idx]}"
-                        )
-                        break
-
-                    # Record iteration time
-                    iteration_time = time.time() - iteration_start
-                    self.iteration_times.append(iteration_time)
-
-                    # Keep only last 50 iterations for moving average
-                    if len(self.iteration_times) > 50:
-                        self.iteration_times = self.iteration_times[-50:]
-
-                    if agent_step_counter[agent_idx] % 10 == 0:
-                        elapsed = time.time() - self.start_time
-                        elapsed_str = f"{int(elapsed // 3600):02d}:{int((elapsed % 3600) // 60):02d}:{int(elapsed % 60):02d}"
-                        eta = self.get_eta(agent_step_counter[agent_idx])
-                        print(
-                            f"\033[92m Process {multiprocessing.current_process().name} - "
-                            f"Model: {self.config.agents[agent_idx].model} - "
-                            f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length} - "
-                            f"Value: {program.value:.2f} - "
-                            f"Elapsed: {elapsed_str} - "
-                            f"ETA: {eta}"
-                        )
-
-                    last_responses[agent_idx] = Response(
-                        code=f"```python\n{evaluated_program.code}\n```",
-                        created_at=evaluated_program.created_at,
-                        score=evaluated_program.value,
-                        achievements=evaluated_program.achievements,
-                        step=depth,
-                        ticks=evaluated_program.ticks,
-                        flows=evaluated_program.flows,
-                        response=evaluated_program.response,
-                        task=task_verification_response,
-                        error=evaluated_program.meta.get("error_occurred", False),
-                        program_id=evaluated_program.id,
+                    # Create program from policy with environment results
+                    program = await self.create_program_from_policy(
+                        policy=policy,
+                        agent_idx=agent_idx,
+                        reward=reward,
+                        response=obs_dict["raw_text"],
+                        error_occurred=info["error_occurred"],
+                        achievements=info["achievements"],
+                        game_state=output_game_state,
+                        production_score=production_score,
                     )
 
-                    # get the agent_completed flag from the agent
-                    agent_completed, update_state = self.agents[
-                        agent_idx
-                    ].check_step_completion(last_responses[agent_idx])
-                    if update_state:
-                        current_state = program.state
-                    else:
-                        self.evaluator.instance.namespaces[agent_idx] = (
-                            instance_namespace_before_program
-                        )
-
-                    program = evaluated_program
-                    program.meta["task_key"] = self.config.task.task_key
-
-                    # Save program
-                    saved_program = await self.db.create_program(program)
-                    print(
-                        f"Saved program {multiprocessing.current_process().name} - "
-                        f"Model: {self.config.agents[agent_idx].model} - "
-                        f"Iteration {agent_step_counter[agent_idx]}/{self.config.task.trajectory_length}"
+                    # Update agent's conversation with the program and its results
+                    await agent.update_conversation(
+                        observation, previous_program=program
                     )
 
-                    parent_id = saved_program.id
-                    last_responses[agent_idx].program_id = saved_program.id
-                    # Update state for next iteration
-                    if program.state:
-                        # add the last 2 messages from program.conversation to the current conversation
-                        current_conversations[agent_idx].messages.extend(
-                            program.conversation.messages[-2:]
-                        )
+                    # Consolidate all trajectory logging operations
+                    self._log_trajectory_state(
+                        iteration_start,
+                        agent,
+                        agent_idx,
+                        agent_steps[agent_idx],
+                        production_score,
+                        program,
+                        observation,
+                    )
 
-                    if task_verification_response.success:
-                        print(
-                            f"Task verification success: {task_verification_response.success}"
+                    # Get the agent_completed flag from the agent
+                    if self.reset_states:
+                        agent_completed, update_state = agent.check_step_completion(
+                            observation
                         )
+                        if update_state:
+                            current_state = output_game_state
+
+                    # Check if done and exit if configured
+                    if done:
                         completion_result = CompletionResult(
-                            step=agent_step_counter[agent_idx],
-                            reason=CompletionReason.SUCCESS,
+                            step=agent_steps[agent_idx], reason=CompletionReason.SUCCESS
                         )
                         for agent in self.agents:
-                            await agent.end(program.conversation, completion_result)
-                        # exit the loop
+                            await agent.end(completion_result)
                         return
+
             except Exception as e:
-                print(f"Error in iteration {agent_step_counter[agent_idx]}: {e}")
-                raise e
+                print(
+                    f"Error in trajectory runner iteration {agent_steps[agent_idx]}: {e}"
+                )
                 continue
-
-
-async def create_factorio_instance(
-    instance_id: int, num_agents: int = 1, agent_cards: Optional[List[AgentCard]] = None
-) -> FactorioInstance:
-    """Create and asynchronously initialize a single Factorio instance"""
-    ips, udp_ports, tcp_ports = get_local_container_ips()
-
-    common_kwargs = {
-        "address": ips[instance_id],
-        "tcp_port": tcp_ports[instance_id],
-        "bounding_box": 200,
-        "fast": True,
-        "cache_scripts": True,
-        "inventory": {},
-        "all_technologies_researched": True,
-        "num_agents": num_agents,
-    }
-
-    if num_agents > 1:
-        instance = await A2AFactorioInstance.create(
-            **common_kwargs, agent_cards=agent_cards
-        )
-    else:
-        instance = FactorioInstance(**common_kwargs)
-
-    # Set initial speed and unpause
-    instance.set_speed_and_unpause(10)
-    return instance
-
-
-async def run_trajectory(process_id: int, config: EvalConfig):
-    """Entry point for running a single trajectory"""
-    db_client = await create_db_client()
-    instance = await create_factorio_instance(
-        process_id, len(config.agents), config.agent_cards
-    )
-    evaluator = SimpleFactorioEvaluator(
-        db_client=db_client, instance=instance, value_accrual_time=1, error_penalty=0
-    )
-    task = config.task
-    task.setup(instance)
-
-    runner = TrajectoryRunner(config.agents, db_client, evaluator, config, process_id)
-
-    await runner.run()
-    await db_client.cleanup()
-
-
-def run_process(process_id: int, config: EvalConfig):
-    """Process entry point"""
-    asyncio.run(run_trajectory(process_id, config))
-
-
-async def get_next_version() -> int:
-    """Get next available version number"""
-    db_client = await create_db_client()
-    version = await db_client.get_largest_version()
-    await db_client.cleanup()
-    return version + 1

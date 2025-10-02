@@ -30,7 +30,7 @@ def fle_eval(args):
     """Run evaluation/experiments with the given config."""
     try:
         # Import run_eval only when needed (requires eval dependencies)
-        from fle.env.gym_env.run_eval import main as run_eval
+        from fle.eval.entrypoints.gym_eval import main as run_eval
 
         config_path = str(Path(args.config))
         asyncio.run(run_eval(config_path))

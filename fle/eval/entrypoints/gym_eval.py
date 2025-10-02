@@ -6,15 +6,15 @@ import os
 import gym
 import importlib.resources
 from dotenv import load_dotenv
-from fle.env.gym_env.config import GymEvalConfig, GymRunConfig
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.gym_env.registry import get_environment_info, list_available_environments
-from fle.env.gym_env.trajectory_runner import GymTrajectoryRunner
 
 from fle.agents.gym_agent import GymAgent
 from fle.commons.db_client import create_db_client, get_next_version
 from fle.eval.tasks import TaskFactory
+from fle.eval.algorithms.independent.trajectory_runner import GymTrajectoryRunner
+from fle.eval.algorithms.independent.config import GymEvalConfig, GymRunConfig
 from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )

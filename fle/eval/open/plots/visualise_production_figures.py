@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from matplotlib import image as mpimg
 
 from fle.commons.db_client import DBClient
-from eval.open.independent_runs.value_calculator import ValueCalculator
+from fle.eval.algorithms.independent.value_calculator import ValueCalculator
 
 load_dotenv()
 

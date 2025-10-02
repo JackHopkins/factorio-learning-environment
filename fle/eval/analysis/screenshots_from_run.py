@@ -54,26 +54,19 @@ class ScreenshotInstance(FactorioInstance):
 
         self.rcon_client.send_command("/sc rendering.clear()")
 
-        # # Calculate optimal zoom if not specified
-        # if zoom is None:
-        #     zoom = self.calculate_optimal_zoom(bounds, resolution)
-
+        # Use proper Factorio Lua API with blocking screenshot
+        # Take screenshot and wait for completion
         command = (
             "/sc game.take_screenshot({player=1, zoom="
             + str(camera.zoom)
             + ", show_entity_info=true, hide_clouds=true, hide_fog=true "
             + POS_STRING
-            + "})"
+            + "}); game.set_wait_for_screenshots_to_finish()"
         )
         self.rcon_client.send_command(command)
-        time.sleep(1)
-        # if not response:
-        #     return None
 
-        # Wait for the screenshot file to appear and get its path
-        screenshot_path = self._get_latest_screenshot(
-            script_output_path=script_output_path
-        )
+        # Poll for screenshot completion by checking if file exists and is non-empty
+        screenshot_path = self._wait_for_screenshot_completion(script_output_path)
         if not screenshot_path:
             print("Screenshot file not found")
             return None
@@ -93,34 +86,59 @@ class ScreenshotInstance(FactorioInstance):
 
         return screenshot_path
 
-    def _get_latest_screenshot(self, script_output_path, max_wait=2):
+    def _wait_for_screenshot_completion(self, script_output_path, max_wait=5.0):
         """
-        Get the path to the latest screenshot in the script-output directory.
-        Waits up to max_wait seconds for the file to appear.
+        Wait for screenshot completion by polling for screenshot.png to be updated and non-empty.
+        Factorio saves screenshots as screenshot.png and overwrites it each time.
         """
+        start_time = time.time()
+        screenshot_path = os.path.join(script_output_path, "screenshot.png")
+        initial_mtime = 0
+
+        # Get initial modification time if file exists
+        try:
+            if os.path.exists(screenshot_path):
+                initial_mtime = os.path.getmtime(screenshot_path)
+        except Exception:
+            pass
+
+        while time.time() - start_time < max_wait:
+            try:
+                # Check if screenshot.png exists and has been updated
+                if os.path.exists(screenshot_path):
+                    current_mtime = os.path.getmtime(screenshot_path)
+                    current_size = os.path.getsize(screenshot_path)
+
+                    # File has been updated and is non-empty
+                    if current_mtime > initial_mtime and current_size > 0:
+                        return screenshot_path
+
+            except Exception as e:
+                print(f"Error checking for screenshot: {e}")
+
+            time.sleep(0.1)  # Check every 100ms
+
+        return None
+
+    def _get_latest_screenshot(self, script_output_path, max_wait=0.1):
+        """
+        Get the path to screenshot.png in the script-output directory.
+        Factorio saves screenshots as screenshot.png and overwrites it each time.
+        """
+        screenshot_path = os.path.join(script_output_path, "screenshot.png")
+
         start_time = time.time()
         while time.time() - start_time < max_wait:
             try:
-                # Get list of screenshot files
-                screenshots = [
-                    f
-                    for f in os.listdir(script_output_path)
-                    if f.endswith(".png") and f.startswith("screenshot")
-                ]
-
-                if screenshots:
-                    # Sort by modification time to get the latest
-                    latest = max(
-                        screenshots,
-                        key=lambda x: os.path.getmtime(
-                            os.path.join(script_output_path, x)
-                        ),
-                    )
-                    return os.path.join(script_output_path, latest)
+                if (
+                    os.path.exists(screenshot_path)
+                    and os.path.getsize(screenshot_path) > 0
+                ):
+                    return screenshot_path
             except Exception as e:
-                print(f"Error checking for screenshots: {e}")
+                print(f"Error checking for screenshot: {e}")
 
-            time.sleep(0.5)  # Wait before checking again
+            time.sleep(0.01)  # Much shorter wait since API handles the heavy lifting
 
         return None
 
@@ -202,6 +220,9 @@ def create_factorio_instance(output_dir, script_output_path) -> ScreenshotInstan
     screenshot_counter = get_highest_screenshot_number() + 1
     print(f"Starting screenshot numbering from {screenshot_counter}")
 
+    # Make screenshot counter accessible from the instance
+    instance.screenshot_counter = screenshot_counter
+
     # Reset camera settings
     instance.rcon_client.send_command("/c global.camera = nil")
 
@@ -223,6 +244,8 @@ def create_factorio_instance(output_dir, script_output_path) -> ScreenshotInstan
 
         # Increment the counter for the next screenshot
         screenshot_counter += 1
+        # Keep instance counter in sync
+        instance.screenshot_counter = screenshot_counter
 
     # Register post-tool hook for place_entity
     for tool in [
@@ -270,15 +293,19 @@ def capture_screenshots_with_hooks(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Initialize screenshot counter based on existing screenshots
-    existing_screenshots = get_existing_screenshots(output_path)
-    screenshot_counter = max(existing_screenshots, default=-1) + 1
+    # Use the screenshot counter from the instance (already initialized in create_factorio_instance)
+    # This ensures we have a single, consistent counter throughout the process
+    screenshot_counter = instance.screenshot_counter
 
     # Process each program
+    total_programs = len(program_ids)
     for idx, (program_id, created_at) in enumerate(program_ids):
         if idx >= max_steps:
             print(f"Reached max_steps limit ({max_steps}), stopping")
             break
+
+        # Print program progress with nice formatting
+        print(f"\n{'=' * 20} Program {idx + 1:3d}/{total_programs:3d} {'=' * 20}")
 
         # Load program state JIT
         program = get_program_state(conn, program_id)
@@ -306,6 +333,8 @@ def capture_screenshots_with_hooks(
 
         # Increment counter for the next screenshot
         screenshot_counter += 1
+        # Keep instance counter in sync
+        instance.screenshot_counter = screenshot_counter
 
     # Add a few final frames to show completion (optional)
     print("Adding final completion frames...")
@@ -323,6 +352,8 @@ def capture_screenshots_with_hooks(
             )
             print(f"Captured final completion frame: {screenshot_filename}")
             screenshot_counter += 1
+            # Keep instance counter in sync
+            instance.screenshot_counter = screenshot_counter
         except Exception as e:
             print(f"Error in final frames: {e}")
             break
@@ -433,8 +464,26 @@ def main():
         version_dir = output_base / str(args.version)
         version_dir.mkdir(parents=True, exist_ok=True)
 
+        # Check for existing PNG files and prompt user
+        existing_pngs = list(version_dir.glob("*.png"))
+        if existing_pngs:
+            print(
+                f"Found {len(existing_pngs)} existing PNG files in {version_dir.absolute()}"
+            )
+            response = (
+                input("Clear existing PNG files and restart? (Y/n): ").strip().lower()
+            )
+            if response in ["", "y", "yes"]:  # Empty string means default (Y)
+                print("Clearing existing PNG files...")
+                for png_file in existing_pngs:
+                    png_file.unlink()
+                print(f"Cleared {len(existing_pngs)} PNG files")
+            else:
+                print("User chose not to clear existing files. Exiting with no-op.")
+                return
+
         print(f"Screenshots will be saved to: {version_dir.absolute()}")
-        print(f"Video will be saved to: {version_dir.absolute()}/output.mp4")
+        print(f"Video will be saved to: {output_base.absolute()}/{args.version}.mp4")
 
         # Connect to database
         conn = get_db_connection()
@@ -448,6 +497,7 @@ def main():
 
             if not program_ids:
                 print(f"No programs found for version {args.version}")
+                print("Script finished - exiting")
                 return
 
             print(f"Found {len(program_ids)} programs")
@@ -470,16 +520,29 @@ def main():
 
             # Convert to video
             print("Converting screenshots to video...")
-            output_video = version_dir / "output.mp4"
+            output_video = output_base / f"{args.version}.mp4"
             try:
                 png_to_mp4(str(version_dir), str(output_video), args.framerate)
                 print(f"Successfully created video: {output_video}")
             except Exception as e:
                 print(f"Failed to create video: {e}")
 
+        except Exception as e:
+            print(f"Error during processing: {e}")
+            print("Script encountered an error - exiting")
         finally:
+            # Clean up resources
+            try:
+                if "instance" in locals():
+                    instance.cleanup()
+                    print("Factorio instance cleaned up")
+            except Exception as e:
+                print(f"Warning: Failed to cleanup instance: {e}")
+
             conn.close()
             print(f"Completed processing version {args.version}")
+            print("Script finished successfully - exiting")
+            break  # Exit after processing one version
 
 
 if __name__ == "__main__":

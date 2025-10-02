@@ -55,6 +55,7 @@ local function ensure_player_state(player_index)
     g.player_state[player_index] = g.player_state[player_index] or {
         last_zoom = nil,
         last_position = nil,
+        camera_interp = nil,
     }
     return g.player_state[player_index]
 end
@@ -79,6 +80,24 @@ local function clamp_zoom(z)
     if z < 0.05 then return 0.05 end
     if z > 4.0 then return 4.0 end
     return z
+end
+
+-- Easing and interpolation helpers for smoother camera
+local function lerp(a, b, t)
+    return a + (b - a) * t
+end
+
+local function ease_in_out_cubic(t)
+    if t < 0.5 then
+        return 4 * t * t * t
+    else
+        local u = -2 * t + 2
+        return 1 - (u * u * u) / 2
+    end
+end
+
+local function interp_vec2(a, b, t)
+    return { x = lerp(a.x, b.x, t), y = lerp(a.y, b.y, t) }
 end
 
 local function compute_zoom_for_bbox(bbox, resolution)
@@ -372,6 +391,51 @@ local function compile_plan(player, plan)
     return waypoints
 end
 
+-- === Interpolation state ==================================================
+local function resolve_wp_position(wp)
+    if not wp then return nil end
+    if wp.position then return { x = wp.position.x, y = wp.position.y } end
+    if wp.target and wp.target.valid then
+        return { x = wp.target.position.x, y = wp.target.position.y }
+    end
+    return nil
+end
+
+local function prime_camera_interp(player_index, plan, waypoints)
+    local ps = ensure_player_state(player_index)
+    local now = game.tick
+    local first = waypoints[1]
+    if not first then return end
+
+    local start_pos = plan.start_position or ps.last_position
+    if not start_pos then
+        local p = game.get_player(player_index)
+        if p and p.valid then
+            start_pos = { x = p.position.x, y = p.position.y }
+        else
+            start_pos = resolve_wp_position(first) or { x = 0, y = 0 }
+        end
+    end
+
+    local end_pos = resolve_wp_position(first) or start_pos
+    local start_zoom = plan.start_zoom or ps.last_zoom or (first.zoom or 1.0)
+    local end_zoom = first.zoom or start_zoom
+    local seg_duration = first.transition_time or 0
+    local dwell = first.time_to_wait or 0
+
+    ps.camera_interp = {
+        active = true,
+        wp_index = 0, -- before first waypoint
+        seg_start_tick = now,
+        seg_end_tick = now + seg_duration,
+        dwell_end_tick = now + seg_duration + dwell,
+        start_pos = start_pos,
+        end_pos = end_pos,
+        start_zoom = start_zoom,
+        end_zoom = end_zoom,
+    }
+end
+
 -- === Validation ==========================================================
 local function validate_shot_intent(shot)
     if type(shot) ~= "table" or type(shot.id) ~= "string" or type(shot.kind) ~= "table" or type(shot.kind.type) ~= "string" then
@@ -545,11 +609,42 @@ script.on_nth_tick(1, function(e)
         game.write_file("cinema_debug.log", string.format("Screenshot path: %s (capture_dir: %s)\n", path, capture_dir), true)
     end
 
-    -- During cutscenes, let the screenshot capture the current view
-    -- Don't specify position/zoom to avoid API issues
+    -- Compute smooth camera sample (position + zoom) for this frame
+    local ps = ensure_player_state(frame_capture.player_index or 1)
+    local ci = ps.camera_interp
+
+    local curr_pos
+    local curr_zoom
+
+    if ci and ci.active then
+        local seg_len = math.max(0, (ci.seg_end_tick or e.tick) - (ci.seg_start_tick or e.tick))
+        if seg_len > 0 and e.tick < (ci.seg_end_tick or 0) then
+            -- In transition: interpolate with easing
+            local t = (e.tick - (ci.seg_start_tick or e.tick)) / seg_len
+            t = math.max(0, math.min(1, t))
+            local te = ease_in_out_cubic(t)
+            curr_pos = interp_vec2(ci.start_pos, ci.end_pos, te)
+            curr_zoom = lerp(ci.start_zoom, ci.end_zoom, te)
+        else
+            -- In dwell or after transition
+            curr_pos = { x = ci.end_pos.x, y = ci.end_pos.y }
+            curr_zoom = ci.end_zoom
+        end
+    end
+
+    -- Fallbacks
+    if not curr_pos then
+        curr_pos = ps.last_position or { x = p.position.x, y = p.position.y }
+    end
+    if not curr_zoom then
+        curr_zoom = ps.last_zoom or p.zoom or 1.0
+    end
+
+    -- Take explicit screenshot using surface+position+zoom for deterministic capture
     game.take_screenshot{
-        player = p,
-        by_player = p.index,
+        surface = p.surface,
+        position = curr_pos,
+        zoom = clamp_zoom(curr_zoom),
         path = path,
         resolution = CAPTURE_CONFIG.resolution,
         quality = CAPTURE_CONFIG.quality,
@@ -598,6 +693,9 @@ local function start_plan(player_index, plan)
     plan.__compiled = waypoints
     g.active_plan_by_player[player_index] = plan
 
+    -- Prime camera interpolation so screenshots can track smooth zoom/position
+    prime_camera_interp(player_index, plan, waypoints)
+
     -- Always stop any existing capture before starting new one
     if frame_capture.active then
         stop_frame_capture()
@@ -618,7 +716,7 @@ local function start_plan(player_index, plan)
         start_zoom = plan.start_zoom,
         final_transition_time = plan.final_transition_time,
         chart_mode_cutoff = plan.chart_mode_cutoff,
-        skip_soft_zoom = true,
+        -- skip_soft_zoom = true,
         disable_camera_movements = false,
     }
 
@@ -703,6 +801,33 @@ local function on_cutscene_waypoint(event)
 
     if wp.zoom then
         ensure_player_state(event.player_index).last_zoom = wp.zoom
+    end
+
+    -- Update interpolation to the NEXT segment (wp[idx] -> wp[idx+1])
+    local next_wp = plan.__compiled[idx + 2]
+    local ps = ensure_player_state(event.player_index)
+    if next_wp then
+        local start_pos = resolve_wp_position(wp) or ps.last_position or { x = 0, y = 0 }
+        local end_pos = resolve_wp_position(next_wp) or start_pos
+        local start_zoom = wp.zoom or ps.last_zoom or 1.0
+        local end_zoom = next_wp.zoom or start_zoom
+        local seg_duration = next_wp.transition_time or 0
+        local dwell = next_wp.time_to_wait or 0
+        ps.camera_interp = {
+            active = true,
+            wp_index = idx + 1,
+            seg_start_tick = event.tick,
+            seg_end_tick = event.tick + seg_duration,
+            dwell_end_tick = event.tick + seg_duration + dwell,
+            start_pos = start_pos,
+            end_pos = end_pos,
+            start_zoom = start_zoom,
+            end_zoom = end_zoom,
+        }
+    else
+        -- No more segments; hold at last position/zoom
+        ps.camera_interp = ps.camera_interp or {}
+        ps.camera_interp.active = false
     end
 end
 

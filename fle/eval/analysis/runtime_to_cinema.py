@@ -53,51 +53,6 @@ from fle.eval.analysis.cinematographer import Cinematographer, CameraPrefs, Game
 load_dotenv()
 
 
-# --- Remote (RCON) helpers for screenshot capture --------------------------
-
-
-def _lua_bool(b: bool) -> str:
-    return "true" if b else "false"
-
-
-def _start_frame_capture(
-    instance: FactorioInstance,
-    *,
-    player_index: int = 1,
-    nth: int = 6,
-    dir_prefix: str = "cinema_seq",
-    res: tuple[int, int] = (1920, 1080),
-    quality: int = 100,
-    show_gui: bool = False,
-    subdir: str | None = None,
-) -> None:
-    """Tell the mod-side remote interface to start continuous capture on a rendering client.
-    This captures the *player's current view* (cutscene camera), so we don't need to pass zoom/position.
-    """
-    w, h = res
-    # Build directory path inside client's script-output. Factorio will create nested dirs.
-    if subdir:
-        full_dir = f"{dir_prefix}/{subdir}"
-    else:
-        full_dir = dir_prefix
-    cmd = (
-        'remote.call("cinema_capture","start", '
-        f'{{player_index={player_index}, nth={nth}, dir="{full_dir}", res={{{w},{h}}}, quality={quality}, show_gui={_lua_bool(show_gui)}}})'
-    )
-    try:
-        instance.rcon_client.send_command(f"/c {cmd}")
-    except Exception as e:
-        print(f"[capture] start failed: {e}")
-
-
-def _stop_frame_capture(instance: FactorioInstance) -> None:
-    cmd = 'remote.call("cinema_capture","stop")'
-    try:
-        instance.rcon_client.send_command(f"/c {cmd}")
-    except Exception as e:
-        print(f"[capture] stop failed: {e}")
-
-
 # --- Module-level defaults -------------------------------------------------
 
 # Note: connection shots now provide pan_ticks/dwell_ticks; Lua prefers tick timing when present.
@@ -407,14 +362,9 @@ def process_programs(
     print("Environment reset complete")
     instance.first_namespace.enable_admin_tools_in_runtime(True)
 
-    capture_opts = capture_opts or {}
-    cap_enabled = capture_opts.get("enabled", True)
-    cap_player = int(capture_opts.get("player_index", 1))
-    cap_nth = int(capture_opts.get("nth", 6))
-    cap_dir_prefix = str(capture_opts.get("dir_prefix", "cinema_seq"))
-    cap_res = tuple(capture_opts.get("res", (1920, 1080)))
-    cap_quality = int(capture_opts.get("quality", 100))
-    cap_show_gui = bool(capture_opts.get("show_gui", False))
+    # Simplified capture options - just enable/disable
+    cap_enabled = capture_opts.get("enabled", True) if capture_opts else True
+    cap_player = 1  # Static default
     run_slug = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     def play_cutscene(
@@ -427,22 +377,23 @@ def process_programs(
         if not plan or not plan.get("shots"):
             return None
 
-        capture_subdir = subdir or f"v{version}/{warn_label}_{run_slug}"
+        label_source = None
+        if subdir:
+            label_source = str(subdir).strip("/").split("/")[-1]
+        if not label_source:
+            label_source = f"{warn_label}_{run_slug}"
+
+        plan_id = plan.get("plan_id") or label_source
+        plan["plan_id"] = plan_id
+        plan.setdefault("player", cap_player)
+
+        # Simplified capture contract: just enable/disable with static defaults
+        if cap_enabled:
+            plan["capture"] = True  # Simple boolean flag
+        else:
+            plan.pop("capture", None)
 
         try:
-            if cap_enabled:
-                _start_frame_capture(
-                    instance,
-                    player_index=cap_player,
-                    nth=cap_nth,
-                    dir_prefix=cap_dir_prefix,
-                    res=cap_res,
-                    quality=cap_quality,
-                    show_gui=cap_show_gui,
-                    subdir=capture_subdir,
-                )
-                time.sleep(0.35)
-
             result = instance.first_namespace.cutscene(plan)
             if linger > 0:
                 time.sleep(linger)
@@ -578,15 +529,21 @@ def process_programs(
                 )
 
         # Create normalized action stream and world context before execution
-        action_stream = create_action_stream(action_sites)
-        world_context = build_world_context(instance, program)
-        world_context["pre_connect_done"] = pre_connect_done
+        pre_action_stream = create_action_stream(action_sites)
+        pre_world_context = build_world_context(instance, program)
+        pre_world_context["pre_connect_done"] = pre_connect_done
 
-        # Give the cinematographer a chance to stage pre-program opening shots
-        cin.observe_action_stream(action_stream, world_context)
-
-        if idx == 0 and cin.shots:
-            opening_plan = cin.build_plan(player=1)
+        if idx == 0:
+            preview_cin = Cinematographer(
+                cin.camera_prefs,
+                cin.game_clock,
+                policy=cin.policy,
+            )
+            preview_cin.observe_action_stream(
+                pre_action_stream,
+                dict(pre_world_context),
+            )
+            opening_plan = preview_cin.build_plan(player=1)
             if opening_plan.get("shots"):
                 print(
                     f"\nExecuting opening shots ({len(opening_plan['shots'])}) before replay..."
@@ -596,7 +553,6 @@ def process_programs(
                     "opening",
                     subdir=f"v{version}/opening_{program_id:07d}_{run_slug}",
                 )
-                cin.reset_plan()
 
         # Execute the original program (no cinema code injection)
         print("Executing program...")
@@ -616,13 +572,10 @@ def process_programs(
         action_stream = create_action_stream(action_sites)
 
         # Feed actions + world context to Cinematographer (the single brain)
+        before_count = len(cin.shots)
         cin.observe_action_stream(action_stream, world_context)
-
-        # Debug: how many shots were added by this program
-        # Note: "added approx" is an estimate; deduplication may affect the true count.
-        print(
-            f"[cinema] queued shots after mapping: {len(cin.shots)} (added {len(cin.shots) - (total_actions_processed - len(action_stream))} approx)"
-        )
+        added = len(cin.shots) - before_count
+        print(f"[cinema] queued shots after mapping: {len(cin.shots)} (added {added})")
 
         total_actions_processed += len(action_stream)
 
@@ -776,29 +729,53 @@ def _render_video_from_frames(
     frames_dir: Path,
     output_dir: Path,
     *,
-    script: Optional[Path] = None,
-    extra_args: Optional[List[str]] = None,
+    fps: int = 10,
+    crf: int = 28,
+    preset: str = "ultrafast",
 ) -> dict:
-    """Invoke the shell helper to turn a frame tree into MP4 artifacts."""
+    """Render an MP4 from PNG frames using ffmpeg."""
 
     if not frames_dir.exists():
         return {"ok": False, "error": f"frames dir {frames_dir} missing"}
 
-    if not any(frames_dir.rglob("*.png")):
+    if not any(frames_dir.glob("*.png")):
+        # fall back to recursive search to provide a clearer error when frames are nested
+        nested = list(frames_dir.rglob("*.png"))
+        if nested:
+            return {
+                "ok": False,
+                "error": "png frames found in subdirectories; expected flat directory",
+            }
         return {"ok": False, "error": "no png frames"}
 
-    script_path = (
-        script or Path(__file__).resolve().parents[3] / "process_cinema_frames.sh"
-    )
-    if not script_path.exists():
-        return {"ok": False, "error": f"script {script_path} not found"}
-
     output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / f"{frames_dir.parent.name}.mp4"
 
-    cmd = ["bash", str(script_path), "--output", str(output_dir)]
-    if extra_args:
-        cmd.extend(extra_args)
-    cmd.append(str(frames_dir))
+    pattern = str(frames_dir / "*.png")
+
+    cmd = [
+        "ffmpeg",
+        "-y",
+        "-loglevel",
+        "error",
+        "-framerate",
+        str(fps),
+        "-pattern_type",
+        "glob",
+        "-i",
+        pattern,
+        "-r",
+        str(fps),
+        "-c:v",
+        "libx264",
+        "-preset",
+        preset,
+        "-crf",
+        str(crf),
+        "-pix_fmt",
+        "yuv420p",
+        str(output_file),
+    ]
 
     try:
         result = subprocess.run(
@@ -807,8 +784,10 @@ def _render_video_from_frames(
             capture_output=True,
             text=True,
         )
+    except FileNotFoundError:
+        return {"ok": False, "error": "ffmpeg not found"}
     except Exception as exc:  # pragma: no cover - defensive
-        return {"ok": False, "error": f"failed to invoke script: {exc}"}
+        return {"ok": False, "error": f"failed to invoke ffmpeg: {exc}"}
 
     return {
         "ok": result.returncode == 0,
@@ -816,6 +795,7 @@ def _render_video_from_frames(
         "stdout": result.stdout.strip(),
         "stderr": result.stderr.strip(),
         "command": cmd,
+        "output": str(output_file),
     }
 
 
@@ -835,36 +815,7 @@ def main():
     parser.add_argument(
         "--no-capture",
         action="store_true",
-        help="Disable screenshot capture via remote interface",
-    )
-    parser.add_argument(
-        "--capture-nth",
-        type=int,
-        default=int(os.getenv("CINEMA_CAPTURE_NTH", "6")),
-        help="Capture every Nth tick (lower = more frames)",
-    )
-    parser.add_argument(
-        "--capture-dir",
-        default=os.getenv("CINEMA_CAPTURE_DIR", "cinema_seq"),
-        help="Base directory under client's script-output for frames",
-    )
-    parser.add_argument(
-        "--capture-width",
-        type=int,
-        default=int(os.getenv("CINEMA_CAPTURE_WIDTH", "1920")),
-    )
-    parser.add_argument(
-        "--capture-height",
-        type=int,
-        default=int(os.getenv("CINEMA_CAPTURE_HEIGHT", "1080")),
-    )
-    parser.add_argument(
-        "--capture-quality",
-        type=int,
-        default=int(os.getenv("CINEMA_CAPTURE_QUALITY", "100")),
-    )
-    parser.add_argument(
-        "--capture-show-gui", action="store_true", help="Include GUI in captured frames"
+        help="Disable server-driven screenshot capture",
     )
     parser.add_argument(
         "--script-output-dir",
@@ -874,13 +825,24 @@ def main():
     parser.add_argument(
         "--no-render",
         action="store_true",
-        help="Skip running process_cinema_frames.sh after moving frames",
+        help="Skip running ffmpeg after moving frames",
     )
     parser.add_argument(
-        "--render-arg",
-        action="append",
-        default=[],
-        help="Additional arguments to forward to process_cinema_frames.sh",
+        "--render-fps",
+        type=int,
+        default=int(os.getenv("CINEMA_RENDER_FPS", "10")),
+        help="Playback framerate for ffmpeg (controls final speed)",
+    )
+    parser.add_argument(
+        "--render-crf",
+        type=int,
+        default=int(os.getenv("CINEMA_RENDER_CRF", "28")),
+        help="FFmpeg CRF (lower = higher quality)",
+    )
+    parser.add_argument(
+        "--render-preset",
+        default=os.getenv("CINEMA_RENDER_PRESET", "ultrafast"),
+        help="FFmpeg preset (e.g. ultrafast, fast, medium)",
     )
     args = parser.parse_args()
 
@@ -903,13 +865,18 @@ def main():
             cin = Cinematographer(CameraPrefs(), GameClock())
             capture_opts = {
                 "enabled": not args.no_capture,
-                "player_index": 1,
-                "nth": args.capture_nth,
-                "dir_prefix": args.capture_dir,
-                "res": (args.capture_width, args.capture_height),
-                "quality": args.capture_quality,
-                "show_gui": args.capture_show_gui,
             }
+            script_output_dir = _detect_script_output_dir(args.script_output_dir)
+            capture_root = script_output_dir / f"cinema_seq/v{version}"
+
+            if not args.no_capture:
+                try:
+                    if capture_root.exists():
+                        shutil.rmtree(capture_root)
+                except Exception as exc:
+                    print(f"[warn] failed to clean capture dir {capture_root}: {exc}")
+                capture_root.mkdir(parents=True, exist_ok=True)
+
             report = process_programs(
                 version, cin, instance, programs, conn, args.max_steps, capture_opts
             )
@@ -930,8 +897,7 @@ def main():
                     json.dump(report["cutscene_result"], fh, indent=2)
 
             # --- Move captured PNGs to output frames and clean script-output ---
-            script_output_dir = _detect_script_output_dir(args.script_output_dir)
-            src_version_root = script_output_dir / args.capture_dir / f"v{version}"
+            src_version_root = capture_root
             frames_out = out_dir / "frames"
             if src_version_root.exists():
                 report_move = _move_png_tree(src_version_root, frames_out)
@@ -945,11 +911,15 @@ def main():
                 if not args.no_render:
                     videos_out = out_dir / "videos"
                     render_report = _render_video_from_frames(
-                        frames_out, videos_out, extra_args=args.render_arg
+                        frames_out,
+                        videos_out,
+                        fps=args.render_fps,
+                        crf=args.render_crf,
+                        preset=args.render_preset,
                     )
                     if render_report.get("ok"):
                         print(
-                            f"Rendered video(s) to {videos_out} using {render_report['command']}"
+                            f"Rendered video to {render_report.get('output')} using {render_report['command']}"
                         )
                     else:
                         print(

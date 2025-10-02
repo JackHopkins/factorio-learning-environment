@@ -19,15 +19,33 @@ local runtime = {
     screenshot_counter = 0
 }
 
--- === Continuous frame capture state =====================================
+-- === Continuous frame capture defaults ==================================
+local CAPTURE_BASE_DIR = "cinema_seq"
+local CAPTURE_NTH_TICKS = 6
+local CAPTURE_RESOLUTION = {1920, 1080}
+local CAPTURE_QUALITY = 100
+local CAPTURE_SHOW_GUI = false
+local CAPTURE_USE_TICK_NAMES = true
+
+local runtime_capture = {
+    base_dir = CAPTURE_BASE_DIR,
+    nth = CAPTURE_NTH_TICKS,
+    resolution = CAPTURE_RESOLUTION,
+    quality = CAPTURE_QUALITY,
+    show_gui = CAPTURE_SHOW_GUI,
+    use_tick_names = CAPTURE_USE_TICK_NAMES,
+}
+
 local frame_capture = {
     active = false,
     player_index = nil,
-    nth = 6,
-    dir = "cinema_seq",
-    res = {1920, 1080},
-    quality = 100,
-    show_gui = false,
+    nth = CAPTURE_NTH_TICKS,
+    dir = CAPTURE_BASE_DIR,
+    res = {CAPTURE_RESOLUTION[1], CAPTURE_RESOLUTION[2]},
+    quality = CAPTURE_QUALITY,
+    show_gui = CAPTURE_SHOW_GUI,
+    use_tick_names = CAPTURE_USE_TICK_NAMES,
+    plan_label = nil,
     frame = 0,
     last_tick = 0,
 }
@@ -264,7 +282,7 @@ local function compile_shot(player, plan, shot)
         })
     elseif kind.type == "zoom_to_fit" then
         local pos = position_from_kind(player, kind)
-        local fit_zoom = compute_zoom_for_bbox(kind.bbox, plan.capture_defaults and plan.capture_defaults.resolution)
+        local fit_zoom = compute_zoom_for_bbox(kind.bbox, runtime_capture.resolution)
         table.insert(waypoints, {
             position = pos,
             transition_time = shot.pan_ticks or ticks_from_ms(shot.pan_ms),
@@ -442,11 +460,34 @@ local function start_frame_capture(opts)
     opts = opts or {}
     frame_capture.active = true
     frame_capture.player_index = opts.player_index or frame_capture.player_index or 1
-    frame_capture.nth = math.max(1, opts.nth or frame_capture.nth or 6)
-    frame_capture.dir = tostring(opts.dir or frame_capture.dir or "cinema_seq")
-    frame_capture.res = opts.res or frame_capture.res or {1920, 1080}
-    frame_capture.quality = opts.quality or frame_capture.quality or 100
-    frame_capture.show_gui = opts.show_gui == true
+    local configured_nth = opts.nth or runtime_capture.nth or CAPTURE_NTH_TICKS
+    frame_capture.nth = math.max(1, configured_nth)
+    frame_capture.dir = tostring(opts.dir or runtime_capture.base_dir or CAPTURE_BASE_DIR)
+    frame_capture.plan_label = opts.plan_label and tostring(opts.plan_label) or nil
+
+    local res = opts.res or opts.resolution
+    if res and res[1] and res[2] then
+        frame_capture.res = {res[1], res[2]}
+    else
+        frame_capture.res = {
+            runtime_capture.resolution[1],
+            runtime_capture.resolution[2],
+        }
+    end
+
+    frame_capture.quality = opts.quality or runtime_capture.quality or CAPTURE_QUALITY
+
+    if opts.show_gui ~= nil then
+        frame_capture.show_gui = opts.show_gui == true
+    else
+        frame_capture.show_gui = runtime_capture.show_gui
+    end
+
+    if opts.use_tick_names ~= nil then
+        frame_capture.use_tick_names = opts.use_tick_names and true or false
+    else
+        frame_capture.use_tick_names = runtime_capture.use_tick_names
+    end
     frame_capture.frame = 0
     frame_capture.last_tick = 0
 end
@@ -454,6 +495,10 @@ end
 local function stop_frame_capture()
     if not frame_capture.active then return end
     frame_capture.active = false
+    frame_capture.plan_label = nil
+    frame_capture.player_index = nil
+    frame_capture.frame = 0
+    frame_capture.last_tick = 0
     local ok, err = pcall(function()
         if game and game.set_wait_for_screenshots_to_finish then
             game.set_wait_for_screenshots_to_finish()
@@ -475,7 +520,18 @@ script.on_nth_tick(1, function(e)
     if not (p and p.valid) then return end
     if p.controller_type ~= defines.controllers.cutscene then return end
 
-    local path = string.format("%s/%06d.png", frame_capture.dir, frame_capture.frame)
+    local basename
+    if frame_capture.use_tick_names then
+        basename = string.format("%010d-%04d", e.tick, frame_capture.frame)
+    else
+        basename = string.format("%06d", frame_capture.frame)
+    end
+
+    if frame_capture.plan_label then
+        basename = string.format("%s-%s", frame_capture.plan_label, basename)
+    end
+
+    local path = string.format("%s/%s.png", frame_capture.dir, basename)
     frame_capture.frame = frame_capture.frame + 1
 
     game.take_screenshot{
@@ -491,9 +547,25 @@ script.on_nth_tick(1, function(e)
     }
 end)
 
+local function sanitise_plan_id(candidate)
+    local id = tostring(candidate or "")
+    id = id:gsub("[^%w%-%_]", "_")
+    if id == "" then
+        id = string.format("plan_%d", game.tick)
+    end
+    return id
+end
+
+local function capture_dir_for_plan(plan_id)
+    local safe_id = sanitise_plan_id(plan_id)
+    return string.format("%s/%s", runtime_capture.base_dir or CAPTURE_BASE_DIR, safe_id)
+end
+
 local function resolve_plan_id(plan)
-    if plan.plan_id then return plan.plan_id end
-    return string.format("plan_%d", game.tick)
+    if plan.plan_id then
+        return sanitise_plan_id(plan.plan_id)
+    end
+    return sanitise_plan_id(string.format("plan_%d", game.tick))
 end
 
 -- === Plan execution ======================================================
@@ -513,8 +585,29 @@ local function start_plan(player_index, plan)
         return false, "no waypoints"
     end
 
+    plan.plan_id = resolve_plan_id(plan)
     plan.__compiled = waypoints
     g.active_plan_by_player[player_index] = plan
+
+    if frame_capture.active then
+        stop_frame_capture()
+    end
+
+    -- Simplified capture: just enable/disable with static defaults
+    if plan.capture then
+        start_frame_capture({
+            player_index = player_index,
+            nth = runtime_capture.nth,
+            dir = capture_dir_for_plan(plan.plan_id),
+            res = runtime_capture.resolution,
+            quality = runtime_capture.quality,
+            show_gui = runtime_capture.show_gui,
+            use_tick_names = runtime_capture.use_tick_names,
+            plan_label = plan.plan_id,
+        })
+    end
+
+    plan.capture = nil
 
     player.set_controller{
         type = defines.controllers.cutscene,

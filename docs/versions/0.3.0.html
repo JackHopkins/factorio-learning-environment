@@ -90,10 +90,22 @@
             margin: 40px 0;
         }
         .tabs-container {
-            border-bottom: 2px solid #e0e0e0;
             margin-bottom: 0;
             display: flex;
             gap: 0;
+            position: relative;
+            padding-top: 50px;
+        }
+        /* Progress line connecting tabs */
+        .tabs-container::before {
+            content: '';
+            position: absolute;
+            top: 25px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, #2196F3 0%, #e0e0e0 100%);
+            z-index: 0;
         }
         .tab-button {
             padding: 15px 30px;
@@ -107,7 +119,23 @@
             border-left: 1px solid #e0e0e0;
             transition: all 0.3s ease;
             position: relative;
-            bottom: -2px;
+            flex: 1;
+            z-index: 1;
+        }
+        /* Circle indicator on each tab */
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            border: 3px solid white;
+            transition: all 0.3s ease;
+            z-index: 2;
         }
         .tab-button:first-child {
             border-left: none;
@@ -116,11 +144,18 @@
             background: #e8e8e8;
             color: #333;
         }
+        .tab-button:hover::before {
+            background: #90CAF9;
+        }
         .tab-button.active {
             background: white;
             color: #2196F3;
             border-bottom: 2px solid white;
             border-top: 2px solid #2196F3;
+        }
+        .tab-button.active::before {
+            background: #2196F3;
+            box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
         }
         .tab-content {
             display: none;
@@ -228,6 +263,44 @@
         .result-card h4 {
             color: #4caf50;
         }
+        /* Collapsible section styles */
+        .collapsible-header {
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.3s ease;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            background-color: #1976D2;
+        }
+        .collapsible-header h4 {
+            margin: 0;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .collapsible-arrow {
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        .collapsible-arrow.expanded {
+            transform: rotate(180deg);
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        .collapsible-content.expanded {
+            max-height: 2000px;
+        }
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script defer src="../static/js/fontawesome.all.min.js"></script>
@@ -259,6 +332,15 @@
 
             // Add active class to the clicked button
             event.currentTarget.classList.add('active');
+        }
+
+        // Toggle collapsible sections
+        function toggleCollapsible(id) {
+            const content = document.getElementById(id);
+            const arrow = document.querySelector(`[onclick="toggleCollapsible('${id}')"] .collapsible-arrow`);
+
+            content.classList.toggle('expanded');
+            arrow.classList.toggle('expanded');
         }
 
         // Initialize syntax highlighting when page loads
@@ -443,7 +525,7 @@
             <div class="content has-text-justified" style="margin-top:2em">
                 <div class="feature-box">
                     <h4 class="title is-5">🤖 Claude Code Plays Factorio</h4>
-                    <p>We bridged Claude Code into Factorio via FLE and are streaming it to showcase the state of the art of frontier agents in long-horizon interactive environments. More details <a href="#" style="color: #2196F3; text-decoration: underline;">here</a>.</p>
+                    <p>We bridged Claude Code into Factorio via FLE and are livestreaming it on Twitch to showcase the capabilities of frontier agents in long-horizon interactive environments. Link here <a href="#" style="color: #2196F3; text-decoration: underline;">here</a>.</p>
                 </div>
 
                 <div class="feature-box">
@@ -453,7 +535,7 @@
 
                 <div class="feature-box">
                     <h4 class="title is-5">🏋️ OpenAI Gym Compatibility</h4>
-                    <p>We standardized the FLE evaluation environment to conform to the OpenAI gym interface, making it extremely easy to integrate into existing research codebases. Examples from the observation and action spaces are shown below.</p>
+                    <p>We standardized the FLE evaluation environment to conform to the OpenAI gym interface, simplifying integration into existing research codebases for multi-turn interactive agent research. Examples from the observation and action spaces are shown below.</p>
                 </div>
 
                 <div class="feature-box">
@@ -476,31 +558,92 @@
 
             <div class="examples-section">
                 <div class="tabs-container">
-                    <button class="tab-button active" onclick="switchTab(event, 'example1')">Initial Mining Setup</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example2')">Assembling Machine Setup</button>
-                    <button class="tab-button" onclick="switchTab(event, 'example3')">Logistics Attempt</button>
+                    <button class="tab-button active" onclick="switchTab(event, 'example1')">Power Setup</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example1b')">Iron Mining</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example2')">Assembling Machine</button>
+                    <button class="tab-button" onclick="switchTab(event, 'example3')">Failed Logistics Attempt</button>
                     <button class="tab-button" onclick="switchTab(event, 'example4')">Final Success</button>
                 </div>
 
                 <div id="example1" class="tab-content active">
-                    <h3 class="title is-4">Initial Mining Setup</h3>
+                    <h3 class="title is-4">Power Setup</h3>
+                    <p>The agent spawns into the lab-play world with an inventory of items and an objective to build an iron gear wheel factory.</p>
+
+                    <div class="example-grid">
+                        <div class="example-card">
+                            <h4>Input State</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/initial1.gif" alt="Before state" class="example-image">
+                        </div>
+
+                        <div class="example-card">
+                            <h4>State After Action</h4>
+                            <img src="../assets/0.3.0_vids/iron_gear_wheel/15_17_engine_setup.gif" alt="After animation" class="example-image">
+                        </div>
+                    </div>
+
+                    <div class="example-grid-single">
+                        <div class="example-card">
+                            <h4>Action Program</h4>
+                            <pre><code class="language-python"># Step 1: Find water and set up power generation
+water_pos = nearest(Resource.Water)
+print(f"Found water at {water_pos}")
+
+# Move to water and place offshore pump
+move_to(water_pos)
+offshore_pump = place_entity(Prototype.OffshorePump, position=water_pos)
+print(f"Placed offshore pump at {offshore_pump.position}")
+
+# Find buildable area for boiler (away from water)
+boiler_box = BuildingBox(width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4)
+boiler_coords = nearest_buildable(Prototype.Boiler, boiler_box, offshore_pump.position)
+move_to(boiler_coords.center)
+boiler = place_entity(Prototype.Boiler, position=boiler_coords.center, direction=Direction.LEFT)
+print(f"Placed boiler at {boiler.position}")
+
+# Add coal to boiler
+boiler = insert_item(Prototype.Coal, boiler, quantity=20)
+
+# Find buildable area for steam engine
+engine_box = BuildingBox(width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4)
+engine_coords = nearest_buildable(Prototype.SteamEngine, engine_box, boiler.position)
+move_to(engine_coords.center)
+steam_engine = place_entity(Prototype.SteamEngine, position=engine_coords.center, direction=Direction.LEFT)
+print(f"Placed steam engine at {steam_engine.position}")
+
+# Connect water flow
+water_pipes = connect_entities(offshore_pump, boiler, Prototype.Pipe)
+print(f"Connected offshore pump to boiler with pipes")
+steam_pipes = connect_entities(boiler, steam_engine, Prototype.Pipe)
+print(f"Connected boiler to steam engine with pipes")
+
+# Wait and verify power generation
+sleep(5)
+steam_engine = get_entity(Prototype.SteamEngine, steam_engine.position)
+assert steam_engine.energy > 0, "Steam engine not generating power"
+print(f"Power generation verified! Steam engine producing {steam_engine.energy} energy")</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="example1b" class="tab-content">
+                    <h3 class="title is-4">Iron Mining</h3>
                     <p>The agent sets up electric mining drills on an iron ore patch and connects them to electric furnaces for automated iron plate production.</p>
 
                     <div class="example-grid">
                         <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
+                            <h4>Input State</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/15_17_engine_setup.gif" alt="Before state" class="example-image">
                         </div>
 
                         <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
+                            <h4>State After Action</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/34_36_furnaces.gif" alt="After animation" class="example-image">
                         </div>
                     </div>
 
                     <div class="example-grid-single">
                         <div class="example-card">
-                            <h4>⚡ Action Program</h4>
+                            <h4>Action Program</h4>
                             <pre><code class="language-python"># Find iron ore and setup mining
 iron_pos = <span class="hljs-built_in">nearest</span>(Resource.IronOre)
 <span class="hljs-built_in">print</span>(f"Found iron ore at {iron_pos}")
@@ -537,24 +680,24 @@ for i in range(2):
                 </div>
 
                 <div id="example2" class="tab-content">
-                    <h3 class="title is-4">Assembling Machine Setup</h3>
+                    <h3 class="title is-4">Assembling Machine</h3>
                     <p>The agent places an assembler to create iron gear wheels in the vicinity of the mining setup and hooks it up to power while the mining operation collects iron plates in chests.</p>
 
                     <div class="example-grid">
                         <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
+                            <h4>Input State</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/48_50_furnaces.gif" alt="Before state" class="example-image">
                         </div>
 
                         <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
+                            <h4>State After Action</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/68_70_assembler_inserters.gif" alt="After animation" class="example-image">
                         </div>
                     </div>
 
                     <div class="example-grid-single">
                         <div class="example-card">
-                            <h4>⚡ Action Program</h4>
+                            <h4>Action Program</h4>
                             <pre><code class="language-python"># Need to place assembling machines away from the mining area
 # Iron gear wheels need 2 iron plates each, and we need 16 per minute
 # Assembling machine 2 crafts 90 iron gear wheels per 60 seconds, so 1 machine is enough
@@ -606,19 +749,19 @@ print(f"Connected inserters to power")</code></pre>
 
                     <div class="example-grid">
                         <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
+                            <h4>Input State</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/68_70_assembler_inserters.gif" alt="Before state" class="example-image">
                         </div>
 
                         <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
+                            <h4>State After Action</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/86_88_inserter_nochests.gif" alt="After animation" class="example-image">
                         </div>
                     </div>
 
                     <div class="example-grid-single">
                         <div class="example-card">
-                            <h4>⚡ Action Program</h4>
+                            <h4>Action Program</h4>
                             <pre><code class="language-python"><span class="hljs-comment"># Let me remove the iron plate storage chests and connect belts directly from furnace inserters</span>
 
 <span class="hljs-comment"># First, pickup the chests that are blocking</span>
@@ -671,19 +814,19 @@ belts2 = <span class="hljs-built_in">connect_entities</span>(
 
                     <div class="example-grid">
                         <div class="example-card">
-                            <h4>🎮 Game State (Before)</h4>
+                            <h4>Input State</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/86_88_inserter_nochests.gif" alt="Before state" class="example-image">
                         </div>
 
                         <div class="example-card">
-                            <h4>🎬 Game State (After)</h4>
+                            <h4>State After Action</h4>
                             <img src="../assets/0.3.0_vids/iron_gear_wheel/95_97_running.gif" alt="After animation" class="example-image">
                         </div>
                     </div>
 
                     <div class="example-grid-single">
                         <div class="example-card">
-                            <h4>⚡ Action Program</h4>
+                            <h4>Action Program</h4>
                             <pre><code class="language-python"><span class="hljs-comment"># The assembler input chest is also blocking. Let me remove it too and rethink the setup</span>
 <span class="hljs-comment"># I need to place belts first, then the input chest on the belt line</span>
 
@@ -726,72 +869,78 @@ boiler = <span class="hljs-built_in">insert_item</span>(Prototype.Coal, boiler, 
                         </div>
                     </div>
                 </div>
+
+                <div class="collapsible-header" onclick="toggleCollapsible('observation-space-content')" style="margin-top: 40px;">
+                    <h4>Observation Space</h4>
+                    <span class="collapsible-arrow">▼</span>
+                </div>
+
+                <div id="observation-space-content" class="collapsible-content">
+                    <p style="font-size: 110%; line-height: 1.6; margin: 20px 0;">
+                        At each step, agents receive a structured <code>Observation</code> object containing comprehensive information about the game state and with fields as described below:
+                    </p>
+
+                    <table class="table is-striped is-fullwidth" style="font-size: 105%; margin: 20px 0;">
+                        <thead>
+                            <tr style="background-color: #2196F3; color: white;">
+                                <th style="padding: 12px; width: 25%;">Field</th>
+                                <th style="padding: 12px;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>raw_text</code></strong></td>
+                                <td style="padding: 10px;">Standard output and error messages from the last action program execution, annotated with source code line numbers</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>entities</code></strong></td>
+                                <td style="padding: 10px;">List of all entities in the game world with their properties (position, type, orientation, inventory contents, warnings, etc.)</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>inventory</code></strong></td>
+                                <td style="padding: 10px;">The agent's personal inventory with item types and quantities</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>research</code></strong></td>
+                                <td style="padding: 10px;">Technology tree state with researched technologies, current research progress, and available technologies with prerequisites and costs</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>game_info</code></strong></td>
+                                <td style="padding: 10px;">Game timing information (tick count, elapsed time, game speed)</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>flows</code></strong></td>
+                                <td style="padding: 10px;">Production statistics tracking input/output rates, crafted items, harvested resources, and optional price lists for economic evaluation</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>messages</code></strong></td>
+                                <td style="padding: 10px;">Inter-agent communication messages for multi-agent coordination scenarios</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>task_info</code></strong></td>
+                                <td style="padding: 10px;">Task metadata including goal description, instructions, task identifier, and maximum trajectory length</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>task_verification</code></strong></td>
+                                <td style="padding: 10px;">Task-specific verification results indicating success/failure and metadata about progress toward objectives</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>serialized_functions</code></strong></td>
+                                <td style="padding: 10px;">Previously defined helper functions and abstractions stored in the agent's namespace for reuse across episodes</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px;"><strong><code>map_image</code></strong></td>
+                                <td style="padding: 10px;">Base64-encoded PNG rendering of the factory layout for visual agents (optional)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p style="font-size: 110%; line-height: 1.6;">
+                        This rich observation space enables agents to maintain spatial awareness, track production metrics, debug errors, and plan multi-step automation strategies. The combination of structured data and human-readable text provides both programmatic access and interpretability. Agent implementations can utilize and format these fields as needed. The agent harness used for evaluation concatenates these fields into a formatted markdown string.
+                    </p>
+                </div>
             </div>
 
-            </br>
-            <h4 class="title is-5">Observation Space</h4>
-            <p style="font-size: 110%; line-height: 1.6;">
-                At each step, agents receive a structured <code>Observation</code> object containing comprehensive information about the game state and with fields as described below:
-            </p>
-
-            <table class="table is-striped is-fullwidth" style="font-size: 105%; margin: 20px 0;">
-                <thead>
-                    <tr style="background-color: #2196F3; color: white;">
-                        <th style="padding: 12px; width: 25%;">Field</th>
-                        <th style="padding: 12px;">Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>raw_text</code></strong></td>
-                        <td style="padding: 10px;">Standard output and error messages from the last action program execution, annotated with source code line numbers</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>entities</code></strong></td>
-                        <td style="padding: 10px;">List of all entities in the game world with their properties (position, type, orientation, inventory contents, warnings, etc.)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>inventory</code></strong></td>
-                        <td style="padding: 10px;">The agent's personal inventory with item types and quantities</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>research</code></strong></td>
-                        <td style="padding: 10px;">Technology tree state with researched technologies, current research progress, and available technologies with prerequisites and costs</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>game_info</code></strong></td>
-                        <td style="padding: 10px;">Game timing information (tick count, elapsed time, game speed)</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>flows</code></strong></td>
-                        <td style="padding: 10px;">Production statistics tracking input/output rates, crafted items, harvested resources, and optional price lists for economic evaluation</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>messages</code></strong></td>
-                        <td style="padding: 10px;">Inter-agent communication messages for multi-agent coordination scenarios</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>task_info</code></strong></td>
-                        <td style="padding: 10px;">Task metadata including goal description, instructions, task identifier, and maximum trajectory length</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>task_verification</code></strong></td>
-                        <td style="padding: 10px;">Task-specific verification results indicating success/failure and metadata about progress toward objectives</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>serialized_functions</code></strong></td>
-                        <td style="padding: 10px;">Previously defined helper functions and abstractions stored in the agent's namespace for reuse across episodes</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px;"><strong><code>map_image</code></strong></td>
-                        <td style="padding: 10px;">Base64-encoded PNG rendering of the factory layout for visual agents (optional)</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p style="font-size: 110%; line-height: 1.6;">
-                This rich observation space enables agents to maintain spatial awareness, track production metrics, debug errors, and plan multi-step automation strategies. The combination of structured data and human-readable text provides both programmatic access and interpretability. Agent implementations can utilize and format these fields as needed. The agent harness used for evaluation concatenates these fields into a formatted markdown string.
-            </p>
             </br>
         </div>
     </section>
@@ -807,52 +956,71 @@ boiler = <span class="hljs-built_in">insert_item</span>(Prototype.Coal, boiler, 
                 <li>Agents have a starting inventory with useful items for building functional factories.</li>
                 <li>The task objective is to achieve production throughput targets: 16 per minute for solid items and 250 per minute for fluids.</li>
                 <li>Trajectories are run for 64 program-level actions and models are prompted to make their programs modular and at most 50 lines of code.</li>
-                <li>Success is measured with a pass@8 criteria to control for variance.
-                <li>Results shown are the best performance between reasoning enabled and disabled (there were minimal differences between the two settings across all models).</li>
+                <li>Success is measured with a pass@8 criteria to control for variance.</li>
+                <li>Results shown with reasoning enabled for models that support it at default settings (<code>{"enabled": true}</code>).</li>
             </ul>
 
             <div class="heatmap-container">
-                <img src="../assets/images/fle_0_3_0_combined_dependency_sorted_heatmap.png?v=5"
+                <img src="../assets/images/fle_0_3_0_combined_dependency_sorted_heatmap_v3.png?v=5"
                      alt="FLE 0.3.0 Combined Model Performance Heatmap"
                      style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
             </div>
             </br>
             <h3 class="subtitle is-4"><span class="dvima">Discussion</span></h3>
             <p style="font-size: 110%;">
-                The observed performance gap between the strongest and weakest models in the lab-play setting demonstrates that the evaluation is sensitive to meaningful differences in capabilities. Open source models have caught up to the SoTA performance level observed in FLE 0.2.0 with successes in electronic circuits, steel plate, sulfur and plastic production. Meanwhile, the frontier has advanced substantially, with Claude Opus 4.1 completing tasks with over a dozen ingredient dependencies. We also show the cases in which agents managed to produce some of the target entity without meeting the target threshold as partial success, indicating a relatively smooth gradient of difficulty as the target entity resource requirements grow exponentially.
+                The latest generation of frontier models continues to advance the state of the art in FLE with substantial improvement over the results from version 0.2.0. For the first time, models are able to achieve successes in the harder half of tasks which can utilize over a dozen ingredient dependencies. Open source models have caught up to the SoTA performance level observed in v0.2.0 with successes in electronic circuits, steel plate, sulfur and plastic production. This is consistent with trends showing that the time for open source models to reach parity with closed source results is diminishing. FLE lab-play is also able to differentiate between the capabilities of the latest proprietary models e.g. there is a noticeable gap between Claude Opus 4.1 and Grok 4. It's interesting to note the ordering and performance gaps between these most advanced models (Claude > GPT > Gemini > Grok) is most similar to GDPval, a novel benchmark recently released to measure progress in automating economically valuable tasks. This is in contrast to many other static exam-like benchmarks including Humanity's Last Exam, AIME 25, GPQA and MMMU where the relative orderings of the most advanced proprietary models is inverted or nearly so. 
             </p>
             </br>
             <p style="font-size: 110%; line-height: 1.6;">
+                Lab-play is a highly constrained environment where agents are given a fixed set of resources and a single target entity to maximize production throughput. This simple problem is only a minute fraction of the complexity of the open-play setting where agents are given a procedurally generated map and must achieve a complex goal given no starting inventory. The chart below illustrates the unbounded and exponentially growing complexity of the open-play setting with references to human achievements which take very long to achieve.
+    
+            </p>
+            </br>
+            <p style="font-size: 110%; line-height: 1.6;"></p>
                 While agents achieve throughput according to environment measurements, many rely on semi-manual strategies rather than building robust automation for more complex tasks. Models exhibit reward-hacking tendencies by shuttling resources manually instead of constructing functional logistics chains. Although this achieves progress toward the target, it creates a local optimum where agents avoid the more difficult but necessary step of full automation. Throughput is challenging to measure consistently due to buffering effects—agents can store items in intermediate buffers (like chests or belts) which temporarily satisfy throughput checks without true sustained production. Higher throughput targets would make it impossible to pass with manual logistics, forcing agents to build proper automation. However, we report results with the same settings as v0.2.0 to enable direct comparisons across versions.
             </p>
             </br>
             
-            <h4 class="title is-5">Error Analysis Breakdown</h4>
+            <h4 class="title is-5">Error Analysis</h4>
 
 
             <p style="font-size: 110%;">Common failure patterns can be grouped by type:</p>
             <ul style="font-size: 110%;">
-                <li><strong>Syntactic and Execution Errors:</strong> Invalid Python code, syntax mistakes, or other execution errors that prevent actions from running at all. These errors represent a major category of failures as the agents did not follow the high-level instructions.</li>
-                <li><strong>API Misunderstandings:</strong> Misuse of FLE commands or tool arguments (e.g., incorrect parameters, misunderstanding documentation), leading to errors in the execution of the action program. These errors imply difficulty to correctly use given context.</li>
-                <li><strong>State Tracking Failures:</strong> Incorrect reasoning about the current game state, such as attempting to insert items that are not present in the inventory. These errors are the most common category of failures as the game state is dynamic and challenging to model implicitly.</li>
+                <li><strong>Syntactic Errors:</strong> Invalid Python code, syntax mistakes, or other execution errors that prevent actions from running at all. These errors are significant failures as the agents did not follow the high-level instructions which are expected of coding agents.</li>
+                <li><strong>Semantic Errors:</strong> Misuse of FLE commands or tool arguments (e.g., incorrect parameters, misunderstanding documentation), leading to errors in the execution of the action program. These errors imply difficulty in correctly using context given in the system prompt.</li>
+                <li><strong>Pragmatic Errors:</strong> Incorrect reasoning about the current game state, such as attempting to insert items that are not present in the inventory. These errors are the most common category of failures as the game state is dynamic and challenging to model implicitly.</li>
                 <li><strong>Planning and Control Errors:</strong> Even when primitives are known, agents fail to chain actions coherently, resulting in inefficient or incomplete trajectories. <em>Note: This category cannot be reliably quantified through automated trajectory analysis, as it requires evaluating higher-level strategic coherence rather than individual error types.</em></li>
             </ul>
             </br>
             <div class="heatmap-container">
-                <img src="../assets/images/fle_0_3_0_error_types_by_model.png?v=5" alt="Error Category Distribution by Model">
+                <img src="../assets/images/error_types_by_model.png" alt="Error Category Distribution by Model">
+            </div>
+
+            <p style="font-size: 110%; text-align: center; margin-top: 20px;">
+                <strong>Aggregate Mean Error Rates</strong>: Claude Opus 4.1: <strong>22.99%</strong> | GPT-5: <strong>25.05%</strong> | Gemini 2.5 Pro: <strong>27.29%</strong> | Grok 4: <strong>40.89%</strong>
+            </p>
+            </br>
+
+            <p style="font-size: 110%;">
+                The chart categorizes errors from trajectory logs across all evaluation tasks for the evaluated proprietary frontier models. We recognize syntactic errors from iterations where the model failed to generate valid Python code entirely. API misunderstandings are implied by failures which arose from Python exceptions such as TypeError, AttributeError, NameError, etc. when using the functions and objects of the FLE API. Finally, pragmatic errors are implied by failures which have error messages being propagated back from the Lua code running in the Factorio game engine as well as AssertionError raises in Python. Examples of pragmatic errors include attempting to insert items that are not present in the inventory, placing entities in invalid positions, connecting entities with incompatible objects, etc.
+
+            </p>
+        </br>
+
+            <p style="font-size: 110%;">
+                The distribution reveals notable model-specific patterns. Claude Opus 4.1 stands out with zero syntactic errors and almost entirely pragmatic errors (97.7%), indicating strong code generation but difficulties maintaining accurate mental models of game state. All other models—Gemini 2.5 Pro, Grok 4, and GPT-5—exhibit API misunderstandings at noticeable rates (12-17%), suggesting challenges with correctly using the FLE API documentation. Additionally, GPT-5 and Grok 4 show surprisingly high rates of syntactic errors (21% and 17% respectively), failing to generate valid Python code more frequently than expected from frontier models.
+            </p>
+        </br>
+
+            <div class="heatmap-container">
+                <img src="../assets/images/error_rate_heatmap_by_program_index.png" alt="Mean Error Rate for Step Number by Model">
             </div>
 
             <p style="font-size: 110%;">
-                The chart categorizes errors from trajectory logs across all evaluation tasks for the evaluated proprietary frontier models. Syntactic errors represent iterations where the model failed to generate valid Python code entirely. API misunderstandings are implied by failures which arose from Python exceptions such as TypeError, AttributeError, NameError, etc. when using the functions and objects of the FLE API. Finally, state tracking failures are implied by failures which have error messages being propagated back from the Lua code running in the Factorio game engine as well as AssertionError raises in Python. Examples of state tracking failures include attempting to insert items that are not present in the inventory, placing entities in invalid positions, connecting entities with incompatible types, etc.
-                
+                The heatmap above shows the mean error rate across all trajectories for each model at each step number. This temporal view reveals how error rates evolve throughout the 64-step trajectories. Claude Opus 4.1 maintains the most consistent low error rate throughout trajectories, while Grok 4 shows notably higher error rates that persist across steps. The pattern suggests that error accumulation and recovery remain challenging across all models, with most exhibiting elevated error rates in the middle portions of trajectories where factory complexity increases.
             </p>
         </br>
 
-            <p style="font-size: 110%;">
-                The distribution reveals notable model-specific patterns. Claude Opus 4.1 stands out with zero syntactic errors and almost entirely state tracking failures (97.7%), indicating strong code generation but difficulties maintaining accurate mental models of game state. All other models—Gemini 2.5 Pro, Grok 4, and GPT-5—exhibit API misunderstandings at noticeable rates (12-17%), suggesting challenges with correctly using the FLE API documentation. Additionally, GPT-5 and Grok 4 show surprisingly high rates of syntactic errors (21% and 17% respectively), failing to generate valid Python code more frequently than expected from frontier models.
-            </p>
-        </br>
-       
             <h4 class="title is-5">Higher-Level Limitations</h4>
             <ul style="font-size: 110%;">
                 <li><strong>Spatial Reasoning:</strong> Agents struggle to maintain consistent mental models of the factory layout. Misplacement of entities often cascades into larger failures, since the agent is unable to recover efficiently or reorganize the environment once errors occur.</li>

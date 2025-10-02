@@ -6,60 +6,48 @@ This runtime focuses on a small, predictable surface:
   * We translate the intents into Factorio cutscene waypoints verbatim.
   * Lifecycle events (started/waypoint/finished/cancelled) are recorded so the
     caller can poll for status.
-  * A lightweight remote interface toggles screenshot capture on demand.
+  * Screenshot capture is automatically managed per cutscene plan.
+
+Key insight: With automatic screenshot capture, the camera needs to be SMART
+about positioning - get to the exact right place and zoom level where the action
+is happening, then stay there to capture it effectively.
 
 Higher-level policies (debouncing, ordering, merging) live in Python. The Lua
 side deliberately avoids re-sorting or mutating the shot sequence.
 ]]
 
-local serpent = serpent
 local CUTSCENE_VERSION = "1.1.110"
 
-local runtime = {
-    screenshot_counter = 0
-}
 
--- === Continuous frame capture defaults ==================================
-local CAPTURE_BASE_DIR = "cinema_seq"
-local CAPTURE_NTH_TICKS = 6
-local CAPTURE_RESOLUTION = {1920, 1080}
-local CAPTURE_QUALITY = 100
-local CAPTURE_SHOW_GUI = false
-local CAPTURE_USE_TICK_NAMES = true
-
-local runtime_capture = {
-    base_dir = CAPTURE_BASE_DIR,
-    nth = CAPTURE_NTH_TICKS,
-    resolution = CAPTURE_RESOLUTION,
-    quality = CAPTURE_QUALITY,
-    show_gui = CAPTURE_SHOW_GUI,
-    use_tick_names = CAPTURE_USE_TICK_NAMES,
+-- === Frame capture configuration =========================================
+local CAPTURE_CONFIG = {
+    base_dir = "cinema_seq",
+    nth_ticks = 6,
+    resolution = {1920, 1080},
+    quality = 100,
+    show_gui = false,
+    use_tick_names = true,
 }
 
 local frame_capture = {
     active = false,
     player_index = nil,
-    nth = CAPTURE_NTH_TICKS,
-    dir = CAPTURE_BASE_DIR,
-    res = {CAPTURE_RESOLUTION[1], CAPTURE_RESOLUTION[2]},
-    quality = CAPTURE_QUALITY,
-    show_gui = CAPTURE_SHOW_GUI,
-    use_tick_names = CAPTURE_USE_TICK_NAMES,
     plan_label = nil,
     frame = 0,
     last_tick = 0,
+    session_id = nil,
 }
 
 -- === Globals =============================================================
 local function ensure_global()
-    global.cinema = global.cinema or {}
-    local g = global.cinema
-    g.version = g.version or CUTSCENE_VERSION
-    g.active_plan_by_player = g.active_plan_by_player or {}
-    g.reports_by_player = g.reports_by_player or {}
-    g.entity_cache = g.entity_cache or {}
-    g.player_state = g.player_state or {}
-    return g
+    global.cinema = global.cinema or {
+        version = CUTSCENE_VERSION,
+        active_plan_by_player = {},
+        reports_by_player = {},
+        entity_cache = {},
+        player_state = {}
+    }
+    return global.cinema
 end
 
 local function ensure_player_state(player_index)
@@ -94,23 +82,41 @@ local function clamp_zoom(z)
 end
 
 local function compute_zoom_for_bbox(bbox, resolution)
-    if not bbox then return 1 end
+    if not bbox then 
+        if game and game.write_file then
+            game.write_file("cinema_debug.log", "compute_zoom_for_bbox: no bbox provided\n", true)
+        end
+        return 1 
+    end
     local width = math.abs(bbox[2][1] - bbox[1][1])
     local height = math.abs(bbox[2][2] - bbox[1][2])
-    if width == 0 or height == 0 then return 1 end
+    if width == 0 or height == 0 then 
+        if game and game.write_file then
+            game.write_file("cinema_debug.log", string.format("compute_zoom_for_bbox: zero dimensions width=%f height=%f\n", width, height), true)
+        end
+        return 1 
+    end
 
-    local res_x = resolution and resolution[1] or 1920
-    local res_y = resolution and resolution[2] or 1080
-    local aspect = res_x / res_y
+    local res = resolution or CAPTURE_CONFIG.resolution
+    local aspect = res[1] / res[2]
 
     local base_visible_height = 25
     local base_visible_width = base_visible_height * aspect
 
-    local zoom_width = base_visible_width / (width + 10)
-    local zoom_height = base_visible_height / (height + 10)
+    -- Calculate zoom to fit the bbox in the visible area
+    -- Higher zoom = more zoomed in (smaller visible area)
+    -- Lower zoom = more zoomed out (larger visible area)
+    local zoom_width = base_visible_width / width
+    local zoom_height = base_visible_height / height
     local zoom = math.min(zoom_width, zoom_height) * 1.2
 
-    return clamp_zoom(zoom)
+    local final_zoom = clamp_zoom(zoom)
+    if game and game.write_file then
+        game.write_file("cinema_debug.log", string.format("compute_zoom_for_bbox: bbox=%s, width=%f, height=%f, zoom_width=%f, zoom_height=%f, zoom=%f, final=%f\n", 
+            game.table_to_json(bbox), width, height, zoom_width, zoom_height, zoom, final_zoom), true)
+    end
+
+    return final_zoom
 end
 
 local function resolve_player(player_ref)
@@ -196,10 +202,20 @@ local function position_from_kind(player, kind)
         end
     elseif kind.type == "zoom_to_fit" then
         local bbox = kind.bbox
-        return {
+        if not bbox or not bbox[1] or not bbox[2] then
+            if game and game.write_file then
+                game.write_file("cinema_debug.log", string.format("zoom_to_fit: invalid bbox %s\n", game.table_to_json(bbox or {})), true)
+            end
+            return {x = player.position.x, y = player.position.y}
+        end
+        local pos = {
             x = (bbox[1][1] + bbox[2][1]) / 2,
             y = (bbox[1][2] + bbox[2][2]) / 2
         }
+        if game and game.write_file then
+            game.write_file("cinema_debug.log", string.format("zoom_to_fit: bbox=%s, pos=%s\n", game.table_to_json(bbox), game.table_to_json(pos)), true)
+        end
+        return pos
     end
     return {x = player.position.x, y = player.position.y}
 end
@@ -282,12 +298,23 @@ local function compile_shot(player, plan, shot)
         })
     elseif kind.type == "zoom_to_fit" then
         local pos = position_from_kind(player, kind)
-        local fit_zoom = compute_zoom_for_bbox(kind.bbox, runtime_capture.resolution)
+        local fit_zoom = compute_zoom_for_bbox(kind.bbox, CAPTURE_CONFIG.resolution)
+        local final_zoom = zoom or fit_zoom
+        
+        -- Debug logging
+        if game and game.write_file then
+            game.write_file("cinema_debug.log", string.format(
+                "zoom_to_fit: shot_zoom=%.3f, fit_zoom=%.3f, final_zoom=%.3f, bbox=%s\n",
+                zoom or 0, fit_zoom, final_zoom, 
+                game.table_to_json(kind.bbox or {})
+            ), true)
+        end
+        
         table.insert(waypoints, {
             position = pos,
             transition_time = shot.pan_ticks or ticks_from_ms(shot.pan_ms),
             time_to_wait = shot.dwell_ticks or ticks_from_ms(shot.dwell_ms),
-            zoom = zoom or fit_zoom
+            zoom = final_zoom
         })
     elseif kind.type == "follow_entity" then
         local entity = entity_from_descriptor(kind)
@@ -347,14 +374,8 @@ end
 
 -- === Validation ==========================================================
 local function validate_shot_intent(shot)
-    if type(shot) ~= "table" then
-        return false, "shot must be table"
-    end
-    if type(shot.id) ~= "string" then
-        return false, "shot missing id"
-    end
-    if type(shot.kind) ~= "table" or type(shot.kind.type) ~= "string" then
-        return false, "kind.type required"
+    if type(shot) ~= "table" or type(shot.id) ~= "string" or type(shot.kind) ~= "table" or type(shot.kind.type) ~= "string" then
+        return false, "shot must have id and kind.type"
     end
 
     local kind = shot.kind.type
@@ -362,17 +383,16 @@ local function validate_shot_intent(shot)
         if type(shot.kind.entity_uid) ~= "number" then
             return false, "entity_uid required"
         end
-    end
-    if kind == "focus_position" then
+    elseif kind == "focus_position" then
         if type(shot.kind.pos) ~= "table" or type(shot.kind.pos[1]) ~= "number" then
             return false, "pos must be [x,y]"
         end
-    end
-    if kind == "zoom_to_fit" then
+    elseif kind == "zoom_to_fit" then
         if type(shot.kind.bbox) ~= "table" then
             return false, "bbox required"
         end
     end
+
     if (kind == "follow_entity" or kind == "orbit_entity") and (type(shot.kind.duration_ms) ~= "number" or shot.kind.duration_ms <= 0) then
         return false, "duration_ms required"
     end
@@ -380,10 +400,9 @@ local function validate_shot_intent(shot)
         return false, "orbit requires radius_tiles and degrees"
     end
 
-    local has_pan = shot.pan_ms or shot.pan_ticks
-    local has_dwell = shot.dwell_ms or shot.dwell_ticks
-    if not has_pan then return false, "timing.pan required" end
-    if not has_dwell then return false, "timing.dwell required" end
+    if not shot.pan_ticks or not shot.dwell_ticks then
+        return false, "timing.pan and timing.dwell required"
+    end
 
     if shot.zoom and type(shot.zoom) ~= "number" then
         return false, "zoom must be number"
@@ -460,45 +479,37 @@ local function start_frame_capture(opts)
     opts = opts or {}
     frame_capture.active = true
     frame_capture.player_index = opts.player_index or frame_capture.player_index or 1
-    local configured_nth = opts.nth or runtime_capture.nth or CAPTURE_NTH_TICKS
-    frame_capture.nth = math.max(1, configured_nth)
-    frame_capture.dir = tostring(opts.dir or runtime_capture.base_dir or CAPTURE_BASE_DIR)
     frame_capture.plan_label = opts.plan_label and tostring(opts.plan_label) or nil
-
-    local res = opts.res or opts.resolution
-    if res and res[1] and res[2] then
-        frame_capture.res = {res[1], res[2]}
-    else
-        frame_capture.res = {
-            runtime_capture.resolution[1],
-            runtime_capture.resolution[2],
-        }
-    end
-
-    frame_capture.quality = opts.quality or runtime_capture.quality or CAPTURE_QUALITY
-
-    if opts.show_gui ~= nil then
-        frame_capture.show_gui = opts.show_gui == true
-    else
-        frame_capture.show_gui = runtime_capture.show_gui
-    end
-
-    if opts.use_tick_names ~= nil then
-        frame_capture.use_tick_names = opts.use_tick_names and true or false
-    else
-        frame_capture.use_tick_names = runtime_capture.use_tick_names
-    end
+    frame_capture.capture_dir = opts.capture_dir or CAPTURE_CONFIG.base_dir
+    frame_capture.session_id = opts.session_id or tostring(game.tick)
     frame_capture.frame = 0
     frame_capture.last_tick = 0
+    
+    -- Log capture start
+    if game and game.write_file then
+        game.write_file("cinema_capture.log", string.format("Started capture session %s for player %d\n", 
+            frame_capture.session_id, frame_capture.player_index), true)
+    end
 end
 
 local function stop_frame_capture()
     if not frame_capture.active then return end
+    
+    -- Log capture stop
+    if game and game.write_file then
+        game.write_file("cinema_capture.log", string.format("Stopping capture session %s (frame %d)\n", 
+            frame_capture.session_id or "unknown", frame_capture.frame), true)
+    end
+    
     frame_capture.active = false
     frame_capture.plan_label = nil
     frame_capture.player_index = nil
+    frame_capture.capture_dir = nil
+    frame_capture.session_id = nil
     frame_capture.frame = 0
     frame_capture.last_tick = 0
+    
+    -- Safe flush with error handling
     local ok, err = pcall(function()
         if game and game.set_wait_for_screenshots_to_finish then
             game.set_wait_for_screenshots_to_finish()
@@ -513,34 +524,36 @@ end
 
 script.on_nth_tick(1, function(e)
     if not frame_capture.active then return end
-    if e.tick - (frame_capture.last_tick or 0) < (frame_capture.nth or 6) then return end
+    if e.tick - (frame_capture.last_tick or 0) < CAPTURE_CONFIG.nth_ticks then return end
     frame_capture.last_tick = e.tick
 
     local p = game.get_player(frame_capture.player_index or 1)
     if not (p and p.valid) then return end
     if p.controller_type ~= defines.controllers.cutscene then return end
 
-    local basename
-    if frame_capture.use_tick_names then
-        basename = string.format("%010d-%04d", e.tick, frame_capture.frame)
-    else
-        basename = string.format("%06d", frame_capture.frame)
-    end
-
+    local basename = string.format("%010d-%04d", e.tick, frame_capture.frame)
     if frame_capture.plan_label then
         basename = string.format("%s-%s", frame_capture.plan_label, basename)
     end
 
-    local path = string.format("%s/%s.png", frame_capture.dir, basename)
+    local capture_dir = frame_capture.capture_dir or CAPTURE_CONFIG.base_dir
+    local path = string.format("%s/%s.png", capture_dir, basename)
     frame_capture.frame = frame_capture.frame + 1
 
+    -- Debug: log the path being used
+    if game and game.write_file then
+        game.write_file("cinema_debug.log", string.format("Screenshot path: %s (capture_dir: %s)\n", path, capture_dir), true)
+    end
+
+    -- During cutscenes, let the screenshot capture the current view
+    -- Don't specify position/zoom to avoid API issues
     game.take_screenshot{
         player = p,
         by_player = p.index,
         path = path,
-        resolution = {frame_capture.res[1], frame_capture.res[2]},
-        quality = frame_capture.quality,
-        show_gui = frame_capture.show_gui,
+        resolution = CAPTURE_CONFIG.resolution,
+        quality = CAPTURE_CONFIG.quality,
+        show_gui = CAPTURE_CONFIG.show_gui,
         force_render = true,
         allow_in_replay = true,
         wait_for_finish = false,
@@ -556,10 +569,6 @@ local function sanitise_plan_id(candidate)
     return id
 end
 
-local function capture_dir_for_plan(plan_id)
-    local safe_id = sanitise_plan_id(plan_id)
-    return string.format("%s/%s", runtime_capture.base_dir or CAPTURE_BASE_DIR, safe_id)
-end
 
 local function resolve_plan_id(plan)
     if plan.plan_id then
@@ -589,25 +598,18 @@ local function start_plan(player_index, plan)
     plan.__compiled = waypoints
     g.active_plan_by_player[player_index] = plan
 
+    -- Always stop any existing capture before starting new one
     if frame_capture.active then
         stop_frame_capture()
     end
 
-    -- Simplified capture: just enable/disable with static defaults
-    if plan.capture then
-        start_frame_capture({
-            player_index = player_index,
-            nth = runtime_capture.nth,
-            dir = capture_dir_for_plan(plan.plan_id),
-            res = runtime_capture.resolution,
-            quality = runtime_capture.quality,
-            show_gui = runtime_capture.show_gui,
-            use_tick_names = runtime_capture.use_tick_names,
-            plan_label = plan.plan_id,
-        })
-    end
-
-    plan.capture = nil
+    -- Always start capture for any plan submission
+    start_frame_capture({
+        player_index = player_index,
+        plan_label = plan.plan_id,
+        capture_dir = plan.capture_dir or CAPTURE_CONFIG.base_dir,
+        session_id = plan.plan_id,
+    })
 
     player.set_controller{
         type = defines.controllers.cutscene,
@@ -625,36 +627,6 @@ local function start_plan(player_index, plan)
     return true
 end
 
-local function cancel_active(player_index)
-    local g = ensure_global()
-    local plan = g.active_plan_by_player[player_index]
-    if not plan then
-        return {ok = false, error = "no active plan"}
-    end
-
-    local player = game.players[player_index]
-    if player and player.valid then
-        player.exit_cutscene()
-    end
-
-    g.active_plan_by_player[player_index] = nil
-    record_event(player_index, plan.plan_id, "cancelled", {tick = game.tick})
-    stop_frame_capture()
-    return {ok = true, plan_id = plan.plan_id}
-end
-
-local function fetch_report(plan_id, player_index)
-    local g = ensure_global()
-    local reports = g.reports_by_player[player_index]
-    if not reports then
-        return {ok = false, error = "no reports"}
-    end
-    local report = reports[plan_id]
-    if not report then
-        return {ok = false, error = "plan not found"}
-    end
-    return {ok = true, report = report}
-end
 
 -- === Event handlers ======================================================
 local function normalise_waypoint_index(event)
@@ -688,13 +660,20 @@ local function on_cutscene_finished(event)
     ensure_player_state(event.player_index).last_position = plan.__compiled[#plan.__compiled].position
     g.active_plan_by_player[event.player_index] = nil
 
+    -- Always stop capture when cutscene finishes
     if frame_capture.active and frame_capture.player_index == event.player_index then
         stop_frame_capture()
     end
 end
 
 local function on_cutscene_cancelled(event)
-    cancel_active(event.player_index)
+    local g = ensure_global()
+    local plan = g.active_plan_by_player[event.player_index]
+    if not plan then return end
+
+    record_event(event.player_index, plan.plan_id, "cancelled", {tick = event.tick})
+    g.active_plan_by_player[event.player_index] = nil
+    stop_frame_capture()
 end
 
 local function on_cutscene_waypoint(event)
@@ -770,28 +749,12 @@ local function handle_plan_submission(plan)
 end
 
 local function handle_action(payload)
-    local mode = payload.mode or "play"
-    if mode == "play" or mode == "queue" then
-        return handle_plan_submission(payload)
-    elseif mode == "report" then
-        if not payload.plan_id or not payload.player then
-            return {ok = false, error = "plan_id and player required"}
-        end
-        local player = resolve_player(payload.player)
-        if not player then
-            return {ok = false, error = "player not found"}
-        end
-        return fetch_report(payload.plan_id, player.index)
-    elseif mode == "cancel" then
-        local player = resolve_player(payload.player)
-        if not player then
-            return {ok = false, error = "player not found"}
-        end
-        return cancel_active(player.index)
-    end
-    return {ok = false, error = "unknown mode"}
+    -- Simplified interface: only support plan submission
+    -- Cutscenes are fire-and-forget with automatic lifecycle management
+    return handle_plan_submission(payload)
 end
 
+-- === Global API ===========================================================
 global.actions = global.actions or {}
 global.actions.cutscene = function(raw_payload)
     ensure_global()
@@ -802,37 +765,46 @@ global.actions.cutscene = function(raw_payload)
     return handle_action(payload)
 end
 
--- === Remote interface ====================================================
-local function _register_cinema_interfaces()
-    pcall(function() remote.remove_interface("cinema_capture") end)
-    remote.add_interface("cinema_capture", {
-        start = function(opts)
-            start_frame_capture(opts or {})
-            return {ok = true}
-        end,
-        stop = function()
-            stop_frame_capture()
-            return {ok = true}
-        end,
-        status = function()
-            return {
-                active = frame_capture.active,
-                player_index = frame_capture.player_index,
-                frame = frame_capture.frame,
-            }
-        end,
+-- Start a recording session (always captures screenshots)
+global.actions.start_recording = function(raw_payload)
+    ensure_global()
+    local payload, err = parse_payload(raw_payload)
+    if not payload then
+        return {ok = false, error = err}
+    end
+    
+    local player_index = payload.player_index or 1
+    local player = game.players[player_index]
+    if not (player and player.valid) then
+        return {ok = false, error = "player not found"}
+    end
+    
+    -- Stop any existing capture
+    if frame_capture.active then
+        stop_frame_capture()
+    end
+    
+    -- Start new recording session
+    start_frame_capture({
+        player_index = player_index,
+        plan_label = payload.session_id or "recording",
+        capture_dir = payload.capture_dir or CAPTURE_CONFIG.base_dir,
+        session_id = payload.session_id or tostring(game.tick),
     })
-
-    pcall(function() remote.remove_interface("cinema_admin") end)
-    remote.add_interface("cinema_admin", {
-        rehook = function()
-            _register_cinema_interfaces()
-            return {ok = true, tick = game.tick}
-        end,
-        ping = function()
-            return {version = CUTSCENE_VERSION, tick = game.tick, active = frame_capture.active}
-        end,
-    })
+    
+    return {ok = true, session_id = frame_capture.session_id}
 end
 
-_register_cinema_interfaces()
+-- Stop the current recording session
+global.actions.stop_recording = function(raw_payload)
+    ensure_global()
+    
+    if not frame_capture.active then
+        return {ok = false, error = "no active recording session"}
+    end
+    
+    local session_id = frame_capture.session_id
+    stop_frame_capture()
+    
+    return {ok = true, session_id = session_id}
+end

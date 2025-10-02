@@ -390,6 +390,11 @@ def process_programs(
         # Simplified capture contract: just enable/disable with static defaults
         if cap_enabled:
             plan["capture"] = True  # Simple boolean flag
+            # Pass the version directory for screenshot saving
+            if subdir:
+                # Extract just the version directory (e.g., "v4701" from "v4701/batch_0001_20251002_192829")
+                version_dir = subdir.split("/")[0]
+                plan["capture_dir"] = version_dir
         else:
             plan.pop("capture", None)
 
@@ -751,52 +756,74 @@ def _render_video_from_frames(
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{frames_dir.parent.name}.mp4"
 
-    pattern = str(frames_dir / "*.png")
+    # Get all PNG files and sort them by tick number to ensure proper temporal order
+    import re
 
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-loglevel",
-        "error",
-        "-framerate",
-        str(fps),
-        "-pattern_type",
-        "glob",
-        "-i",
-        pattern,
-        "-r",
-        str(fps),
-        "-c:v",
-        "libx264",
-        "-preset",
-        preset,
-        "-crf",
-        str(crf),
-        "-pix_fmt",
-        "yuv420p",
-        str(output_file),
-    ]
+    png_files = list(frames_dir.glob("*.png"))
+    if not png_files:
+        return {"ok": False, "error": "no png frames found after sorting"}
 
-    try:
-        result = subprocess.run(
-            cmd,
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        return {"ok": False, "error": "ffmpeg not found"}
-    except Exception as exc:  # pragma: no cover - defensive
-        return {"ok": False, "error": f"failed to invoke ffmpeg: {exc}"}
+    # Sort by tick number extracted from filename
+    # Filename format: {shot_type}-{program_id}-{timestamp}-{tick_number}-{frame_number}.png
+    def extract_tick_number(png_path):
+        match = re.search(r"-(\d{10})-\d{4}\.png$", png_path.name)
+        return int(match.group(1)) if match else 0
 
-    return {
-        "ok": result.returncode == 0,
-        "returncode": result.returncode,
-        "stdout": result.stdout.strip(),
-        "stderr": result.stderr.strip(),
-        "command": cmd,
-        "output": str(output_file),
-    }
+    png_files = sorted(png_files, key=extract_tick_number)
+
+    # Create a temporary directory with properly numbered files
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        # Create symlinks with continuous numbering to ensure proper order
+        for i, png_file in enumerate(png_files):
+            link_name = temp_path / f"{i:06d}.png"
+            link_name.symlink_to(png_file.absolute())
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-loglevel",
+            "error",
+            "-framerate",
+            str(fps),
+            "-i",
+            str(temp_path / "%06d.png"),  # Use sequential numbering pattern
+            "-r",
+            str(fps),
+            "-c:v",
+            "libx264",
+            "-preset",
+            preset,
+            "-crf",
+            str(crf),
+            "-pix_fmt",
+            "yuv420p",
+            str(output_file),
+        ]
+
+        try:
+            result = subprocess.run(
+                cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except FileNotFoundError:
+            return {"ok": False, "error": "ffmpeg not found"}
+        except Exception as exc:  # pragma: no cover - defensive
+            return {"ok": False, "error": f"failed to invoke ffmpeg: {exc}"}
+
+        return {
+            "ok": result.returncode == 0,
+            "returncode": result.returncode,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+            "command": cmd,
+            "output": str(output_file),
+        }
 
 
 def main():
@@ -867,12 +894,14 @@ def main():
                 "enabled": not args.no_capture,
             }
             script_output_dir = _detect_script_output_dir(args.script_output_dir)
-            capture_root = script_output_dir / f"cinema_seq/v{version}"
+            capture_root = script_output_dir / f"v{version}"
 
             if not args.no_capture:
+                # Clean up any existing PNGs for this version in script-output
                 try:
                     if capture_root.exists():
                         shutil.rmtree(capture_root)
+                        print(f"Cleaned existing PNGs from {capture_root}")
                 except Exception as exc:
                     print(f"[warn] failed to clean capture dir {capture_root}: {exc}")
                 capture_root.mkdir(parents=True, exist_ok=True)

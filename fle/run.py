@@ -4,6 +4,12 @@ import shutil
 from pathlib import Path
 import importlib.resources
 import asyncio
+
+# Ensure slpp warnings are suppressed for all users before any imports
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="slpp")
+
 from fle.cluster.run_envs import (
     start_cluster,
     stop_cluster,

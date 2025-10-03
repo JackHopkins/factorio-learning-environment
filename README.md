@@ -52,20 +52,21 @@ automation (e.g electronic-circuit manufacturing).
 - Docker
 - Python 3.10+
 
-### Package Installation
-
-You can install the factorio-learning-environment package using either uv or pip:
+### Installation
 
 ```bash
-# Core SDK (for building agents and managing game instances)
+# Core FLE SDK package
 pip install factorio-learning-environment
+uv add factorio-learning-environment
 
-# With evaluation capabilities (for running experiments)
-pip install factorio-learning-environment[eval]
+# With optional features
+pip install factorio-learning-environment[eval]      # For running experiments
+pip install factorio-learning-environment[mcp]       # For MCP protocol support  
+pip install factorio-learning-environment[psql]      # For PostgreSQL support
+pip install factorio-learning-environment[eval,mcp,psql]  # All features
 
 # Using uv (recommended)
-uv add factorio-learning-environment
-uv add 'factorio-learning-environment[eval]'
+uv add factorio-learning-environment[eval]
 ```
 
 ### Quickstart
@@ -76,7 +77,7 @@ uv add 'factorio-learning-environment[eval]'
 # Start Factorio cluster
 fle cluster start
 
-# Run evaluation experiments (requires [eval] dependencies)
+# Run evaluation trajectories (requires [eval] dependencies)
 fle eval --config configs/gym_run_config.json
 ```
 
@@ -91,22 +92,23 @@ instance = FactorioInstance()
 from fle.agents import LLMAgent
 ```
 
-> When you run `fle` for the first time, an `.env` file and a `configs/` directory with example configurations are created automatically
+> When you run `fle init` or `fle eval` for the first time, an `.env` file and a `configs/` directory with example configurations are created automatically
 
 ### Gym Environment Usage
 
-   # Run Factorio servers
-   cd ../local
-   ./run-envs.sh  # Starts 1 instance with default lab scenario
+```
+# Run Factorio servers
+fle cluster start # Starts 1 instance with default lab scenario
 
-   # Alternatively, with more options (see cluster/local/!README.md):
-   ./run-envs.sh -n 3 -s open_world  # Starts 3 instances with open world scenario
-   ./run-envs.sh stop                # Stops all running instances
-   ./run-envs.sh restart             # Restarts with previous configuration
-   ```
-   **Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
+# Alternatively:
+fle cluster start -n 4                     # Start 4 instances  
+fle cluster start -s open_world            # Start with open world scenario
+```
+
+**Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
 
 4. **Configure firewall** (if running server on a different machine):
+
    Open the following ports:
    - UDP 34197 (Game connection)
    - TCP 27015 (RCON)

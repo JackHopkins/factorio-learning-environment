@@ -14,17 +14,37 @@ from fle.agents.data.sprites.download import download_sprites_from_hf, generate_
 
 
 def fle_init():
-    """Initialize FLE environment by creating .env file if it doesn't exist."""
-    if Path(".env").exists():
-        return
-    try:
-        pkg = importlib.resources.files("fle")
-        env_path = pkg / ".example.env"
-        shutil.copy(str(env_path), ".env")
-        print("Created .env file - please edit with your API keys and DB config")
-    except Exception as e:
-        print(f"Error during init: {e}", file=sys.stderr)
-        sys.exit(1)
+    """Initialize FLE environment by creating .env file and configs directory if they don't exist."""
+    created_files = []
+
+    # Create .env file if it doesn't exist
+    if not Path(".env").exists():
+        try:
+            pkg = importlib.resources.files("fle")
+            env_path = pkg / ".example.env"
+            shutil.copy(str(env_path), ".env")
+            created_files.append(".env file")
+        except Exception as e:
+            print(f"Error creating .env file: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Create configs directory and copy default config if it doesn't exist
+    configs_dir = Path("configs")
+    if not configs_dir.exists():
+        try:
+            configs_dir.mkdir(exist_ok=True)
+            pkg = importlib.resources.files("fle")
+            config_path = pkg / "eval" / "configs" / "gym_run_config.json"
+            shutil.copy(str(config_path), configs_dir / "gym_run_config.json")
+            created_files.append("configs/ directory with gym_run_config.json")
+        except Exception as e:
+            print(f"Error creating configs directory: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    if created_files:
+        print(
+            f"Created {', '.join(created_files)} - please edit .env with your API keys and DB config"
+        )
 
 
 def fle_eval(args):

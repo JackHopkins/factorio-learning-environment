@@ -32,12 +32,8 @@ from fle.eval.analysis.cinematic_instance import (
     CinematicInstance,
     create_cinematic_instance,
 )
-from fle.env.lua_manager import LuaScriptManager
 from fle.commons.models.program import Program
 from fle.commons.cluster_ips import get_local_container_ips
-from fle.eval.analysis.continuous_cinematographer import ContinuousCinematographer
-from fle.eval.analysis.ast_actions import parse_actions, create_action_stream
-from fle.eval.analysis.runtime_to_cinema import build_world_context
 
 load_dotenv()
 
@@ -525,6 +521,9 @@ class RolloutToVideos:
         # Enable admin tools for cutscene functionality
         self.cinematic_instance.first_namespace.enable_admin_tools_in_runtime(True)
 
+        # Register cinematic hooks for automatic camera positioning
+        self.cinematic_instance.register_cinematic_hooks()
+
         # Configure capture settings
         if self.config.capture_enabled:
             self.cinematic_instance.capture_enabled = True
@@ -552,49 +551,7 @@ class RolloutToVideos:
                     if self.config.debug:
                         raise
 
-        print("Cinematic instance created and configured")
-
-        # Minimal pre-tool hook: place_entity → quick focus shot
-        def _pre_place_entity(tool, *args, **kwargs):
-            try:
-                # Position is 3rd positional arg or keyword 'position'
-                pos = kwargs.get("position")
-                if pos is None and len(args) >= 3:
-                    pos = args[2]
-                if pos is None:
-                    return
-                x = getattr(pos, "x", None)
-                y = getattr(pos, "y", None)
-                if x is None or y is None:
-                    # Support tuples
-                    if isinstance(pos, (list, tuple)) and len(pos) >= 2:
-                        x, y = float(pos[0]), float(pos[1])
-                    else:
-                        return
-                plan = {
-                    "player": 1,
-                    "shots": [
-                        {
-                            "id": f"auto-place-{int(time.time() * 1000)}",
-                            "kind": {
-                                "type": "focus_position",
-                                "pos": [float(x), float(y)],
-                            },
-                            "pan_ticks": 48,
-                            "dwell_ticks": 96,
-                            "zoom": 1.5,  # Zoom in for placement
-                        }
-                    ],
-                    # No capture fields - using continuous recording
-                }
-                self.cinematic_instance.first_namespace.cutscene(plan)
-            except Exception:
-                pass
-
-        # Register the minimal hook via LuaScriptManager
-        LuaScriptManager.register_pre_tool_hook(
-            self.cinematic_instance, "place_entity", _pre_place_entity
-        )
+        print("Cinematic instance created and configured with hooks")
 
     def _process_programs(
         self, programs: List[Tuple[int, datetime]], capture_dir: Path
@@ -626,8 +583,11 @@ class RolloutToVideos:
                 )
                 self.report.programs.append(program_data)
                 self.report.programs_processed += 1
-                self.report.total_actions += len(program_data.actions)
-                self.report.total_shots += program_data.shots_generated
+                # Note: actions/shots are handled transparently by hooks
+                self.report.total_actions += (
+                    0  # Not tracking individual actions anymore
+                )
+                self.report.total_shots += 0  # Shots happen automatically via hooks
 
             except Exception as e:
                 error_msg = f"Error processing program {program_id}: {e}"
@@ -666,8 +626,8 @@ class RolloutToVideos:
             print("Resetting environment with program state")
             self.cinematic_instance.reset(program.state)
 
-        # Execute program with cinematic hooks
-        print("Executing program with cinematic hooks...")
+        # Execute program - hooks will automatically position camera before each action
+        print("Executing program (hooks will handle camera positioning)...")
         execution_result = self.cinematic_instance.eval(program.code)
         program_data.execution_result = execution_result
 
@@ -677,11 +637,8 @@ class RolloutToVideos:
         if execution_result[1]:  # prints
             print(f"Program output: {execution_result[1]}")
 
-        # Generate cinematic shots based on the executed program
-        shots_generated = self._generate_cinematic_shots_for_program(
-            program_id, run_slug, program.code
-        )
-        program_data.shots_generated = shots_generated
+        # No need to generate shots - hooks did it automatically during execution
+        program_data.shots_generated = 0  # Hooks handle this transparently
 
         program_data.processing_time = time.time() - start_time
         print(
@@ -689,110 +646,6 @@ class RolloutToVideos:
         )
 
         return program_data
-
-    def _generate_cinematic_shots_for_program(
-        self, program_id: int, run_slug: str, program_code: str
-    ) -> int:
-        """Generate cinematic shots for a program using the continuous cinematographer."""
-        try:
-            # Parse actions from the program code
-            action_sites = parse_actions(
-                program_code,
-                program_id=str(program_id),
-                created_at=None,  # We don't have the exact timestamp here
-            )
-
-            action_stream = create_action_stream(action_sites)
-            print(f"Extracted {len(action_stream)} actions from program {program_id}")
-
-            # Build world context after program execution (entities should exist now)
-            program = self.db_manager.get_program_state(program_id)
-            world_context = build_world_context(self.cinematic_instance, program)
-
-            # Create cinematographer and process program
-            cinematographer = ContinuousCinematographer(player=1)
-            cinematographer.process_program(
-                program_id=str(program_id),
-                actions=action_stream,
-                world_context=world_context,
-            )
-
-            if not cinematographer.shots:
-                print(f"No shots generated for program {program_id}")
-                return 0
-
-            # Group shots by type for better organization
-            shot_groups = {}
-            for shot in cinematographer.shots:
-                shot_type = shot.state.value
-                if shot_type not in shot_groups:
-                    shot_groups[shot_type] = []
-                shot_groups[shot_type].append(shot)
-
-            total_shots_executed = 0
-
-            # Execute each group of shots
-            for shot_type, shots in shot_groups.items():
-                # Track last zoom to minimize jarring transitions
-                prev_zoom = getattr(self, "_last_cutscene_zoom", 1.0)
-
-                shot_plan = {
-                    "player": 1,
-                    "start_zoom": prev_zoom,  # Start from last zoom for smooth transitions
-                    "shots": [
-                        {
-                            "id": shot.id,
-                            "seq": i,
-                            "kind": shot.kind,
-                            "pan_ticks": shot.pan_ticks,
-                            "dwell_ticks": shot.dwell_ticks,
-                            "zoom": shot.zoom,
-                            "tags": shot.tags,
-                            "stage": shot.state.value,
-                            "order": i,
-                        }
-                        for i, shot in enumerate(shots)
-                    ],
-                    "plan_id": f"{shot_type}-{program_id}-{run_slug}",
-                    # No capture fields - using continuous recording instead
-                }
-
-                # Remember final zoom for next cutscene
-                if shots:
-                    self._last_cutscene_zoom = shots[-1].zoom or prev_zoom
-
-                # Debug: Print shot details
-                for i, shot in enumerate(shots):
-                    print(
-                        f"  {shot_type} Shot {i}: zoom={shot.zoom}, dwell={shot.dwell_ticks}"
-                    )
-                    if shot.kind.get("pos"):
-                        print(f"    Position: {shot.kind['pos']}")
-                    elif shot.kind.get("bbox"):
-                        bbox = shot.kind["bbox"]
-                        width = abs(bbox[1][0] - bbox[0][0])
-                        height = abs(bbox[1][1] - bbox[0][1])
-                        print(f"    Bbox dimensions: {width:.1f} x {height:.1f} tiles")
-
-                print(f"Executing {len(shots)} {shot_type} shots...")
-
-                # Execute cutscene
-                self.cinematic_instance.first_namespace.cutscene(shot_plan)
-                total_shots_executed += len(shots)
-
-                # Small delay between shot groups
-                time.sleep(0.2)
-
-            print(
-                f"Executed {total_shots_executed} total shots for program {program_id}"
-            )
-            return total_shots_executed
-
-        except Exception as e:
-            print(f"Error generating cinematic shots for program {program_id}: {e}")
-            if self.config.debug:
-                raise e  # Re-raise in debug mode
-            return 0
 
     def _finalize_video_generation(self, output_dir: Path, capture_dir: Path) -> None:
         """Move frames and render final video."""

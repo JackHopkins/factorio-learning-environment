@@ -56,6 +56,9 @@ class CinematicInstance(FactorioInstance):
         self.focus_duration = 120  # 2 seconds
         self.pan_duration = 60  # 1 second
 
+        # Hooks registered flag
+        self._hooks_registered = False
+
     @property
     def cutscene(self):
         """Get the cutscene controller for clean API access."""
@@ -295,6 +298,135 @@ class CinematicInstance(FactorioInstance):
             except Exception as e:
                 print(f"Error cancelling cutscene: {e}")
         return {"ok": False, "error": "cutscene controller not available"}
+
+    def register_cinematic_hooks(self) -> None:
+        """Register all cinematic hooks for automatic camera positioning during tool execution."""
+        if self._hooks_registered:
+            return
+
+        from fle.env.lua_manager import LuaScriptManager
+        import time
+
+        def _create_cutscene_for_action(
+            tool_name: str, zoom: float = 1.5, dwell_ticks: int = 96
+        ):
+            """Create a pre-hook that positions camera before action executes."""
+
+            def _pre_hook(tool_instance, *args, **kwargs):
+                try:
+                    # Extract position based on tool type
+                    pos = None
+
+                    if tool_name in ["place_entity", "place_entity_next_to"]:
+                        # Position is 3rd positional arg or keyword 'position'
+                        pos = kwargs.get("position")
+                        if pos is None and len(args) >= 3:
+                            pos = args[2]
+                    elif tool_name == "connect_entities":
+                        # For connections, get midpoint of both entities
+                        entity_a = kwargs.get("entity_a") or (
+                            args[0] if len(args) > 0 else None
+                        )
+                        entity_b = kwargs.get("entity_b") or (
+                            args[1] if len(args) > 1 else None
+                        )
+                        if entity_a and entity_b:
+                            # Get positions and calculate midpoint
+                            pos_a = getattr(entity_a, "position", None)
+                            pos_b = getattr(entity_b, "position", None)
+                            if pos_a and pos_b:
+                                mid_x = (pos_a.x + pos_b.x) / 2
+                                mid_y = (pos_a.y + pos_b.y) / 2
+                                pos = (mid_x, mid_y)
+                    elif tool_name == "move_to":
+                        # Destination is first arg
+                        pos = kwargs.get("destination") or (
+                            args[0] if len(args) > 0 else None
+                        )
+                    elif tool_name == "insert_item":
+                        # Position is 2nd positional arg or keyword 'position'
+                        pos = kwargs.get("position")
+                        if pos is None and len(args) >= 2:
+                            pos = args[1]
+
+                    if pos is None:
+                        return
+
+                    # Convert position to [x, y] list
+                    if hasattr(pos, "x") and hasattr(pos, "y"):
+                        x, y = float(pos.x), float(pos.y)
+                    elif isinstance(pos, (list, tuple)) and len(pos) >= 2:
+                        x, y = float(pos[0]), float(pos[1])
+                    else:
+                        return
+
+                    # Create cutscene plan to position camera
+                    plan = {
+                        "player": self.player,
+                        "shots": [
+                            {
+                                "id": f"auto-{tool_name}-{int(time.time() * 1000)}",
+                                "kind": {
+                                    "type": "focus_position",
+                                    "pos": [x, y],
+                                },
+                                "pan_ticks": self.pan_duration,
+                                "dwell_ticks": dwell_ticks,
+                                "zoom": zoom,
+                            }
+                        ],
+                    }
+
+                    # Submit cutscene plan to position camera
+                    if self.cutscene:
+                        result = self.cutscene(plan)
+                        print(f"[DEBUG] Cutscene result for {tool_name}: {result}")
+                        if isinstance(result, dict) and not result.get("ok", False):
+                            print(
+                                f"Warning: Cutscene hook for {tool_name} at ({x:.1f}, {y:.1f}) failed: {result.get('error', 'unknown')}"
+                            )
+                        elif not isinstance(result, dict):
+                            print(
+                                f"Warning: Cutscene returned non-dict: {type(result)} = {result}"
+                            )
+
+                except Exception as e:
+                    # Don't fail the action if cutscene fails
+                    print(f"Warning: Cutscene hook failed for {tool_name}: {e}")
+
+            return _pre_hook
+
+        # Register hooks for each action type with appropriate zoom/dwell
+        LuaScriptManager.register_pre_tool_hook(
+            self,
+            "place_entity",
+            _create_cutscene_for_action("place_entity", zoom=1.5, dwell_ticks=96),
+        )
+        LuaScriptManager.register_pre_tool_hook(
+            self,
+            "place_entity_next_to",
+            _create_cutscene_for_action(
+                "place_entity_next_to", zoom=1.5, dwell_ticks=96
+            ),
+        )
+        LuaScriptManager.register_pre_tool_hook(
+            self,
+            "connect_entities",
+            _create_cutscene_for_action("connect_entities", zoom=1.2, dwell_ticks=120),
+        )
+        LuaScriptManager.register_pre_tool_hook(
+            self,
+            "move_to",
+            _create_cutscene_for_action("move_to", zoom=1.3, dwell_ticks=72),
+        )
+        LuaScriptManager.register_pre_tool_hook(
+            self,
+            "insert_item",
+            _create_cutscene_for_action("insert_item", zoom=1.6, dwell_ticks=84),
+        )
+
+        self._hooks_registered = True
+        print("Cinematic hooks registered for all action types")
 
     def cleanup(self) -> None:
         """Clean up the cinematic instance."""

@@ -2,52 +2,19 @@
 CinematicInstance - A Factorio instance that integrates cutscene actions with program execution hooks.
 
 This module provides a CinematicInstance that combines:
-- Hook system from screenshots_from_run.py for capturing after actions
+- Hook system for capturing actions
 - Cinematographer logic for generating camera shots
-- Cutscene action integration for precise camera control
-- Buffering system for managing shots across action calls
+- Clean integration with the cutscene admin tool
 
-The instance allows for specific cutscene hooks to actions while maintaining
-the ability to buffer and manage shots across multiple action calls.
+State management is handled by the Lua cutscene system (server.lua).
+Python side focuses on high-level shot generation and hook coordination.
 """
 
-import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Callable
-from enum import Enum
 
 from fle.env.instance import FactorioInstance
-
-
-class ShotState(Enum):
-    """Simple states for camera placement."""
-
-    ESTABLISHING = "establishing"  # Wide overview shot
-    FOCUS = "focus"  # Focused shot on specific area
-    FOLLOW = "follow"  # Following shot
-    REACTION = "reaction"  # Reaction shot showing results
-
-
-@dataclass
-class CinematicShot:
-    """Represents a cinematic shot with position, timing, and metadata."""
-
-    id: str
-    state: ShotState
-    kind: Dict[str, Any]  # Camera instruction (focus_position, zoom_to_fit, etc.)
-    pan_ticks: int = 60  # Time to move to position (1 second default)
-    dwell_ticks: int = 180  # Time to stay at position (3 seconds default)
-    zoom: Optional[float] = None  # Zoom level (None = auto-calculate)
-    tags: List[str] = field(default_factory=list)
-    action_id: Optional[str] = None  # Associated action ID
-    program_id: Optional[str] = None
-    # Spatial information for reference
-    spatial_center: Optional[Tuple[float, float]] = None
-    spatial_radius: float = 0.0
-    # Timing information
-    start_tick: Optional[int] = None
-    end_tick: Optional[int] = None
 
 
 @dataclass
@@ -58,51 +25,7 @@ class ActionContext:
     action_type: str
     args: Dict[str, Any]
     position: Optional[Tuple[float, float]] = None
-    world_context: Dict[str, Any] = field(default_factory=dict)
     program_id: Optional[str] = None
-    timestamp: float = field(default_factory=time.time)
-
-
-class ShotBuffer:
-    """Manages buffering of shots across action calls."""
-
-    def __init__(self, max_buffer_size: int = 10):
-        self.shots: List[CinematicShot] = []
-        self.max_buffer_size = max_buffer_size
-        self.current_tick = 0
-
-    def add_shot(self, shot: CinematicShot) -> None:
-        """Add a shot to the buffer."""
-        shot.start_tick = self.current_tick
-        shot.end_tick = self.current_tick + shot.pan_ticks + shot.dwell_ticks
-        self.shots.append(shot)
-
-        # Trim buffer if it gets too large
-        if len(self.shots) > self.max_buffer_size:
-            self.shots = self.shots[-self.max_buffer_size :]
-
-    def get_pending_shots(self) -> List[CinematicShot]:
-        """Get shots that are ready to be executed."""
-        return [shot for shot in self.shots if shot.start_tick <= self.current_tick]
-
-    def advance_tick(self, ticks: int = 1) -> None:
-        """Advance the current tick."""
-        self.current_tick += ticks
-
-    def clear_completed_shots(self) -> None:
-        """Remove shots that have completed."""
-        self.shots = [shot for shot in self.shots if shot.end_tick > self.current_tick]
-
-    def get_buffer_stats(self) -> Dict[str, Any]:
-        """Get statistics about the buffer."""
-        return {
-            "buffer_size": len(self.shots),
-            "current_tick": self.current_tick,
-            "pending_shots": len(self.get_pending_shots()),
-            "completed_shots": len(
-                [s for s in self.shots if s.end_tick <= self.current_tick]
-            ),
-        }
 
 
 class CinematicInstance(FactorioInstance):
@@ -112,17 +35,13 @@ class CinematicInstance(FactorioInstance):
     This instance provides:
     - Hook system for capturing after actions
     - Cinematographer logic for generating camera shots
-    - Cutscene action integration for precise camera control
-    - Buffering system for managing shots across action calls
+    - Clean integration with cutscene admin tool via self.controllers["cutscene"]
+
+    State management is delegated to Lua (server.lua) for simplicity.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # Shot management
-        self.shot_buffer = ShotBuffer()
-        self.active_shots: List[CinematicShot] = []
-        self.shot_counter = 0
 
         # Hook management
         self.pre_action_hooks: Dict[str, List[Callable]] = {}
@@ -131,31 +50,16 @@ class CinematicInstance(FactorioInstance):
 
         # Cinematographer settings
         self.player = kwargs.get("player", 1)
-        self.capture_enabled = True
-        self.capture_dir = "cinema_seq"
+        self.capture_dir = kwargs.get("capture_dir", "cinema_seq")
 
-        # Timing configuration
-        self.establishment_duration = 180  # 3 seconds
+        # Timing configuration (in ticks, 60 ticks = 1 second)
         self.focus_duration = 120  # 2 seconds
-        self.follow_duration = 150  # 2.5 seconds
-        self.reaction_duration = 120  # 2 seconds
         self.pan_duration = 60  # 1 second
 
-        # Initialize cutscene system
-        self._initialize_cutscene_system()
-
-    def _initialize_cutscene_system(self) -> None:
-        """Initialize the cutscene system in Factorio."""
-        # Clear any existing camera
-        self.rcon_client.send_command("/c global.camera = nil")
-
-        # Initialize cutscene system
-        self.rcon_client.send_command("/c global.cutscene_system = {}")
-        self.rcon_client.send_command("/c global.cutscene_system.shots = {}")
-        self.rcon_client.send_command("/c global.cutscene_system.current_shot = nil")
-        self.rcon_client.send_command(
-            "/c global.cutscene_system.capture_enabled = true"
-        )
+    @property
+    def cutscene(self):
+        """Get the cutscene controller for clean API access."""
+        return self.controllers.get("cutscene")
 
     def register_pre_action_hook(self, action_type: str, hook_func: Callable) -> None:
         """Register a hook to be called before an action is executed."""
@@ -178,18 +82,11 @@ class CinematicInstance(FactorioInstance):
         # Extract position from action
         position = self._extract_position_from_action(action_type, args)
 
-        # Create world context
-        world_context = {
-            "player_position": self._get_player_position(),
-            "resolve_position": self._resolve_position,
-        }
-
         return ActionContext(
             action_id=action_id,
             action_type=action_type,
             args=args,
             position=position,
-            world_context=world_context,
             program_id=program_id,
         )
 
@@ -275,154 +172,42 @@ class CinematicInstance(FactorioInstance):
             except Exception as e:
                 print(f"Error in post-action hook for {context.action_type}: {e}")
 
-    def _generate_cinematic_shots(self, context: ActionContext) -> List[CinematicShot]:
-        """Generate cinematic shots for the given action context."""
-        shots = []
+    def _generate_shot_intent(self, context: ActionContext) -> Optional[Dict[str, Any]]:
+        """Generate a shot intent for the given action context.
 
+        Returns a shot intent dict ready for submission to the cutscene tool.
+        """
         if not context.position:
-            return shots
+            return None
 
-        # Determine shot strategy based on action type
+        # Determine shot parameters based on action type
         if context.action_type in ["place_entity", "place_entity_next_to"]:
-            shots.extend(self._create_placement_shots(context))
+            zoom = 2.5
         elif context.action_type == "connect_entities":
-            shots.extend(self._create_connection_shots(context))
+            zoom = 2.0
         elif context.action_type == "move_to":
-            shots.extend(self._create_movement_shots(context))
+            zoom = 2.2
         else:
-            shots.extend(self._create_generic_shots(context))
+            zoom = 2.0
 
-        return shots
+        # Build shot intent
+        shot_intent = {
+            "id": f"shot_{context.action_type}_{context.action_id}",
+            "kind": {
+                "type": "focus_position",
+                "pos": list(context.position),
+            },
+            "pan_ticks": self.pan_duration,
+            "dwell_ticks": self.focus_duration,
+            "zoom": zoom,
+        }
 
-    def _create_placement_shots(self, context: ActionContext) -> List[CinematicShot]:
-        """Create shots for entity placement actions."""
-        shots = []
-
-        # Focus shot on the placement location
-        focus_shot = CinematicShot(
-            id=f"focus_placement_{context.action_id}",
-            state=ShotState.FOCUS,
-            kind={"type": "focus_position", "pos": list(context.position)},
-            pan_ticks=self.pan_duration,
-            dwell_ticks=self.focus_duration,
-            zoom=1.1,  # Medium zoom for entity placement
-            tags=["placement", "focus", "entity_placement"],
-            action_id=context.action_id,
-            program_id=context.program_id,
-            spatial_center=context.position,
-            spatial_radius=8.0,
-        )
-        shots.append(focus_shot)
-
-        return shots
-
-    def _create_connection_shots(self, context: ActionContext) -> List[CinematicShot]:
-        """Create shots for entity connection actions."""
-        shots = []
-
-        # Focus shot on the connection midpoint
-        focus_shot = CinematicShot(
-            id=f"focus_connection_{context.action_id}",
-            state=ShotState.FOCUS,
-            kind={"type": "focus_position", "pos": list(context.position)},
-            pan_ticks=self.pan_duration,
-            dwell_ticks=self.focus_duration,
-            zoom=0.8,  # Zoom out to see both entities
-            tags=["connection", "focus", "entity_connection"],
-            action_id=context.action_id,
-            program_id=context.program_id,
-            spatial_center=context.position,
-            spatial_radius=12.0,
-        )
-        shots.append(focus_shot)
-
-        return shots
-
-    def _create_movement_shots(self, context: ActionContext) -> List[CinematicShot]:
-        """Create shots for movement actions."""
-        shots = []
-
-        # Focus shot on the destination
-        focus_shot = CinematicShot(
-            id=f"focus_movement_{context.action_id}",
-            state=ShotState.FOCUS,
-            kind={"type": "focus_position", "pos": list(context.position)},
-            pan_ticks=self.pan_duration,
-            dwell_ticks=self.focus_duration,
-            zoom=0.9,  # Zoom out to see the path
-            tags=["movement", "focus", "player_movement"],
-            action_id=context.action_id,
-            program_id=context.program_id,
-            spatial_center=context.position,
-            spatial_radius=10.0,
-        )
-        shots.append(focus_shot)
-
-        return shots
-
-    def _create_generic_shots(self, context: ActionContext) -> List[CinematicShot]:
-        """Create generic shots for other actions."""
-        shots = []
-
-        # Simple focus shot
-        focus_shot = CinematicShot(
-            id=f"focus_generic_{context.action_id}",
-            state=ShotState.FOCUS,
-            kind={"type": "focus_position", "pos": list(context.position)},
-            pan_ticks=self.pan_duration,
-            dwell_ticks=self.focus_duration,
-            zoom=1.0,  # Default zoom
-            tags=["generic", "focus"],
-            action_id=context.action_id,
-            program_id=context.program_id,
-            spatial_center=context.position,
-            spatial_radius=8.0,
-        )
-        shots.append(focus_shot)
-
-        return shots
-
-    def _execute_cutscene_action(self, shot: CinematicShot) -> None:
-        """Execute a cutscene action for the given shot."""
-        try:
-            # Build the cutscene command
-            if shot.kind["type"] == "focus_position":
-                pos = shot.kind["pos"]
-                zoom_cmd = f", zoom={shot.zoom}" if shot.zoom else ""
-                command = f"/c cutscene_focus_position({{x={pos[0]}, y={pos[1]}{zoom_cmd}}}, {shot.pan_ticks}, {shot.dwell_ticks})"
-            elif shot.kind["type"] == "zoom_to_fit":
-                bbox = shot.kind["bbox"]
-                command = f"/c cutscene_zoom_to_fit({{x1={bbox[0][0]}, y1={bbox[0][1]}, x2={bbox[1][0]}, y2={bbox[1][1]}}}, {shot.pan_ticks}, {shot.dwell_ticks})"
-            else:
-                print(f"Unknown shot kind: {shot.kind['type']}")
-                return
-
-            # Execute the cutscene command
-            self.rcon_client.send_command(command)
-
-            # Add to active shots
-            self.active_shots.append(shot)
-
-            print(f"Executed cutscene action: {shot.id} ({shot.state.value})")
-
-        except Exception as e:
-            print(f"Error executing cutscene action {shot.id}: {e}")
-
-    def _process_shot_buffer(self) -> None:
-        """Process pending shots in the buffer."""
-        pending_shots = self.shot_buffer.get_pending_shots()
-
-        for shot in pending_shots:
-            self._execute_cutscene_action(shot)
-
-        # Advance tick and clear completed shots
-        self.shot_buffer.advance_tick()
-        self.shot_buffer.clear_completed_shots()
+        return shot_intent
 
     def execute_action_with_cinema(
         self, action_type: str, args: Dict[str, Any], program_id: Optional[str] = None
     ) -> Any:
-        """Execute an action with cinematic hooks."""
+        """Execute an action with cinematic hooks and shot submission."""
         # Create action context
         context = self._create_action_context(action_type, args, program_id)
         self.action_contexts[context.action_id] = context
@@ -430,12 +215,19 @@ class CinematicInstance(FactorioInstance):
         # Execute pre-action hooks
         self._execute_pre_action_hooks(context)
 
-        # Generate cinematic shots
-        shots = self._generate_cinematic_shots(context)
-
-        # Add shots to buffer
-        for shot in shots:
-            self.shot_buffer.add_shot(shot)
+        # Generate and submit shot intent
+        shot_intent = self._generate_shot_intent(context)
+        if shot_intent and self.cutscene:
+            try:
+                response = self.cutscene.submit_shot(
+                    shot=shot_intent,
+                    player=self.player,
+                    capture_dir=self.capture_dir,
+                )
+                if not response.get("ok"):
+                    print(f"Warning: Shot submission failed: {response.get('error')}")
+            except Exception as e:
+                print(f"Error submitting shot for {action_type}: {e}")
 
         # Execute the actual action
         try:
@@ -446,9 +238,6 @@ class CinematicInstance(FactorioInstance):
 
         # Execute post-action hooks
         self._execute_post_action_hooks(context)
-
-        # Process shot buffer
-        self._process_shot_buffer()
 
         return result
 
@@ -464,54 +253,19 @@ class CinematicInstance(FactorioInstance):
                 lua_args.append(f"{key}={value}")
         return ", ".join(lua_args)
 
-    def register_cinematic_hooks(self) -> None:
-        """Register cinematic hooks for common actions."""
-        # Register hooks for entity placement
-        self.register_post_action_hook("place_entity", self._cinematic_placement_hook)
-        self.register_post_action_hook(
-            "place_entity_next_to", self._cinematic_placement_hook
-        )
-
-        # Register hooks for connections
-        self.register_post_action_hook(
-            "connect_entities", self._cinematic_connection_hook
-        )
-
-        # Register hooks for movement
-        self.register_post_action_hook("move_to", self._cinematic_movement_hook)
-
-        # Register hooks for other actions
-        self.register_post_action_hook("rotate_entity", self._cinematic_generic_hook)
-        self.register_post_action_hook("shift_entity", self._cinematic_generic_hook)
-        self.register_post_action_hook("harvest_resource", self._cinematic_generic_hook)
-
-    def _cinematic_placement_hook(self, instance, context: ActionContext) -> None:
-        """Cinematic hook for entity placement actions."""
-        print(f"Executing cinematic placement hook for {context.action_id}")
-        # Additional placement-specific cinematic logic can be added here
-
-    def _cinematic_connection_hook(self, instance, context: ActionContext) -> None:
-        """Cinematic hook for entity connection actions."""
-        print(f"Executing cinematic connection hook for {context.action_id}")
-        # Additional connection-specific cinematic logic can be added here
-
-    def _cinematic_movement_hook(self, instance, context: ActionContext) -> None:
-        """Cinematic hook for movement actions."""
-        print(f"Executing cinematic movement hook for {context.action_id}")
-        # Additional movement-specific cinematic logic can be added here
-
-    def _cinematic_generic_hook(self, instance, context: ActionContext) -> None:
-        """Cinematic hook for generic actions."""
-        print(f"Executing cinematic generic hook for {context.action_id}")
-        # Additional generic cinematic logic can be added here
-
     def get_cinematic_stats(self) -> Dict[str, Any]:
         """Get statistics about the cinematic system."""
-        buffer_stats = self.shot_buffer.get_buffer_stats()
+        # Get stats from Lua side
+        lua_stats = {}
+        if self.cutscene:
+            try:
+                lua_stats = self.cutscene.get_stats()
+            except Exception as e:
+                print(f"Error getting Lua stats: {e}")
 
+        # Combine with Python-side stats
         return {
-            "buffer_stats": buffer_stats,
-            "active_shots": len(self.active_shots),
+            "lua_stats": lua_stats,
             "registered_pre_hooks": sum(
                 len(hooks) for hooks in self.pre_action_hooks.values()
             ),
@@ -519,24 +273,46 @@ class CinematicInstance(FactorioInstance):
                 len(hooks) for hooks in self.post_action_hooks.values()
             ),
             "action_contexts": len(self.action_contexts),
-            "capture_enabled": self.capture_enabled,
             "capture_dir": self.capture_dir,
         }
 
+    def get_cutscene_status(self, player: Optional[int] = None) -> Dict[str, Any]:
+        """Get the current cutscene status for a player."""
+        player = player or self.player
+        if self.cutscene:
+            try:
+                return self.cutscene.get_status(player)
+            except Exception as e:
+                print(f"Error getting cutscene status: {e}")
+        return {"ok": False, "error": "cutscene controller not available"}
+
+    def cancel_cutscene(self, player: Optional[int] = None) -> Dict[str, Any]:
+        """Cancel the active cutscene for a player."""
+        player = player or self.player
+        if self.cutscene:
+            try:
+                return self.cutscene.cancel(player)
+            except Exception as e:
+                print(f"Error cancelling cutscene: {e}")
+        return {"ok": False, "error": "cutscene controller not available"}
+
     def cleanup(self) -> None:
         """Clean up the cinematic instance."""
-        # Clear cutscene system
-        self.rcon_client.send_command("/c global.cutscene_system = nil")
-        self.rcon_client.send_command("/c global.camera = nil")
+        # NOTE: stop_recording is now called in rollout_to_videos._cleanup()
+        # to avoid duplicate calls. Keeping this as fallback only.
+        if self.cutscene:
+            try:
+                # Check if recording is still active
+                stats = self.cutscene.get_stats()
+                if stats.get("capture_active"):
+                    self.cutscene.stop_recording()
+            except Exception:
+                pass
 
         # Clear hooks and contexts
         self.pre_action_hooks.clear()
         self.post_action_hooks.clear()
         self.action_contexts.clear()
-
-        # Clear shots
-        self.shot_buffer.shots.clear()
-        self.active_shots.clear()
 
         # Call parent cleanup
         super().cleanup()
@@ -545,6 +321,4 @@ class CinematicInstance(FactorioInstance):
 # Convenience function for creating a cinematic instance
 def create_cinematic_instance(*args, **kwargs) -> CinematicInstance:
     """Create a new cinematic instance with default settings."""
-    instance = CinematicInstance(*args, **kwargs)
-    instance.register_cinematic_hooks()
-    return instance
+    return CinematicInstance(*args, **kwargs)

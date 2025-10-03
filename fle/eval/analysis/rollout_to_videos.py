@@ -91,10 +91,12 @@ class ProcessingConfig:
     capture_enabled: bool = True
     script_output_dir: Optional[str] = None
     render_enabled: bool = True
-    render_fps: int = 10
-    render_crf: int = 28
+    render_fps: int = 24
+    render_crf: int = 35
     render_preset: str = "ultrafast"
+    speed: float = 4.0
     cleanup_after: bool = True
+    debug: bool = False  # If True, raise exceptions instead of continuing
 
 
 @dataclass
@@ -204,16 +206,26 @@ class VideoRenderer:
         # Generate output video path
         output_video = videos_dir / f"{output_dir.name}.mp4"
 
-        # Build ffmpeg command
+        # Build ffmpeg command with speed control using setpts filter
+        # This correctly speeds up the video by manipulating presentation timestamps
+        input_fps = self.config.render_fps
+        speed_multiplier = self.config.speed
+
+        # setpts filter: smaller values = faster video
+        # For 4x speed: setpts=0.25*PTS (because 1/4 = 0.25)
+        setpts_value = 1.0 / speed_multiplier
+
         cmd = [
             "ffmpeg",
             "-y",  # Overwrite output files
             "-framerate",
-            str(self.config.render_fps),
+            str(input_fps),  # Input framerate (actual capture rate)
             "-pattern_type",
             "glob",
             "-i",
             str(frames_dir / "*.png"),
+            "-vf",
+            f"setpts={setpts_value}*PTS",  # Speed up video by manipulating timestamps
             "-c:v",
             "libx264",
             "-crf",
@@ -222,11 +234,17 @@ class VideoRenderer:
             self.config.render_preset,
             "-pix_fmt",
             "yuv420p",
+            "-movflags",
+            "+faststart",  # Optimize for web streaming
+            "-f",
+            "mp4",  # Force MP4 container format
             str(output_video),
         ]
 
         try:
             print(f"Rendering video: {output_video}")
+            print(f"Input FPS: {input_fps} (capture rate)")
+            print(f"Speed multiplier: {speed_multiplier}x (setpts={setpts_value})")
             print(f"Command: {' '.join(cmd)}")
 
             result = subprocess.run(
@@ -283,6 +301,15 @@ class FileManager:
                 print(f"Cleaned existing output directory: {version_dir}")
             except Exception as e:
                 print(f"Warning: Failed to clean output directory {version_dir}: {e}")
+                # If rmtree fails, try to at least clean the frames directory
+                frames_dir = version_dir / "frames"
+                if frames_dir.exists():
+                    try:
+                        for png_file in frames_dir.glob("*.png"):
+                            png_file.unlink()
+                        print(f"Cleaned PNG files from {frames_dir}")
+                    except Exception as e2:
+                        print(f"Warning: Failed to clean PNG files: {e2}")
 
         # Create directory structure
         version_dir.mkdir(parents=True, exist_ok=True)
@@ -330,8 +357,8 @@ class FileManager:
                 "error": f"Capture directory {capture_dir} does not exist",
             }
 
-        # Count source files
-        src_files = list(capture_dir.glob("*.png"))
+        # Sort files by name to ensure chronological order (filenames are zero-padded tick+frame)
+        src_files = sorted(capture_dir.glob("*.png"))
         if not src_files:
             return {"moved": 0, "error": "No PNG files found in capture directory"}
 
@@ -340,14 +367,24 @@ class FileManager:
             moved_count = 0
             for src_file in src_files:
                 dst_file = frames_dir / src_file.name
+                # Overwrite if destination exists (shouldn't happen with proper cleanup)
+                if dst_file.exists():
+                    dst_file.unlink()
                 shutil.move(str(src_file), str(dst_file))
                 moved_count += 1
 
-            # Remove empty capture directory
+            # Aggressively clean capture directory
             try:
+                # Remove any remaining files (non-PNG)
+                for remaining_file in capture_dir.iterdir():
+                    try:
+                        remaining_file.unlink()
+                    except Exception:
+                        pass
                 capture_dir.rmdir()
-            except OSError:
-                pass  # Directory not empty, that's fine
+                print(f"Cleaned up capture directory: {capture_dir}")
+            except OSError as e:
+                print(f"Warning: Could not fully clean capture directory: {e}")
 
             return {
                 "moved": moved_count,
@@ -391,6 +428,8 @@ class RolloutToVideos:
         """Process a single version and generate videos."""
         print(f"\n{'=' * 60}")
         print(f"Processing version {version}")
+        if self.config.debug:
+            print("DEBUG MODE ENABLED - Will raise exceptions instead of continuing")
         print(f"{'=' * 60}")
 
         start_time = time.time()
@@ -457,7 +496,9 @@ class RolloutToVideos:
             error_msg = f"Error processing version {version}: {e}"
             print(error_msg)
             self.report.errors.append(error_msg)
-            raise
+            if self.config.debug:
+                raise  # Always re-raise in debug mode
+            raise  # Always re-raise for top-level version processing errors
 
         finally:
             self._cleanup()
@@ -489,6 +530,28 @@ class RolloutToVideos:
             self.cinematic_instance.capture_enabled = True
             self.cinematic_instance.capture_dir = f"v{self.report.version}"
 
+            # Start continuous recording for the entire session
+            print("Starting continuous screenshot recording...")
+            if self.cinematic_instance.cutscene:
+                try:
+                    result = self.cinematic_instance.cutscene.start_recording(
+                        player=1,
+                        session_id=f"v{self.report.version}",
+                        capture_dir=f"v{self.report.version}",
+                    )
+                    if result.get("ok"):
+                        print(
+                            f"Continuous recording started: session {result.get('session_id')}"
+                        )
+                    else:
+                        print(
+                            f"Warning: Failed to start recording: {result.get('error')}"
+                        )
+                except Exception as e:
+                    print(f"Error starting recording: {e}")
+                    if self.config.debug:
+                        raise
+
         print("Cinematic instance created and configured")
 
         # Minimal pre-tool hook: place_entity → quick focus shot
@@ -519,11 +582,10 @@ class RolloutToVideos:
                             },
                             "pan_ticks": 48,
                             "dwell_ticks": 96,
-                            "zoom": 1.1,
+                            "zoom": 1.5,  # Zoom in for placement
                         }
                     ],
-                    # Use default capture_dir configured on server; explicit is optional
-                    # "capture_dir": f"v{self.report.version}",
+                    # No capture fields - using continuous recording
                 }
                 self.cinematic_instance.first_namespace.cutscene(plan)
             except Exception:
@@ -571,6 +633,8 @@ class RolloutToVideos:
                 error_msg = f"Error processing program {program_id}: {e}"
                 print(error_msg)
                 self.report.errors.append(error_msg)
+                if self.config.debug:
+                    raise  # Re-raise in debug mode
                 continue
 
             # Small delay between programs
@@ -669,9 +733,12 @@ class RolloutToVideos:
 
             # Execute each group of shots
             for shot_type, shots in shot_groups.items():
+                # Track last zoom to minimize jarring transitions
+                prev_zoom = getattr(self, "_last_cutscene_zoom", 1.0)
+
                 shot_plan = {
                     "player": 1,
-                    "start_zoom": 1.0,
+                    "start_zoom": prev_zoom,  # Start from last zoom for smooth transitions
                     "shots": [
                         {
                             "id": shot.id,
@@ -687,9 +754,12 @@ class RolloutToVideos:
                         for i, shot in enumerate(shots)
                     ],
                     "plan_id": f"{shot_type}-{program_id}-{run_slug}",
-                    "capture": True,
-                    "capture_dir": f"v{self.report.version}",
+                    # No capture fields - using continuous recording instead
                 }
+
+                # Remember final zoom for next cutscene
+                if shots:
+                    self._last_cutscene_zoom = shots[-1].zoom or prev_zoom
 
                 # Debug: Print shot details
                 for i, shot in enumerate(shots):
@@ -720,6 +790,8 @@ class RolloutToVideos:
 
         except Exception as e:
             print(f"Error generating cinematic shots for program {program_id}: {e}")
+            if self.config.debug:
+                raise e  # Re-raise in debug mode
             return 0
 
     def _finalize_video_generation(self, output_dir: Path, capture_dir: Path) -> None:
@@ -792,6 +864,14 @@ class RolloutToVideos:
         if self.current_output_dir and self.current_capture_dir:
             print("Attempting to create video from existing frames...")
 
+            # Stop any active recording first
+            if self.cinematic_instance and self.cinematic_instance.cutscene:
+                try:
+                    self.cinematic_instance.cutscene.stop_recording()
+                    print("Stopped active recording session")
+                except Exception as e:
+                    print(f"Warning: Could not stop recording: {e}")
+
             # Try to move any existing frames
             try:
                 move_result = self.file_manager.move_frames_to_output(
@@ -810,6 +890,8 @@ class RolloutToVideos:
             except Exception as e:
                 print(f"Error during graceful exit video creation: {e}")
                 self.report.errors.append(f"Graceful exit error: {e}")
+                if self.config.debug:
+                    raise  # Re-raise in debug mode
 
         print("Graceful exit completed")
 
@@ -846,16 +928,72 @@ class RolloutToVideos:
         """Clean up resources."""
         if self.cinematic_instance:
             try:
-                # Disable admin tools before cleanup
-                self.cinematic_instance.first_namespace.enable_admin_tools_in_runtime(
-                    False
-                )
+                # Stop recording - cinematic_instance.cleanup() also does this,
+                # but we do it here first with explicit error handling
+                if self.cinematic_instance.cutscene:
+                    try:
+                        result = self.cinematic_instance.cutscene.stop_recording()
+                        if result.get("ok"):
+                            print(f"Recording stopped: {result.get('session_id')}")
+                    except Exception as e:
+                        print(f"Warning: Could not stop recording: {e}")
+
+                # Give server a moment to process the stop command before full cleanup
+                time.sleep(0.5)
+
+                # Let parent cleanup handle everything else
+                # Admin tools don't need to be disabled - we're shutting down anyway
                 self.cinematic_instance.cleanup()
                 print("Cinematic instance cleaned up")
             except Exception as e:
                 print(f"Warning: Failed to cleanup cinematic instance: {e}")
 
+        # Aggressively clean ALL PNGs from script-output
+        self._cleanup_all_script_output_pngs()
+
         self.db_manager.close()
+
+    def _cleanup_all_script_output_pngs(self) -> None:
+        """Remove ALL PNG files from Factorio script-output directory."""
+        try:
+            if not self.config.script_output_dir:
+                script_output = (
+                    Path.home()
+                    / "Library"
+                    / "Application Support"
+                    / "factorio"
+                    / "script-output"
+                )
+            else:
+                script_output = Path(self.config.script_output_dir)
+
+            if not script_output.exists():
+                return
+
+            # Find and remove ALL PNG files recursively
+            png_count = 0
+            for png_file in script_output.rglob("*.png"):
+                try:
+                    png_file.unlink()
+                    png_count += 1
+                except Exception as e:
+                    print(f"Warning: Could not delete {png_file}: {e}")
+
+            if png_count > 0:
+                print(f"Cleaned up {png_count} PNG files from script-output")
+
+            # Try to remove empty directories
+            for dirpath in sorted(
+                script_output.rglob("*"), key=lambda p: len(p.parts), reverse=True
+            ):
+                if dirpath.is_dir():
+                    try:
+                        dirpath.rmdir()  # Only removes if empty
+                    except OSError:
+                        pass  # Directory not empty or can't be removed
+
+        except Exception as e:
+            print(f"Warning: Failed to cleanup script-output PNGs: {e}")
 
 
 def main():
@@ -896,19 +1034,30 @@ def main():
     parser.add_argument(
         "--render-fps",
         type=int,
-        default=int(os.getenv("CINEMA_RENDER_FPS", "10")),
-        help="Video framerate",
+        default=int(os.getenv("CINEMA_RENDER_FPS", "24")),
+        help="Video framerate for rendering (default: 24 fps)",
+    )
+    parser.add_argument(
+        "--speed",
+        type=float,
+        default=4.0,
+        help="Playback speed multiplier (default: 4.0x)",
     )
     parser.add_argument(
         "--render-crf",
         type=int,
-        default=int(os.getenv("CINEMA_RENDER_CRF", "28")),
+        default=int(os.getenv("CINEMA_RENDER_CRF", "35")),
         help="Video quality (lower = higher quality)",
     )
     parser.add_argument(
         "--render-preset",
         default=os.getenv("CINEMA_RENDER_PRESET", "ultrafast"),
         help="FFmpeg preset",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode (raise exceptions instead of continuing)",
     )
 
     args = parser.parse_args()
@@ -923,8 +1072,10 @@ def main():
         script_output_dir=args.script_output_dir,
         render_enabled=not args.no_render,
         render_fps=args.render_fps,
+        speed=args.speed,
         render_crf=args.render_crf,
         render_preset=args.render_preset,
+        debug=args.debug,
     )
 
     # Process each version

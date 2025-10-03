@@ -1,19 +1,27 @@
 --[[
 Cutscene Admin Tool — minimal runtime for Factorio 1.1.110
 
-This runtime focuses on a small, predictable surface:
-  * Python submits an ordered list of shot intents.
-  * We translate the intents into Factorio cutscene waypoints verbatim.
-  * Lifecycle events (started/waypoint/finished/cancelled) are recorded so the
-    caller can poll for status.
-  * Screenshot capture is automatically managed per cutscene plan.
+ARCHITECTURE:
+  * Screenshot recording runs CONTINUOUSLY via start_recording/stop_recording
+  * Cutscenes are INDEPENDENT - they just move the camera
+  * Screenshots capture at all times (cutscene or normal gameplay)
+  * Zoom/position interpolation ensures smooth camera tracking
 
-Key insight: With automatic screenshot capture, the camera needs to be SMART
-about positioning - get to the exact right place and zoom level where the action
-is happening, then stay there to capture it effectively.
+WORKFLOW:
+  1. Python calls start_recording() once at session start
+  2. Screenshots capture every nth tick with current camera position/zoom
+  3. Python submits cutscene plans to move camera for specific actions
+  4. Cutscenes execute, camera moves, screenshots continue capturing
+  5. When cutscene ends, camera position/zoom are preserved for next frame
+  6. Python calls stop_recording() when session ends
 
-Higher-level policies (debouncing, ordering, merging) live in Python. The Lua
-side deliberately avoids re-sorting or mutating the shot sequence.
+KEY INSIGHT: 
+  * Cutscenes control WHERE the camera looks (position + zoom)
+  * Recording controls WHEN screenshots are taken (continuous)
+  * Interpolation ensures smooth zoom transitions for better video quality
+
+Higher-level policies (shot generation, timing) live in Python. The Lua
+side focuses on faithful execution and smooth camera interpolation.
 ]]
 
 local CUTSCENE_VERSION = "1.1.110"
@@ -24,18 +32,9 @@ local CAPTURE_CONFIG = {
     base_dir = "cinema_seq",
     nth_ticks = 6,
     resolution = {1920, 1080},
-    quality = 100,
+    quality = 50,  -- Reduced from 100 for better performance (50 is good balance)
     show_gui = false,
     use_tick_names = true,
-}
-
-local frame_capture = {
-    active = false,
-    player_index = nil,
-    plan_label = nil,
-    frame = 0,
-    last_tick = 0,
-    session_id = nil,
 }
 
 -- === Globals =============================================================
@@ -45,9 +44,24 @@ local function ensure_global()
         active_plan_by_player = {},
         reports_by_player = {},
         entity_cache = {},
-        player_state = {}
+        player_state = {},
+        frame_capture = {
+            active = false,
+            player_index = nil,
+            plan_label = nil,
+            frame = 0,
+            last_tick = 0,
+            session_id = nil,
+            capture_dir = nil,
+        }
     }
     return global.cinema
+end
+
+-- Frame capture state is stored in global to survive save/load
+local function get_frame_capture()
+    ensure_global()
+    return global.cinema.frame_capture
 end
 
 local function ensure_player_state(player_index)
@@ -541,82 +555,71 @@ end
 -- === Frame capture =======================================================
 local function start_frame_capture(opts)
     opts = opts or {}
-    frame_capture.active = true
-    frame_capture.player_index = opts.player_index or frame_capture.player_index or 1
-    frame_capture.plan_label = opts.plan_label and tostring(opts.plan_label) or nil
-    frame_capture.capture_dir = opts.capture_dir or CAPTURE_CONFIG.base_dir
-    frame_capture.session_id = opts.session_id or tostring(game.tick)
-    frame_capture.frame = 0
-    frame_capture.last_tick = 0
+    local fc = get_frame_capture()
+    fc.active = true
+    fc.player_index = opts.player_index or fc.player_index or 1
+    fc.plan_label = opts.plan_label and tostring(opts.plan_label) or nil
+    fc.capture_dir = opts.capture_dir or CAPTURE_CONFIG.base_dir
+    fc.session_id = opts.session_id or tostring(game.tick)
+    fc.frame = 0
+    fc.last_tick = 0
     
     -- Log capture start
     if game and game.write_file then
         game.write_file("cinema_capture.log", string.format("Started capture session %s for player %d\n", 
-            frame_capture.session_id, frame_capture.player_index), true)
+            fc.session_id, fc.player_index), true)
     end
 end
 
 local function stop_frame_capture()
-    if not frame_capture.active then return end
+    local fc = get_frame_capture()
+    if not fc.active then return end
     
     -- Log capture stop
     if game and game.write_file then
         game.write_file("cinema_capture.log", string.format("Stopping capture session %s (frame %d)\n", 
-            frame_capture.session_id or "unknown", frame_capture.frame), true)
+            fc.session_id or "unknown", fc.frame), true)
     end
     
-    frame_capture.active = false
-    frame_capture.plan_label = nil
-    frame_capture.player_index = nil
-    frame_capture.capture_dir = nil
-    frame_capture.session_id = nil
-    frame_capture.frame = 0
-    frame_capture.last_tick = 0
+    fc.active = false
+    fc.plan_label = nil
+    fc.player_index = nil
+    fc.capture_dir = nil
+    fc.session_id = nil
+    fc.frame = 0
+    fc.last_tick = 0
     
-    -- Safe flush with error handling
-    local ok, err = pcall(function()
-        if game and game.set_wait_for_screenshots_to_finish then
-            game.set_wait_for_screenshots_to_finish()
-        end
-    end)
-    if not ok then
-        if game and game.write_file then
-            game.write_file("cinema_capture.log", "flush failed: " .. tostring(err) .. "\n", true)
-        end
-    end
+    -- NOTE: Removed game.set_wait_for_screenshots_to_finish() because it's a blocking call
+    -- that can take 10-30+ seconds with hundreds of screenshots in the queue, causing
+    -- RCON connection timeouts. Screenshots will complete asynchronously on their own.
 end
 
 script.on_nth_tick(1, function(e)
-    if not frame_capture.active then return end
-    if e.tick - (frame_capture.last_tick or 0) < CAPTURE_CONFIG.nth_ticks then return end
-    frame_capture.last_tick = e.tick
+    local fc = get_frame_capture()
+    if not fc.active then return end
+    if e.tick - (fc.last_tick or 0) < CAPTURE_CONFIG.nth_ticks then return end
+    fc.last_tick = e.tick
 
-    local p = game.get_player(frame_capture.player_index or 1)
+    local p = game.get_player(fc.player_index or 1)
     if not (p and p.valid) then return end
-    if p.controller_type ~= defines.controllers.cutscene then return end
 
-    local basename = string.format("%010d-%04d", e.tick, frame_capture.frame)
-    if frame_capture.plan_label then
-        basename = string.format("%s-%s", frame_capture.plan_label, basename)
+    local basename = string.format("%010d-%04d", e.tick, fc.frame)
+    if fc.plan_label then
+        basename = string.format("%s-%s", fc.plan_label, basename)
     end
 
-    local capture_dir = frame_capture.capture_dir or CAPTURE_CONFIG.base_dir
+    local capture_dir = fc.capture_dir or CAPTURE_CONFIG.base_dir
     local path = string.format("%s/%s.png", capture_dir, basename)
-    frame_capture.frame = frame_capture.frame + 1
+    fc.frame = fc.frame + 1
 
-    -- Debug: log the path being used
-    if game and game.write_file then
-        game.write_file("cinema_debug.log", string.format("Screenshot path: %s (capture_dir: %s)\n", path, capture_dir), true)
-    end
-
-    -- Compute smooth camera sample (position + zoom) for this frame
-    local ps = ensure_player_state(frame_capture.player_index or 1)
+    -- Compute camera position and zoom based on controller mode
+    local ps = ensure_player_state(fc.player_index or 1)
     local ci = ps.camera_interp
-
     local curr_pos
     local curr_zoom
 
-    if ci and ci.active then
+    -- If in cutscene mode with interpolation, use smooth camera tracking
+    if p.controller_type == defines.controllers.cutscene and ci and ci.active then
         local seg_len = math.max(0, (ci.seg_end_tick or e.tick) - (ci.seg_start_tick or e.tick))
         if seg_len > 0 and e.tick < (ci.seg_end_tick or 0) then
             -- In transition: interpolate with easing
@@ -632,15 +635,19 @@ script.on_nth_tick(1, function(e)
         end
     end
 
-    -- Fallbacks
+    -- Fallback to player's current position/zoom (for non-cutscene recording)
     if not curr_pos then
         curr_pos = ps.last_position or { x = p.position.x, y = p.position.y }
     end
     if not curr_zoom then
-        curr_zoom = ps.last_zoom or p.zoom or 1.0
+        -- NOTE: LuaPlayer doesn't have 'zoom' property in Factorio 1.1.110
+        -- Zoom is only available in cutscene controller via waypoints
+        -- Use last known zoom or default to 1.0
+        curr_zoom = ps.last_zoom or 1.0
     end
 
-    -- Take explicit screenshot using surface+position+zoom for deterministic capture
+    -- Take screenshot using surface+position+zoom for deterministic capture
+    -- Works in any controller mode (cutscene, character, god, etc.)
     game.take_screenshot{
         surface = p.surface,
         position = curr_pos,
@@ -696,29 +703,27 @@ local function start_plan(player_index, plan)
     -- Prime camera interpolation so screenshots can track smooth zoom/position
     prime_camera_interp(player_index, plan, waypoints)
 
-    -- Always stop any existing capture before starting new one
-    if frame_capture.active then
-        stop_frame_capture()
+    -- NOTE: We do NOT start/stop capture per-cutscene anymore
+    -- Recording should be started explicitly via start_recording() and run continuously
+    -- Cutscenes just move the camera; screenshots capture everything
+
+    -- Wrap set_controller in pcall to handle errors gracefully
+    local ok, err = pcall(function()
+        player.set_controller{
+            type = defines.controllers.cutscene,
+            waypoints = waypoints,
+            start_position = plan.start_position,
+            start_zoom = plan.start_zoom,
+            final_transition_time = plan.final_transition_time,
+            chart_mode_cutoff = plan.chart_mode_cutoff,
+            -- skip_soft_zoom = true,
+            disable_camera_movements = false,
+        }
+    end)
+    
+    if not ok then
+        return false, "set_controller failed: " .. tostring(err)
     end
-
-    -- Always start capture for any plan submission
-    start_frame_capture({
-        player_index = player_index,
-        plan_label = plan.plan_id,
-        capture_dir = plan.capture_dir or CAPTURE_CONFIG.base_dir,
-        session_id = plan.plan_id,
-    })
-
-    player.set_controller{
-        type = defines.controllers.cutscene,
-        waypoints = waypoints,
-        start_position = plan.start_position,
-        start_zoom = plan.start_zoom,
-        final_transition_time = plan.final_transition_time,
-        chart_mode_cutoff = plan.chart_mode_cutoff,
-        -- skip_soft_zoom = true,
-        disable_camera_movements = false,
-    }
 
     record_event(player_index, plan.plan_id, "started", {tick = game.tick})
     ensure_player_state(player_index).last_zoom = waypoints[#waypoints].zoom
@@ -754,14 +759,23 @@ local function on_cutscene_finished(event)
     if not plan then return end
 
     record_event(event.player_index, plan.plan_id, "finished", {tick = event.tick})
-    ensure_player_state(event.player_index).last_zoom = plan.__compiled[#plan.__compiled].zoom
-    ensure_player_state(event.player_index).last_position = plan.__compiled[#plan.__compiled].position
-    g.active_plan_by_player[event.player_index] = nil
-
-    -- Always stop capture when cutscene finishes
-    if frame_capture.active and frame_capture.player_index == event.player_index then
-        stop_frame_capture()
+    
+    -- Store final zoom and position for continuous recording
+    local final_zoom = plan.__compiled[#plan.__compiled].zoom
+    local final_pos = plan.__compiled[#plan.__compiled].position
+    ensure_player_state(event.player_index).last_zoom = final_zoom
+    ensure_player_state(event.player_index).last_position = final_pos
+    
+    -- Mark interpolation as inactive
+    local ps = ensure_player_state(event.player_index)
+    if ps.camera_interp then
+        ps.camera_interp.active = false
     end
+    
+    g.active_plan_by_player[event.player_index] = nil
+    
+    -- NOTE: Do NOT stop capture here - let it run continuously
+    -- Recording is managed separately via start_recording/stop_recording
 end
 
 local function on_cutscene_cancelled(event)
@@ -771,7 +785,8 @@ local function on_cutscene_cancelled(event)
 
     record_event(event.player_index, plan.plan_id, "cancelled", {tick = event.tick})
     g.active_plan_by_player[event.player_index] = nil
-    stop_frame_capture()
+    
+    -- NOTE: Do NOT stop capture here - let it run continuously
 end
 
 local function on_cutscene_waypoint(event)
@@ -895,17 +910,18 @@ global.actions.start_recording = function(raw_payload)
     ensure_global()
     local payload, err = parse_payload(raw_payload)
     if not payload then
-        return {ok = false, error = err}
+        return game.table_to_json({ok = false, error = err})
     end
     
     local player_index = payload.player_index or 1
     local player = game.players[player_index]
     if not (player and player.valid) then
-        return {ok = false, error = "player not found"}
+        return game.table_to_json({ok = false, error = "player not found"})
     end
     
-    -- Stop any existing capture
-    if frame_capture.active then
+    -- Stop any existing capture before starting new one
+    local fc = get_frame_capture()
+    if fc.active then
         stop_frame_capture()
     end
     
@@ -917,19 +933,119 @@ global.actions.start_recording = function(raw_payload)
         session_id = payload.session_id or tostring(game.tick),
     })
     
-    return {ok = true, session_id = frame_capture.session_id}
+    fc = get_frame_capture()
+    return game.table_to_json({ok = true, session_id = fc.session_id})
 end
 
 -- Stop the current recording session
 global.actions.stop_recording = function(raw_payload)
     ensure_global()
+    local fc = get_frame_capture()
     
-    if not frame_capture.active then
-        return {ok = false, error = "no active recording session"}
+    if not fc.active then
+        return game.table_to_json({ok = false, error = "no active recording session"})
     end
     
-    local session_id = frame_capture.session_id
+    local session_id = fc.session_id
     stop_frame_capture()
     
-    return {ok = true, session_id = session_id}
+    return game.table_to_json({ok = true, session_id = session_id})
+end
+
+-- Get status for a specific player's cutscene
+global.actions.cutscene_status = function(player_index)
+    ensure_global()
+    local g = ensure_global()
+    local fc = get_frame_capture()
+    
+    if type(player_index) == "string" then
+        player_index = tonumber(player_index) or 1
+    end
+    player_index = player_index or 1
+    
+    local active_plan = g.active_plan_by_player[player_index]
+    if not active_plan then
+        return game.table_to_json({
+            ok = true,
+            active = false,
+            player_index = player_index
+        })
+    end
+    
+    return game.table_to_json({
+        ok = true,
+        active = true,
+        player_index = player_index,
+        plan_id = active_plan.plan_id,
+        num_shots = #(active_plan.shots or {}),
+        num_waypoints = #(active_plan.__compiled or {}),
+        capture_active = fc.active and fc.player_index == player_index,
+    })
+end
+
+-- Get overall cutscene system statistics
+global.actions.cutscene_stats = function()
+    ensure_global()
+    local g = ensure_global()
+    local fc = get_frame_capture()
+    
+    local active_count = 0
+    local total_reports = 0
+    
+    for _, _ in pairs(g.active_plan_by_player) do
+        active_count = active_count + 1
+    end
+    
+    for _, reports in pairs(g.reports_by_player) do
+        for _, _ in pairs(reports) do
+            total_reports = total_reports + 1
+        end
+    end
+    
+    return game.table_to_json({
+        ok = true,
+        version = CUTSCENE_VERSION,
+        active_plans = active_count,
+        total_reports = total_reports,
+        capture_active = fc.active,
+        capture_player = fc.player_index,
+        capture_session = fc.session_id,
+        capture_frames = fc.frame,
+    })
+end
+
+-- Cancel active cutscene for a player
+global.actions.cutscene_cancel = function(player_index)
+    ensure_global()
+    local g = ensure_global()
+    local fc = get_frame_capture()
+    
+    if type(player_index) == "string" then
+        player_index = tonumber(player_index) or 1
+    end
+    player_index = player_index or 1
+    
+    local active_plan = g.active_plan_by_player[player_index]
+    if not active_plan then
+        return game.table_to_json({
+            ok = false,
+            error = "no active plan for player"
+        })
+    end
+    
+    local player = game.players[player_index]
+    if player and player.valid then
+        player.exit_cutscene()
+    end
+    
+    record_event(player_index, active_plan.plan_id, "cancelled", {tick = game.tick, reason = "manual"})
+    g.active_plan_by_player[player_index] = nil
+    
+    -- NOTE: Do NOT stop capture - let it run continuously
+    
+    return game.table_to_json({
+        ok = true,
+        cancelled = true,
+        plan_id = active_plan.plan_id
+    })
 end

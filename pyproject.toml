@@ -70,6 +70,7 @@ psql = [
 
 [project.scripts]
 fle = "fle.run:main"
+fle-mcp = "fle.server:main"
 
 [tool.hatch.version]
 path = "fle/__init__.py"

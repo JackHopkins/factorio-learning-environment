@@ -1,6 +1,6 @@
 <h1 align="center">Factorio Learning Environment</h1>
 <p align="center">
-  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>| <a href="https://discord.com/invite/saRmjpE2s6">Discord</a>
+  <a href="https://jackhopkins.github.io/factorio-learning-environment/leaderboard">Leaderboard</a> | <a href="https://arxiv.org/abs/2503.09617">Paper</a> | <a href="https://jackhopkins.github.io/factorio-learning-environment/">Website</a>| <a href="https://discord.gg/zKaV2skewa">Discord (#factorio-learning-env)</a>
 </p>
 
 <p align="center">
@@ -8,10 +8,10 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 
 <p align="center">
-<img src="docs/assets/videos/compressed_527-cropped.webp" width="485" height="364" controls/>
-<img src="docs/assets/videos/compressed_1897-cropped.webp" width="485" height="364" controls/>
+<img src="docs/assets/videos/compressed_sulfuric_acid.webp" width="485" height="364" controls/>
+<img src="docs/assets/videos/compressed_red_science.webp" width="485" height="364" controls/>
 </p>
-<p align="center"><em>Claude 3.5 plays Factorio</em></p>
+<p align="center"><em>Claude Opus 4.1 Plays Factorio</em></p>
 
 ## Why FLE?
 
@@ -23,29 +23,24 @@ We provide two settings:
 2. **Open-play** An unbounded task of building the largest possible factory on a procedurally generated map.
 
 Our results demonstrate that models still lack strong spatial reasoning. In lab-play, we find that while LLMs
-exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex
-automation (e.g electronic-circuit manufacturing).
+exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex automation (e.g electronic-circuit manufacturing).
 
 ## Quick Links
 
 - [Installation](#installation)
 - [Environment](#environment)
-- [Agents](#agents)
-- [Tasks](#tasks)
-- [Multiagent Experiments](#multiagent-experiments)
 - [Tools](#tool-documentation)
 - [Project Structure](#project-structure)
 - [Database](#database)
-- [Benchmarks](#benchmarks)
 - [Contributions](#contributing-guidelines)
 
 ## Installation
 
 ### Prerequisites
 
-- [Factorio](https://www.factorio.com/) (version 1.1.110)
 - Docker
 - Python 3.10+
+- [Factorio](https://www.factorio.com/) (version 1.1.110), only for optional rendering.
 
 ### Installation
 
@@ -83,8 +78,8 @@ Or import the package in your Python code:
 from fle.env import FactorioInstance
 instance = FactorioInstance()
 
-# Evaluation features (requires [eval] dependencies)  
-from fle.agents import LLMAgent
+# Evaluation features (requires [eval] dependencies)
+from fle.agents.gym_agent import GymAgent
 ```
 
 > When you run `fle init` or `fle eval` for the first time, an `.env` file and a `configs/` directory with example configurations are created automatically
@@ -99,17 +94,6 @@ fle cluster start # Starts 1 instance with default lab scenario
 fle cluster start -n 4                     # Start 4 instances  
 fle cluster start -s open_world            # Start with open world scenario
 ```
-
-**Note**: The script automatically detects your platform (arm64/amd64) and configures Docker appropriately.
-
-4. **Configure firewall** (if running server on a different machine):
-
-   Open the following ports:
-   - UDP 34197 (Game connection)
-   - TCP 27015 (RCON)
-
-   **Note**: On Windows, you may need to configure Windows Defender Firewall to allow these ports.
-
 5. **Configure DB**: Copy the example environment file:
    - Note that API keys are only required for the respective model providers that will be evaluated
    ```bash
@@ -117,14 +101,7 @@ fle cluster start -s open_world            # Start with open world scenario
    ```
 
 6. **Run Eval**: Running open and lab play with example run configs:
-   1. Open Play (one parallel run):
-      ```sh
-      # Using uv
-      uv run -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
-      # Using python
-      python -m fle.run --run_config=eval/algorithms/independent/run_config_example_open_play.json
-      ```
-   2. Tasks (one parallel run of iron-ore task):
+    Tasks (one parallel run of iron-ore task):
       ```sh
       # Using uv
       uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
@@ -132,7 +109,7 @@ fle cluster start -s open_world            # Start with open world scenario
       python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
       ```
 
-### Client-side running (renders graphics)
+### Client-side running (optional, renders graphics)
 
 1. **Set up Factorio client**:
    - Purchase Factorio from the [official website](https://www.factorio.com/) (recommended) or on Steam.
@@ -288,182 +265,6 @@ Agents are able to enhance their internal representation of the game state by de
 1. Utility functions for reuse throughout an episode, to encapsulate previously successful logic
 2. Classes in the namespace to better organize the data retrieved from the game.
 
-## Agents
-
-The Factorio Learning Environment provides a straightforward agent architecture for developing and evaluating AI models that can play Factorio.
-
-Agents operate in _episodes_, with each step involving observation, planning, and action execution through Python code synthesis.
-The agent maintains state through a conversation history that includes its actions (_assistant_) and the stdout/stderr from the environment (_user_).
-At each step, agents generate Python code policies that are executed in the environment.
-
-### Anatomy of an Agent
-
-Agents live in `agents`, and implement an abstract base class (AgentABC) that defines the core interface for interacting with the environment.
-
-The abstract base class defines two methods that all agents must implement:
-
-```
-# Generates the next action based on conversation history and environment response (including score / achievements etc).
-step(conversation: Conversation, response: Response) -> Policy:
-
-# Handles cleanup when an episode terminates, i.e for reporting results etc.
-end(conversation: Conversation, completion: CompletionState) -> None:
-```
-
-Each agent takes input a task (discussed in the next section) which specifies the goal of the agent.
-
-Our default agent is `BasicAgent`, which incorporates some basic mechanisms for managing context over long (+1000 step) runs:
-
-1. Every 32 steps, the all older interactions are summarised into a report in the system message.
-2. Conversations are clipped to remain under 200k characters (~87k tokens).
-3. We strip out all _historical_ observations of game entities, as this both fills up the context, and confuses the agent.
-
-We include some basic utilities for calling different LLMs (`agents/utils/llm_factory.py`), for formatting the conversation history (`agents/utils/formatters/conversation_formatter_abc.py`), and for parsing responses into valid Python (`agents/utils/parse_response.py`)
-
-### Minimal Agent Example
-
-```python
-# ./agents/minimal_agent.py
-
-class MinimalAgent(AgentABC):
-    """
-    This is a minimal Agent implementation, which takes the current conversation (including the most recent response)
-    and generates a simple Python code policy to execute the next step.
-
-    Note: This will blow up context length on longer runs, without some context pruning/management.
-    """
-    def __init__(self, model, system_prompt, goal_description, *args, **kwargs):
-        system_prompt += f"\n\n### Goal\n{goal_description}\n\n"
-        super().__init__(model, system_prompt, *args, **kwargs)
-        self.llm_factory = LLMFactory(model)
-
-    @tenacity.retry(
-       retry=retry_if_exception_type(Exception),
-       wait=wait_exponential(multiplier=1, min=4, max=10)
-    )
-    async def step(self, conversation: Conversation, response: Response) -> Policy:
-        # Generate and return next policy
-        response = await self.llm_factory.acall(
-           messages=self.formatter.to_llm_messages(conversation),
-           n_samples=1,  # We only need one program per iteration
-           temperature=self.generation_params.temperature,
-           max_tokens=self.generation_params.max_tokens,
-           model=self.generation_params.model,
-       )
-
-       # Parse LLM response into a Policy object
-       policy = parse_response(response)
-       if not policy:
-           raise Exception("Not a valid Python policy")
-
-       return policy
-
-    async def end(self, conversation: Conversation, completion: CompletionResult):
-        pass
-```
-
-## Tasks
-
-Each agent is given a `task`, which specifies the goal the agent will carry out in FLE. A task consists of a task object defining the core interface of the task category and a json file specifying the parameters of the task.
-
-### Anatomy of a Task
-
-Tasks live in `eval/tasks`, and implement an abstract base class in `eval/tasks/task_abc.py` that defines the core interface for defining the task, setting up the environment and verifying success
-
-The abstract base class defines three methods that all tasks must implement:
-
-```
-verify(self, score: float, step: int, instance: FactorioInstance, step_statistics: Dict) -> bool:
-""" Return true if the task is completed"""
-
-setup_instance(self, instance):
-"""Code to provision the initial game state for the task environment"""
-
-enhance_response_with_task_output(self, response: str, task_response: TaskResponse) -> str:
-"""Add task specific information to the environment response if needed"""
-
-```
-
-We provide two default tasks:
-
-1. OpenPlayTask - Task for the open-play setting, where the agent plays the game until a specified number of steps is finished. The verify function will always return False
-2. ThroughputTask - Task for requiring the agent to build a factory that achieves a specified throughput in the holdout period. The verify function will return True if the holdout period throughput is above the threshold
-3. UnboundedThroughputTask - Task for the agent to create a factory that maximises the throughput of a target entity in a specified number of timesteps. The verify function will always return False until the number of steps is reached
-   The task jsons specifies the "task_type" and the "config" parameters. `task_type` specifies the mapping from the json to the task type (the creation of task objects from the json is done in `eval\tasks\task_factory.py`). `config` specifies all required attributes to substantiate the respective task object. Each config must at minimum define the "goal_description", "trajectory_length" and "task_key" parameters.
-   Examples of task json
-
-```
-# Open play task json
-
-{   "task_type": "default",
-    "config": {
-        "goal_description":"- Build the biggest possible factory\n- Maximise automation, efficiency and scale",
-        "trajectory_length": 5000,
-        "task_key": "open_play"
-    }
-}
-# One example of a throughput task json
-{
-    "task_type": "throughput",
-    "config":
-        {"goal_description":"Create an automatic iron gear wheel factory that produces 16 iron gear wheel per 60 ingame seconds",
-        "throughput_entity":"iron-gear-wheel",
-        "quota":16,
-        "trajectory_length": 128,
-        "holdout_wait_period": 60,
-        "pre_holdout_wait_period": 60,
-        "task_key": "iron_gear_wheel_throughput_16"}
-
-}
-```
-
-Example open play task object can be seen below. The throughput task object can be found here `eval/tasks/throughput_task.py`
-
-```
-class OpenPlayTask(TaskABC):
-    def __init__(self, trajectory_length, goal_description: str, task_key: str):
-        super().__init__(trajectory_length, starting_inventory = {}, goal_description=goal_description, task_key = task_key)
-        self.starting_game_state = None
-
-
-    def verify(self, score: float, instance: FactorioInstance, step_statistics: Dict) -> TaskResponse:
-        return TaskResponse(success = False,
-                            meta = {})
-
-    def _to_dict(self) -> Dict[str, Any]:
-        return {
-            "goal_description": self.goal_description,
-            "trajectory_length": self.trajectory_length,
-            "starting_inventory": self.starting_inventory,
-            "initial_state": self.starting_game_state.to_raw() if self.starting_game_state else None,
-        }
-
-    def setup_instance(self, instance):
-        """Code to provision the task environment"""
-        pass
-```
-
-### Running tasks
-
-The entrypoint to run tasks is `env/src/gym_env/run_eval.py` which reads in a run config json file, runs the tasks specified in parallel and saves each generated program with the environment output and task verification result into the database. The location of the run config json is sent in through the `--run_config` inline argument. If no argument is sent, the default run config `eval/open/independent_runs/gym_run_config.json` is used.
-
-The run config json is a list of dictionaries specifying the gym environment ID, model and version (optional). One example to run 2s tasks in parallel:
-
-```json
-[
-  {
-    "env_id": "Factorio-iron_ore_throughput_16-v0",
-    "model": "claude-3-5-sonnet-latest"
-  },
-  {
-    "env_id": "Factorio-open_play-v0",
-    "model": "claude-3-5-sonnet-latest"
-  }
-]
-```
-
-Each task is run until either `verify` returns True or the maximum number of steps (`trajectory_length`) is reached.
-
 ### Gym Environment Registry
 
 The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use `gym.make()` to create environments and reference them by their environment IDs.
@@ -495,7 +296,7 @@ print(f"Available environments: {env_ids}")
 Or use the command-line tool:
 
 ```bash
-python env/src/gym_env/example_usage.py --list
+python fle/env/gym_env/example_usage.py --list
 ```
 
 **2. Create an Environment**
@@ -504,23 +305,26 @@ python env/src/gym_env/example_usage.py --list
 import gym
 
 # Create any available environment
-env = gym.make("Factorio-iron_ore_throughput_16-v0")
+env = gym.make("iron_ore_throughput")
 ```
 
 **3. Use the Environment**
 
 ```python
+from fle.env.gym_env.action import Action
+
 # Reset the environment
-obs = env.reset()
+obs = env.reset(options={'game_state': None})
 
 # Take an action
-action = {
-    'agent_idx': 0,  # Which agent takes the action
-    'code': 'print("Hello Factorio!")'  # Python code to execute
-}
+action = Action(
+    agent_idx=0,  # Which agent takes the action
+    code='print("Hello Factorio!")',  # Python code to execute
+    game_state=None  # Optional: game state to reset to before running code
+)
 
 # Execute the action
-obs, reward, done, info = env.step(action)
+obs, reward, terminated, truncated, info = env.step(action)
 
 # Clean up
 env.close()
@@ -528,19 +332,32 @@ env.close()
 
 #### Available Environments
 
-The registry automatically discovers all JSON task definition files and creates corresponding gym environments. Environment IDs follow the pattern:
+The registry automatically discovers all task definitions and creates corresponding gym environments using the task key as the environment ID.
 
+**Throughput Tasks (Lab Play)**
+
+All throughput tasks are defined in `fle/eval/tasks/task_definitions/lab_play/throughput_tasks.py`. The 24 available tasks are:
+
+- **Circuits**: `advanced_circuit_throughput`, `electronic_circuit_throughput`, `processing_unit_throughput`
+- **Science Packs**: `automation_science_pack_throughput`, `logistics_science_pack_throughput`, `chemical_science_pack_throughput`, `military_science_pack_throughput`, `production_science_pack_throughput`, `utility_science_pack_throughput`
+- **Components**: `battery_throughput`, `engine_unit_throughput`, `inserter_throughput`, `iron_gear_wheel_throughput`, `low_density_structure_throughput`
+- **Raw Materials**: `iron_ore_throughput`, `iron_plate_throughput`, `steel_plate_throughput`, `plastic_bar_throughput`
+- **Oil & Chemicals**: `crude_oil_throughput`, `petroleum_gas_throughput`, `sufuric_acid_throughput`, `sulfur_throughput`
+- **Military**: `piercing_round_throughput`, `stone_wall_throughput`
+
+Most tasks require 16 items per 60 seconds; fluid tasks require 250 units per 60 seconds.
+
+**Example Usage**
+
+```python
+# Create a throughput environment
+env = gym.make("iron_plate_throughput")
+env = gym.make("automation_science_pack_throughput")
+env = gym.make("crude_oil_throughput")
+
+# Create open play environment
+env = gym.make("open_play")
 ```
-Factorio-{task_key}-v0
-```
-
-**Example Environment IDs**
-
-- `Factorio-iron_ore_throughput_16-v0` - Iron ore production task
-- `Factorio-iron_plate_throughput_16-v0` - Iron plate production task
-- `Factorio-crude_oil_throughput_16-v0` - Crude oil production task
-- `Factorio-open_play-v0` - Open-ended factory building
-- `Factorio-automation_science_pack_throughput_16-v0` - Science pack production
 
 #### Command-Line Tools
 
@@ -548,19 +365,19 @@ The `example_usage.py` script provides both interactive examples and command-lin
 
 ```bash
 # Run interactive examples
-python env/src/gym_env/example_usage.py
+python fle/env/gym_env/example_usage.py
 
 # List all environments
-python env/src/gym_env/example_usage.py --list
+python fle/env/gym_env/example_usage.py --list
 
 # Show detailed information
-python env/src/gym_env/example_usage.py --detail
+python fle/env/gym_env/example_usage.py --detail
 
 # Search for specific environments
-python env/src/gym_env/example_usage.py --search iron
+python fle/env/gym_env/example_usage.py --search iron
 
 # Output in gym.make() format
-python env/src/gym_env/example_usage.py --gym-format
+python fle/env/gym_env/example_usage.py --gym-format
 ```
 
 #### Environment Interface
@@ -571,8 +388,9 @@ All environments follow the standard gym interface:
 
 ```python
 {
-    'agent_idx': Discrete(num_agents),  # Which agent takes the action
-    'code': Text(max_length=10000)      # Python code to execute
+    'agent_idx': Discrete(instance.num_agents),  # Index of the agent taking the action
+    'game_state': Text(max_length=1000000),      # Optional: game state to reset to before running code
+    'code': Text(max_length=10000)               # Python code to execute
 }
 ```
 
@@ -585,16 +403,17 @@ The observation space includes:
 - `research`: Research progress and technologies
 - `game_info`: Game state (tick, time, speed)
 - `score`: Current score
-- `achievements`: Achievement progress
 - `flows`: Production statistics
 - `task_verification`: Task completion status
 - `messages`: Inter-agent messages
 - `serialized_functions`: Available functions
+- `task_info`: Information about the task
+- `map_image`: Base64 encoded PNG image
 
 **Methods**
 
-- `reset(state: Optional[GameState] = None) -> Dict[str, Any]`
-- `step(action: Dict[str, Any]) -> Tuple[Dict[str, Any], float, bool, Dict[str, Any]]`
+- `reset(options: Dict[str, Any], seed: Optional[int] = None) -> Dict[str, Any]`
+- `step(action: Action) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]`
 - `close() -> None`
 
 #### API Reference
@@ -615,30 +434,35 @@ Here's a complete example that demonstrates the full workflow:
 
 ```python
 import gym
-from gym_env.registry import list_available_environments, get_environment_info
+from fle.env.gym_env.registry import list_available_environments, get_environment_info
+from fle.env.gym_env.action import Action
 
 # 1. List available environments
 env_ids = list_available_environments()
 print(f"Found {len(env_ids)} environments")
 
 # 2. Get information about a specific environment
-info = get_environment_info("Factorio-iron_ore_throughput_16-v0")
+info = get_environment_info("iron_ore_throughput")
 print(f"Description: {info['description']}")
 
 # 3. Create the environment
-env = gym.make("Factorio-iron_ore_throughput_16-v0")
+env = gym.make("iron_ore_throughput")
 
 # 4. Use the environment
-obs = env.reset()
+obs = env.reset(options={'game_state': None})
 print(f"Initial observation keys: {list(obs.keys())}")
 
 # 5. Take actions
+current_state = None
 for step in range(5):
-    action = {
-        'agent_idx': 0,
-        'code': f'print("Step {step}: Hello Factorio!")'
-    }
-    obs, reward, done, info = env.step(action)
+    action = Action(
+        agent_idx=0,
+        game_state=current_state,
+        code=f'print("Step {step}: Hello Factorio!")'
+    )
+    obs, reward, terminated, truncated, info = env.step(action)
+    done = terminated or truncated
+    current_state = info['output_game_state']
     print(f"Step {step}: Reward={reward}, Done={done}")
 
     if done:
@@ -647,61 +471,6 @@ for step in range(5):
 # 6. Clean up
 env.close()
 ```
-
-#### Adding New Tasks
-
-To add a new task:
-
-1. Create a JSON file in `eval/tasks/task_definitions/`
-2. Define the task configuration following the existing format
-3. The registry will automatically discover and register the new environment
-
-**Task Definition Format**
-
-```json
-{
-  "task_type": "throughput",
-  "config": {
-    "goal_description": "Create an automatic iron ore factory...",
-    "throughput_entity": "iron-ore",
-    "quota": 16,
-    "trajectory_length": 128,
-    "task_key": "iron_ore_throughput_16"
-  }
-}
-```
-
-#### Advanced Usage
-
-**Custom Environment Registration**
-
-You can also register custom environments programmatically:
-
-```python
-from gym_env.registry import _registry
-
-_registry.register_environment(
-    env_id="Factorio-CustomTask-v0",
-    task_key="custom_task",
-    task_config_path="/path/to/custom_task.json",
-    description="My custom task",
-    num_agents=2
-)
-```
-
-**Multi-Agent Environments**
-
-The registry supports multi-agent environments. When creating a multi-agent environment, specify the number of agents:
-
-```python
-# Create a multi-agent environment
-env = gym.make("Factorio-MultiAgentTask-v0")
-
-# Actions for different agents
-action1 = {'agent_idx': 0, 'code': 'print("Agent 0 action")'}
-action2 = {'agent_idx': 1, 'code': 'print("Agent 1 action")'}
-```
-
 #### Error Handling
 
 The registry includes error handling for:
@@ -748,142 +517,6 @@ python env/tests/gym_env/test_registry.py
 ```
 
 This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.
-
-### Legacy Task-Based Configuration
-
-For backward compatibility, you can still use the legacy task-based configuration with `eval/open/independent_runs/run.py`:
-
-```json
-[
-  {
-    "task": "iron_gear_wheel_throughput_16.json",
-    "model": "gpt-4o-mini-2024-07-18",
-    "version": 768
-  },
-  {
-    "task": "plastic_bar_throughput_16.json",
-    "model": "anthropic/claude-3.5-sonnet-open-router"
-  },
-  { "task": "open_play.json", "model": "gpt-4o-mini-2024-07-18" }
-]
-```
-
-**Note**: The CLI (`fle eval`) is the recommended approach for new users.
-
-## Multiagent Experiments
-
-The Factorio Learning Environment supports multiagent experiments where multiple AI agents can work together (or against each other) in the same game world through the Agent-to-Agent (A2A) protocol. Here's how to set up and run multiagent experiments:
-
-### 1. Task Configuration
-
-Multiagent tasks are defined in JSON files under `eval/tasks/task_definitions/multiagent/`. Each task can specify:
-
-- A shared goal description for all agents
-- Agent-specific instructions for each agent
-- Number of agents required
-- Other task parameters (trajectory length, holdout period, etc.)
-
-Example task configuration:
-
-```json
-{
-  "task_type": "unbounded_throughput",
-  "config": {
-    "goal_description": "Create an automatic iron plate factory...",
-    "agent_instructions": [
-      "You are Agent 1. Your role is to mine coal.",
-      "You are Agent 2. Your role is to mine iron."
-    ],
-    "throughput_entity": "iron-plate",
-    "trajectory_length": 16,
-    "holdout_wait_period": 60
-  }
-}
-```
-
-### 2. Run Configuration
-
-Create a run configuration file in `eval/open/independent_runs/multiagent/` that specifies:
-
-- The task file to use
-- The model to use for each agent
-- Number of agents
-
-Example run configuration:
-
-```json
-[
-  {
-    "task": "multiagent/iron_plate_throughput_free.json",
-    "model": "claude-3-5-sonnet-latest",
-    "num_agents": 2
-  }
-]
-```
-
-### 3. Running the A2A Server
-
-The Agent-to-Agent (A2A) protocol server enables communication between multiple AI agents in the Factorio environment. Here's how to set it up:
-
-1. **Install Dependencies**:
-
-```bash
-pip install fastapi uvicorn aiohttp
-```
-
-2. **Start the A2A Server**:
-
-```bash
-# Start the server on default host (localhost) and port (8000)
-python env/src/protocols/a2a/server.py
-
-# Or specify custom host and port
-python env/src/protocols/a2a/server.py --host 127.0.0.1 --port 8000
-```
-
-3. **Run the Experiment**:
-
-```bash
-python eval/open/independent_runs/run.py --config eval/open/independent_runs/multiagent/your_config.json
-```
-
-### 4. Agent Communication
-
-Agents can communicate with each other using the `send_message()` tool. Each agent's system prompt includes instructions about:
-
-- Their role in the multiagent setup
-- How to communicate with other agents
-- When to send messages (start/end of programs)
-
-The A2A server handles:
-
-- Agent registrations
-- Message routing between agents
-- Agent discovery and capability negotiation
-- Message queuing for offline agents
-
-### 5. Example Scenarios
-
-The codebase includes several example multiagent scenarios:
-
-1. **Cooperative Factory Building**: Agents work together to build an efficient factory
-2. **Distrust Scenario**: Agents are suspicious of each other's actions
-3. **Impostor Scenario**: One agent tries to sabotage while the other tries to maintain the factory
-
-To run these examples, use the provided configuration files:
-
-- `claude_lab_free.json`: Cooperative scenario
-- `claude_lab_distrust.json`: Distrust scenario
-- `claude_lab_impostor.json`: Impostor scenario
-
-### 6. Troubleshooting
-
-If you encounter issues:
-
-- Ensure the A2A server is running before starting agent instances
-- Check that the server port (default 8000) is not blocked by a firewall
-- Verify agent registration in the server logs
-- Check agent message delivery status
 
 ## Tool Documentation
 
@@ -973,55 +606,39 @@ Next time you run an eval, the tool will automatically be available to the agent
 
 # Project Structure
 
-Below is an overview of how the project is structured. Some directories also contain more detailed readmes.
+Below is an overview of how the project is structured.
 
 ```
 factorio-learning-environment/
-├── .github/                        # GitHub workflows and scripts
-├── docs/                           # Website and documentation
-├── fle/                            # Main Factorio Learning Environment codebase
-│   ├── agents/                     # Agent implementations
-│   │   ├── formatters/             # Conversation formatting utilities
-│   │   ├── llm/                    # LLM integration utilities
-│   │   ├── agent_abc.py            # Abstract base class for agents
-│   │   ├── basic_agent.py          # Default agent implementation
-│   │   ├── backtracking_agent.py   # Backtracking agent
-│   │   ├── visual_agent.py         # Visual agent implementation
-│   │   └── gym_agent.py            # Gym-compatible agent
-│   ├── cluster/                    # Docker and deployment utilities
-│   │   ├── remote/                 # Remote deployment utilities
-│   │   └── scenarios/              # Game scenario configurations
-│   ├── commons/                    # Shared utilities and constants
-│   ├── data/                       # Data files and resources
-│   ├── env/                        # Environment implementation
-│   │   ├── gym_env/                # Gym environment interface
-│   │   ├── tools/                  # Agent tools and API
-│   │   ├── protocols/              # Communication protocols (A2A, etc.)
-│   │   ├── utils/                  # Environment utilities
-│   │   ├── lib/                    # Core libraries
+├── .github/                        # GitHub workflows and CI/CD
+├── .fle/                           # Runtime data (saves, scenarios, trajectory logs)
+├── docs/                           # Documentation and website
+├── examples/                       # Example agent implementations
+├── fle/                            # Main codebase
+│   ├── agents/                     # Agent implementations (BasicAgent, VisualAgent, etc.)
+│   ├── cluster/                    # Docker orchestration and scenarios
+│   ├── commons/                    # Shared utilities and models
+│   ├── configs/                    # Configuration files
+│   ├── data/                       # Data files and replays
+│   ├── env/                        # Core environment
+│   │   ├── gym_env/                # OpenAI Gym interface
+│   │   ├── tools/                  # Agent-accessible tools (place_entity, craft_item, etc.)
+│   │   ├── protocols/              # Communication protocols (A2A, MCP)
 │   │   ├── exceptions/             # Custom exceptions
-│   │   ├── instance.py             # Factorio instance management
-│   │   ├── namespace.py            # Python namespace management
-│   │   ├── entities.py             # Entity definitions
-│   │   └── game_types.py           # Game type definitions
+│   │   └── utils/                  # Environment utilities
 │   ├── eval/                       # Evaluation framework
-│   │   ├── algorithms/             # Evaluation algorithms
-│   │   ├── tasks/                  # Task definitions and implementations
-│   │   ├── open/                   # Open-play evaluation scripts
+│   │   ├── algorithms/             # Beam search, MCTS, independent evaluation
+│   │   ├── analysis/               # Analysis tools
+│   │   ├── tasks/                  # Task definitions
 │   │   └── evaluator.py            # Main evaluation logic
-│   ├── run.py                      # Main CLI entry point
-│   ├── server.py                   # Server implementation
-│   └── __init__.py                 # Package initialization
-├── tests/                          # Test suite
-├── .example.env                    # Example environment variables
-├── .gitignore                      # Git ignore file
+│   ├── run.py                      # CLI entry point
+│   └── server.py                   # RCON server
+├── tests/                          # Test suite (actions, benchmarks, functional, etc.)
+├── .example.env                    # Environment variables template
 ├── BUILD.md                        # Build instructions
 ├── CONTRIBUTING.md                 # Contribution guidelines
-├── LICENSE                         # License file
-├── README.md                       # Project readme
-├── clean.sh                        # Clean script
 ├── pyproject.toml                  # Python project config
-└── uv.lock                         # UV lock file
+└── uv.lock                         # Dependency lock file
 ```
 
 ## Database
@@ -1051,98 +668,6 @@ SKILLS_DB_NAME=fle_database
 SKILLS_DB_USER=fle_user
 SKILLS_DB_PASSWORD=fle123
 ```
-
-## Benchmarks
-
-We measured FLE execution performance across different configurations to measure performance. All benchmarks were run on a Macbook Pro M4 128GB, with 100 iterations per operation on a subset of the existing tools.
-
-### Direct API Calls (Factorio Client)
-
-Executing tools against the Factorio server, while a Factorio game client is connected.
-
-| Operation            | Operations/Min | Operations/Sec |
-| -------------------- | -------------- | -------------- |
-| place_entity_next_to | 2,578.20       | 42.97          |
-| place_entity         | 12,057.63      | 200.96         |
-| move_to              | 8,649.89       | 144.16         |
-| harvest_resource     | 16,599.44      | 276.66         |
-| craft_item           | 16,875.14      | 281.25         |
-| connect_entities     | 1,664.70       | 27.74          |
-| rotate_entity        | 12,281.31      | 204.69         |
-| insert_item          | 13,044.42      | 217.41         |
-| extract_item         | 17,167.43      | 286.12         |
-| inspect_inventory    | 17,036.32      | 283.94         |
-| get_resource_patch   | 7,004.49       | 116.74         |
-| **Total**            | **7,513.29**   | **125.22**     |
-
-### Direct API Calls (Headless)
-
-Executing tools against the Factorio server without a game client.
-
-| Operation            | Operations/Min | Operations/Sec |
-| -------------------- | -------------- | -------------- |
-| place_entity_next_to | 4,856.51       | 80.94          |
-| place_entity         | 22,332.72      | 372.21         |
-| move_to              | 16,005.59      | 266.76         |
-| harvest_resource     | 32,727.01      | 545.45         |
-| craft_item           | 36,223.63      | 603.73         |
-| connect_entities     | 2,926.01       | 48.77          |
-| rotate_entity        | 23,467.46      | 391.12         |
-| insert_item          | 25,154.28      | 419.24         |
-| extract_item         | 32,997.26      | 549.95         |
-| inspect_inventory    | 28,401.56      | 473.36         |
-| get_resource_patch   | 8,736.30       | 145.61         |
-| **Total**            | **13,094.98**  | **218.25**     |
-
-### Python Interpreter (Factorio Client)
-
-Executing tools as part of a Python policy string, while a Factorio game client is connected.
-
-| Operation            | Operations/Min | Operations/Sec |
-| -------------------- | -------------- | -------------- |
-| place_entity_next_to | 4,714.52       | 78.58          |
-| place_entity         | 4,774.13       | 79.57          |
-| move_to              | 4,005.77       | 66.76          |
-| harvest_resource     | 3,594.59       | 59.91          |
-| craft_item           | 4,985.02       | 83.08          |
-| connect_entities     | 1,497.11       | 24.95          |
-| rotate_entity        | 4,914.69       | 81.91          |
-| insert_item          | 5,046.99       | 84.12          |
-| extract_item         | 4,743.08       | 79.05          |
-| inspect_inventory    | 4,838.31       | 80.64          |
-| get_resource_patch   | 2,593.11       | 43.22          |
-| **Total**            | **3,639.10**   | **60.65**      |
-
-### Python Interpreter (Headless)
-
-Executing tools as part of a Python policy string, without a game client.
-
-| Operation            | Operations/Min | Operations/Sec |
-| -------------------- | -------------- | -------------- |
-| place_entity_next_to | 5,069.60       | 84.49          |
-| place_entity         | 5,238.61       | 87.31          |
-| move_to              | 4,979.59       | 82.99          |
-| harvest_resource     | 3,247.09       | 54.12          |
-| craft_item           | 5,854.27       | 97.57          |
-| connect_entities     | 2,150.21       | 35.84          |
-| rotate_entity        | 5,370.21       | 89.50          |
-| insert_item          | 5,065.89       | 84.43          |
-| extract_item         | 5,449.07       | 90.82          |
-| inspect_inventory    | 5,638.67       | 93.98          |
-| get_resource_patch   | 2,479.41       | 41.32          |
-| **Total**            | **4,103.53**   | **68.39**      |
-
-### Key Observations
-
-1. **Headless vs Client Performance**: The headless server configuration consistently outperforms the client version, with direct API calls showing approximately 74% better throughput (218.25 vs 125.22 ops/sec).
-
-2. **Interpreter Overhead**: Adding the interpreter layer introduces significant overhead:
-   - Headless: Drops from 218.25 to 68.39 ops/sec (~69% reduction)
-   - Client: Drops from 125.22 to 60.65 ops/sec (~52% reduction)
-
-3. **Operation Variability**: Some operations show more significant performance variations:
-   - `connect_entities` is consistently the slowest operation across all configurations (because it relies on pathfinding)
-   - `craft_item` and `extract_item` tend to be among the fastest operations
 
 ## Contributing Guidelines
 

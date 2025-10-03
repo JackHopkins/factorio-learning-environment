@@ -26,11 +26,6 @@ Our results demonstrate that models still lack strong spatial reasoning. In lab-
 exhibit promising short-horizon skills, they are unable to operate effectively in constrained environments, reflecting limitations in error analysis. In open-play, while LLMs discover automation strategies that improve growth (e.g electric-powered drilling), they fail to achieve complex
 automation (e.g electronic-circuit manufacturing).
 
-## Updates
-
-- [08/5/2025] [Blog](https://jackhopkins.github.io/factorio-learning-environment/release.0.2.0): Added support for multi-agent coordination and MCP allowing reasoning models to invoke tools within their reasoning chain
-- [15/4/2025] Added a visual agent, that takes a rendering of the map as an additional input.
-
 ## Quick Links
 
 - [Installation](#installation)
@@ -188,6 +183,41 @@ FLE supports multiple LLM providers for agent evaluation. To get started with AP
 - **API key errors**: Run `python fle/eval/infra/setup_api_keys.py` to verify your API key configuration.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
+
+## Model Context Protocol (MCP)
+
+FLE supports the Model Context Protocol (MCP) to enable LLM reasoning models to invoke tools within their reasoning chain. This allows for more sophisticated agent interactions with the Factorio environment.
+
+### Usage
+
+```bash
+# Start MCP server with stdio transport (default)
+python -m fle.env.protocols._mcp
+
+# Start MCP server with SSE transport
+python -m fle.env.protocols._mcp --transport sse --host 127.0.0.1 --port 3000
+```
+
+The MCP server provides access to Factorio game state and tools through a standardized protocol, enabling integration with various LLM frameworks and reasoning systems.
+
+## Sprites
+
+FLE includes sprite management functionality for downloading and processing Factorio game assets. This is essential for visual agents and other applications that need access to game entity images.
+
+### Usage
+
+```bash
+# Download and generate sprites
+fle sprites
+
+# Force re-download even if sprites exist
+fle sprites --force
+
+# Use custom directories and worker count
+fle sprites --spritemap-dir .fle/spritemaps --sprite-dir .fle/sprites --workers 5
+```
+
+The sprites functionality downloads spritemaps from HuggingFace, then extracts individual entity sprites, icons, and other visual assets for use in visual reasoning tasks.
 
 ## Environment
 

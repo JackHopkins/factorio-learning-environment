@@ -99,6 +99,8 @@ class ProcessingConfig:
     cleanup_after: bool = True
     debug: bool = False  # If True, raise exceptions instead of continuing
     subtitles_enabled: bool = True  # Generate WebVTT subtitle files
+    linger_seconds: float = 3.0  # How long to linger on final relevant entity
+    max_steps_explicit: bool = False  # Whether max_steps was explicitly set by user
 
 
 @dataclass
@@ -175,6 +177,39 @@ class DatabaseManager:
 
             col_names = [desc[0] for desc in cur.description]
             return Program.from_row(dict(zip(col_names, row)))
+
+    def get_task_info(self, version: int) -> Optional[str]:
+        """Get task information from the first program's metadata."""
+        query = """
+        SELECT meta, version_description FROM programs
+        WHERE version = %s
+        AND meta IS NOT NULL
+        ORDER BY created_at ASC
+        LIMIT 1
+        """
+        with self.conn.cursor() as cur:
+            cur.execute(query, (version,))
+            row = cur.fetchone()
+            if not row:
+                return None
+
+            meta, version_description = row
+
+            # Try to extract task from version_description (same as run_to_mp4.py)
+            if version_description and "type:" in version_description:
+                try:
+                    task_key = (
+                        version_description.split("type:")[1].split("\n")[0].strip()
+                    )
+                    return task_key
+                except (IndexError, AttributeError):
+                    pass
+
+            # Fallback to meta if available
+            if meta and isinstance(meta, dict):
+                return meta.get("task")
+
+            return None
 
     def close(self) -> None:
         """Close database connection."""
@@ -434,6 +469,7 @@ class RolloutToVideos:
         self.exit_handler = GracefulExitHandler()
         self.current_output_dir: Optional[Path] = None
         self.current_capture_dir: Optional[Path] = None
+        self.task_throughput_item: Optional[str] = None
 
     def process_version(self, version: int) -> ProcessingReport:
         """Process a single version and generate videos."""
@@ -461,6 +497,14 @@ class RolloutToVideos:
 
             # Connect to database
             self.db_manager.connect()
+
+            # Get task info for lingering at end
+            task_key = self.db_manager.get_task_info(version)
+            if task_key:
+                print(f"Detected task: {task_key}")
+                self.task_throughput_item = self._extract_throughput_item(task_key)
+                if self.task_throughput_item:
+                    print(f"Target throughput item: {self.task_throughput_item}")
 
             # Get program chain
             programs = self.db_manager.get_program_chain(version, self.config.max_steps)
@@ -595,7 +639,7 @@ class RolloutToVideos:
                 break
 
             print(
-                f"\n--- Processing program {self.report.programs_processed + 1}: {program_id} ---"
+                f"\n--- Processing program {self.report.programs_processed + 1}/{len(programs)}: {program_id} ---"
             )
 
             try:
@@ -709,6 +753,25 @@ class RolloutToVideos:
     def _finalize_video_generation(self, output_dir: Path, capture_dir: Path) -> None:
         """Move frames and render final video."""
         print("\nFinalizing video generation...")
+
+        # Linger on relevant entity if conditions are met
+        should_linger = (
+            not self.config.max_steps_explicit
+            and self.task_throughput_item
+            and self.config.linger_seconds > 0
+            and self.cinematic_instance
+        )
+
+        if should_linger:
+            print(
+                f"\nLingering on relevant entity for {self.config.linger_seconds}s..."
+            )
+            try:
+                self._linger_on_relevant_entity()
+            except Exception as e:
+                print(f"Warning: Failed to linger on entity: {e}")
+                if self.config.debug:
+                    raise
 
         # Move frames from capture directory to output directory
         move_result = self.file_manager.move_frames_to_output(capture_dir, output_dir)
@@ -934,6 +997,121 @@ class RolloutToVideos:
         except Exception as e:
             print(f"Warning: Failed to cleanup script-output PNGs: {e}")
 
+    def _extract_throughput_item(self, task_key: str) -> Optional[str]:
+        """Extract the throughput item name from a task key.
+
+        E.g., 'iron_plate_throughput_16' -> 'iron-plate'
+              'automation_science_pack_throughput' -> 'automation-science-pack'
+        """
+        if not task_key:
+            return None
+
+        task_lower = task_key.lower()
+
+        # Remove trailing numbers first (e.g., _16, _32)
+        parts = task_lower.split("_")
+        if parts and parts[-1].isdigit():
+            parts = parts[:-1]
+            task_lower = "_".join(parts)
+
+        # Remove common suffixes
+        for suffix in ["_throughput_unbounded", "_throughput", "_unbounded"]:
+            if task_lower.endswith(suffix):
+                task_lower = task_lower[: -len(suffix)]
+                break
+
+        # Convert underscores to hyphens (Factorio naming convention)
+        item_name = task_lower.replace("_", "-")
+
+        return item_name if item_name else None
+
+    def _linger_on_relevant_entity(self) -> None:
+        """Find and focus camera on an assembler producing the target item."""
+        if not self.cinematic_instance or not self.task_throughput_item:
+            return
+
+        # Find assembler with matching recipe using RCON
+        lua_script = f"""
+        local target_item = "{self.task_throughput_item}"
+        local surface = game.surfaces[1]
+        local assemblers = surface.find_entities_filtered{{
+            type = "assembling-machine",
+            force = "player"
+        }}
+        
+        local best_assembler = nil
+        local best_score = -1
+        
+        for _, asm in ipairs(assemblers) do
+            local recipe = asm.get_recipe()
+            if recipe then
+                -- Check if this recipe produces our target item
+                for _, product in ipairs(recipe.products) do
+                    if product.name == target_item then
+                        -- Prefer working assemblers
+                        local score = 0
+                        if asm.status == defines.entity_status.working then
+                            score = 2
+                        elseif asm.status == defines.entity_status.normal then
+                            score = 1
+                        end
+                        
+                        if score > best_score then
+                            best_score = score
+                            best_assembler = asm
+                        end
+                        break
+                    end
+                end
+            end
+        end
+        
+        if best_assembler then
+            rcon.print(string.format("%.2f,%.2f", best_assembler.position.x, best_assembler.position.y))
+        else
+            rcon.print("")
+        end
+        """
+
+        try:
+            result = self.cinematic_instance.rcon_client.send_command(
+                f"/sc {lua_script}"
+            )
+
+            if result and "," in result:
+                # Parse position
+                x_str, y_str = result.strip().split(",")
+                target_x = float(x_str)
+                target_y = float(y_str)
+
+                print(f"Found relevant assembler at ({target_x:.1f}, {target_y:.1f})")
+
+                # Pan camera to the assembler with a close zoom
+                # zoom = 1.2  # Close-up view
+
+                # Use cutscene's set_camera_state if available, otherwise use RCON
+                if (
+                    hasattr(self.cinematic_instance, "cutscene")
+                    and self.cinematic_instance.cutscene
+                ):
+                    # Set camera position via RCON for smooth view
+                    camera_cmd = f"""
+                    /sc game.players[1].teleport({{x={target_x}, y={target_y}}})
+                    """
+                    self.cinematic_instance.rcon_client.send_command(camera_cmd)
+
+                # Wait and let frames capture while focused on this entity
+                time.sleep(self.config.linger_seconds)
+
+                print(f"Lingered for {self.config.linger_seconds}s")
+            else:
+                print(f"No assembler found producing {self.task_throughput_item}")
+
+        except Exception as e:
+            print(f"Error during linger: {e}")
+            if self.config.debug:
+                raise
+
 
 def main():
     """Main entry point for the rollout to videos script."""
@@ -1013,8 +1191,24 @@ def main():
         action="store_true",
         help="Disable subtitle generation",
     )
+    parser.add_argument(
+        "--linger-seconds",
+        type=float,
+        default=3.0,
+        help="How long to linger on final relevant entity (default: 3.0 seconds, only when max-steps not explicitly set)",
+    )
+    parser.add_argument(
+        "--no-linger",
+        action="store_true",
+        help="Disable lingering on final entity at end",
+    )
 
     args = parser.parse_args()
+
+    # Detect if max_steps was explicitly set by checking if it differs from default
+    import sys
+
+    max_steps_explicit = "--max-steps" in sys.argv or "-m" in sys.argv
 
     # Create configuration
     config = ProcessingConfig(
@@ -1033,6 +1227,8 @@ def main():
         target_buffer_size=args.buffer_size,
         debug=args.debug,
         subtitles_enabled=not args.no_subtitles,
+        linger_seconds=0.0 if args.no_linger else args.linger_seconds,
+        max_steps_explicit=max_steps_explicit,
     )
 
     # Process each version

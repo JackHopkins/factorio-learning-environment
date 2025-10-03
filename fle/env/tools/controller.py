@@ -2,6 +2,11 @@ import time
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
 
+# Suppress SyntaxWarning from slpp on Python 3.12+
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="slpp")
+
 from slpp import slpp as lua, ParseError
 
 from fle.env.entities import Direction

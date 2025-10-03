@@ -90,6 +90,10 @@ pythonpath = "fle/env"
 testpaths = "tests"
 python_files = "test_*.py"
 
+[tool.ruff]
+# Ignore module-import-at-top to allow early warning suppression before imports
+ignore = ["E402"]
+
 [project.urls]
 homepage = "https://jackhopkins.github.io/factorio-learning-environment/"
 leaderboard = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"

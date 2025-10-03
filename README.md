@@ -8,8 +8,8 @@ An open source framework for developing and evaluating LLM agents in the game of
 </p>
 
 <p align="center">
-<img src="docs/assets/videos/compressed_sulfuric_acid.webp" width="485" height="364" controls/>
-<img src="docs/assets/videos/compressed_red_science.webp" width="485" height="364" controls/>
+<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_sulfuric_acid.webp" width="485" height="364" controls/>
+<img src="https://github.com/JackHopkins/factorio-learning-environment/raw/main/docs/assets/videos/compressed_red_science.webp" width="485" height="364" controls/>
 </p>
 <p align="center"><em>Claude Opus 4.1 Plays Factorio</em></p>
 

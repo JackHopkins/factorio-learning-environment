@@ -190,7 +190,7 @@ FLE supports the [Model Context Protocol](fle/env/protocols/_mcp/README.md) (MCP
 
 ## Sprites
 
-FLE includes sprite management functionality for downloading and processing Factorio game assets.
+FLE includes sprite management functionality for downloading spritemaps, extracting individual entity sprites, icons, and other visual assets from HuggingFace for use in visual reasoning tasks.
 
 ### Usage
 
@@ -204,8 +204,6 @@ fle sprites --force
 # Use custom directories and worker count
 fle sprites --spritemap-dir .fle/spritemaps --sprite-dir .fle/sprites --workers 5
 ```
-
-The sprites functionality downloads spritemaps from HuggingFace, then extracts individual entity sprites, icons, and other visual assets for use in visual reasoning tasks.
 
 ## Environment
 

@@ -1,5 +1,12 @@
 """Factorio Learning Environment (FLE) package."""
 
+# Suppress slpp SyntaxWarning about invalid escape sequences
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="slpp")
+
+__version__ = "0.3.0a1"
+
 # Make submodules available
 from fle import agents, env, eval, cluster, commons
 

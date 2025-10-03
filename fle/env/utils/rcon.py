@@ -7,6 +7,11 @@ from typing import List
 from typing_extensions import deprecated
 
 from timeit import default_timer as timer
+
+# Suppress SyntaxWarning from slpp on Python 3.12+
+import warnings
+
+warnings.filterwarnings("ignore", category=SyntaxWarning, module="slpp")
 from slpp import slpp as lua
 
 import io

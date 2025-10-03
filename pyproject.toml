@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.3.0"
+version = "0.3.0a1"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "jack.hopkins@me.com"},
@@ -89,6 +89,10 @@ packages = ["fle"]
 pythonpath = "fle/env"
 testpaths = "tests"
 python_files = "test_*.py"
+
+[tool.ruff]
+# Ignore module-import-at-top to allow early warning suppression before imports
+ignore = ["E402"]
 
 [project.urls]
 homepage = "https://jackhopkins.github.io/factorio-learning-environment/"

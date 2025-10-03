@@ -160,7 +160,7 @@ class FactorioInstance:
 
     def __init__(
         self,
-        address='localhost',
+        address="localhost",
         fast=True,
         tcp_port=START_RCON_PORT,
         inventory: Dict = {},

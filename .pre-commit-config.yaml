@@ -5,10 +5,8 @@ repos:
   hooks:
     # Run the linter.
     - id: ruff-check
-      files: ^(fle/|tests/)
       types_or: [ python, pyi ]
       args: [ --fix, --exclude=data/prompts, --ignore=E722,--ignore=F405 ]
     # Run the formatter.
     - id: ruff-format
-      files: ^(fle/|tests/)
       types_or: [ python, pyi ] 

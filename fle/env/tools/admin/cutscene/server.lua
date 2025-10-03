@@ -30,9 +30,9 @@ local CUTSCENE_VERSION = "1.1.110"
 -- === Frame capture configuration =========================================
 local CAPTURE_CONFIG = {
     base_dir = "cinema_seq",
-    nth_ticks = 6,
+    nth_ticks = 18,  -- Capture every 18 ticks (0.3 seconds)
     resolution = {1920, 1080},
-    quality = 50,  -- Reduced from 100 for better performance (50 is good balance)
+    quality = 35,  -- Lower quality for better performance
     show_gui = false,
     use_tick_names = true,
 }
@@ -594,10 +594,9 @@ local function stop_frame_capture()
     -- RCON connection timeouts. Screenshots will complete asynchronously on their own.
 end
 
-script.on_nth_tick(1, function(e)
+script.on_nth_tick(18, function(e)
     local fc = get_frame_capture()
     if not fc.active then return end
-    if e.tick - (fc.last_tick or 0) < CAPTURE_CONFIG.nth_ticks then return end
     fc.last_tick = e.tick
 
     local p = game.get_player(fc.player_index or 1)
@@ -656,7 +655,7 @@ script.on_nth_tick(1, function(e)
         resolution = CAPTURE_CONFIG.resolution,
         quality = CAPTURE_CONFIG.quality,
         show_gui = CAPTURE_CONFIG.show_gui,
-        force_render = true,
+        force_render = false,  -- Let Factorio render async to reduce CPU overhead
         allow_in_replay = true,
         wait_for_finish = false,
     }

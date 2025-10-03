@@ -35,6 +35,10 @@ local CAPTURE_CONFIG = {
     quality = 35,  -- Lower quality for better performance
     show_gui = false,
     use_tick_names = true,
+    max_pending_screenshots = 10,  -- Maximum screenshots in queue before throttling
+    skip_if_rendering = true,  -- Skip frames if previous render not finished
+    debug = false,  -- Enable debug logging to file
+    game_debug = false,  -- Enable debug output to game console
 }
 
 -- === Globals =============================================================
@@ -53,6 +57,9 @@ local function ensure_global()
             last_tick = 0,
             session_id = nil,
             capture_dir = nil,
+            pending_screenshots = 0,  -- Track in-flight screenshots
+            skipped_frames = 0,  -- Track how many frames we've skipped
+            last_screenshot_tick = 0,  -- Last successful screenshot tick
         }
     }
     return global.cinema
@@ -75,6 +82,18 @@ local function ensure_player_state(player_index)
 end
 
 -- === Utility helpers =====================================================
+local function debug_log(message)
+    if CAPTURE_CONFIG.debug and game and game.write_file then
+        game.write_file("cinema_debug.log", message .. "\n", true)
+    end
+end
+
+local function game_debug_log(message)
+    if CAPTURE_CONFIG.game_debug then
+        game.print(message)
+    end
+end
+
 local function deep_copy(value)
     if type(value) ~= "table" then return value end
     local copy = {}
@@ -116,17 +135,13 @@ end
 
 local function compute_zoom_for_bbox(bbox, resolution)
     if not bbox then 
-        if game and game.write_file then
-            game.write_file("cinema_debug.log", "compute_zoom_for_bbox: no bbox provided\n", true)
-        end
+        debug_log("compute_zoom_for_bbox: no bbox provided")
         return 1 
     end
     local width = math.abs(bbox[2][1] - bbox[1][1])
     local height = math.abs(bbox[2][2] - bbox[1][2])
     if width == 0 or height == 0 then 
-        if game and game.write_file then
-            game.write_file("cinema_debug.log", string.format("compute_zoom_for_bbox: zero dimensions width=%f height=%f\n", width, height), true)
-        end
+        debug_log(string.format("compute_zoom_for_bbox: zero dimensions width=%f height=%f", width, height))
         return 1 
     end
 
@@ -144,10 +159,8 @@ local function compute_zoom_for_bbox(bbox, resolution)
     local zoom = math.min(zoom_width, zoom_height) * 1.2
 
     local final_zoom = clamp_zoom(zoom)
-    if game and game.write_file then
-        game.write_file("cinema_debug.log", string.format("compute_zoom_for_bbox: bbox=%s, width=%f, height=%f, zoom_width=%f, zoom_height=%f, zoom=%f, final=%f\n", 
-            game.table_to_json(bbox), width, height, zoom_width, zoom_height, zoom, final_zoom), true)
-    end
+    debug_log(string.format("compute_zoom_for_bbox: bbox=%s, width=%f, height=%f, zoom_width=%f, zoom_height=%f, zoom=%f, final=%f", 
+        game.table_to_json(bbox), width, height, zoom_width, zoom_height, zoom, final_zoom))
 
     return final_zoom
 end
@@ -236,18 +249,14 @@ local function position_from_kind(player, kind)
     elseif kind.type == "zoom_to_fit" then
         local bbox = kind.bbox
         if not bbox or not bbox[1] or not bbox[2] then
-            if game and game.write_file then
-                game.write_file("cinema_debug.log", string.format("zoom_to_fit: invalid bbox %s\n", game.table_to_json(bbox or {})), true)
-            end
+            debug_log(string.format("zoom_to_fit: invalid bbox %s", game.table_to_json(bbox or {})))
             return {x = player.position.x, y = player.position.y}
         end
         local pos = {
             x = (bbox[1][1] + bbox[2][1]) / 2,
             y = (bbox[1][2] + bbox[2][2]) / 2
         }
-        if game and game.write_file then
-            game.write_file("cinema_debug.log", string.format("zoom_to_fit: bbox=%s, pos=%s\n", game.table_to_json(bbox), game.table_to_json(pos)), true)
-        end
+        debug_log(string.format("zoom_to_fit: bbox=%s, pos=%s", game.table_to_json(bbox), game.table_to_json(pos)))
         return pos
     end
     return {x = player.position.x, y = player.position.y}
@@ -335,13 +344,11 @@ local function compile_shot(player, plan, shot)
         local final_zoom = zoom or fit_zoom
         
         -- Debug logging
-        if game and game.write_file then
-            game.write_file("cinema_debug.log", string.format(
-                "zoom_to_fit: shot_zoom=%.3f, fit_zoom=%.3f, final_zoom=%.3f, bbox=%s\n",
-                zoom or 0, fit_zoom, final_zoom, 
-                game.table_to_json(kind.bbox or {})
-            ), true)
-        end
+        debug_log(string.format(
+            "zoom_to_fit: shot_zoom=%.3f, fit_zoom=%.3f, final_zoom=%.3f, bbox=%s",
+            zoom or 0, fit_zoom, final_zoom, 
+            game.table_to_json(kind.bbox or {})
+        ))
         
         table.insert(waypoints, {
             position = pos,
@@ -563,23 +570,25 @@ local function start_frame_capture(opts)
     fc.session_id = opts.session_id or tostring(game.tick)
     fc.frame = 0
     fc.last_tick = 0
+    fc.pending_screenshots = 0
+    fc.skipped_frames = 0
+    fc.last_screenshot_tick = 0
     
     -- Log capture start
-    if game and game.write_file then
-        game.write_file("cinema_capture.log", string.format("Started capture session %s for player %d\n", 
-            fc.session_id, fc.player_index), true)
-    end
+    debug_log(string.format(
+        "Started capture session %s for player %d (max_pending=%d, quality=%d)", 
+        fc.session_id, fc.player_index, 
+        CAPTURE_CONFIG.max_pending_screenshots, CAPTURE_CONFIG.quality))
 end
 
 local function stop_frame_capture()
     local fc = get_frame_capture()
     if not fc.active then return end
     
-    -- Log capture stop
-    if game and game.write_file then
-        game.write_file("cinema_capture.log", string.format("Stopping capture session %s (frame %d)\n", 
-            fc.session_id or "unknown", fc.frame), true)
-    end
+    -- Log capture stop with performance stats
+    debug_log(string.format(
+        "Stopping capture session %s (frame %d, skipped %d frames, pending %d screenshots)", 
+        fc.session_id or "unknown", fc.frame, fc.skipped_frames or 0, fc.pending_screenshots or 0))
     
     fc.active = false
     fc.plan_label = nil
@@ -588,6 +597,9 @@ local function stop_frame_capture()
     fc.session_id = nil
     fc.frame = 0
     fc.last_tick = 0
+    fc.pending_screenshots = 0
+    fc.skipped_frames = 0
+    fc.last_screenshot_tick = 0
     
     -- NOTE: Removed game.set_wait_for_screenshots_to_finish() because it's a blocking call
     -- that can take 10-30+ seconds with hundreds of screenshots in the queue, causing
@@ -600,7 +612,7 @@ script.on_nth_tick(18, function(e)
     if fc.paused then 
         -- Debug: log every 60 ticks (1 second) when paused to avoid spam
         if e.tick % 60 == 0 then
-            game.print("[CINEMA] Frame capture paused at tick " .. e.tick)
+            debug_log("[CINEMA] Frame capture paused at tick " .. e.tick)
         end
         return 
     end  -- Skip capture if paused
@@ -608,6 +620,19 @@ script.on_nth_tick(18, function(e)
 
     local p = game.get_player(fc.player_index or 1)
     if not (p and p.valid) then return end
+
+    -- SAFETY: Check if we have too many pending screenshots
+    fc.pending_screenshots = fc.pending_screenshots or 0
+    if fc.pending_screenshots >= CAPTURE_CONFIG.max_pending_screenshots then
+        fc.skipped_frames = (fc.skipped_frames or 0) + 1
+        -- Log throttling periodically to avoid spam
+        if fc.skipped_frames % 10 == 0 then
+            debug_log(string.format(
+                "[THROTTLE] Skipped %d frames due to pending screenshots (%d in queue) at tick %d",
+                fc.skipped_frames, fc.pending_screenshots, e.tick))
+        end
+        return
+    end
 
     local basename = string.format("%010d-%04d", e.tick, fc.frame)
     if fc.plan_label then
@@ -654,18 +679,54 @@ script.on_nth_tick(18, function(e)
 
     -- Take screenshot using surface+position+zoom for deterministic capture
     -- Works in any controller mode (cutscene, character, god, etc.)
-    game.take_screenshot{
-        surface = p.surface,
-        position = curr_pos,
-        zoom = clamp_zoom(curr_zoom),
-        path = path,
-        resolution = CAPTURE_CONFIG.resolution,
-        quality = CAPTURE_CONFIG.quality,
-        show_gui = CAPTURE_CONFIG.show_gui,
-        force_render = false,  -- Let Factorio render async to reduce CPU overhead
-        allow_in_replay = true,
-        wait_for_finish = false,
-    }
+    -- SAFETY: Wrap in pcall to handle errors gracefully
+    local screenshot_ok, screenshot_err = pcall(function()
+        game.take_screenshot{
+            surface = p.surface,
+            position = curr_pos,
+            zoom = clamp_zoom(curr_zoom),
+            path = path,
+            resolution = CAPTURE_CONFIG.resolution,
+            quality = CAPTURE_CONFIG.quality,
+            show_gui = CAPTURE_CONFIG.show_gui,
+            force_render = false,  -- Never force render to avoid blocking
+            allow_in_replay = true,
+        }
+    end)
+    
+    if screenshot_ok then
+        fc.pending_screenshots = fc.pending_screenshots + 1
+        fc.last_screenshot_tick = e.tick
+    else
+        -- Log screenshot errors
+        debug_log(string.format(
+            "[ERROR] Screenshot failed at tick %d: %s", e.tick, tostring(screenshot_err)))
+        fc.skipped_frames = (fc.skipped_frames or 0) + 1
+    end
+end)
+
+-- SAFETY: Periodically decrement pending screenshot counter
+-- Since Factorio doesn't provide callbacks for screenshot completion,
+-- we estimate based on time elapsed. Screenshots typically take 1-3 ticks to complete.
+-- Check every 60 ticks (1 second) and decay the counter conservatively.
+script.on_nth_tick(60, function(e)
+    local fc = get_frame_capture()
+    if not fc.active then return end
+    
+    -- Decay pending screenshots counter - assume most have completed after 60 ticks
+    -- This is a conservative estimate to prevent counter from growing unbounded
+    if fc.pending_screenshots and fc.pending_screenshots > 0 then
+        -- Reduce by up to 5 screenshots per second, or down to 0
+        local decay = math.min(5, fc.pending_screenshots)
+        fc.pending_screenshots = fc.pending_screenshots - decay
+        
+        -- Log if we have a backlog
+        if fc.pending_screenshots > CAPTURE_CONFIG.max_pending_screenshots / 2 then
+            debug_log(string.format(
+                "[PERF] High screenshot backlog: %d pending at tick %d",
+                fc.pending_screenshots, e.tick))
+        end
+    end
 end)
 
 local function sanitise_plan_id(candidate)
@@ -963,20 +1024,20 @@ global.actions.pause_recording = function(raw_payload)
     ensure_global()
     local fc = get_frame_capture()
     
-    game.print("[CINEMA] pause_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
+    game_debug_log("[CINEMA] pause_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
     
     if not fc.active then
-        game.print("[CINEMA] pause_recording failed - no active recording session")
+        game_debug_log("[CINEMA] pause_recording failed - no active recording session")
         return game.table_to_json({ok = false, error = "no active recording session"})
     end
     
     if fc.paused then
-        game.print("[CINEMA] pause_recording - already paused")
+        game_debug_log("[CINEMA] pause_recording - already paused")
         return game.table_to_json({ok = true, already_paused = true, session_id = fc.session_id})
     end
     
     fc.paused = true
-    game.print("[CINEMA] pause_recording - recording paused successfully")
+    game_debug_log("[CINEMA] pause_recording - recording paused successfully")
     return game.table_to_json({ok = true, session_id = fc.session_id})
 end
 
@@ -985,20 +1046,20 @@ global.actions.resume_recording = function(raw_payload)
     ensure_global()
     local fc = get_frame_capture()
     
-    game.print("[CINEMA] resume_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
+    game_debug_log("[CINEMA] resume_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
     
     if not fc.active then
-        game.print("[CINEMA] resume_recording failed - no active recording session")
+        game_debug_log("[CINEMA] resume_recording failed - no active recording session")
         return game.table_to_json({ok = false, error = "no active recording session"})
     end
     
     if not fc.paused then
-        game.print("[CINEMA] resume_recording - already active")
+        game_debug_log("[CINEMA] resume_recording - already active")
         return game.table_to_json({ok = true, already_active = true, session_id = fc.session_id})
     end
     
     fc.paused = false
-    game.print("[CINEMA] resume_recording - recording resumed successfully")
+    game_debug_log("[CINEMA] resume_recording - recording resumed successfully")
     return game.table_to_json({ok = true, session_id = fc.session_id})
 end
 
@@ -1061,6 +1122,9 @@ global.actions.cutscene_stats = function()
         capture_player = fc.player_index,
         capture_session = fc.session_id,
         capture_frames = fc.frame,
+        capture_skipped_frames = fc.skipped_frames or 0,
+        capture_pending_screenshots = fc.pending_screenshots or 0,
+        capture_last_screenshot_tick = fc.last_screenshot_tick or 0,
     })
 end
 

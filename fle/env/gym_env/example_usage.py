@@ -50,7 +50,6 @@ def print_environment_list(env_ids: List[str], detailed: bool = False):
             print(f"     Task Key: {info['task_key']}")
             print(f"     Config Path: {info['task_config_path']}")
             print(f"     Agents: {info['num_agents']}")
-            print(f"     Model: {info['model']}")
 
         print()
 

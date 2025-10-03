@@ -103,10 +103,7 @@ fle cluster start -s open_world            # Start with open world scenario
 6. **Run Eval**: Running open and lab play with example run configs:
     Tasks (one parallel run of iron-ore task):
       ```sh
-      # Using uv
-      uv run -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
-      # Using python
-      python -m fle.run --run_config=fle/eval/algorithms/independent/gym_run_config.json
+      fle eval --run_config=fle/eval/configs/gym_run_config.json
       ```
 
 ### Client-side running (optional, renders graphics)

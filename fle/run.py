@@ -10,6 +10,7 @@ from fle.cluster.run_envs import (
     restart_cluster,
     ClusterManager,
 )
+from fle.agents.data.sprites.download import download_sprites_from_hf, generate_sprites
 
 
 def fle_init():
@@ -79,6 +80,33 @@ def fle_cluster(args):
 
     else:
         print(f"Error: Unknown cluster command '{args.cluster_command}'")
+
+
+def fle_sprites(args):
+    try:
+        # Download spritemaps from HuggingFace
+        print("Downloading spritemaps...")
+        success = download_sprites_from_hf(
+            output_dir=args.spritemap_dir, force=args.force, num_workers=args.workers
+        )
+
+        if not success:
+            print("Failed to download spritemaps", file=sys.stderr)
+            sys.exit(1)
+
+        # Generate individual sprites from spritemaps
+        print("\nGenerating sprites...")
+        success = generate_sprites(
+            input_dir=args.spritemap_dir, output_dir=args.sprite_dir
+        )
+
+        if not success:
+            print("Failed to generate sprites", file=sys.stderr)
+            sys.exit(1)
+
+        print("\nSprites successfully downloaded and generated!")
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -97,7 +125,11 @@ Examples:
   fle cluster stop                           # Stop all instances
   fle cluster show                           # Show running services
   fle cluster logs factorio_0                # View logs for specific service
+  fle cluster restart                        # Restart current cluster
   fle eval --config configs/run_config.json  # Run experiment
+  fle eval --config configs/gym_run_config.json
+  fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
+  fle sprites [--force] [--workers N]
 
 Tips:
   Use 'fle <command> -h' for command-specific help
@@ -185,7 +217,31 @@ Examples:
         "--config", required=True, help="Path to run config JSON file"
     )
 
-    # Parse arguments
+    # Sprites command
+    sprites_parser = subparsers.add_parser(
+        "sprites", help="Download and generate sprites"
+    )
+    sprites_parser.add_argument(
+        "--force", action="store_true", help="Force re-download even if sprites exist"
+    )
+    sprites_parser.add_argument(
+        "--workers",
+        type=int,
+        default=10,
+        help="Number of parallel download workers (default: 10)",
+    )
+    sprites_parser.add_argument(
+        "--spritemap-dir",
+        type=str,
+        default=".fle/spritemaps",
+        help="Directory to save downloaded spritemaps (default: .fle/spritemaps)",
+    )
+    sprites_parser.add_argument(
+        "--sprite-dir",
+        type=str,
+        default=".fle/sprites",
+        help="Directory to save generated sprites (default: .fle/sprites)",
+    )
     args = parser.parse_args()
 
     # Handle commands
@@ -201,11 +257,11 @@ Examples:
     elif args.command == "eval":
         fle_init()  # Ensure .env exists before running eval
         fle_eval(args)
-
+    elif args.command == "sprites":
+        fle_sprites(args)
     elif args.command is None:
         parser.print_help()
         sys.exit(1)
-
     else:
         print(f"Error: Unknown command '{args.command}'")
         parser.print_help()

@@ -1,199 +1,229 @@
-from typing import Optional, Dict
-import math
+from typing import Dict, Optional, Union, List, Tuple
 
-from fle.env import BoundingBox, Position, BeltGroup, PipeGroup, ElectricityGroup, Layer
-from fle.env.tools.admin.render.rendered_image import RenderedImage
+from fle.commons.models.rendered_image import RenderedImage
+from fle.env import Position, Layer
+from fle.env.tools import Tool
+from fle.env.tools.admin.render.constants import DEFAULT_SCALING
+from fle.env.tools.admin.render.decoder import Decoder
+from fle.env.tools.admin.render.image_resolver import ImageResolver
+from fle.env.tools.admin.render.profiler import profile_method
 from fle.env.tools.admin.render.renderer import Renderer
 from fle.env.tools.agent.get_entities.client import GetEntities
-from fle.env.tools import Tool
-
-MAX_TILES = (
-    20  # Don't parameterise this, as the agent could break if it chooses a huge grid.
-)
 
 
 class Render(Tool):
-    """Render tool for visualizing Factorio entities"""
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.image_resolver = ImageResolver(".fle/sprites")
+        self.decoder = Decoder()
+        self.get_entities = GetEntities(*args)
 
-    def __init__(self, connection, game_state):
-        super().__init__(connection, game_state)
-        self.renderer = Renderer()
-        self.get_entities = GetEntities(connection, game_state)
+    @profile_method(include_args=True)
+    def _get_map_entities(self, include_status, radius, compression_level):
+        # Execute the Lua function with compression level
+        try:
+            result, _ = self.execute(
+                self.player_index, include_status, radius, compression_level
+            )
 
+            # Decode the optimized format if necessary
+            decoded_result = self._decode_optimized_format(result)
+
+            return decoded_result
+        except Exception:
+            result, _ = self.execute(
+                self.player_index, include_status, radius, compression_level
+            )
+            pass
+
+    @profile_method(include_args=True)
     def __call__(
         self,
+        include_status: bool = False,
+        radius: int = 64,
         position: Optional[Position] = None,
-        bounding_box: Optional[BoundingBox] = None,
-        style: Optional[Dict] = None,
-        layers: Optional[Layer] = Layer.ALL,
-        zoom: float = 1.0,
-    ) -> RenderedImage:
+        layers: Layer = Layer.ALL,
+        compression_level: str = "binary",
+        blueprint: Union[str, List[Dict]] = None,
+        return_renderer=False,
+        max_render_radius: Optional[float] = None,
+    ) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
         """
-        Render entities around a position or within a bounding box.
+        Returns information about all entities, tiles, and resources within the specified radius of the player.
 
         Args:
-            position: Center position for rendering (defaults to player position if None)
-            radius: Radius around position to render (default: 10)
-            bounding_box: Specific area to render (overrides position and radius)
-            style: Optional custom style configuration
-            max_tiles: Maximum number of tiles to render on each side of the position (default: 50)
-            layers: Layer flags to specify which elements to render
-            zoom: Zoom factor for rendering (default: 1.0) - values > 1 zoom in (fewer tiles visible),
-                  values < 1 zoom out (more tiles visible)
+            include_status: Whether to include status information for entities (optional)
+            radius: Search radius around the player (default: 50)
+            position: Center position for the search (optional, defaults to player position)
+            layers: Which layers to include in the render
+            compression_level: Compression level to use ('none', 'standard', 'binary', 'maximum')
+                - 'none': No compression, raw data
+                - 'standard': Run-length encoding for water, patch-based for resources (default)
+                - 'binary': Binary encoding with base64 transport
+                - 'maximum': Same as binary, reserved for future improvements
+            blueprint: Either a Base64 encoded blueprint, or a decoded blueprint
+            return_renderer: Whether to return the renderer, which contains the entities that were rendered
 
         Returns:
-            RenderedImage: An image object that can be displayed or saved
+            RenderedImage containing the visual representation of the area
         """
-        radius: int = MAX_TILES
-        max_tiles: int = MAX_TILES
+        assert isinstance(include_status, bool), "Include status must be boolean"
+        assert isinstance(radius, (int, float)), "Radius must be a number"
 
-        # Apply minimum and maximum bounds to prevent issues with very small or very large zoom values
-        MIN_TILES = 2  # Prevent zooming in too much (minimum tiles to show)
-        MAX_ZOOM_TILES = 100  # Prevent zooming out too much (maximum tiles to show)
-
-        # Cap the maximum resolution/dimensions of the final image
-        MAX_IMAGE_RESOLUTION = 4000  # Maximum pixels in either dimension
-        MAX_TOTAL_TILES = (
-            8000  # Maximum total tiles (width * height) to prevent memory issues
-        )
-
-        # Apply style if provided
-        custom_style = {}
-        if style:
-            custom_style.update(style)
-
-        # Create new renderer with the custom style if any
-        if custom_style:
-            self.renderer = Renderer(custom_style)
-
-        # Apply zoom by adjusting max_tiles (number of tiles displayed)
-        if zoom != 1.0:
-            # Adjust the number of tiles displayed based on zoom
-            # Zoom in (> 1.0) = fewer tiles displayed (divide by zoom)
-            # Zoom out (< 1.0) = more tiles displayed (divide by zoom)
-            max_tiles = int(MAX_TILES / zoom)
-            radius = max_tiles  # Update radius as well to keep consistent
-
-            # Apply bounds to ensure reasonable limits
-            max_tiles = max(MIN_TILES, min(max_tiles, MAX_ZOOM_TILES))
-            radius = max_tiles  # Match radius to max_tiles
-
-        # Cap max_tiles to ensure the total image size doesn't exceed maximum resolution
-        # Calculate estimated pixels per tile including margins
-        estimated_pixels_per_tile = self.renderer.config.style["cell_size"]
-
-        # Calculate maximum tiles in each dimension based on MAX_IMAGE_RESOLUTION
-        max_tiles_per_dimension = MAX_IMAGE_RESOLUTION // estimated_pixels_per_tile
-
-        # Ensure max_tiles doesn't exceed the resolution limit
-        max_tiles = min(max_tiles, max_tiles_per_dimension)
-        radius = min(radius, max_tiles_per_dimension)
-
-        # Ensure total tiles (width * height) doesn't exceed MAX_TOTAL_TILES
-        # A square of max_tiles*2 x max_tiles*2 would have 4*max_tiles^2 total tiles
-        # We want this to be <= MAX_TOTAL_TILES
-        max_tiles_from_total = int(math.sqrt(MAX_TOTAL_TILES / 4))
-        max_tiles = min(max_tiles, max_tiles_from_total)
-        radius = min(radius, max_tiles_from_total)
-
-        if position is None and bounding_box is None:
-            # Get player position from game state
-            position = Position(0, 0)  # Default fallback
-            player_data = self.game_state.get("player", {})
-            if "position" in player_data:
-                position = Position(
-                    player_data["position"]["x"], player_data["position"]["y"]
-                )
-
-        # Ensure radius doesn't exceed max_tiles
-        radius = min(radius, max_tiles)
-
-        # Set up area to query
-        if bounding_box:
-            # Clip bounding box to max_tiles if needed
-            if position:
-                # Ensure the box doesn't exceed max_tiles from center_pos
-                left = max(bounding_box.left_top.x, position.x - max_tiles)
-                right = min(bounding_box.right_bottom.x, position.x + max_tiles)
-                top = max(bounding_box.left_top.y, position.y - max_tiles)
-                bottom = min(bounding_box.right_bottom.y, position.y + max_tiles)
-
-                # Create a new clipped bounding box
-                bounding_box = BoundingBox(
-                    left_top=Position(left, top),
-                    right_bottom=Position(right, bottom),
-                    left_bottom=Position(left, bottom),
-                    right_top=Position(right, top),
-                )
-
-            # Get entities within bounding box
-            response, _ = self.execute(
-                self.player_index,
-                "bounding_box",
-                bounding_box.left_top.x,
-                bounding_box.left_top.y,
-                bounding_box.right_bottom.x,
-                bounding_box.right_bottom.y,
+        if not blueprint:
+            # Create renderer with decoded data
+            renderer = self.get_renderer_from_map(
+                include_status, radius, compression_level, max_render_radius
             )
         else:
-            # Ensure radius is within the max_tiles limit
-            radius = min(radius, max_tiles)
+            renderer = self.get_renderer_from_blueprint(blueprint)
 
-            # Get water, resources, trees and rocks within radius of position
-            response, _ = self.execute(
-                self.player_index, "radius", position.x, position.y, radius
-            )
+        # Calculate render size
+        size = renderer.get_size()
+        if size["width"] == 0 or size["height"] == 0:
+            raise Exception("Nothing to render.")
 
-        # Get entities within radius of position
-        entities = self.get_entities(position=position, radius=radius)
+        # Calculate the ideal dimensions
+        width = size["width"] * DEFAULT_SCALING
+        height = size["height"] * DEFAULT_SCALING
 
-        base_entities = []
-
-        for entity in entities:
-            if isinstance(entity, BeltGroup):
-                base_entities.extend(entity.belts)
-            elif isinstance(entity, PipeGroup):
-                base_entities.extend(entity.pipes)
-            elif isinstance(entity, ElectricityGroup):
-                base_entities.extend(entity.poles)
+        # Cap the resolution at 1024x1024
+        max_dimension = 1024
+        if width > max_dimension or height > max_dimension:
+            # Calculate new dimensions while maintaining aspect ratio
+            aspect_ratio = width / height
+            if width > height:
+                width = max_dimension
+                height = int(max_dimension / aspect_ratio)
             else:
-                base_entities.append(entity)
+                height = max_dimension
+                width = int(max_dimension * aspect_ratio)
 
-        # Extract data from the response
-        water_tiles = list(response.get("water_tiles", {}).values())
-        resource_entities = list(response.get("resources", {}).values())
-        trees = list(response.get("trees", {}).values())
-        rocks = list(response.get("rocks", {}).values())
-        electricity_networks = list(
-            response.get("electricity_networks", {}).values()
-        )  # Extract electricity networks
+        # Ensure dimensions are at least 1
+        width = max(1, width)
+        height = max(1, height)
 
-        # Render the entities with all additional elements
-        img = self.renderer.render_entities(
-            base_entities,
-            center_pos=position,
-            bounding_box=bounding_box,
+        # Render the blueprint - the renderer will calculate the appropriate scaling
+        image = renderer.render(width, height, self.image_resolver)
+
+        if return_renderer:
+            return RenderedImage(image), renderer
+        else:
+            return RenderedImage(image)
+
+    def get_renderer_from_blueprint(self, blueprint):
+        if isinstance(blueprint, str):
+            raise NotImplementedError()
+            # entities = blueprint['entities']
+            # renderer = Renderer(
+            #     entities=entities
+            # )
+        else:
+            if "entities" not in blueprint:
+                raise ValueError("Blueprint passed with no entities")
+
+            entities = blueprint["entities"]
+            renderer = Renderer(entities=entities)
+        return renderer
+
+    def get_renderer_from_map(
+        self,
+        include_status: bool = False,
+        radius: int = 64,
+        compression_level: str = "binary",
+        max_render_radius: Optional[float] = None,
+    ) -> Renderer:
+        result = self._get_map_entities(include_status, radius, compression_level)
+
+        # Parse the Lua dictionaries
+        entities = self.parse_lua_dict(result["entities"])
+
+        character_position = [
+            c["position"]
+            for c in list(filter(lambda x: x["name"] == "character", entities))
+        ]
+
+        char_pos = Position(character_position[0]["x"], character_position[0]["y"])
+        ent = self.get_entities(position=char_pos, radius=radius)
+        if ent:
+            entities.extend(ent)
+            pass
+
+        # ent.extend(entities)
+        water_tiles = result["water_tiles"]
+
+        resources = result["resources"]
+
+        # Create renderer with decoded data
+        renderer = Renderer(
+            entities=entities,
             water_tiles=water_tiles,
-            resource_entities=resource_entities,
-            trees=trees,
-            rocks=rocks,
-            electricity_networks=electricity_networks,  # Pass electricity networks to renderer
-            max_tiles=max_tiles,
-            layers=layers,
+            resources=resources,
+            max_render_radius=max_render_radius,
         )
+        return renderer
 
-        return RenderedImage(img)
+    def _decode_optimized_format(self, result: Dict) -> Dict:
+        """
+        Decode the optimized format based on the version.
 
-    def _process_nested_dict(self, nested_dict):
-        """Helper method to process nested dictionaries"""
-        if isinstance(nested_dict, dict):
-            if all(isinstance(key, int) for key in nested_dict.keys()):
-                return [
-                    self._process_nested_dict(value) for value in nested_dict.values()
-                ]
-            else:
-                return {
-                    key: self._process_nested_dict(value)
-                    for key, value in nested_dict.items()
-                }
-        return nested_dict
+        Args:
+            result: The raw result from the Lua execution
+
+        Returns:
+            Dictionary with decoded entities, water_tiles, and resources
+        """
+        meta = result.get("meta", {})
+        format_version = meta.get("format", "v1")
+
+        if format_version == "v2-binary":
+            # Handle binary compressed format
+            entities = result.get("entities", [])
+
+            # Decode binary water data
+            water_tiles = []
+            if "water_binary" in result:
+                water_binary = self.decoder.decode_base64_urlsafe(
+                    result["water_binary"]
+                )
+                water_runs = self.decoder.decode_water_binary(water_binary)
+                water_tiles = self.decoder.decode_water_runs(water_runs)
+
+            # Decode binary resource data
+            resources = []
+            if "resources_binary" in result:
+                resources_binary = self.decoder.decode_base64_urlsafe(
+                    result["resources_binary"]
+                )
+                resource_patches = self.decoder.decode_resources_binary(
+                    resources_binary
+                )
+                resources = self.decoder.decode_resource_patches(resource_patches)
+
+            return {
+                "entities": entities,
+                "water_tiles": water_tiles,
+                "resources": resources,
+            }
+        elif format_version == "v2":
+            # Handle optimized format
+            entities = result.get("entities", [])
+            water_runs = result.get("water", [])
+            resource_patches = result.get("resources", {})
+
+            # Decode compressed data
+            water_tiles = self.decoder.decode_water_runs(water_runs)
+            resources = self.decoder.decode_resource_patches(resource_patches)
+
+            return {
+                "entities": entities,
+                "water_tiles": water_tiles,
+                "resources": resources,
+            }
+        else:
+            # Handle legacy format
+            return {
+                "entities": result.get("entities", []),
+                "water_tiles": result.get("water_tiles", []),
+                "resources": result.get("resources", []),
+            }

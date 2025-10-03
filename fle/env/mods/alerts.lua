@@ -286,7 +286,7 @@ function global.utils.get_issues(entity)
                 if destination_entity.type == "container" then
                     table.insert(issues, "\'chest at drop position is full. Empty the chest at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 elseif destination_entity.type == "furnace" then
-                    table.insert(issues, "\'furnace belt at drop position is blocked.\'")
+                    table.insert(issues, "\'furnace at drop position is blocked.\'")
                 else
                     table.insert(issues, "\'transport belt at drop position is blocked. Clear the belt at (" .. rounded_x .. ", " .. rounded_y .. ") to continue mining.\'")
                 end

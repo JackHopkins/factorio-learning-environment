@@ -1,0 +1,13 @@
+Generate a spatial reasoning question about a missing entity in a Factorio blueprint.
+
+The removed entity was: {{ removed_entity.name }} at position ({{ removed_position.x }}, {{ removed_position.y }})
+
+Nearby entities:
+{{ nearby_entities | tojson(indent=2) }}
+
+Create a question that uses spatial relationships to identify what's missing. Examples:
+- "What entity is missing 2 tiles north of the {{ nearest_entity_name }}?"
+- "An entity has been removed between two transport belts. What should be there?"
+- "What's missing at the position that would connect the nearby inserters?"
+
+Return only the question.

@@ -770,12 +770,17 @@ global.utils.serialize_entity = function(entity)
         serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
         serialized.is_source = #entity.belt_neighbours["inputs"] == 0
 
+        serialized.inventory['left'] = {}
+        serialized.inventory['right'] = {}
+
         -- Merge contents from both belt lines
         for item_name, count in pairs(line1_contents) do
-            serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+            --serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+            serialized.inventory['left'][item_name] = (serialized.inventory[item_name] or 0) + count
         end
         for item_name, count in pairs(line2_contents) do
-            serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+            --serialized.inventory[item_name] = (serialized.inventory[item_name] or 0) + count
+            serialized.inventory['right'][item_name] = (serialized.inventory[item_name] or 0) + count
         end
 
         -- Add warning if belt is full

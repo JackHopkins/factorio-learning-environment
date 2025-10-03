@@ -37,6 +37,9 @@ global.actions.create_agent_characters = function(num_agents)
     end
 
     -- Initialize agent characters table
+    for _, entity in pairs(game.surfaces[1].find_entities_filtered{type = "character"}) do
+        entity.destroy()
+    end
     -- Destroy existing agent characters if they exist
     if global.agent_characters then
         for _, char in pairs(global.agent_characters) do

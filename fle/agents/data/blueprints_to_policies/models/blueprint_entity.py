@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 
 @dataclass
@@ -17,3 +17,8 @@ class BlueprintEntity:
     control_behavior: Dict = None
     connections: Dict = None
     filter: Dict = None
+    filters: List[Dict] = None
+    filter_mode: Any = None
+    use_filters: Any = None
+    recipe_quality: Dict = None
+    bar: Dict = None

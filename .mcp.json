@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "factorio-learning-env": {
+      "command": "python",
+      "args": ["-m", "fle.env.protocols._mcp"],
+      "env": {
+        "PYTHONPATH": "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser"
+      }
+    }
+  }
+}

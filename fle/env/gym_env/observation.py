@@ -42,7 +42,7 @@ class Observation:
     """Complete observation of the game state"""
 
     raw_text: str
-    entities: List[str]  # Changed from List[Union[Entity, EntityGroup]] to List[str]
+    entities: List[str]
     inventory: Inventory
     research: ResearchState
     game_info: GameInfo
@@ -50,8 +50,9 @@ class Observation:
     flows: ProductionFlows
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
-    serialized_functions: List[Dict[str, Any]]  # List of serialized functions
-    task_info: Optional[TaskInfo]  # Task information and objectives
+    serialized_functions: List[Dict[str, Any]]
+    task_info: Optional[TaskInfo]
+    map_image: str  # Base64 encoded PNG image
 
     @classmethod
     def from_dict(cls, obs_dict: Dict[str, Any]) -> "Observation":
@@ -166,6 +167,9 @@ class Observation:
                 trajectory_length=task_dict.get("trajectory_length", 0),
             )
 
+        # Get map image (base64 encoded string)
+        map_image = obs_dict.get("map_image", "")
+
         return cls(
             raw_text=obs_dict.get("raw_text", ""),
             entities=entities,  # Now just passing the list of strings
@@ -178,6 +182,7 @@ class Observation:
             messages=messages,
             serialized_functions=serialized_functions,
             task_info=task_info,
+            map_image=map_image,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -204,6 +209,7 @@ class Observation:
 
         return {
             "raw_text": self.raw_text,
+            "map_image": self.map_image,
             "entities": self.entities,  # Use string representation of entities
             "inventory": [
                 {"quantity": np.int32(v), "type": k}

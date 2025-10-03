@@ -307,8 +307,8 @@ production_score.generate_price_list = function(param)
   return price_list
 end
 
-production_score.get_production_scores = function(price_list)
-  local price_list = price_list or production_score.generate_price_list()
+production_score.get_production_scores = function(_price_list)
+  local price_list = _price_list or production_score.generate_price_list()
   local scores = {}
   for k, force in pairs (game.forces) do
     local score = 0
@@ -350,8 +350,8 @@ if scores then
 end
 
 global.actions.score = function()
-    local production_score = production_score.get_production_scores()
-    production_score["player"] = production_score["player"] - global.initial_score["player"]
+    local prod_score = production_score.get_production_scores()
+    prod_score["player"] = prod_score["player"] - global.initial_score["player"]
     
     -- Try to get goal description from first player if available, otherwise skip
     local goal_description = nil
@@ -365,7 +365,7 @@ global.actions.score = function()
       --if goal_description ~= nil and #goal_description > 1 then
         --production_score["goal"] = goal_description[1]:gsub("-", "_")
       --end
-      return dump(production_score)
+      return dump(prod_score)
     end
-    return dump(production_score)
+    return dump(prod_score)
 end

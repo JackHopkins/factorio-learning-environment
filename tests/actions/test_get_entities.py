@@ -206,11 +206,19 @@ def test_get_assembling_machine_1(game):
 def test_get_pipe_groups(game):
     # game.craft_item(Prototype.OffshorePump)
 
-    water_patch = game.get_resource_patch(Resource.Water, game.nearest(Resource.Water))
-    game.move_to(water_patch.bounding_box.left_top)
-    offshore_pump = game.place_entity(
-        Prototype.OffshorePump, position=game.nearest(Resource.Water)
-    )
+    try:
+        game.move_to(game.nearest(Resource.Water))
+        offshore_pump = game.place_entity(
+            Prototype.OffshorePump, position=game.nearest(Resource.Water)
+        )
+    except:
+        water_patch = game.get_resource_patch(
+            Resource.Water, game.nearest(Resource.Water)
+        )
+        game.move_to(water_patch)
+        offshore_pump = game.place_entity(
+            Prototype.OffshorePump, position=game.nearest(Resource.Water)
+        )
     boiler = game.place_entity_next_to(
         Prototype.Boiler,
         reference_position=offshore_pump.position,

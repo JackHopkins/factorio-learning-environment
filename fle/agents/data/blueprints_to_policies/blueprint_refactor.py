@@ -14,8 +14,8 @@ from anthropic import Anthropic
 import pandas as pd
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from cluster.remote.cluster_ips import get_public_ips
-from data.blueprints_to_policies.processing_state import ProcessingState
+from fle.cluster.remote.cluster_ips import get_public_ips
+from fle.agents.data.blueprints_to_policies.processing_state import ProcessingState
 from fle.env import Position
 from fle.env import FactorioInstance
 from blueprint_analyzer import BlueprintAnalyzer

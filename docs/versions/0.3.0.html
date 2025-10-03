@@ -459,6 +459,129 @@
             z-index: 4;
         }
 
+
+        @media (max-width: 768px) {
+    /* Feature boxes - Force single column */
+    .content div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tabs - Stack vertically */
+    .tabs-container {
+        flex-direction: column;
+        padding-top: 20px;
+    }
+
+    .tabs-container::before,
+    .tabs-container::after {
+        display: none;
+    }
+
+    .tab-button {
+        width: 100%;
+        border-left: none !important;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .tab-button::before {
+        display: none;
+    }
+
+    .tab-button.active {
+        border-left: 4px solid #2196F3;
+        border-top: none;
+        border-bottom: 2px solid white;
+    }
+
+    /* Example content */
+    .example-image {
+        max-height: 300px;
+        object-fit: contain;
+    }
+
+    .example-card pre {
+        max-height: 300px;
+        font-size: 0.8em;
+    }
+
+    /* Chart responsiveness */
+    .chart-container {
+        height: 220px;
+        padding: 0 10px;
+    }
+
+    .chart-area {
+        height: 120px;
+    }
+
+    .point-spm {
+        font-size: 9px;
+    }
+
+    /* Action Program code blocks */
+
+    .example-card {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    /* Force pre and code blocks to stay within bounds */
+    .example-card pre {
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+    }
+
+    .example-card pre code,
+    .example-card pre code.hljs {
+        max-width: 100% !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Force the grid itself to behave */
+    .example-grid-single {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    /* Also constrain the tab content container */
+    .tab-content {
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+        padding: 15px !important;
+    }
+
+    /* Make collapsible headers more touch-friendly */
+    .collapsible-header {
+        padding: 12px 15px;
+        font-size: 0.95em;
+    }
+
+    .collapsible-header h4 {
+        font-size: 1em;
+    }
+}
+/* For very small screens (phones in portrait) */
+@media (max-width: 480px) {
+    .example-card pre code {
+        font-size: 0.7em !important;
+    }
+
+    .example-card pre code.hljs {
+        font-size: 0.7em !important;
+    }
+}
+
         /* Data points */
         .data-point {
             position: absolute;
@@ -704,7 +827,7 @@
         }
         .columns .column.video-column {
                 padding: 0 3px;
-                margin-bottom: 5px;
+                /*margin-bottom: 5px;*/
         }
 
         /* Responsive adjustments */
@@ -891,7 +1014,7 @@
             </p>
             <br/>
             <p style="font-size: 110%;">
-                Since the original FLE paper, where we demonstrated that frontier models struggle with spatial reasoning, constrained environments, and recovery; and the 0.2.0 release, which introduced multi-agency, backtracking agents, and vision, we have worked hard over summer to bring v0.3.0, with numerous improvements.
+                Since the original <a href="https://arxiv.org/abs/2503.09617">FLE paper</a>, where we demonstrated that frontier models struggle with adapting to changing environments, long-term goal setting, and dynamic recovery; and the 0.2.0 release, which introduced multi-agency, backtracking agents, and vision, we have worked hard over summer to bring v0.3.0, with numerous improvements.
             </p>
 
             <div class="content has-text-justified" style="margin-top:2em">
@@ -1689,6 +1812,10 @@ boiler = <span class="hljs-built_in">insert_item</span>(Prototype.Coal, boiler, 
 
          </p>
         <ul style="font-size: 110%;">
+
+            <li><strong>Scaling to Open-Play and Megabases.</strong> Lab-play tasks use constrained starting inventories and single production targets. Open-play requires surviving from nothing on procedurally generated maps with complex, multi-stage objectives. The difficulty spectrum extends orders of magnitude: from manual crafting to megabases with thousands of interconnected machines.</li>
+
+
             <li><strong>Real-time Performance Under Latency Constraints.</strong> Current evaluations allow agents unlimited thinking time between actions. We're developing benchmarks where Factorio runs continuously, forcing agents to balance solution quality against response latency.
                 This tests whether agents can maintain robust performance in streaming environments rather than idealized turn-based settings.</li>
 <!--        </ul>-->
@@ -1715,7 +1842,6 @@ boiler = <span class="hljs-built_in">insert_item</span>(Prototype.Coal, boiler, 
 
 <!--        <h4 class="subtitle is-4" style="margin-top: 2em;">Scaling to Open-Play and Megabases</h4>-->
 <!--        <ul style="font-size: 110%;">-->
-            <li><strong>Scaling to Open-Play and Megabases.</strong> Lab-play tasks use constrained starting inventories and single production targets. Open-play requires surviving from nothing on procedurally generated maps with complex, multi-stage objectives. The difficulty spectrum extends orders of magnitude: from manual crafting to megabases with thousands of interconnected machines.</li>
         </ul>
 
     </div>

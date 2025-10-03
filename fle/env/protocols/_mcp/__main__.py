@@ -15,11 +15,11 @@ sys.path.insert(
     ),
 )
 
-
-# Import all tools to register them with decorators
+# NOW import all modules that define tools - this registers them
 
 # Import the lifespan setup
 from fle.env.protocols._mcp import mcp
+
 
 if __name__ == "__main__":
     mcp.run()

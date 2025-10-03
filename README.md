@@ -186,23 +186,11 @@ FLE supports multiple LLM providers for agent evaluation. To get started with AP
 
 ## Model Context Protocol (MCP)
 
-FLE supports the Model Context Protocol (MCP) to enable LLM reasoning models to invoke tools within their reasoning chain. This allows for more sophisticated agent interactions with the Factorio environment.
-
-### Usage
-
-```bash
-# Start MCP server with stdio transport (default)
-python -m fle.env.protocols._mcp
-
-# Start MCP server with SSE transport
-python -m fle.env.protocols._mcp --transport sse --host 127.0.0.1 --port 3000
-```
-
-The MCP server provides access to Factorio game state and tools through a standardized protocol, enabling integration with various LLM frameworks and reasoning systems.
+FLE supports the [Model Context Protocol](fle/env/protocols/_mcp/README.md) (MCP) to enable LLM reasoning models to invoke tools.
 
 ## Sprites
 
-FLE includes sprite management functionality for downloading and processing Factorio game assets. This is essential for visual agents and other applications that need access to game entity images.
+FLE includes sprite management functionality for downloading and processing Factorio game assets.
 
 ### Usage
 

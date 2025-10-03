@@ -105,7 +105,7 @@ class FactorioMCPState:
                     "wood": 5,
                     "iron-plate": 8,
                 },
-                all_technologies_researched=True,
+                all_technologies_researched=False,
             )
             # Ensure agent characters exist (removed one-time associate command)
             # Check if agent characters exist, if not create them

@@ -1,5 +1,7 @@
 """Factorio Learning Environment (FLE) package."""
 
+__version__ = "0.3.0a1"
+
 # Make submodules available
 from fle import agents, env, eval, cluster, commons
 

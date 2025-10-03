@@ -56,6 +56,15 @@ class CinematicInstance(FactorioInstance):
         self.focus_duration = 120  # 2 seconds
         self.pan_duration = 60  # 1 second
 
+        # Camera state tracking for smooth transitions
+        self._last_camera_pos: Optional[Tuple[float, float]] = None
+        self._last_camera_zoom: float = 1.0
+        self._last_action_tick: int = 0
+
+        # Thresholds for smart camera behavior
+        self.camera_movement_threshold = 8.0  # Don't move if within 8 tiles
+        self.zoom_change_threshold = 0.2  # Don't adjust if zoom delta < 0.2
+
         # Hooks registered flag
         self._hooks_registered = False
 
@@ -299,6 +308,82 @@ class CinematicInstance(FactorioInstance):
                 print(f"Error cancelling cutscene: {e}")
         return {"ok": False, "error": "cutscene controller not available"}
 
+    def _calculate_distance(
+        self, pos1: Tuple[float, float], pos2: Tuple[float, float]
+    ) -> float:
+        """Calculate Euclidean distance between two positions."""
+        return ((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2) ** 0.5
+
+    def _calculate_adaptive_pan_duration(self, distance: float) -> int:
+        """Calculate pan duration based on distance to travel."""
+        if distance < 10:
+            return 30  # 0.5 seconds for short distances
+        elif distance < 50:
+            return 60  # 1 second for medium distances
+        else:
+            return 90  # 1.5 seconds for long distances
+
+    def _calculate_bounding_box_zoom(
+        self, pos1: Tuple[float, float], pos2: Tuple[float, float], padding: float = 5.0
+    ) -> Tuple[Tuple[float, float], float]:
+        """
+        Calculate center position and zoom to frame both positions with padding.
+
+        Returns:
+            (center_pos, zoom_level)
+        """
+        # Calculate center
+        center_x = (pos1[0] + pos2[0]) / 2
+        center_y = (pos1[1] + pos2[1]) / 2
+        center = (center_x, center_y)
+
+        # Calculate distance between points
+        distance = self._calculate_distance(pos1, pos2)
+
+        # Calculate zoom to fit both points with padding
+        # Assume screen is ~30 tiles wide at zoom 1.0
+        # We want the distance + padding to fit in frame
+        target_width = distance + (2 * padding)
+        base_screen_width = 30.0
+
+        if target_width > base_screen_width:
+            # Zoom out
+            zoom = max(0.5, base_screen_width / target_width)
+        else:
+            # Can zoom in a bit, but not too much for context
+            zoom = min(1.2, base_screen_width / max(target_width, 15))
+
+        return center, zoom
+
+    def _should_skip_camera_move(
+        self, target_pos: Tuple[float, float], target_zoom: float
+    ) -> bool:
+        """
+        Determine if camera should skip moving based on current state.
+
+        Returns True if the camera is already close enough to target.
+        """
+        if self._last_camera_pos is None:
+            return False
+
+        # Check position distance
+        distance = self._calculate_distance(self._last_camera_pos, target_pos)
+        if distance > self.camera_movement_threshold:
+            return False
+
+        # Check zoom difference
+        zoom_delta = abs(self._last_camera_zoom - target_zoom)
+        if zoom_delta > self.zoom_change_threshold:
+            return False
+
+        # Camera is close enough, skip the move
+        return True
+
+    def _update_camera_state(self, pos: Tuple[float, float], zoom: float) -> None:
+        """Update tracked camera state after a cutscene."""
+        self._last_camera_pos = pos
+        self._last_camera_zoom = zoom
+
     def register_cinematic_hooks(self) -> None:
         """Register all cinematic hooks for automatic camera positioning during tool execution."""
         if self._hooks_registered:
@@ -308,22 +393,30 @@ class CinematicInstance(FactorioInstance):
         import time
 
         def _create_cutscene_for_action(
-            tool_name: str, zoom: float = 1.5, dwell_ticks: int = 96
+            tool_name: str,
+            zoom: float = 1.5,
+            dwell_ticks: int = 96,
+            use_adaptive: bool = True,
         ):
-            """Create a pre-hook that positions camera before action executes."""
+            """Create a pre-hook that positions camera before action executes with smart state management."""
 
             def _pre_hook(tool_instance, *args, **kwargs):
                 try:
-                    # Extract position based on tool type
+                    # Extract position(s) based on tool type
                     pos = None
+                    pos_a_tuple = None
+                    pos_b_tuple = None
+                    target_zoom = zoom
+                    target_pos = None
 
                     if tool_name in ["place_entity", "place_entity_next_to"]:
                         # Position is 3rd positional arg or keyword 'position'
                         pos = kwargs.get("position")
                         if pos is None and len(args) >= 3:
                             pos = args[2]
+
                     elif tool_name == "connect_entities":
-                        # For connections, get midpoint of both entities
+                        # Special handling: frame both entities with bounding box
                         entity_a = kwargs.get("entity_a") or (
                             args[0] if len(args) > 0 else None
                         )
@@ -331,34 +424,56 @@ class CinematicInstance(FactorioInstance):
                             args[1] if len(args) > 1 else None
                         )
                         if entity_a and entity_b:
-                            # Get positions and calculate midpoint
                             pos_a = getattr(entity_a, "position", None)
                             pos_b = getattr(entity_b, "position", None)
                             if pos_a and pos_b:
-                                mid_x = (pos_a.x + pos_b.x) / 2
-                                mid_y = (pos_a.y + pos_b.y) / 2
-                                pos = (mid_x, mid_y)
+                                # Convert to tuples
+                                pos_a_tuple = (float(pos_a.x), float(pos_a.y))
+                                pos_b_tuple = (float(pos_b.x), float(pos_b.y))
+
+                                # Calculate framing with padding
+                                target_pos, target_zoom = (
+                                    self._calculate_bounding_box_zoom(
+                                        pos_a_tuple, pos_b_tuple, padding=6.0
+                                    )
+                                )
+
                     elif tool_name == "move_to":
                         # Destination is first arg
                         pos = kwargs.get("destination") or (
                             args[0] if len(args) > 0 else None
                         )
+
                     elif tool_name == "insert_item":
                         # Position is 2nd positional arg or keyword 'position'
                         pos = kwargs.get("position")
                         if pos is None and len(args) >= 2:
                             pos = args[1]
 
-                    if pos is None:
+                    # Convert position to tuple if not already done (for connect_entities)
+                    if target_pos is None:
+                        if pos is None:
+                            return
+
+                        if hasattr(pos, "x") and hasattr(pos, "y"):
+                            target_pos = (float(pos.x), float(pos.y))
+                        elif isinstance(pos, (list, tuple)) and len(pos) >= 2:
+                            target_pos = (float(pos[0]), float(pos[1]))
+                        else:
+                            return
+
+                    # Check if we should skip this camera move (already in position)
+                    if self._should_skip_camera_move(target_pos, target_zoom):
+                        # Camera is already well-positioned, skip the cutscene
                         return
 
-                    # Convert position to [x, y] list
-                    if hasattr(pos, "x") and hasattr(pos, "y"):
-                        x, y = float(pos.x), float(pos.y)
-                    elif isinstance(pos, (list, tuple)) and len(pos) >= 2:
-                        x, y = float(pos[0]), float(pos[1])
-                    else:
-                        return
+                    # Calculate adaptive pan duration based on distance
+                    pan_ticks = self.pan_duration
+                    if use_adaptive and self._last_camera_pos:
+                        distance = self._calculate_distance(
+                            self._last_camera_pos, target_pos
+                        )
+                        pan_ticks = self._calculate_adaptive_pan_duration(distance)
 
                     # Create cutscene plan to position camera
                     plan = {
@@ -368,11 +483,11 @@ class CinematicInstance(FactorioInstance):
                                 "id": f"auto-{tool_name}-{int(time.time() * 1000)}",
                                 "kind": {
                                     "type": "focus_position",
-                                    "pos": [x, y],
+                                    "pos": [target_pos[0], target_pos[1]],
                                 },
-                                "pan_ticks": self.pan_duration,
+                                "pan_ticks": pan_ticks,
                                 "dwell_ticks": dwell_ticks,
-                                "zoom": zoom,
+                                "zoom": target_zoom,
                             }
                         ],
                     }
@@ -380,15 +495,13 @@ class CinematicInstance(FactorioInstance):
                     # Submit cutscene plan to position camera
                     if self.cutscene:
                         result = self.cutscene(plan)
-                        print(f"[DEBUG] Cutscene result for {tool_name}: {result}")
                         if isinstance(result, dict) and not result.get("ok", False):
                             print(
-                                f"Warning: Cutscene hook for {tool_name} at ({x:.1f}, {y:.1f}) failed: {result.get('error', 'unknown')}"
+                                f"Warning: Cutscene hook for {tool_name} at ({target_pos[0]:.1f}, {target_pos[1]:.1f}) failed: {result.get('error', 'unknown')}"
                             )
-                        elif not isinstance(result, dict):
-                            print(
-                                f"Warning: Cutscene returned non-dict: {type(result)} = {result}"
-                            )
+                        else:
+                            # Update camera state tracking
+                            self._update_camera_state(target_pos, target_zoom)
 
                 except Exception as e:
                     # Don't fail the action if cutscene fails
@@ -396,33 +509,139 @@ class CinematicInstance(FactorioInstance):
 
             return _pre_hook
 
-        # Register hooks for each action type with appropriate zoom/dwell
+        def _create_connect_entities_cutscene_hook():
+            """Create a specialized pre-hook for connect_entities with improved timing and positioning."""
+
+            def _pre_hook(tool_instance, *args, **kwargs):
+                try:
+                    # Extract entities to connect
+                    entity_a = kwargs.get("entity_a") or (
+                        args[0] if len(args) > 0 else None
+                    )
+                    entity_b = kwargs.get("entity_b") or (
+                        args[1] if len(args) > 1 else None
+                    )
+
+                    if not entity_a or not entity_b:
+                        return
+
+                    pos_a = getattr(entity_a, "position", None)
+                    pos_b = getattr(entity_b, "position", None)
+                    if not pos_a or not pos_b:
+                        return
+
+                    # Convert to tuples
+                    pos_a_tuple = (float(pos_a.x), float(pos_a.y))
+                    pos_b_tuple = (float(pos_b.x), float(pos_b.y))
+
+                    # Calculate framing with more padding for better visibility
+                    target_pos, target_zoom = self._calculate_bounding_box_zoom(
+                        pos_a_tuple, pos_b_tuple, padding=8.0
+                    )
+
+                    # Check if we should skip this camera move
+                    if self._should_skip_camera_move(target_pos, target_zoom):
+                        return
+
+                    # Calculate longer pan duration for more cinematic zoom-out movement
+                    pan_ticks = 240  # 4 seconds - longer for more cinematic effect
+                    if self._last_camera_pos:
+                        distance = self._calculate_distance(
+                            self._last_camera_pos, target_pos
+                        )
+                        # Scale pan duration based on distance, keeping it cinematic
+                        if distance > 50:
+                            pan_ticks = 300  # 5 seconds for long distances
+                        elif distance > 20:
+                            pan_ticks = 270  # 4.5 seconds for medium distances
+
+                    # Create cutscene plan with shorter dwell time to avoid lingering too long
+                    plan = {
+                        "player": self.player,
+                        "shots": [
+                            {
+                                "id": f"auto-connect-entities-{int(time.time() * 1000)}",
+                                "kind": {
+                                    "type": "focus_position",
+                                    "pos": [target_pos[0], target_pos[1]],
+                                },
+                                "pan_ticks": pan_ticks,
+                                "dwell_ticks": 60,  # 1 second dwell - just enough to see the connection
+                                "zoom": target_zoom,
+                            }
+                        ],
+                    }
+
+                    # Submit cutscene plan and wait for it to complete
+                    if self.cutscene:
+                        result = self.cutscene(plan)
+                        if isinstance(result, dict) and not result.get("ok", False):
+                            print(
+                                f"Warning: Connect entities cutscene failed: {result.get('error', 'unknown')}"
+                            )
+                        else:
+                            # Update camera state tracking
+                            self._update_camera_state(target_pos, target_zoom)
+
+                            # Sleep for the FULL pan duration to ensure camera reaches target
+                            # before the action executes. This is the key fix.
+                            sleep_seconds = pan_ticks / 60.0  # Convert ticks to seconds
+
+                            # Use the sleep tool to wait for the cutscene to complete
+                            if hasattr(tool_instance, "sleep"):
+                                tool_instance.sleep(sleep_seconds)
+                            else:
+                                # Fallback: use time.sleep with game speed adjustment
+                                game_speed = (
+                                    self.get_speed()
+                                    if hasattr(self, "get_speed")
+                                    else 1.0
+                                )
+                                time.sleep(sleep_seconds / game_speed)
+
+                except Exception as e:
+                    # Don't fail the action if cutscene fails
+                    print(f"Warning: Connect entities cutscene hook failed: {e}")
+
+            return _pre_hook
+
+        # Register hooks for each action type with tuned zoom/dwell settings
+        # Note: connect_entities uses specialized hook with improved timing
+
         LuaScriptManager.register_pre_tool_hook(
             self,
             "place_entity",
-            _create_cutscene_for_action("place_entity", zoom=1.5, dwell_ticks=96),
+            _create_cutscene_for_action(
+                "place_entity", zoom=1.5, dwell_ticks=96, use_adaptive=True
+            ),
         )
         LuaScriptManager.register_pre_tool_hook(
             self,
             "place_entity_next_to",
             _create_cutscene_for_action(
-                "place_entity_next_to", zoom=1.5, dwell_ticks=96
+                "place_entity_next_to", zoom=1.5, dwell_ticks=96, use_adaptive=True
             ),
         )
         LuaScriptManager.register_pre_tool_hook(
             self,
             "connect_entities",
-            _create_cutscene_for_action("connect_entities", zoom=1.2, dwell_ticks=120),
+            # Use specialized hook with slower pan and proper timing
+            _create_connect_entities_cutscene_hook(),
         )
         LuaScriptManager.register_pre_tool_hook(
             self,
             "move_to",
-            _create_cutscene_for_action("move_to", zoom=1.3, dwell_ticks=72),
+            _create_cutscene_for_action(
+                "move_to", zoom=1.3, dwell_ticks=72, use_adaptive=True
+            ),
         )
         LuaScriptManager.register_pre_tool_hook(
             self,
             "insert_item",
-            _create_cutscene_for_action("insert_item", zoom=1.6, dwell_ticks=84),
+            # Zoom in closer to see items being inserted
+            _create_cutscene_for_action(
+                "insert_item", zoom=1.8, dwell_ticks=84, use_adaptive=True
+            ),
         )
 
         self._hooks_registered = True

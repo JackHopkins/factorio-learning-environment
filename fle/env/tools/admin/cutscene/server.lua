@@ -597,6 +597,13 @@ end
 script.on_nth_tick(18, function(e)
     local fc = get_frame_capture()
     if not fc.active then return end
+    if fc.paused then 
+        -- Debug: log every 60 ticks (1 second) when paused to avoid spam
+        if e.tick % 60 == 0 then
+            game.print("[CINEMA] Frame capture paused at tick " .. e.tick)
+        end
+        return 
+    end  -- Skip capture if paused
     fc.last_tick = e.tick
 
     local p = game.get_player(fc.player_index or 1)
@@ -897,20 +904,11 @@ end
 global.actions = global.actions or {}
 global.actions.cutscene = function(raw_payload)
     ensure_global()
-    game.print("[CUTSCENE DEBUG] cutscene called with payload type: " .. type(raw_payload))
     local payload, err = parse_payload(raw_payload)
     if not payload then
-        game.print("[CUTSCENE DEBUG] parse_payload failed: " .. tostring(err))
         return {ok = false, error = err}
     end
-    game.print("[CUTSCENE DEBUG] parsed payload, calling handle_action")
-    local ok, result = pcall(handle_action, payload)
-    if not ok then
-        game.print("[CUTSCENE DEBUG] handle_action ERROR: " .. tostring(result))
-        return {ok = false, error = tostring(result)}
-    end
-    game.print("[CUTSCENE DEBUG] handle_action returned: " .. game.table_to_json(result))
-    return result
+    return handle_action(payload)
 end
 
 -- Start a recording session (always captures screenshots)
@@ -958,6 +956,50 @@ global.actions.stop_recording = function(raw_payload)
     stop_frame_capture()
     
     return game.table_to_json({ok = true, session_id = session_id})
+end
+
+-- Pause the current recording session (keeps state, stops capturing)
+global.actions.pause_recording = function(raw_payload)
+    ensure_global()
+    local fc = get_frame_capture()
+    
+    game.print("[CINEMA] pause_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
+    
+    if not fc.active then
+        game.print("[CINEMA] pause_recording failed - no active recording session")
+        return game.table_to_json({ok = false, error = "no active recording session"})
+    end
+    
+    if fc.paused then
+        game.print("[CINEMA] pause_recording - already paused")
+        return game.table_to_json({ok = true, already_paused = true, session_id = fc.session_id})
+    end
+    
+    fc.paused = true
+    game.print("[CINEMA] pause_recording - recording paused successfully")
+    return game.table_to_json({ok = true, session_id = fc.session_id})
+end
+
+-- Resume a paused recording session
+global.actions.resume_recording = function(raw_payload)
+    ensure_global()
+    local fc = get_frame_capture()
+    
+    game.print("[CINEMA] resume_recording called - active: " .. tostring(fc.active) .. ", paused: " .. tostring(fc.paused))
+    
+    if not fc.active then
+        game.print("[CINEMA] resume_recording failed - no active recording session")
+        return game.table_to_json({ok = false, error = "no active recording session"})
+    end
+    
+    if not fc.paused then
+        game.print("[CINEMA] resume_recording - already active")
+        return game.table_to_json({ok = true, already_active = true, session_id = fc.session_id})
+    end
+    
+    fc.paused = false
+    game.print("[CINEMA] resume_recording - recording resumed successfully")
+    return game.table_to_json({ok = true, session_id = fc.session_id})
 end
 
 -- Get status for a specific player's cutscene

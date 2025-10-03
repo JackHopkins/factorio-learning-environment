@@ -88,9 +88,13 @@ class ProcessingConfig:
     script_output_dir: Optional[str] = None
     render_enabled: bool = True
     render_fps: int = 24
-    render_crf: int = 35
-    render_preset: str = "ultrafast"
+    render_crf: int = (
+        28  # Lower CRF = better quality (18-28 is good range, 28 for smaller files)
+    )
+    render_preset: str = "slow"  # "slow" provides better compression than "ultrafast"
     speed: float = 4.0
+    target_max_bitrate: str = "2M"  # Max bitrate for size control
+    target_buffer_size: str = "4M"  # Buffer size (2x max bitrate)
     cleanup_after: bool = True
     debug: bool = False  # If True, raise exceptions instead of continuing
 
@@ -221,17 +225,25 @@ class VideoRenderer:
             "-i",
             str(frames_dir / "*.png"),
             "-vf",
-            f"setpts={setpts_value}*PTS",  # Speed up video by manipulating timestamps
+            f"setpts={setpts_value}*PTS,scale=1280:720",  # Speed up + downscale to 720p for smaller size
             "-c:v",
-            "libx264",
+            "libx264",  # H.264 video codec
+            "-profile:v",
+            "main",  # "main" profile for better compatibility and smaller size
+            "-level",
+            "4.0",  # H.264 level
             "-crf",
             str(self.config.render_crf),
+            "-maxrate",
+            self.config.target_max_bitrate,  # Maximum bitrate
+            "-bufsize",
+            self.config.target_buffer_size,  # Buffer size for rate control
             "-preset",
             self.config.render_preset,
             "-pix_fmt",
-            "yuv420p",
+            "yuv420p",  # Pixel format for compatibility
             "-movflags",
-            "+faststart",  # Optimize for web streaming
+            "+faststart",  # Optimize for web streaming (move moov atom to start)
             "-f",
             "mp4",  # Force MP4 container format
             str(output_video),
@@ -621,10 +633,36 @@ class RolloutToVideos:
             state=program.state,
         )
 
+        # Pause recording during state reset to avoid capturing reset frames
+        if (
+            program.state
+            and self.config.capture_enabled
+            and self.cinematic_instance.cutscene
+        ):
+            print("Pausing recording for environment reset...")
+            pause_result = self.cinematic_instance.cutscene.pause_recording()
+            if not pause_result.get("ok"):
+                print(
+                    f"Warning: Failed to pause recording: {pause_result.get('error')}"
+                )
+
         # Reset environment if state available
         if program.state:
             print("Resetting environment with program state")
             self.cinematic_instance.reset(program.state)
+
+        # Resume recording before program execution
+        if (
+            program.state
+            and self.config.capture_enabled
+            and self.cinematic_instance.cutscene
+        ):
+            print("Resuming recording for program execution...")
+            resume_result = self.cinematic_instance.cutscene.resume_recording()
+            if not resume_result.get("ok"):
+                print(
+                    f"Warning: Failed to resume recording: {resume_result.get('error')}"
+                )
 
         # Execute program - hooks will automatically position camera before each action
         print("Executing program (hooks will handle camera positioning)...")
@@ -899,13 +937,23 @@ def main():
     parser.add_argument(
         "--render-crf",
         type=int,
-        default=int(os.getenv("CINEMA_RENDER_CRF", "35")),
-        help="Video quality (lower = higher quality)",
+        default=int(os.getenv("CINEMA_RENDER_CRF", "28")),
+        help="Video quality CRF (lower = higher quality, 18-28 recommended, default: 28)",
     )
     parser.add_argument(
         "--render-preset",
-        default=os.getenv("CINEMA_RENDER_PRESET", "ultrafast"),
-        help="FFmpeg preset",
+        default=os.getenv("CINEMA_RENDER_PRESET", "slow"),
+        help="FFmpeg preset (slow = better compression, default: slow)",
+    )
+    parser.add_argument(
+        "--max-bitrate",
+        default="2M",
+        help="Maximum video bitrate for size control (default: 2M)",
+    )
+    parser.add_argument(
+        "--buffer-size",
+        default="4M",
+        help="Video buffer size for rate control (default: 4M)",
     )
     parser.add_argument(
         "--debug",
@@ -928,6 +976,8 @@ def main():
         speed=args.speed,
         render_crf=args.render_crf,
         render_preset=args.render_preset,
+        target_max_bitrate=args.max_bitrate,
+        target_buffer_size=args.buffer_size,
         debug=args.debug,
     )
 

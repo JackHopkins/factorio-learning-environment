@@ -143,10 +143,14 @@ class Cutscene(Tool):
         result = self.lua_script_manager.rcon_client.send_command(
             f"/c return global.actions.start_recording('{json.dumps(payload)}')"
         )
+        print(f"[DEBUG] start_recording RCON response: {repr(result)}")
         if result:
             try:
-                return json.loads(result)
-            except (json.JSONDecodeError, TypeError):
+                parsed = json.loads(result)
+                print(f"[DEBUG] start_recording parsed: {parsed}")
+                return parsed
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"[DEBUG] start_recording JSON parse error: {e}")
                 pass
         return {"ok": False, "error": "failed to start recording"}
 
@@ -165,3 +169,43 @@ class Cutscene(Tool):
             except (json.JSONDecodeError, TypeError):
                 pass
         return {"ok": False, "error": "failed to stop recording"}
+
+    def pause_recording(self) -> Dict[str, Any]:
+        """Pause the current recording session (keeps state, stops capturing frames).
+
+        Returns:
+            Response with session_id
+        """
+        result = self.lua_script_manager.rcon_client.send_command(
+            "/c return global.actions.pause_recording()"
+        )
+        print(f"[DEBUG] pause_recording RCON response: {repr(result)}")
+        if result:
+            try:
+                parsed = json.loads(result)
+                print(f"[DEBUG] pause_recording parsed: {parsed}")
+                return parsed
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"[DEBUG] pause_recording JSON parse error: {e}")
+                pass
+        return {"ok": False, "error": "failed to pause recording"}
+
+    def resume_recording(self) -> Dict[str, Any]:
+        """Resume a paused recording session.
+
+        Returns:
+            Response with session_id
+        """
+        result = self.lua_script_manager.rcon_client.send_command(
+            "/c return global.actions.resume_recording()"
+        )
+        print(f"[DEBUG] resume_recording RCON response: {repr(result)}")
+        if result:
+            try:
+                parsed = json.loads(result)
+                print(f"[DEBUG] resume_recording parsed: {parsed}")
+                return parsed
+            except (json.JSONDecodeError, TypeError) as e:
+                print(f"[DEBUG] resume_recording JSON parse error: {e}")
+                pass
+        return {"ok": False, "error": "failed to resume recording"}

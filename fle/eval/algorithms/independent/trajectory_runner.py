@@ -12,6 +12,7 @@ from fle.commons.models.program import Program
 
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.observation import Observation
+from fle.env.gym_env.action import Action
 from fle.eval.algorithms.independent.trajectory_logger import TrajectoryLogger
 from fle.eval.algorithms.independent.config import GymEvalConfig
 
@@ -242,27 +243,14 @@ class GymTrajectoryRunner:
                         )
                         break
 
-                    # Evaluate program
-                    if current_state.is_multiagent:
-                        update_messages = [
-                            namespace.get_messages()
-                            for namespace in self.evaluator.instance.namespaces
-                        ]
-                        current_state.agent_messages = update_messages
-                    self.evaluator.instance.reset(current_state)
-
-                    (
-                        evaluated_program,
-                        task_verification_response,
-                    ) = await self.evaluator.evaluate(
-                        policy,
-                        current_state,
-                        self.config.task,
+                    # Execute step in the environment
+                    action = Action(
+                        code=policy.code,
                         agent_idx=agent_idx,
                         game_state=current_state if self.reset_states else None,
                     )
                     obs_dict, reward, terminated, truncated, info = self.gym_env.step(
-                        evaluated_program
+                        action
                     )
                     observation = Observation.from_dict(obs_dict)
                     output_game_state = info["output_game_state"]

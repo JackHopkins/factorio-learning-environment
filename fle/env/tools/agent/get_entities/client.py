@@ -1,6 +1,5 @@
 from time import sleep
 from typing import List, Set, Union
-from memoization import cached
 
 from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
@@ -14,7 +13,6 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    @cached(max_size=16, ttl=1)
     def __call__(
         self,
         entities: Union[Set[Prototype], Prototype] = set(),

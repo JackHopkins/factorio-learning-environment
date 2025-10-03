@@ -382,7 +382,7 @@ end
 
 local function compile_plan(player, plan)
     local waypoints = {}
-    local last_zoom = plan.start_zoom or ensure_player_state(player.index).last_zoom or player.zoom
+    local last_zoom = plan.start_zoom or ensure_player_state(player.index).last_zoom or 1.0
 
     for _, shot in ipairs(plan.shots) do
         local shot_waypoints = compile_shot(player, plan, shot)
@@ -897,11 +897,20 @@ end
 global.actions = global.actions or {}
 global.actions.cutscene = function(raw_payload)
     ensure_global()
+    game.print("[CUTSCENE DEBUG] cutscene called with payload type: " .. type(raw_payload))
     local payload, err = parse_payload(raw_payload)
     if not payload then
+        game.print("[CUTSCENE DEBUG] parse_payload failed: " .. tostring(err))
         return {ok = false, error = err}
     end
-    return handle_action(payload)
+    game.print("[CUTSCENE DEBUG] parsed payload, calling handle_action")
+    local ok, result = pcall(handle_action, payload)
+    if not ok then
+        game.print("[CUTSCENE DEBUG] handle_action ERROR: " .. tostring(result))
+        return {ok = false, error = tostring(result)}
+    end
+    game.print("[CUTSCENE DEBUG] handle_action returned: " .. game.table_to_json(result))
+    return result
 end
 
 -- Start a recording session (always captures screenshots)

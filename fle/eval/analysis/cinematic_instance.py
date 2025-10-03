@@ -509,104 +509,8 @@ class CinematicInstance(FactorioInstance):
 
             return _pre_hook
 
-        def _create_connect_entities_cutscene_hook():
-            """Create a specialized pre-hook for connect_entities with improved timing and positioning."""
-
-            def _pre_hook(tool_instance, *args, **kwargs):
-                try:
-                    # Extract entities to connect
-                    entity_a = kwargs.get("entity_a") or (
-                        args[0] if len(args) > 0 else None
-                    )
-                    entity_b = kwargs.get("entity_b") or (
-                        args[1] if len(args) > 1 else None
-                    )
-
-                    if not entity_a or not entity_b:
-                        return
-
-                    pos_a = getattr(entity_a, "position", None)
-                    pos_b = getattr(entity_b, "position", None)
-                    if not pos_a or not pos_b:
-                        return
-
-                    # Convert to tuples
-                    pos_a_tuple = (float(pos_a.x), float(pos_a.y))
-                    pos_b_tuple = (float(pos_b.x), float(pos_b.y))
-
-                    # Calculate framing with more padding for better visibility
-                    target_pos, target_zoom = self._calculate_bounding_box_zoom(
-                        pos_a_tuple, pos_b_tuple, padding=8.0
-                    )
-
-                    # Check if we should skip this camera move
-                    if self._should_skip_camera_move(target_pos, target_zoom):
-                        return
-
-                    # Calculate longer pan duration for more cinematic zoom-out movement
-                    pan_ticks = 240  # 4 seconds - longer for more cinematic effect
-                    if self._last_camera_pos:
-                        distance = self._calculate_distance(
-                            self._last_camera_pos, target_pos
-                        )
-                        # Scale pan duration based on distance, keeping it cinematic
-                        if distance > 50:
-                            pan_ticks = 300  # 5 seconds for long distances
-                        elif distance > 20:
-                            pan_ticks = 270  # 4.5 seconds for medium distances
-
-                    # Create cutscene plan with shorter dwell time to avoid lingering too long
-                    plan = {
-                        "player": self.player,
-                        "shots": [
-                            {
-                                "id": f"auto-connect-entities-{int(time.time() * 1000)}",
-                                "kind": {
-                                    "type": "focus_position",
-                                    "pos": [target_pos[0], target_pos[1]],
-                                },
-                                "pan_ticks": pan_ticks,
-                                "dwell_ticks": 60,  # 1 second dwell - just enough to see the connection
-                                "zoom": target_zoom,
-                            }
-                        ],
-                    }
-
-                    # Submit cutscene plan and wait for it to complete
-                    if self.cutscene:
-                        result = self.cutscene(plan)
-                        if isinstance(result, dict) and not result.get("ok", False):
-                            print(
-                                f"Warning: Connect entities cutscene failed: {result.get('error', 'unknown')}"
-                            )
-                        else:
-                            # Update camera state tracking
-                            self._update_camera_state(target_pos, target_zoom)
-
-                            # Sleep for the FULL pan duration to ensure camera reaches target
-                            # before the action executes. This is the key fix.
-                            sleep_seconds = pan_ticks / 60.0  # Convert ticks to seconds
-
-                            # Use the sleep tool to wait for the cutscene to complete
-                            if hasattr(tool_instance, "sleep"):
-                                tool_instance.sleep(sleep_seconds)
-                            else:
-                                # Fallback: use time.sleep with game speed adjustment
-                                game_speed = (
-                                    self.get_speed()
-                                    if hasattr(self, "get_speed")
-                                    else 1.0
-                                )
-                                time.sleep(sleep_seconds / game_speed)
-
-                except Exception as e:
-                    # Don't fail the action if cutscene fails
-                    print(f"Warning: Connect entities cutscene hook failed: {e}")
-
-            return _pre_hook
-
         # Register hooks for each action type with tuned zoom/dwell settings
-        # Note: connect_entities uses specialized hook with improved timing
+        # Note: connect_entities uses adaptive zoom calculated from bounding box
 
         LuaScriptManager.register_pre_tool_hook(
             self,
@@ -625,8 +529,10 @@ class CinematicInstance(FactorioInstance):
         LuaScriptManager.register_pre_tool_hook(
             self,
             "connect_entities",
-            # Use specialized hook with slower pan and proper timing
-            _create_connect_entities_cutscene_hook(),
+            # Uses adaptive zoom to frame both entities with padding
+            _create_cutscene_for_action(
+                "connect_entities", zoom=1.0, dwell_ticks=72, use_adaptive=True
+            ),
         )
         LuaScriptManager.register_pre_tool_hook(
             self,

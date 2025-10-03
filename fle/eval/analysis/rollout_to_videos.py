@@ -32,6 +32,7 @@ from fle.eval.analysis.cinematic_instance import (
     CinematicInstance,
     create_cinematic_instance,
 )
+from fle.eval.analysis.subtitle_tracker import SubtitleTracker
 from fle.commons.models.program import Program
 from fle.commons.cluster_ips import get_local_container_ips
 
@@ -97,6 +98,7 @@ class ProcessingConfig:
     target_buffer_size: str = "4M"  # Buffer size (2x max bitrate)
     cleanup_after: bool = True
     debug: bool = False  # If True, raise exceptions instead of continuing
+    subtitles_enabled: bool = True  # Generate WebVTT subtitle files
 
 
 @dataclass
@@ -427,6 +429,7 @@ class RolloutToVideos:
         self.file_manager = FileManager(config)
         self.video_renderer = VideoRenderer(config)
         self.cinematic_instance: Optional[CinematicInstance] = None
+        self.subtitle_tracker: Optional[SubtitleTracker] = None
         self.report: Optional[ProcessingReport] = None
         self.exit_handler = GracefulExitHandler()
         self.current_output_dir: Optional[Path] = None
@@ -536,32 +539,18 @@ class RolloutToVideos:
         # Register cinematic hooks for automatic camera positioning
         self.cinematic_instance.register_cinematic_hooks()
 
+        # Initialize subtitle tracker if enabled
+        if self.config.subtitles_enabled:
+            self.subtitle_tracker = SubtitleTracker(
+                self.cinematic_instance, speed=self.config.speed
+            )
+            self.subtitle_tracker.register_hooks()
+            print("Subtitle tracking enabled")
+
         # Configure capture settings
         if self.config.capture_enabled:
             self.cinematic_instance.capture_enabled = True
             self.cinematic_instance.capture_dir = f"v{self.report.version}"
-
-            # Start continuous recording for the entire session
-            print("Starting continuous screenshot recording...")
-            if self.cinematic_instance.cutscene:
-                try:
-                    result = self.cinematic_instance.cutscene.start_recording(
-                        player=1,
-                        session_id=f"v{self.report.version}",
-                        capture_dir=f"v{self.report.version}",
-                    )
-                    if result.get("ok"):
-                        print(
-                            f"Continuous recording started: session {result.get('session_id')}"
-                        )
-                    else:
-                        print(
-                            f"Warning: Failed to start recording: {result.get('error')}"
-                        )
-                except Exception as e:
-                    print(f"Error starting recording: {e}")
-                    if self.config.debug:
-                        raise
 
         print("Cinematic instance created and configured with hooks")
 
@@ -570,6 +559,26 @@ class RolloutToVideos:
     ) -> None:
         """Process all programs for the version."""
         run_slug = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Start recording when first program begins
+        if self.config.capture_enabled and self.cinematic_instance.cutscene:
+            print("Starting continuous screenshot recording...")
+            try:
+                result = self.cinematic_instance.cutscene.start_recording(
+                    player=1,
+                    session_id=f"v{self.report.version}",
+                    capture_dir=f"v{self.report.version}",
+                )
+                if result.get("ok"):
+                    print(
+                        f"Continuous recording started: session {result.get('session_id')}"
+                    )
+                else:
+                    print(f"Warning: Failed to start recording: {result.get('error')}")
+            except Exception as e:
+                print(f"Error starting recording: {e}")
+                if self.config.debug:
+                    raise
 
         for idx, (program_id, created_at) in enumerate(programs):
             # Check for graceful exit
@@ -648,8 +657,16 @@ class RolloutToVideos:
 
         # Reset environment if state available
         if program.state:
+            # Mark reset for subtitle tracker BEFORE resetting (captures current tick)
+            if self.subtitle_tracker:
+                self.subtitle_tracker.mark_reset()
+
             print("Resetting environment with program state")
             self.cinematic_instance.reset(program.state)
+
+        # Notify subtitle tracker of program start AFTER reset
+        if self.subtitle_tracker:
+            self.subtitle_tracker.start_program(program_id, code_preview=program.code)
 
         # Resume recording before program execution
         if (
@@ -674,6 +691,10 @@ class RolloutToVideos:
             print(f"Execution errors: {execution_result[2]}")
         if execution_result[1]:  # prints
             print(f"Program output: {execution_result[1]}")
+
+        # Mark program end for subtitle tracker
+        if self.subtitle_tracker:
+            self.subtitle_tracker.end_program()
 
         # No need to generate shots - hooks did it automatically during execution
         program_data.shots_generated = 0  # Hooks handle this transparently
@@ -702,6 +723,10 @@ class RolloutToVideos:
             self._render_video_from_frames(output_dir)
         else:
             print("Video rendering disabled or no frames available")
+
+        # Generate subtitle file if enabled
+        if self.subtitle_tracker and self.report.total_frames > 0:
+            self._generate_subtitle_file(output_dir)
 
     def _render_video_from_frames(self, output_dir: Path) -> None:
         """Render video from existing frames."""
@@ -743,6 +768,25 @@ class RolloutToVideos:
             print(error_msg)
             self.report.errors.append(error_msg)
 
+    def _generate_subtitle_file(self, output_dir: Path) -> None:
+        """Generate WebVTT subtitle file for the video."""
+        try:
+            subtitle_path = output_dir / "videos" / f"{output_dir.name}.vtt"
+            self.subtitle_tracker.generate_webvtt(subtitle_path)
+
+            # Get and log statistics
+            stats = self.subtitle_tracker.get_statistics()
+            print("Subtitle statistics:")
+            print(f"  Total events: {stats['total_events']}")
+            print(f"  Tool counts: {stats.get('tool_counts', {})}")
+
+        except Exception as e:
+            error_msg = f"Failed to generate subtitles: {e}"
+            print(error_msg)
+            self.report.errors.append(error_msg)
+            if self.config.debug:
+                raise
+
     def _handle_graceful_exit(self) -> None:
         """Handle graceful exit by creating video from existing frames."""
         if not self.exit_handler.should_exit:
@@ -775,6 +819,10 @@ class RolloutToVideos:
 
                     # Try to render video from existing frames
                     self._render_video_from_frames(self.current_output_dir)
+
+                    # Try to generate subtitles from captured events
+                    if self.subtitle_tracker:
+                        self._generate_subtitle_file(self.current_output_dir)
                 else:
                     print("No frames available for video creation")
 
@@ -960,6 +1008,11 @@ def main():
         action="store_true",
         help="Enable debug mode (raise exceptions instead of continuing)",
     )
+    parser.add_argument(
+        "--no-subtitles",
+        action="store_true",
+        help="Disable subtitle generation",
+    )
 
     args = parser.parse_args()
 
@@ -979,6 +1032,7 @@ def main():
         target_max_bitrate=args.max_bitrate,
         target_buffer_size=args.buffer_size,
         debug=args.debug,
+        subtitles_enabled=not args.no_subtitles,
     )
 
     # Process each version

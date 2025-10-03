@@ -176,6 +176,10 @@ class SubtitleTracker:
         self.events: List[ToolExecutionEvent] = []
         self.program_events: List[ProgramExecutionEvent] = []
 
+        # Session-level tick tracking (absolute ticks across resets)
+        self.session_start_tick: Optional[int] = None
+        self.session_tick_offset: int = 0  # Cumulative offset across resets
+
         # Current program tracking
         self.current_program_id: Optional[int] = None
         self.current_program_start_tick: Optional[int] = None
@@ -189,19 +193,33 @@ class SubtitleTracker:
 
     def _get_current_tick(self) -> int:
         """
-        Get current game tick from Factorio.
+        Get current game tick from Factorio (session-absolute).
 
         Returns:
-            Current tick number from global.elapsed_ticks
+            Absolute tick number accounting for resets
         """
         try:
             result = self.instance.rcon_client.send_command(
                 "/c rcon.print(global.elapsed_ticks or 0)"
             )
-            return int(result.strip()) if result else 0
+            relative_tick = int(result.strip()) if result else 0
+
+            # Return absolute tick by adding session offset
+            return self.session_tick_offset + relative_tick
         except Exception as e:
             print(f"Warning: Could not get current tick: {e}")
-            return 0
+            return self.session_tick_offset
+
+    def mark_reset(self):
+        """
+        Mark that instance.reset() is about to be called.
+
+        This captures the current tick before reset and updates the offset.
+        Call this BEFORE instance.reset().
+        """
+        current_absolute = self._get_current_tick()
+        # Update offset to maintain absolute tick continuity
+        self.session_tick_offset = current_absolute
 
     def start_program(self, program_id: int, code_preview: Optional[str] = None):
         """
@@ -215,13 +233,20 @@ class SubtitleTracker:
         self.current_program_start_tick = self._get_current_tick()
         self.current_program_action_count = 0
 
+        # Initialize session start tick on first program
+        if self.session_start_tick is None:
+            self.session_start_tick = self.current_program_start_tick
+            print(
+                f"[SubtitleTracker] Session started at tick {self.session_start_tick}"
+            )
+
         if code_preview:
             # Truncate long code
             if len(code_preview) > 100:
                 code_preview = code_preview[:97] + "..."
 
         print(
-            f"[SubtitleTracker] Started tracking program {program_id} at tick {self.current_program_start_tick}"
+            f"[SubtitleTracker] Started tracking program {program_id} at absolute tick {self.current_program_start_tick} (offset: {self.session_tick_offset})"
         )
 
     def end_program(self):

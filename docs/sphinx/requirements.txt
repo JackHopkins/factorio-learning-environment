@@ -1,0 +1,4 @@
+# Sphinx documentation dependencies
+sphinx>=8.0.0
+sphinx-rtd-theme>=3.0.0
+sphinx-autodoc-typehints>=3.0.0

@@ -1,0 +1,48 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/sphinx/**'
+      - 'fle/**'
+      - 'pyproject.toml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/sphinx/**'
+      - 'fle/**'
+      - 'pyproject.toml'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+    
+    - name: Install dependencies
+      run: |
+        uv sync --dev
+        uv add sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+    
+    - name: Build Sphinx documentation
+      run: |
+        cd docs/sphinx
+        uv run sphinx-build -b html source build/html
+    
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/sphinx/build/html
+        destination_dir: sphinx/build/html

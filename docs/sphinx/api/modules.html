@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Modules &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="fle.env.instance module" href="modules/fle.env.instance.html" />
+    <link rel="prev" title="Tools API" href="tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-environment">Core Environment</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.env.instance.html">fle.env.instance module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.env.namespace.html">fle.env.namespace module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.env.gym_env.html">fle.env.gym_env module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.env.entities.html">fle.env.entities module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.env.game_types.html">fle.env.game_types module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#agents">Agents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.agents.agent_abc.html">fle.agents.agent_abc module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.agents.models.html">fle.agents.models module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluation">Evaluation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.eval.tasks.html">fle.eval.tasks module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.eval.algorithms.html">fle.eval.algorithms module</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#common-models">Common Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="modules/fle.commons.models.html">fle.commons.models module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Modules</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-modules">
+<h1>API Modules<a class="headerlink" href="#api-modules" title="Link to this heading"></a></h1>
+<p>This section contains the complete API reference for all FLE modules.</p>
+<section id="core-environment">
+<h2>Core Environment<a class="headerlink" href="#core-environment" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.env.instance.html">fle.env.instance module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.instance.html#fle.env.instance.GameControl"><code class="docutils literal notranslate"><span class="pre">GameControl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.instance.html#fle.env.instance.DirectionInternal"><code class="docutils literal notranslate"><span class="pre">DirectionInternal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.instance.html#fle.env.instance.FactorioInstance"><code class="docutils literal notranslate"><span class="pre">FactorioInstance</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.env.namespace.html">fle.env.namespace module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.LoopContext"><code class="docutils literal notranslate"><span class="pre">LoopContext</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.FactorioNamespace"><code class="docutils literal notranslate"><span class="pre">FactorioNamespace</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.wrap_for_serialization"><code class="docutils literal notranslate"><span class="pre">wrap_for_serialization()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.unwrap_after_deserialization"><code class="docutils literal notranslate"><span class="pre">unwrap_after_deserialization()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.env.gym_env.html">fle.env.gym_env module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.env.entities.html">fle.env.entities module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Layer"><code class="docutils literal notranslate"><span class="pre">Layer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityStatus"><code class="docutils literal notranslate"><span class="pre">EntityStatus</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Inventory"><code class="docutils literal notranslate"><span class="pre">Inventory</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Direction"><code class="docutils literal notranslate"><span class="pre">Direction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Position"><code class="docutils literal notranslate"><span class="pre">Position</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.IndexedPosition"><code class="docutils literal notranslate"><span class="pre">IndexedPosition</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityInfo"><code class="docutils literal notranslate"><span class="pre">EntityInfo</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.InspectionResults"><code class="docutils literal notranslate"><span class="pre">InspectionResults</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BoundingBox"><code class="docutils literal notranslate"><span class="pre">BoundingBox</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BuildingBox"><code class="docutils literal notranslate"><span class="pre">BuildingBox</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ResourcePatch"><code class="docutils literal notranslate"><span class="pre">ResourcePatch</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Dimensions"><code class="docutils literal notranslate"><span class="pre">Dimensions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.TileDimensions"><code class="docutils literal notranslate"><span class="pre">TileDimensions</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Ingredient"><code class="docutils literal notranslate"><span class="pre">Ingredient</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Product"><code class="docutils literal notranslate"><span class="pre">Product</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Recipe"><code class="docutils literal notranslate"><span class="pre">Recipe</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BurnerType"><code class="docutils literal notranslate"><span class="pre">BurnerType</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityCore"><code class="docutils literal notranslate"><span class="pre">EntityCore</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.StaticEntity"><code class="docutils literal notranslate"><span class="pre">StaticEntity</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Rail"><code class="docutils literal notranslate"><span class="pre">Rail</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Splitter"><code class="docutils literal notranslate"><span class="pre">Splitter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.TransportBelt"><code class="docutils literal notranslate"><span class="pre">TransportBelt</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Electric"><code class="docutils literal notranslate"><span class="pre">Electric</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ElectricalProducer"><code class="docutils literal notranslate"><span class="pre">ElectricalProducer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EnergySource"><code class="docutils literal notranslate"><span class="pre">EnergySource</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Accumulator"><code class="docutils literal notranslate"><span class="pre">Accumulator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Inserter"><code class="docutils literal notranslate"><span class="pre">Inserter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Filtered"><code class="docutils literal notranslate"><span class="pre">Filtered</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.UndergroundBelt"><code class="docutils literal notranslate"><span class="pre">UndergroundBelt</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.MiningDrill"><code class="docutils literal notranslate"><span class="pre">MiningDrill</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ElectricMiningDrill"><code class="docutils literal notranslate"><span class="pre">ElectricMiningDrill</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BurnerInserter"><code class="docutils literal notranslate"><span class="pre">BurnerInserter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BurnerMiningDrill"><code class="docutils literal notranslate"><span class="pre">BurnerMiningDrill</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Ammo"><code class="docutils literal notranslate"><span class="pre">Ammo</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.GunTurret"><code class="docutils literal notranslate"><span class="pre">GunTurret</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.AssemblingMachine"><code class="docutils literal notranslate"><span class="pre">AssemblingMachine</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.FluidHandler"><code class="docutils literal notranslate"><span class="pre">FluidHandler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.AdvancedAssemblingMachine"><code class="docutils literal notranslate"><span class="pre">AdvancedAssemblingMachine</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.MultiFluidHandler"><code class="docutils literal notranslate"><span class="pre">MultiFluidHandler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.FilterInserter"><code class="docutils literal notranslate"><span class="pre">FilterInserter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ChemicalPlant"><code class="docutils literal notranslate"><span class="pre">ChemicalPlant</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.OilRefinery"><code class="docutils literal notranslate"><span class="pre">OilRefinery</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.PumpJack"><code class="docutils literal notranslate"><span class="pre">PumpJack</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.SolarPanel"><code class="docutils literal notranslate"><span class="pre">SolarPanel</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Boiler"><code class="docutils literal notranslate"><span class="pre">Boiler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.HeatExchanger"><code class="docutils literal notranslate"><span class="pre">HeatExchanger</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Generator"><code class="docutils literal notranslate"><span class="pre">Generator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Pump"><code class="docutils literal notranslate"><span class="pre">Pump</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.OffshorePump"><code class="docutils literal notranslate"><span class="pre">OffshorePump</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ElectricityPole"><code class="docutils literal notranslate"><span class="pre">ElectricityPole</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Furnace"><code class="docutils literal notranslate"><span class="pre">Furnace</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ElectricFurnace"><code class="docutils literal notranslate"><span class="pre">ElectricFurnace</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Chest"><code class="docutils literal notranslate"><span class="pre">Chest</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.StorageTank"><code class="docutils literal notranslate"><span class="pre">StorageTank</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.RocketSilo"><code class="docutils literal notranslate"><span class="pre">RocketSilo</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Rocket"><code class="docutils literal notranslate"><span class="pre">Rocket</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Lab"><code class="docutils literal notranslate"><span class="pre">Lab</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Pipe"><code class="docutils literal notranslate"><span class="pre">Pipe</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityGroup"><code class="docutils literal notranslate"><span class="pre">EntityGroup</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.WallGroup"><code class="docutils literal notranslate"><span class="pre">WallGroup</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.BeltGroup"><code class="docutils literal notranslate"><span class="pre">BeltGroup</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.PipeGroup"><code class="docutils literal notranslate"><span class="pre">PipeGroup</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.ElectricityGroup"><code class="docutils literal notranslate"><span class="pre">ElectricityGroup</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.env.game_types.html">fle.env.game_types module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.ResourceName"><code class="docutils literal notranslate"><span class="pre">ResourceName</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.PrototypeMetaclass"><code class="docutils literal notranslate"><span class="pre">PrototypeMetaclass</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.RecipeName"><code class="docutils literal notranslate"><span class="pre">RecipeName</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.Prototype"><code class="docutils literal notranslate"><span class="pre">Prototype</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.Technology"><code class="docutils literal notranslate"><span class="pre">Technology</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.env.game_types.html#fle.env.game_types.Resource"><code class="docutils literal notranslate"><span class="pre">Resource</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="agents">
+<h2>Agents<a class="headerlink" href="#agents" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.agents.agent_abc.html">fle.agents.agent_abc module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.agents.models.html">fle.agents.models module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.agents.models.html#fle.agents.models.TaskResponse"><code class="docutils literal notranslate"><span class="pre">TaskResponse</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.agents.models.html#fle.agents.models.Response"><code class="docutils literal notranslate"><span class="pre">Response</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.agents.models.html#fle.agents.models.CompletionReason"><code class="docutils literal notranslate"><span class="pre">CompletionReason</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.agents.models.html#fle.agents.models.CompletionResult"><code class="docutils literal notranslate"><span class="pre">CompletionResult</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="evaluation">
+<h2>Evaluation<a class="headerlink" href="#evaluation" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.eval.tasks.html">fle.eval.tasks module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.eval.tasks.html#fle.eval.tasks.TaskABC"><code class="docutils literal notranslate"><span class="pre">TaskABC</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.eval.tasks.html#fle.eval.tasks.DefaultTask"><code class="docutils literal notranslate"><span class="pre">DefaultTask</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.eval.tasks.html#fle.eval.tasks.ThroughputTask"><code class="docutils literal notranslate"><span class="pre">ThroughputTask</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask"><code class="docutils literal notranslate"><span class="pre">UnboundedThroughputTask</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.eval.tasks.html#fle.eval.tasks.TaskFactory"><code class="docutils literal notranslate"><span class="pre">TaskFactory</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.eval.algorithms.html">fle.eval.algorithms module</a></li>
+</ul>
+</div>
+</section>
+<section id="common-models">
+<h2>Common Models<a class="headerlink" href="#common-models" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/fle.commons.models.html">fle.commons.models module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.GameState"><code class="docutils literal notranslate"><span class="pre">GameState</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.ResearchState"><code class="docutils literal notranslate"><span class="pre">ResearchState</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.TechnologyState"><code class="docutils literal notranslate"><span class="pre">TechnologyState</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.filter_serializable_vars"><code class="docutils literal notranslate"><span class="pre">filter_serializable_vars()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.Conversation"><code class="docutils literal notranslate"><span class="pre">Conversation</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.Message"><code class="docutils literal notranslate"><span class="pre">Message</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.Program"><code class="docutils literal notranslate"><span class="pre">Program</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.SerializableFunction"><code class="docutils literal notranslate"><span class="pre">SerializableFunction</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.ProfitConfig"><code class="docutils literal notranslate"><span class="pre">ProfitConfig</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.ProductionFlows"><code class="docutils literal notranslate"><span class="pre">ProductionFlows</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.GenerationParameters"><code class="docutils literal notranslate"><span class="pre">GenerationParameters</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.TimingMetrics"><code class="docutils literal notranslate"><span class="pre">TimingMetrics</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tools.html" class="btn btn-neutral float-left" title="Tools API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules/fle.env.instance.html" class="btn btn-neutral float-right" title="fle.env.instance module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

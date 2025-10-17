@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Configuration &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Basic Agent Example" href="../examples/basic_agent.html" />
+    <link rel="prev" title="Implementing Custom Agents" href="agents.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Database Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#database-types">Database Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sqlite-configuration">SQLite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#postgresql-configuration">PostgreSQL Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database-schema">Database Schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database-client">Database Client</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#key-methods">Key Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database-migration">Database Migration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-migration">Example Migration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-optimization">Performance Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-optimization">Example Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#backup-and-recovery">Backup and Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-backup">Example Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#monitoring-and-maintenance">Monitoring and Maintenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-monitoring">Example Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Database Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/customization/database.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="database-configuration">
+<h1>Database Configuration<a class="headerlink" href="#database-configuration" title="Link to this heading"></a></h1>
+<p>FLE supports checkpointing at every agent step using a SQL database. The <cite>db_client</cite> implements the interface for saving and loading agent outputs, environment feedbacks, game states and histories of the current trajectory.</p>
+<section id="database-types">
+<h2>Database Types<a class="headerlink" href="#database-types" title="Link to this heading"></a></h2>
+<p>FLE supports multiple database backends:</p>
+<dl class="simple">
+<dt><strong>SQLite (Default)</strong></dt><dd><p>Lightweight, file-based database</p>
+</dd>
+<dt><strong>PostgreSQL</strong></dt><dd><p>Full-featured, server-based database</p>
+</dd>
+<dt><strong>Custom Databases</strong></dt><dd><p>Extensible database interface</p>
+</dd>
+</dl>
+</section>
+<section id="sqlite-configuration">
+<h2>SQLite Configuration<a class="headerlink" href="#sqlite-configuration" title="Link to this heading"></a></h2>
+<p>SQLite is the default database and requires minimal configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set database type</span>
+<span class="nv">FLE_DB_TYPE</span><span class="o">=</span><span class="s2">&quot;sqlite&quot;</span>
+
+<span class="c1"># Set database file path (default: .fle/data.db)</span>
+<span class="nv">SQLITE_DB_FILE</span><span class="o">=</span><span class="s2">&quot;.fle/data.db&quot;</span>
+</pre></div>
+</div>
+<p>SQLite is ideal for:
+- Development and testing
+- Single-user scenarios
+- Small to medium datasets
+- Quick setup and deployment</p>
+</section>
+<section id="postgresql-configuration">
+<h2>PostgreSQL Configuration<a class="headerlink" href="#postgresql-configuration" title="Link to this heading"></a></h2>
+<p>For production use and large-scale experiments, PostgreSQL is recommended:</p>
+<dl>
+<dt><strong>Docker Setup</strong></dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>fle-postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-e<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>fle123<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-e<span class="w"> </span><span class="nv">POSTGRES_USER</span><span class="o">=</span>fle_user<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-e<span class="w"> </span><span class="nv">POSTGRES_DB</span><span class="o">=</span>fle_database<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-p<span class="w"> </span><span class="m">5432</span>:5432<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span>postgres:15
+</pre></div>
+</div>
+</dd>
+<dt><strong>Environment Variables</strong></dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Database Configuration</span>
+<span class="nv">FLE_DB_TYPE</span><span class="o">=</span><span class="s2">&quot;postgres&quot;</span>
+
+<span class="c1"># PostgreSQL Configuration</span>
+<span class="nv">SKILLS_DB_HOST</span><span class="o">=</span>localhost
+<span class="nv">SKILLS_DB_PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">SKILLS_DB_NAME</span><span class="o">=</span>fle_database
+<span class="nv">SKILLS_DB_USER</span><span class="o">=</span>fle_user
+<span class="nv">SKILLS_DB_PASSWORD</span><span class="o">=</span>fle123
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>PostgreSQL is ideal for:
+- Production deployments
+- Multi-user scenarios
+- Large datasets
+- High-performance requirements</p>
+</section>
+<section id="database-schema">
+<h2>Database Schema<a class="headerlink" href="#database-schema" title="Link to this heading"></a></h2>
+<p>The database schema includes several key tables:</p>
+<dl class="simple">
+<dt><strong>Trajectories</strong></dt><dd><p>Store complete agent trajectories</p>
+</dd>
+<dt><strong>Steps</strong></dt><dd><p>Individual agent steps within trajectories</p>
+</dd>
+<dt><strong>Game States</strong></dt><dd><p>Complete game state snapshots</p>
+</dd>
+<dt><strong>Agent Outputs</strong></dt><dd><p>Agent-generated code and actions</p>
+</dd>
+<dt><strong>Environment Feedbacks</strong></dt><dd><p>Environment responses and observations</p>
+</dd>
+<dt><strong>Metadata</strong></dt><dd><p>Additional information about trajectories</p>
+</dd>
+</dl>
+</section>
+<section id="database-client">
+<h2>Database Client<a class="headerlink" href="#database-client" title="Link to this heading"></a></h2>
+<p>The database client provides a unified interface:</p>
+<section id="key-methods">
+<h3>Key Methods<a class="headerlink" href="#key-methods" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><strong>save_trajectory(trajectory)</strong></dt><dd><p>Save a complete trajectory</p>
+</dd>
+<dt><strong>load_trajectory(trajectory_id)</strong></dt><dd><p>Load a trajectory by ID</p>
+</dd>
+<dt><strong>save_step(step)</strong></dt><dd><p>Save an individual step</p>
+</dd>
+<dt><strong>load_steps(trajectory_id)</strong></dt><dd><p>Load all steps for a trajectory</p>
+</dd>
+<dt><strong>save_game_state(state)</strong></dt><dd><p>Save a game state snapshot</p>
+</dd>
+<dt><strong>load_game_state(state_id)</strong></dt><dd><p>Load a game state by ID</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Saving a Trajectory</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseClient</span>
+
+<span class="c1"># Initialize database client</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">DatabaseClient</span><span class="p">()</span>
+
+<span class="c1"># Save trajectory</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="s1">&#39;trajectory_001&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;agent_type&#39;</span><span class="p">:</span> <span class="s1">&#39;MyAgent&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;task&#39;</span><span class="p">:</span> <span class="s1">&#39;iron_ore_throughput&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;start_time&#39;</span><span class="p">:</span> <span class="s1">&#39;2024-01-01T00:00:00Z&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;end_time&#39;</span><span class="p">:</span> <span class="s1">&#39;2024-01-01T01:00:00Z&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;total_reward&#39;</span><span class="p">:</span> <span class="mf">150.0</span><span class="p">,</span>
+    <span class="s1">&#39;success&#39;</span><span class="p">:</span> <span class="kc">True</span>
+<span class="p">}</span>
+
+<span class="n">db</span><span class="o">.</span><span class="n">save_trajectory</span><span class="p">(</span><span class="n">trajectory</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Loading a Trajectory</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load trajectory</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">load_trajectory</span><span class="p">(</span><span class="s1">&#39;trajectory_001&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Trajectory: </span><span class="si">{</span><span class="n">trajectory</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agent: </span><span class="si">{</span><span class="n">trajectory</span><span class="p">[</span><span class="s1">&#39;agent_type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reward: </span><span class="si">{</span><span class="n">trajectory</span><span class="p">[</span><span class="s1">&#39;total_reward&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Saving Steps</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save individual step</span>
+<span class="n">step</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;trajectory_id&#39;</span><span class="p">:</span> <span class="s1">&#39;trajectory_001&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;step_number&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;print(&quot;Hello Factorio!&quot;)&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;observation&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;entities&#39;</span><span class="p">:</span> <span class="p">[],</span> <span class="s1">&#39;inventory&#39;</span><span class="p">:</span> <span class="p">{}},</span>
+    <span class="s1">&#39;reward&#39;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+    <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="s1">&#39;2024-01-01T00:00:00Z&#39;</span>
+<span class="p">}</span>
+
+<span class="n">db</span><span class="o">.</span><span class="n">save_step</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Loading Steps</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load all steps for a trajectory</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">load_steps</span><span class="p">(</span><span class="s1">&#39;trajectory_001&#39;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;step_number&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;action&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="database-migration">
+<h2>Database Migration<a class="headerlink" href="#database-migration" title="Link to this heading"></a></h2>
+<p>FLE includes database migration support:</p>
+<dl class="simple">
+<dt><strong>Automatic Migration</strong></dt><dd><p>The system automatically migrates the database schema on startup</p>
+</dd>
+<dt><strong>Manual Migration</strong></dt><dd><p>Run migrations manually when needed</p>
+</dd>
+<dt><strong>Version Control</strong></dt><dd><p>Track database schema versions</p>
+</dd>
+</dl>
+</section>
+<section id="example-migration">
+<h2>Example Migration<a class="headerlink" href="#example-migration" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseClient</span>
+
+<span class="c1"># Initialize database client</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">DatabaseClient</span><span class="p">()</span>
+
+<span class="c1"># Run migrations</span>
+<span class="n">db</span><span class="o">.</span><span class="n">migrate</span><span class="p">()</span>
+
+<span class="c1"># Check migration status</span>
+<span class="n">status</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_migration_status</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current version: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;current_version&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Latest version: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;latest_version&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Connection Pooling</strong></dt><dd><p>Reuse database connections</p>
+</dd>
+<dt><strong>Batch Operations</strong></dt><dd><p>Group multiple operations together</p>
+</dd>
+<dt><strong>Indexing</strong></dt><dd><p>Optimize database queries</p>
+</dd>
+<dt><strong>Caching</strong></dt><dd><p>Cache frequently accessed data</p>
+</dd>
+</dl>
+</section>
+<section id="example-optimization">
+<h2>Example Optimization<a class="headerlink" href="#example-optimization" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseClient</span>
+
+<span class="c1"># Initialize with connection pooling</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">DatabaseClient</span><span class="p">(</span>
+    <span class="n">max_connections</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">connection_timeout</span><span class="o">=</span><span class="mi">30</span>
+<span class="p">)</span>
+
+<span class="c1"># Batch save multiple steps</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;trajectory_id&#39;</span><span class="p">:</span> <span class="s1">&#39;t1&#39;</span><span class="p">,</span> <span class="s1">&#39;step_number&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;action1&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;trajectory_id&#39;</span><span class="p">:</span> <span class="s1">&#39;t1&#39;</span><span class="p">,</span> <span class="s1">&#39;step_number&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;action2&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;trajectory_id&#39;</span><span class="p">:</span> <span class="s1">&#39;t1&#39;</span><span class="p">,</span> <span class="s1">&#39;step_number&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;action3&#39;</span><span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">db</span><span class="o">.</span><span class="n">batch_save_steps</span><span class="p">(</span><span class="n">steps</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="backup-and-recovery">
+<h2>Backup and Recovery<a class="headerlink" href="#backup-and-recovery" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Automated Backups</strong></dt><dd><p>Schedule regular database backups</p>
+</dd>
+<dt><strong>Point-in-Time Recovery</strong></dt><dd><p>Restore to specific timestamps</p>
+</dd>
+<dt><strong>Data Export</strong></dt><dd><p>Export data for analysis</p>
+</dd>
+<dt><strong>Data Import</strong></dt><dd><p>Import data from other sources</p>
+</dd>
+</dl>
+</section>
+<section id="example-backup">
+<h2>Example Backup<a class="headerlink" href="#example-backup" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseClient</span>
+
+<span class="c1"># Initialize database client</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">DatabaseClient</span><span class="p">()</span>
+
+<span class="c1"># Create backup</span>
+<span class="n">backup_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_backup</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backup created: </span><span class="si">{</span><span class="n">backup_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># List backups</span>
+<span class="n">backups</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">list_backups</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">backup</span> <span class="ow">in</span> <span class="n">backups</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backup </span><span class="si">{</span><span class="n">backup</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">backup</span><span class="p">[</span><span class="s1">&#39;timestamp&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Restore from backup</span>
+<span class="n">db</span><span class="o">.</span><span class="n">restore_backup</span><span class="p">(</span><span class="n">backup_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="monitoring-and-maintenance">
+<h2>Monitoring and Maintenance<a class="headerlink" href="#monitoring-and-maintenance" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Performance Monitoring</strong></dt><dd><p>Monitor database performance</p>
+</dd>
+<dt><strong>Health Checks</strong></dt><dd><p>Verify database health</p>
+</dd>
+<dt><strong>Cleanup Operations</strong></dt><dd><p>Remove old data</p>
+</dd>
+<dt><strong>Optimization</strong></dt><dd><p>Optimize database performance</p>
+</dd>
+</dl>
+</section>
+<section id="example-monitoring">
+<h2>Example Monitoring<a class="headerlink" href="#example-monitoring" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseClient</span>
+
+<span class="c1"># Initialize database client</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">DatabaseClient</span><span class="p">()</span>
+
+<span class="c1"># Get database statistics</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_statistics</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total trajectories: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;trajectories&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total steps: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;steps&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database size: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get performance metrics</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_performance_metrics</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Average query time: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;avg_query_time&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connection count: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;connection_count&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Connection Issues</strong></dt><dd><ul class="simple">
+<li><p>Verify database server is running</p></li>
+<li><p>Check connection parameters</p></li>
+<li><p>Verify network connectivity</p></li>
+</ul>
+</dd>
+<dt><strong>Performance Issues</strong></dt><dd><ul class="simple">
+<li><p>Monitor database performance</p></li>
+<li><p>Optimize queries</p></li>
+<li><p>Consider connection pooling</p></li>
+</ul>
+</dd>
+<dt><strong>Data Issues</strong></dt><dd><ul class="simple">
+<li><p>Verify data integrity</p></li>
+<li><p>Check for corruption</p></li>
+<li><p>Run data validation</p></li>
+</ul>
+</dd>
+<dt><strong>Migration Issues</strong></dt><dd><ul class="simple">
+<li><p>Check migration status</p></li>
+<li><p>Verify schema compatibility</p></li>
+<li><p>Run manual migrations if needed</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Regular Backups</strong>: Schedule automated backups</p></li>
+<li><p><strong>Performance Monitoring</strong>: Monitor database performance</p></li>
+<li><p><strong>Connection Management</strong>: Use connection pooling</p></li>
+<li><p><strong>Data Validation</strong>: Validate data integrity</p></li>
+<li><p><strong>Migration Testing</strong>: Test migrations before deployment</p></li>
+<li><p><strong>Security</strong>: Secure database access</p></li>
+<li><p><strong>Documentation</strong>: Document database configuration</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="agents.html" class="btn btn-neutral float-left" title="Implementing Custom Agents" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../examples/basic_agent.html" class="btn btn-neutral float-right" title="Basic Agent Example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

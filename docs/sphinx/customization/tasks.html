@@ -1,0 +1,410 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating Custom Tasks &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Creating Custom Tools" href="tools.html" />
+    <link rel="prev" title="fle.commons.models module" href="../api/modules/fle.commons.models.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Creating Custom Tasks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#task-structure">Task Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-definition">Task Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-types">Task Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-implementation">Task Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-configuration">Task Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-registration">Task Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-task">Example Task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing-tasks">Testing Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-features">Advanced Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Creating Custom Tasks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/customization/tasks.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-custom-tasks">
+<h1>Creating Custom Tasks<a class="headerlink" href="#creating-custom-tasks" title="Link to this heading"></a></h1>
+<p>FLE allows you to create custom tasks for evaluating agent capabilities. Tasks define the objectives, constraints, and success criteria for agent evaluation.</p>
+<section id="task-structure">
+<h2>Task Structure<a class="headerlink" href="#task-structure" title="Link to this heading"></a></h2>
+<p>Tasks are defined in <cite>fle/eval/tasks/task_definitions/</cite> and follow a specific structure:</p>
+<dl class="simple">
+<dt><strong>Task Definition File</strong></dt><dd><p>JSON configuration file defining task parameters</p>
+</dd>
+<dt><strong>Task Implementation</strong></dt><dd><p>Python class implementing the task logic</p>
+</dd>
+<dt><strong>Task Registration</strong></dt><dd><p>Automatic registration with the gym environment registry</p>
+</dd>
+</dl>
+</section>
+<section id="task-definition">
+<h2>Task Definition<a class="headerlink" href="#task-definition" title="Link to this heading"></a></h2>
+<p>Create a new task definition file in <cite>fle/eval/tasks/task_definitions/</cite>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_custom_task&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A custom task for evaluating agent capabilities&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;throughput&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;time_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;iron_ore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;copper_ore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;coal&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;technologies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;automation&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;constraints&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;max_entities&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_power&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="task-types">
+<h2>Task Types<a class="headerlink" href="#task-types" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Throughput Tasks</strong></dt><dd><p>Tasks focused on producing a specific item at a target rate</p>
+</dd>
+<dt><strong>Research Tasks</strong></dt><dd><p>Tasks focused on technology research and advancement</p>
+</dd>
+<dt><strong>Construction Tasks</strong></dt><dd><p>Tasks focused on building specific structures</p>
+</dd>
+<dt><strong>Exploration Tasks</strong></dt><dd><p>Tasks focused on map exploration and discovery</p>
+</dd>
+<dt><strong>Multi-Objective Tasks</strong></dt><dd><p>Tasks with multiple competing objectives</p>
+</dd>
+</dl>
+</section>
+<section id="task-implementation">
+<h2>Task Implementation<a class="headerlink" href="#task-implementation" title="Link to this heading"></a></h2>
+<p>Create a Python class implementing your task:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.eval.tasks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTask</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCustomTask</span><span class="p">(</span><span class="n">BaseTask</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_limit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_limit&#39;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the current state against task objectives&quot;&quot;&quot;</span>
+        <span class="c1"># Implement your evaluation logic</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the task is complete&quot;&quot;&quot;</span>
+        <span class="c1"># Implement completion criteria</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate reward for current state&quot;&quot;&quot;</span>
+        <span class="c1"># Implement reward calculation</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+</section>
+<section id="task-configuration">
+<h2>Task Configuration<a class="headerlink" href="#task-configuration" title="Link to this heading"></a></h2>
+<p>Tasks can be configured with various parameters:</p>
+<dl class="simple">
+<dt><strong>Resource Constraints</strong></dt><dd><ul class="simple">
+<li><p>Starting resources</p></li>
+<li><p>Resource availability</p></li>
+<li><p>Resource consumption rates</p></li>
+</ul>
+</dd>
+<dt><strong>Technology Requirements</strong></dt><dd><ul class="simple">
+<li><p>Required technologies</p></li>
+<li><p>Technology research costs</p></li>
+<li><p>Technology dependencies</p></li>
+</ul>
+</dd>
+<dt><strong>Time Constraints</strong></dt><dd><ul class="simple">
+<li><p>Time limits</p></li>
+<li><p>Time-based objectives</p></li>
+<li><p>Time-based rewards</p></li>
+</ul>
+</dd>
+<dt><strong>Spatial Constraints</strong></dt><dd><ul class="simple">
+<li><p>Map size limits</p></li>
+<li><p>Entity placement rules</p></li>
+<li><p>Distance requirements</p></li>
+</ul>
+</dd>
+<dt><strong>Performance Constraints</strong></dt><dd><ul class="simple">
+<li><p>Power consumption limits</p></li>
+<li><p>Entity count limits</p></li>
+<li><p>Efficiency requirements</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="task-registration">
+<h2>Task Registration<a class="headerlink" href="#task-registration" title="Link to this heading"></a></h2>
+<p>Tasks are automatically registered with the gym environment registry:</p>
+<ol class="arabic simple">
+<li><p><strong>File Discovery</strong>: The registry scans <cite>fle/eval/tasks/task_definitions/</cite></p></li>
+<li><p><strong>JSON Parsing</strong>: Task definitions are parsed from JSON files</p></li>
+<li><p><strong>Environment Creation</strong>: Gym environments are created for each task</p></li>
+<li><p><strong>Registration</strong>: Environments are registered with gym</p></li>
+</ol>
+</section>
+<section id="example-task">
+<h2>Example Task<a class="headerlink" href="#example-task" title="Link to this heading"></a></h2>
+<p>Here’s a complete example of a custom task:</p>
+<p><strong>Task Definition</strong> (<cite>my_custom_task.json</cite>):</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;iron_plate_throughput&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Produce iron plates at 16 items per 60 seconds&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;throughput&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;target&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;time_limit&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3600</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;iron_ore&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;coal&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;technologies&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;automation&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;constraints&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;max_entities&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_power&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Task Implementation</strong> (<cite>my_custom_task.py</cite>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.eval.tasks.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTask</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.game_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entity</span><span class="p">,</span> <span class="n">Inventory</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">IronPlateThroughputTask</span><span class="p">(</span><span class="n">BaseTask</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_limit</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;time_limit&#39;</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the task state&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate current throughput&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;game_info&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tick&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;game_info&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tick&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">elapsed_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span>  <span class="c1"># Convert to seconds</span>
+
+        <span class="k">if</span> <span class="n">elapsed_time</span> <span class="o">&lt;</span> <span class="mi">60</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Calculate throughput</span>
+        <span class="n">inventory</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;inventory&#39;</span><span class="p">,</span> <span class="n">Inventory</span><span class="p">({}))</span>
+        <span class="n">iron_plates</span> <span class="o">=</span> <span class="n">inventory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;iron-plate&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">throughput</span> <span class="o">=</span> <span class="n">iron_plates</span> <span class="o">/</span> <span class="n">elapsed_time</span>
+
+        <span class="k">return</span> <span class="n">throughput</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if target throughput is achieved&quot;&quot;&quot;</span>
+        <span class="n">throughput</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">throughput</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_reward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate reward based on throughput&quot;&quot;&quot;</span>
+        <span class="n">throughput</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">throughput</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">1.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">throughput</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span>
+</pre></div>
+</div>
+</section>
+<section id="testing-tasks">
+<h2>Testing Tasks<a class="headerlink" href="#testing-tasks" title="Link to this heading"></a></h2>
+<p>Create test cases for your custom tasks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.eval.tasks.my_custom_task</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyCustomTask</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_task_creation</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+        <span class="s1">&#39;time_limit&#39;</span><span class="p">:</span> <span class="mi">3600</span>
+    <span class="p">}</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">MyCustomTask</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">target</span> <span class="o">==</span> <span class="mi">16</span>
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">time_limit</span> <span class="o">==</span> <span class="mi">3600</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_task_evaluation</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">MyCustomTask</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="c1"># Mock state</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;inventory&#39;</span><span class="p">:</span> <span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;iron-plate&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}),</span>
+        <span class="s1">&#39;game_info&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;tick&#39;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="n">throughput</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">throughput</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_task_completion</span><span class="p">():</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">}</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">MyCustomTask</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="c1"># Mock state with high throughput</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;inventory&#39;</span><span class="p">:</span> <span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;iron-plate&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">}),</span>
+        <span class="s1">&#39;game_info&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;tick&#39;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">assert</span> <span class="n">task</span><span class="o">.</span><span class="n">is_complete</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-features">
+<h2>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Multi-Agent Tasks</strong></dt><dd><p>Tasks that require coordination between multiple agents</p>
+</dd>
+<dt><strong>Dynamic Tasks</strong></dt><dd><p>Tasks that change objectives during execution</p>
+</dd>
+<dt><strong>Hierarchical Tasks</strong></dt><dd><p>Tasks with sub-objectives and dependencies</p>
+</dd>
+<dt><strong>Adaptive Tasks</strong></dt><dd><p>Tasks that adjust difficulty based on agent performance</p>
+</dd>
+</dl>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Clear Objectives</strong>: Define clear, measurable objectives</p></li>
+<li><p><strong>Appropriate Difficulty</strong>: Balance challenge with achievability</p></li>
+<li><p><strong>Robust Evaluation</strong>: Handle edge cases and error conditions</p></li>
+<li><p><strong>Comprehensive Testing</strong>: Test all task scenarios</p></li>
+<li><p><strong>Documentation</strong>: Document task requirements and constraints</p></li>
+<li><p><strong>Performance</strong>: Optimize evaluation for large-scale experiments</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../api/modules/fle.commons.models.html" class="btn btn-neutral float-left" title="fle.commons.models module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tools.html" class="btn btn-neutral float-right" title="Creating Custom Tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

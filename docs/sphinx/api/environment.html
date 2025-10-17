@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Environment API &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Observation Space" href="observation.html" />
+    <link rel="prev" title="Cluster Setup" href="../getting_started/cluster.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Environment API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-concepts">Core Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#factorioinstance">FactorioInstance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.instance.FactorioInstance"><code class="docutils literal notranslate"><span class="pre">FactorioInstance</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.namespace_class"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.namespace_class</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.__init__"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.namespace"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.first_namespace"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.first_namespace</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.is_multiagent"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.is_multiagent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.reset"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.set_speed"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.set_speed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.get_speed"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.get_speed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.get_elapsed_ticks"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.get_elapsed_ticks()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.pause"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.pause()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.unpause"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.unpause()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.set_speed_and_unpause"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.set_speed_and_unpause()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.get_system_prompt"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.get_system_prompt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.connect_to_server"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.connect_to_server()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.eval_with_error"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.eval_with_error()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.eval"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.eval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.initialise"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.initialise()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.get_warnings"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.get_warnings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.instance.FactorioInstance.cleanup"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.cleanup()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#key-methods">Key Methods</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">FactorioInstance.reset()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#namespace-management">Namespace Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gym-environment">Gym Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-registry">Environment Registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#available-environments">Available Environments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#example-usage">Example Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Environment API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/environment.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="environment-api">
+<h1>Environment API<a class="headerlink" href="#environment-api" title="Link to this heading"></a></h1>
+<p>The Factorio Learning Environment provides a comprehensive API for interacting with the game through Python code synthesis.</p>
+<section id="core-concepts">
+<h2>Core Concepts<a class="headerlink" href="#core-concepts" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>FactorioInstance</strong></dt><dd><p>The main interface for interacting with a Factorio game instance. Provides access to all game state and tools.</p>
+</dd>
+<dt><strong>Namespace Management</strong></dt><dd><p>Python namespace that persists across agent actions, allowing for stateful interactions and code reuse.</p>
+</dd>
+<dt><strong>Gym Environment Integration</strong></dt><dd><p>Standard OpenAI Gym interface for reinforcement learning integration.</p>
+</dd>
+</dl>
+</section>
+<section id="factorioinstance">
+<h2>FactorioInstance<a class="headerlink" href="#factorioinstance" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fle.env.instance.</span></span><span class="sig-name descname"><span class="pre">FactorioInstance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tcp_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">27000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inventory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_scripts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_technologies_researched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peaceful</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_agents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_paused</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.namespace_class">
+<span class="sig-name descname"><span class="pre">namespace_class</span></span><a class="headerlink" href="#fle.env.instance.FactorioInstance.namespace_class" title="Link to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.FactorioNamespace" title="fle.env.namespace.FactorioNamespace"><code class="xref py py-class docutils literal notranslate"><span class="pre">FactorioNamespace</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'localhost'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tcp_port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">27000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inventory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_scripts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_technologies_researched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peaceful</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_agents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_speed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_paused</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.namespace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">namespace</span></span><a class="headerlink" href="#fle.env.instance.FactorioInstance.namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.first_namespace">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">first_namespace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="modules/fle.env.namespace.html#fle.env.namespace.FactorioNamespace" title="fle.env.namespace.FactorioNamespace"><span class="pre">FactorioNamespace</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></em><a class="headerlink" href="#fle.env.instance.FactorioInstance.first_namespace" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.is_multiagent">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_multiagent</span></span><a class="headerlink" href="#fle.env.instance.FactorioInstance.is_multiagent" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_position</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_technologies_researched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.reset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.set_speed">
+<span class="sig-name descname"><span class="pre">set_speed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.set_speed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.set_speed" title="Link to this definition"></a></dt>
+<dd><p>Set game speed (only affects speed when unpaused)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.get_speed">
+<span class="sig-name descname"><span class="pre">get_speed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.get_speed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.get_speed" title="Link to this definition"></a></dt>
+<dd><p>Get current speed setting (regardless of pause state)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.get_elapsed_ticks">
+<span class="sig-name descname"><span class="pre">get_elapsed_ticks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.get_elapsed_ticks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.get_elapsed_ticks" title="Link to this definition"></a></dt>
+<dd><p>Get the number of ticks elapsed since the game started</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.pause">
+<span class="sig-name descname"><span class="pre">pause</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.pause"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.pause" title="Link to this definition"></a></dt>
+<dd><p>Pause the game (preserves speed setting)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.unpause">
+<span class="sig-name descname"><span class="pre">unpause</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.unpause"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.unpause" title="Link to this definition"></a></dt>
+<dd><p>Unpause the game (restores previous speed)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.set_speed_and_unpause">
+<span class="sig-name descname"><span class="pre">set_speed_and_unpause</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.set_speed_and_unpause"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.set_speed_and_unpause" title="Link to this definition"></a></dt>
+<dd><p>Set speed and ensure game is unpaused - common use case</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.get_system_prompt">
+<span class="sig-name descname"><span class="pre">get_system_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.get_system_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.get_system_prompt" title="Link to this definition"></a></dt>
+<dd><p>Get the system prompt for the Factorio environment.
+This includes all the available actions, objects, and entities that the agent can interact with.
+We get the system prompt by loading the schema, definitions, and entity definitions from their source files.
+These are converted to their signatures - leaving out the implementations.
+:rtype: <span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.connect_to_server">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">connect_to_server</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">address</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tcp_port</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.connect_to_server"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.connect_to_server" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.eval_with_error">
+<span class="sig-name descname"><span class="pre">eval_with_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.eval_with_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.eval_with_error" title="Link to this definition"></a></dt>
+<dd><p>Evaluate an expression with a timeout, and return the result without error handling</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.eval">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">60</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.eval" title="Link to this definition"></a></dt>
+<dd><p>Evaluate several lines of input, returning the result of the last line with a timeout</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.initialise">
+<span class="sig-name descname"><span class="pre">initialise</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fast</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_technologies_researched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.initialise"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.initialise" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.get_warnings">
+<span class="sig-name descname"><span class="pre">get_warnings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seconds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.get_warnings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.get_warnings" title="Link to this definition"></a></dt>
+<dd><p>Get all alerts that have been raised before the last n seconds
+:type seconds: 
+:param seconds: The number of seconds to look back
+:return:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.instance.FactorioInstance.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.cleanup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.instance.FactorioInstance.cleanup" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<section id="key-methods">
+<h3>Key Methods<a class="headerlink" href="#key-methods" title="Link to this heading"></a></h3>
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-prename descclassname"><span class="pre">FactorioInstance.</span></span><span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">game_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reset_position</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_technologies_researched</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_entities</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/instance.html#FactorioInstance.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+</section>
+<section id="namespace-management">
+<h2>Namespace Management<a class="headerlink" href="#namespace-management" title="Link to this heading"></a></h2>
+<p>The namespace provides:</p>
+<ul class="simple">
+<li><p><strong>Variable Storage</strong>: Store and retrieve objects between actions</p></li>
+<li><p><strong>Function Definitions</strong>: Define reusable functions</p></li>
+<li><p><strong>Class Definitions</strong>: Create custom data structures</p></li>
+<li><p><strong>Import Management</strong>: Handle Python imports and modules</p></li>
+</ul>
+</section>
+<section id="gym-environment">
+<h2>Gym Environment<a class="headerlink" href="#gym-environment" title="Link to this heading"></a></h2>
+<p>The gym environment provides:</p>
+<ul class="simple">
+<li><p><strong>Standard Interface</strong>: Compatible with OpenAI Gym</p></li>
+<li><p><strong>Action Space</strong>: Structured action space for agent actions</p></li>
+<li><p><strong>Observation Space</strong>: Rich observation space with game state</p></li>
+<li><p><strong>Reward System</strong>: Configurable reward functions</p></li>
+</ul>
+</section>
+<section id="environment-registry">
+<h2>Environment Registry<a class="headerlink" href="#environment-registry" title="Link to this heading"></a></h2>
+<p>FLE uses a gym environment registry to automatically discover and register all available tasks.</p>
+<section id="available-environments">
+<h3>Available Environments<a class="headerlink" href="#available-environments" title="Link to this heading"></a></h3>
+<dl>
+<dt><strong>Throughput Tasks (Lab Play)</strong></dt><dd><p>All throughput tasks are defined in <cite>fle/eval/tasks/task_definitions/lab_play/throughput_tasks.py</cite>. The 24 available tasks are:</p>
+<ul class="simple">
+<li><p><strong>Circuits</strong>: <cite>advanced_circuit_throughput</cite>, <cite>electronic_circuit_throughput</cite>, <cite>processing_unit_throughput</cite></p></li>
+<li><p><strong>Science Packs</strong>: <cite>automation_science_pack_throughput</cite>, <cite>logistics_science_pack_throughput</cite>, <cite>chemical_science_pack_throughput</cite>, <cite>military_science_pack_throughput</cite>, <cite>production_science_pack_throughput</cite>, <cite>utility_science_pack_throughput</cite></p></li>
+<li><p><strong>Components</strong>: <cite>battery_throughput</cite>, <cite>engine_unit_throughput</cite>, <cite>inserter_throughput</cite>, <cite>iron_gear_wheel_throughput</cite>, <cite>low_density_structure_throughput</cite></p></li>
+<li><p><strong>Raw Materials</strong>: <cite>iron_ore_throughput</cite>, <cite>iron_plate_throughput</cite>, <cite>steel_plate_throughput</cite>, <cite>plastic_bar_throughput</cite></p></li>
+<li><p><strong>Oil &amp; Chemicals</strong>: <cite>crude_oil_throughput</cite>, <cite>petroleum_gas_throughput</cite>, <cite>sufuric_acid_throughput</cite>, <cite>sulfur_throughput</cite></p></li>
+<li><p><strong>Military</strong>: <cite>piercing_round_throughput</cite>, <cite>stone_wall_throughput</cite></p></li>
+</ul>
+<p>Most tasks require 16 items per 60 seconds; fluid tasks require 250 units per 60 seconds.</p>
+</dd>
+<dt><strong>Open Play</strong></dt><dd><p>Unbounded task of building the largest possible factory: <cite>open_play</cite></p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="example-usage">
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+
+<span class="c1"># Create any available environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Reset the environment</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+
+<span class="c1"># Take an action</span>
+<span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Which agent takes the action</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;print(&quot;Hello Factorio!&quot;)&#39;</span><span class="p">,</span>  <span class="c1"># Python code to execute</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>  <span class="c1"># Optional: game state to reset to before running code</span>
+<span class="p">)</span>
+
+<span class="c1"># Execute the action</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+<span class="c1"># Clean up</span>
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The environment includes comprehensive error handling for:</p>
+<ul class="simple">
+<li><p>Missing task definition files</p></li>
+<li><p>Invalid JSON configurations</p></li>
+<li><p>Missing Factorio containers</p></li>
+<li><p>Environment creation failures</p></li>
+<li><p>Network connectivity issues</p></li>
+</ul>
+<p>If an environment fails to load, a warning will be printed but the registry will continue to load other environments.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting_started/cluster.html" class="btn btn-neutral float-left" title="Cluster Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="observation.html" class="btn btn-neutral float-right" title="Observation Space" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

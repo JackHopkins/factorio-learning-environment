@@ -1,0 +1,735 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fle.env.instance &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fle.env.instance</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fle.env.instance</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">atexit</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">signal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span><span class="p">,</span> <span class="ne">TimeoutError</span> <span class="k">as</span> <span class="n">FutureTimeoutError</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">timeit</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_timer</span> <span class="k">as</span> <span class="n">timer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing_extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.lua_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">LuaScriptManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.namespace</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactorioNamespace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.utils.rcon</span><span class="w"> </span><span class="kn">import</span> <span class="n">_lua2python</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.models.research_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResearchState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">factorio_rcon</span><span class="w"> </span><span class="kn">import</span> <span class="n">RCONClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.models.game_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">GameState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.utils.controller_loader.system_prompt_generator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SystemPromptGenerator</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.cluster.run_envs</span><span class="w"> </span><span class="kn">import</span> <span class="n">START_RCON_PORT</span><span class="p">,</span> <span class="n">RCON_PASSWORD</span>
+
+<span class="n">CHUNK_SIZE</span> <span class="o">=</span> <span class="mi">32</span>
+<span class="n">MAX_SAMPLES</span> <span class="o">=</span> <span class="mi">5000</span>
+
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="n">NONE</span> <span class="o">=</span> <span class="s2">&quot;nil&quot;</span>
+
+<span class="k">global</span> <span class="n">var</span>
+<span class="n">var</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="GameControl">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GameControl</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles game speed and pause/unpause functionality&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="GameControl.__init__">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">rcon_client</span><span class="p">,</span>
+        <span class="n">render_message_tool</span><span class="p">,</span>
+        <span class="n">reset_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">reset_paused</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span> <span class="o">=</span> <span class="n">rcon_client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_speed</span> <span class="o">=</span> <span class="n">reset_speed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_paused</span> <span class="o">=</span> <span class="n">reset_paused</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">render_message_tool</span> <span class="o">=</span> <span class="n">render_message_tool</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render_pause_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Safely render a pause/unpause message using render_message tool&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Use the render_message tool (prefixed with underscore)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">render_message_tool</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">render_message_tool</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># If render_message fails, fall back to console print</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not render message &#39;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GameControl.set_speed">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.set_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set game speed (only affects speed when unpaused)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">speed</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Speed must be greater than 0&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_speed</span> <span class="o">=</span> <span class="n">speed</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span><span class="p">:</span>  <span class="c1"># Only apply if not paused</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/sc game.speed = </span><span class="si">{</span><span class="n">speed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameControl.get_speed">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.get_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current speed setting (regardless of pause state)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_speed</span></div>
+
+
+<div class="viewcode-block" id="GameControl.pause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.pause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pause the game (preserves speed setting)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s2">&quot;/sc game.tick_paused = true&quot;</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_pause_message</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">] Game paused&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameControl.unpause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.unpause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpause the game (restores previous speed)&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s2">&quot;/sc game.tick_paused = false&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/sc game.speed = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_speed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_render_pause_message</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">] Game unpaused (speed: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_speed</span><span class="si">}</span><span class="s2">x)&quot;</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameControl.is_paused">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.is_paused">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_paused</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if game is currently paused&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_paused</span></div>
+
+
+<div class="viewcode-block" id="GameControl.set_speed_and_unpause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.set_speed_and_unpause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed_and_unpause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set speed and ensure game is unpaused - common use case&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_speed</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unpause</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="GameControl.pause_at_speed">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.pause_at_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pause_at_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set speed for when unpaused, but pause immediately&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_speed</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="GameControl.get_elapsed_ticks">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.get_elapsed_ticks">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_elapsed_ticks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span>
+            <span class="s2">&quot;/sc rcon.print(global.elapsed_ticks or 0)&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: No response from get_elapsed_ticks&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">response</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameControl.reset_to_defaults">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.GameControl.reset_to_defaults">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_to_defaults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset to the configured default speed and pause state&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_speed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reset_speed</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_paused</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unpause</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DirectionInternal">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DirectionInternal</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">UP</span> <span class="o">=</span> <span class="n">NORTH</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">RIGHT</span> <span class="o">=</span> <span class="n">EAST</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">DOWN</span> <span class="o">=</span> <span class="n">SOUTH</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="n">LEFT</span> <span class="o">=</span> <span class="n">WEST</span> <span class="o">=</span> <span class="mi">6</span>
+
+<div class="viewcode-block" id="DirectionInternal.opposite">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal.opposite">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">opposite</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">((</span><span class="n">direction</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">4</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DirectionInternal.next_clockwise">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal.next_clockwise">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">next_clockwise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">((</span><span class="n">direction</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DirectionInternal.next_counterclockwise">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal.next_counterclockwise">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">next_counterclockwise</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">((</span><span class="n">direction</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">%</span> <span class="mi">8</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DirectionInternal.to_factorio_direction">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal.to_factorio_direction">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_factorio_direction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">direction</span><span class="o">.</span><span class="n">value</span> <span class="o">//</span> <span class="mi">2</span></div>
+
+
+<div class="viewcode-block" id="DirectionInternal.from_factorio_direction">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.DirectionInternal.from_factorio_direction">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_factorio_direction</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">direction</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">direction</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="FactorioInstance">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FactorioInstance</span><span class="p">:</span>
+    <span class="n">namespace_class</span> <span class="o">=</span> <span class="n">FactorioNamespace</span>
+    <span class="n">_cleanup_registered</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Only register cleanup once per process</span>
+
+<div class="viewcode-block" id="FactorioInstance.__init__">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">address</span><span class="o">=</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+        <span class="n">fast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">tcp_port</span><span class="o">=</span><span class="n">START_RCON_PORT</span><span class="p">,</span>
+        <span class="n">inventory</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="n">cache_scripts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">all_technologies_researched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">clear_entities</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">peaceful</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">num_agents</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">reset_speed</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="n">reset_paused</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())[:</span><span class="mi">8</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span> <span class="o">=</span> <span class="n">num_agents</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">persistent_vars</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tcp_port</span> <span class="o">=</span> <span class="n">tcp_port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">connect_to_server</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">tcp_port</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fast</span> <span class="o">=</span> <span class="n">fast</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ticks_elapsed</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_initialised</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">peaceful</span> <span class="o">=</span> <span class="n">peaceful</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">namespace_class</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_agents</span><span class="p">)]</span>
+
+        <span class="c1"># Create GameControl instance with render_message tool</span>
+        <span class="n">render_message_tool</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="p">,</span> <span class="s2">&quot;_render_message&quot;</span><span class="p">):</span>
+            <span class="n">render_message_tool</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_render_message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span> <span class="o">=</span> <span class="n">GameControl</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="p">,</span> <span class="n">render_message_tool</span><span class="p">,</span> <span class="n">reset_speed</span><span class="p">,</span> <span class="n">reset_paused</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">reset_to_defaults</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span> <span class="o">=</span> <span class="n">LuaScriptManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="p">,</span> <span class="n">cache_scripts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">script_dict</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">lib_scripts</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">tool_scripts</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Initialize hooks as dictionaries to organize callbacks by tool name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_tool_hooks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_tool_hooks</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Load the python controllers that correspond to the Lua scripts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">load_init_into_game</span><span class="p">(</span><span class="s2">&quot;initialise&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">setup_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">inventory</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">inventory</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_inventory</span> <span class="o">=</span> <span class="n">inventory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialise</span><span class="p">(</span><span class="n">fast</span><span class="p">,</span> <span class="n">all_technologies_researched</span><span class="p">,</span> <span class="n">clear_entities</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_score</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">score</span><span class="p">()</span>
+            <span class="c1"># print(&quot;Initial score:&quot;, self.initial_score)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># print(e)</span>
+            <span class="c1"># Invalidate cache if there is an error</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span> <span class="o">=</span> <span class="n">LuaScriptManager</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">script_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">lib_scripts</span><span class="p">,</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">tool_scripts</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">setup_tools</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initialise</span><span class="p">(</span><span class="n">fast</span><span class="p">,</span> <span class="n">all_technologies_researched</span><span class="p">,</span> <span class="n">clear_entities</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initial_score</span><span class="p">,</span> <span class="n">goal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">score</span><span class="p">()</span>
+        <span class="c1"># Register the cleanup method to be called on exit (only once per process)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">FactorioInstance</span><span class="o">.</span><span class="n">_cleanup_registered</span><span class="p">:</span>
+            <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cleanup</span><span class="p">)</span>
+            <span class="n">FactorioInstance</span><span class="o">.</span><span class="n">_cleanup_registered</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span> <span class="o">=</span> <span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only use .namespace for single-agent instances&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">first_namespace</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FactorioNamespace</span><span class="p">]:</span>  <span class="c1"># Add this property if used</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_multiagent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+<div class="viewcode-block" id="FactorioInstance.reset">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.reset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">game_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GameState</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reset_position</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">all_technologies_researched</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">clear_entities</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># Reset the namespace (clear variables, functions etc)</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">game_state</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">game_state</span><span class="o">.</span><span class="n">inventories</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">&quot;Game state must have the same number of inventories as num_agents&quot;</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">:</span>
+            <span class="n">namespace</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">game_state</span><span class="p">:</span>
+            <span class="c1"># Reset the game instance</span>
+            <span class="n">inventories</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_inventory</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_reset</span><span class="p">(</span>
+                <span class="n">inventories</span><span class="p">,</span> <span class="n">reset_position</span><span class="p">,</span> <span class="n">all_technologies_researched</span><span class="p">,</span> <span class="n">clear_entities</span>
+            <span class="p">)</span>
+            <span class="c1"># Reset the technologies</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">all_technologies_researched</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_load_research_state</span><span class="p">(</span>
+                    <span class="n">ResearchState</span><span class="p">(</span>
+                        <span class="n">technologies</span><span class="o">=</span><span class="p">{},</span>
+                        <span class="n">research_progress</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                        <span class="n">current_research</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">research_queue</span><span class="o">=</span><span class="p">[],</span>
+                        <span class="n">progress</span><span class="o">=</span><span class="p">{},</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Reset the game instance with the correct player&#39;s inventory and messages if multiagent</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_reset</span><span class="p">(</span>
+                <span class="n">game_state</span><span class="o">.</span><span class="n">inventories</span><span class="p">,</span>
+                <span class="n">reset_position</span><span class="p">,</span>
+                <span class="n">all_technologies_researched</span><span class="p">,</span>
+                <span class="n">clear_entities</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Load entities into the game</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_load_entity_state</span><span class="p">(</span>
+                <span class="n">game_state</span><span class="o">.</span><span class="n">entities</span><span class="p">,</span> <span class="n">decompress</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Load research state into the game</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_load_research_state</span><span class="p">(</span><span class="n">game_state</span><span class="o">.</span><span class="n">research</span><span class="p">)</span>
+
+            <span class="c1"># Load messages for each agent</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">game_state</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">))):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">load_messages</span><span class="p">(</span><span class="n">game_state</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+            <span class="c1"># Load variables / functions from game state</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">game_state</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Always restore to predictable state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">reset_to_defaults</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_score</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">score</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">initial_score</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.set_speed">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.set_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set game speed (only affects speed when unpaused)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">set_speed</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.get_speed">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.get_speed">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current speed setting (regardless of pause state)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">get_speed</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.get_elapsed_ticks">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.get_elapsed_ticks">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_elapsed_ticks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the number of ticks elapsed since the game started&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">get_elapsed_ticks</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.pause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.pause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pause the game (preserves speed setting)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">pause</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.unpause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.unpause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpause</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpause the game (restores previous speed)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">unpause</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.set_speed_and_unpause">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.set_speed_and_unpause">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_speed_and_unpause</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set speed and ensure game is unpaused - common use case&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">game_control</span><span class="o">.</span><span class="n">set_speed_and_unpause</span><span class="p">(</span><span class="n">speed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.get_system_prompt">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.get_system_prompt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_system_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the system prompt for the Factorio environment.</span>
+<span class="sd">        This includes all the available actions, objects, and entities that the agent can interact with.</span>
+<span class="sd">        We get the system prompt by loading the schema, definitions, and entity definitions from their source files.</span>
+<span class="sd">        These are converted to their signatures - leaving out the implementations.</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">execution_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)))</span>
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">SystemPromptGenerator</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">execution_path</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate_for_agent</span><span class="p">(</span>
+            <span class="n">agent_idx</span><span class="o">=</span><span class="n">agent_idx</span><span class="p">,</span> <span class="n">num_agents</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.connect_to_server">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.connect_to_server">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect_to_server</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">tcp_port</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rcon_client</span> <span class="o">=</span> <span class="n">RCONClient</span><span class="p">(</span>
+                <span class="n">address</span><span class="p">,</span> <span class="n">tcp_port</span><span class="p">,</span> <span class="n">RCON_PASSWORD</span>
+            <span class="p">)</span>  <span class="c1">#&#39;quai2eeha3Lae7v&#39;)</span>
+            <span class="n">address</span> <span class="o">=</span> <span class="n">address</span>
+        <span class="k">except</span> <span class="ne">ConnectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="n">rcon_client</span> <span class="o">=</span> <span class="n">RCONClient</span><span class="p">(</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="n">tcp_port</span><span class="p">,</span> <span class="n">RCON_PASSWORD</span><span class="p">)</span>
+            <span class="n">address</span> <span class="o">=</span> <span class="s2">&quot;localhost&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">rcon_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+            <span class="n">player_count</span> <span class="o">=</span> <span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s2">&quot;/sc rcon.print(#game.players)&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">player_count</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;WARNING: LuaPlayer hasn&#39;t been initialised into the game. Entity placement behavior _may_ be incorrect for boilers and pumps.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ConnectionError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Could not connect to </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s2"> at tcp/</span><span class="si">{</span><span class="n">tcp_port</span><span class="si">}</span><span class="s2">: </span><span class="se">\n</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connected to </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s2"> client at tcp/</span><span class="si">{</span><span class="n">tcp_port</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rcon_client</span><span class="p">,</span> <span class="n">address</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__eval_with_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate an expression with a timeout, and return the result without error handling&quot;&quot;&quot;</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">handler</span><span class="p">(</span><span class="n">signum</span><span class="p">,</span> <span class="n">frame</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">()</span>
+
+        <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGALRM</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span>
+        <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="n">timeout</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">agent_idx</span><span class="p">]</span><span class="o">.</span><span class="n">eval_with_timeout</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">signal</span><span class="o">.</span><span class="n">alarm</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="FactorioInstance.eval_with_error">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.eval_with_error">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval_with_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate an expression with a timeout, and return the result without error handling&quot;&quot;&quot;</span>
+
+        <span class="c1"># Submit the evaluation to the thread pool</span>
+        <span class="n">future</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">agent_idx</span><span class="p">]</span><span class="o">.</span><span class="n">eval_with_timeout</span><span class="p">,</span> <span class="n">expr</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Wait for the result with timeout</span>
+            <span class="k">return</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">FutureTimeoutError</span><span class="p">:</span>
+            <span class="c1"># Cancel the future if it&#39;s still running</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Re-raise any other exceptions</span>
+            <span class="k">raise</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.eval">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.eval">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expr</span><span class="p">,</span> <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">):</span>
+        <span class="s2">&quot;Evaluate several lines of input, returning the result of the last line with a timeout&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_with_error</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">agent_idx</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;Error: Evaluation timed out&quot;</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">n&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.initialise">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.initialise">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialise</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fast</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">all_technologies_researched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">clear_entities</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/sc global.fast = </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">fast</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_create_agent_characters</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="p">)</span>
+
+        <span class="n">init_scripts</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;lualib_util&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;utils&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;alerts&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;connection_points&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;recipe_fluid_connection_mappings&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;serialize&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">script_name</span> <span class="ow">in</span> <span class="n">init_scripts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lua_script_manager</span><span class="o">.</span><span class="n">load_init_into_game</span><span class="p">(</span><span class="n">script_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">peaceful</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span><span class="s2">&quot;/sc global.remove_enemies()&quot;</span><span class="p">)</span>
+
+        <span class="n">inventories</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">initial_inventory</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_reset</span><span class="p">(</span>
+            <span class="n">inventories</span><span class="p">,</span>
+            <span class="n">reset_position</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">all_technologies_researched</span><span class="o">=</span><span class="n">all_technologies_researched</span><span class="p">,</span>
+            <span class="n">clear_entities</span><span class="o">=</span><span class="n">clear_entities</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_clear_collision_boxes</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.get_warnings">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.get_warnings">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_warnings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seconds</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all alerts that have been raised before the last n seconds</span>
+<span class="sd">        :param seconds: The number of seconds to look back</span>
+<span class="sd">        :return:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">timer</span><span class="p">()</span>
+        <span class="n">lua_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">send_command</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;/sc rcon.print(dump(global.get_alerts(</span><span class="si">{</span><span class="n">seconds</span><span class="si">}</span><span class="s2">)))&quot;</span>
+        <span class="p">)</span>
+        <span class="c1"># print(lua_response)</span>
+        <span class="n">alert_dict</span><span class="p">,</span> <span class="n">duration</span> <span class="o">=</span> <span class="n">_lua2python</span><span class="p">(</span><span class="s2">&quot;alerts&quot;</span><span class="p">,</span> <span class="n">lua_response</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alert_dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">alerts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">alert_dict</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+            <span class="n">alert_strings</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">alert</span> <span class="ow">in</span> <span class="n">alerts</span><span class="p">:</span>
+                <span class="n">issues</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">al</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">al</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">alert</span><span class="p">[</span><span class="s2">&quot;issues&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
+                <span class="p">)</span>
+                <span class="n">alert_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">alert</span><span class="p">[</span><span class="s1">&#39;entity_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">alert</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">issues</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">alert_strings</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="FactorioInstance.cleanup">
+<a class="viewcode-back" href="../../../api/modules/fle.env.instance.html#fle.env.instance.FactorioInstance.cleanup">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Close the RCON connection</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;rcon_client&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rcon_client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_tool_hooks</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_tool_hooks</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Join all non-daemon threads</span>
+        <span class="k">for</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">threading</span><span class="o">.</span><span class="n">enumerate</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">thread</span> <span class="o">!=</span> <span class="n">threading</span><span class="o">.</span><span class="n">current_thread</span><span class="p">()</span>
+                <span class="ow">and</span> <span class="n">thread</span><span class="o">.</span><span class="n">is_alive</span><span class="p">()</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">thread</span><span class="o">.</span><span class="n">daemon</span>
+            <span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># Wait up to 5 seconds for each thread</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error joining thread </span><span class="si">{</span><span class="n">thread</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Shutdown the executor</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_executor&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cancel_futures</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

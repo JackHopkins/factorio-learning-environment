@@ -1,0 +1,535 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fle.env.game_types &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fle.env.game_types</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fle.env.game_types</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">difflib</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_close_matches</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">entities</span> <span class="k">as</span> <span class="n">ent</span>
+
+
+<div class="viewcode-block" id="ResourceName">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.ResourceName">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ResourceName</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">Coal</span> <span class="o">=</span> <span class="s2">&quot;coal&quot;</span>
+    <span class="n">IronOre</span> <span class="o">=</span> <span class="s2">&quot;iron-ore&quot;</span>
+    <span class="n">CopperOre</span> <span class="o">=</span> <span class="s2">&quot;copper-ore&quot;</span>
+    <span class="n">Stone</span> <span class="o">=</span> <span class="s2">&quot;stone&quot;</span>
+    <span class="n">Water</span> <span class="o">=</span> <span class="s2">&quot;water&quot;</span>
+    <span class="n">CrudeOil</span> <span class="o">=</span> <span class="s2">&quot;crude-oil&quot;</span>
+    <span class="n">UraniumOre</span> <span class="o">=</span> <span class="s2">&quot;uranium-ore&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="PrototypeMetaclass">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.PrototypeMetaclass">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PrototypeMetaclass</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">EnumMeta</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Try to get the attribute normally first</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_member_map_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="c1"># Get all valid prototype names</span>
+            <span class="n">valid_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">member</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">member</span> <span class="ow">in</span> <span class="bp">cls</span><span class="p">]</span>
+
+            <span class="c1"># Find closest matches</span>
+            <span class="n">matches</span> <span class="o">=</span> <span class="n">get_close_matches</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">valid_names</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+
+            <span class="n">suggestion_msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">matches</span><span class="p">:</span>
+                <span class="n">suggestion_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;. Did you mean: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span><span class="si">}</span><span class="s2">?&quot;</span>
+
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&#39; has no attribute &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;</span><span class="si">{</span><span class="n">suggestion_msg</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="RecipeName">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.RecipeName">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RecipeName</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recipe names that can be used in the game for fluids</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">NuclearFuelReprocessing</span> <span class="o">=</span> <span class="s2">&quot;nuclear-fuel-reprocessing&quot;</span>
+    <span class="n">UraniumProcessing</span> <span class="o">=</span> <span class="s2">&quot;uranium-processing&quot;</span>
+    <span class="n">SulfuricAcid</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;sulfuric-acid&quot;</span>  <span class="c1"># Recipe for producing sulfuric acid with a chemical plant</span>
+    <span class="p">)</span>
+    <span class="n">BasicOilProcessing</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;basic-oil-processing&quot;</span>  <span class="c1"># Recipe for producing petroleum gas with a oil refinery</span>
+    <span class="p">)</span>
+    <span class="n">AdvancedOilProcessing</span> <span class="o">=</span> <span class="s2">&quot;advanced-oil-processing&quot;</span>  <span class="c1"># Recipe for producing petroleum gas, heavy oil and light oil with a oil refinery</span>
+    <span class="n">CoalLiquefaction</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;coal-liquefaction&quot;</span>  <span class="c1"># Recipe for producing petroleum gas in a oil refinery</span>
+    <span class="p">)</span>
+    <span class="n">HeavyOilCracking</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;heavy-oil-cracking&quot;</span>  <span class="c1"># Recipe for producing light oil in a chemical plant</span>
+    <span class="p">)</span>
+    <span class="n">LightOilCracking</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;light-oil-cracking&quot;</span>  <span class="c1"># Recipe for producing petroleum gas in a chemical plant</span>
+    <span class="p">)</span>
+
+    <span class="n">SolidFuelFromHeavyOil</span> <span class="o">=</span> <span class="s2">&quot;solid-fuel-from-heavy-oil&quot;</span>  <span class="c1"># Recipe for producing solid fuel in a chemical plant</span>
+    <span class="n">SolidFuelFromLightOil</span> <span class="o">=</span> <span class="s2">&quot;solid-fuel-from-light-oil&quot;</span>  <span class="c1"># Recipe for producing solid fuel in a chemical plant</span>
+    <span class="n">SolidFuelFromPetroleumGas</span> <span class="o">=</span> <span class="s2">&quot;solid-fuel-from-petroleum-gas&quot;</span>  <span class="c1"># Recipe for producing solid fuel in a chemical plant</span>
+
+    <span class="n">FillCrudeOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-crude-oil-barrel&quot;</span>
+    <span class="n">FillHeavyOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-heavy-oil-barrel&quot;</span>
+    <span class="n">FillLightOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-light-oil-barrel&quot;</span>
+    <span class="n">FillLubricantBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-lubricant-barrel&quot;</span>
+    <span class="n">FillPetroleumGasBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-petroleum-gas-barrel&quot;</span>
+    <span class="n">FillSulfuricAcidBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-sulfuric-acid-barrel&quot;</span>
+    <span class="n">FillWaterBarrel</span> <span class="o">=</span> <span class="s2">&quot;fill-water-barrel&quot;</span>
+
+    <span class="n">EmptyCrudeOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-crude-oil-barrel&quot;</span>
+    <span class="n">EmptyHeavyOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-heavy-oil-barrel&quot;</span>
+    <span class="n">EmptyLightOilBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-light-oil-barrel&quot;</span>
+    <span class="n">EmptyLubricantBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-lubricant-barrel&quot;</span>
+    <span class="n">EmptyPetroleumGasBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-petroleum-gas-barrel&quot;</span>
+    <span class="n">EmptySulfuricAcidBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-sulfuric-acid-barrel&quot;</span>
+    <span class="n">EmptyWaterBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-water-barrel&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="Prototype">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.Prototype">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Prototype</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">PrototypeMetaclass</span><span class="p">):</span>
+    <span class="n">AssemblingMachine1</span> <span class="o">=</span> <span class="s2">&quot;assembling-machine-1&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">AssemblingMachine</span>
+    <span class="n">AssemblingMachine2</span> <span class="o">=</span> <span class="s2">&quot;assembling-machine-2&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">AdvancedAssemblingMachine</span>
+    <span class="n">AssemblingMachine3</span> <span class="o">=</span> <span class="s2">&quot;assembling-machine-3&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">AdvancedAssemblingMachine</span>
+    <span class="n">Centrifuge</span> <span class="o">=</span> <span class="s2">&quot;centrifuge&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">AssemblingMachine</span>
+
+    <span class="n">BurnerInserter</span> <span class="o">=</span> <span class="s2">&quot;burner-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">BurnerInserter</span>
+    <span class="n">FastInserter</span> <span class="o">=</span> <span class="s2">&quot;fast-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Inserter</span>
+    <span class="n">ExpressInserter</span> <span class="o">=</span> <span class="s2">&quot;express-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Inserter</span>
+
+    <span class="n">LongHandedInserter</span> <span class="o">=</span> <span class="s2">&quot;long-handed-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Inserter</span>
+    <span class="n">StackInserter</span> <span class="o">=</span> <span class="s2">&quot;stack-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Inserter</span>
+    <span class="n">StackFilterInserter</span> <span class="o">=</span> <span class="s2">&quot;stack-filter-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">FilterInserter</span>
+    <span class="n">FilterInserter</span> <span class="o">=</span> <span class="s2">&quot;filter-inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">FilterInserter</span>
+
+    <span class="n">Inserter</span> <span class="o">=</span> <span class="s2">&quot;inserter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Inserter</span>
+
+    <span class="n">BurnerMiningDrill</span> <span class="o">=</span> <span class="s2">&quot;burner-mining-drill&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">BurnerMiningDrill</span>
+    <span class="n">ElectricMiningDrill</span> <span class="o">=</span> <span class="s2">&quot;electric-mining-drill&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricMiningDrill</span>
+
+    <span class="n">StoneFurnace</span> <span class="o">=</span> <span class="s2">&quot;stone-furnace&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Furnace</span>
+    <span class="n">SteelFurnace</span> <span class="o">=</span> <span class="s2">&quot;steel-furnace&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Furnace</span>
+    <span class="n">ElectricFurnace</span> <span class="o">=</span> <span class="s2">&quot;electric-furnace&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricFurnace</span>
+
+    <span class="n">Splitter</span> <span class="o">=</span> <span class="s2">&quot;splitter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Splitter</span>
+    <span class="n">FastSplitter</span> <span class="o">=</span> <span class="s2">&quot;fast-splitter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Splitter</span>
+    <span class="n">ExpressSplitter</span> <span class="o">=</span> <span class="s2">&quot;express-splitter&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Splitter</span>
+
+    <span class="n">Rail</span> <span class="o">=</span> <span class="s2">&quot;rail&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Rail</span>
+
+    <span class="n">TransportBelt</span> <span class="o">=</span> <span class="s2">&quot;transport-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">TransportBelt</span>
+    <span class="n">FastTransportBelt</span> <span class="o">=</span> <span class="s2">&quot;fast-transport-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">TransportBelt</span>
+    <span class="n">ExpressTransportBelt</span> <span class="o">=</span> <span class="s2">&quot;express-transport-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">TransportBelt</span>
+    <span class="n">ExpressUndergroundBelt</span> <span class="o">=</span> <span class="s2">&quot;express-underground-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">UndergroundBelt</span>
+    <span class="n">FastUndergroundBelt</span> <span class="o">=</span> <span class="s2">&quot;fast-underground-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">UndergroundBelt</span>
+    <span class="n">UndergroundBelt</span> <span class="o">=</span> <span class="s2">&quot;underground-belt&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">UndergroundBelt</span>
+    <span class="n">OffshorePump</span> <span class="o">=</span> <span class="s2">&quot;offshore-pump&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">OffshorePump</span>
+    <span class="n">PumpJack</span> <span class="o">=</span> <span class="s2">&quot;pumpjack&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">PumpJack</span>
+    <span class="n">Pump</span> <span class="o">=</span> <span class="s2">&quot;pump&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Pump</span>
+    <span class="n">Boiler</span> <span class="o">=</span> <span class="s2">&quot;boiler&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Boiler</span>
+    <span class="n">OilRefinery</span> <span class="o">=</span> <span class="s2">&quot;oil-refinery&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">OilRefinery</span>
+    <span class="n">ChemicalPlant</span> <span class="o">=</span> <span class="s2">&quot;chemical-plant&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ChemicalPlant</span>
+
+    <span class="n">SteamEngine</span> <span class="o">=</span> <span class="s2">&quot;steam-engine&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Generator</span>
+    <span class="n">SolarPanel</span> <span class="o">=</span> <span class="s2">&quot;solar-panel&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">SolarPanel</span>
+
+    <span class="n">UndergroundPipe</span> <span class="o">=</span> <span class="s2">&quot;pipe-to-ground&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Pipe</span>
+    <span class="n">HeatPipe</span> <span class="o">=</span> <span class="s2">&quot;heat-pipe&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Pipe</span>
+    <span class="n">Pipe</span> <span class="o">=</span> <span class="s2">&quot;pipe&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Pipe</span>
+
+    <span class="n">SteelChest</span> <span class="o">=</span> <span class="s2">&quot;steel-chest&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Chest</span>
+    <span class="n">IronChest</span> <span class="o">=</span> <span class="s2">&quot;iron-chest&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Chest</span>
+    <span class="n">WoodenChest</span> <span class="o">=</span> <span class="s2">&quot;wooden-chest&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Chest</span>
+    <span class="n">IronGearWheel</span> <span class="o">=</span> <span class="s2">&quot;iron-gear-wheel&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Entity</span>
+    <span class="n">StorageTank</span> <span class="o">=</span> <span class="s2">&quot;storage-tank&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">StorageTank</span>
+
+    <span class="n">SmallElectricPole</span> <span class="o">=</span> <span class="s2">&quot;small-electric-pole&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricityPole</span>
+    <span class="n">MediumElectricPole</span> <span class="o">=</span> <span class="s2">&quot;medium-electric-pole&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricityPole</span>
+    <span class="n">BigElectricPole</span> <span class="o">=</span> <span class="s2">&quot;big-electric-pole&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricityPole</span>
+
+    <span class="n">Coal</span> <span class="o">=</span> <span class="s2">&quot;coal&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Wood</span> <span class="o">=</span> <span class="s2">&quot;wood&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Sulfur</span> <span class="o">=</span> <span class="s2">&quot;sulfur&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">IronOre</span> <span class="o">=</span> <span class="s2">&quot;iron-ore&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">CopperOre</span> <span class="o">=</span> <span class="s2">&quot;copper-ore&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Stone</span> <span class="o">=</span> <span class="s2">&quot;stone&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Concrete</span> <span class="o">=</span> <span class="s2">&quot;concrete&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">UraniumOre</span> <span class="o">=</span> <span class="s2">&quot;uranium-ore&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">IronPlate</span> <span class="o">=</span> <span class="s2">&quot;iron-plate&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># Crafting requires smelting 1 iron ore</span>
+    <span class="n">IronStick</span> <span class="o">=</span> <span class="s2">&quot;iron-stick&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">SteelPlate</span> <span class="o">=</span> <span class="s2">&quot;steel-plate&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># Crafting requires smelting 5 iron plates</span>
+    <span class="n">CopperPlate</span> <span class="o">=</span> <span class="s2">&quot;copper-plate&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># Crafting requires smelting 1 copper ore</span>
+    <span class="n">StoneBrick</span> <span class="o">=</span> <span class="s2">&quot;stone-brick&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># Crafting requires smelting 2 stone</span>
+    <span class="n">CopperCable</span> <span class="o">=</span> <span class="s2">&quot;copper-cable&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">PlasticBar</span> <span class="o">=</span> <span class="s2">&quot;plastic-bar&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">EmptyBarrel</span> <span class="o">=</span> <span class="s2">&quot;empty-barrel&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Battery</span> <span class="o">=</span> <span class="s2">&quot;battery&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">SulfuricAcid</span> <span class="o">=</span> <span class="s2">&quot;sulfuric-acid&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Uranium235</span> <span class="o">=</span> <span class="s2">&quot;uranium-235&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">Uranium238</span> <span class="o">=</span> <span class="s2">&quot;uranium-238&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">Lubricant</span> <span class="o">=</span> <span class="s2">&quot;lubricant&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">PetroleumGas</span> <span class="o">=</span> <span class="s2">&quot;petroleum-gas&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">AdvancedOilProcessing</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;advanced-oil-processing&quot;</span><span class="p">,</span>
+        <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span>  <span class="c1"># These are recipes, not prototypes.</span>
+    <span class="n">CoalLiquifaction</span> <span class="o">=</span> <span class="s2">&quot;coal-liquifaction&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># These are recipes, not prototypes.</span>
+    <span class="n">SolidFuel</span> <span class="o">=</span> <span class="s2">&quot;solid-fuel&quot;</span><span class="p">,</span> <span class="kc">None</span>  <span class="c1"># These are recipes, not prototypes.</span>
+    <span class="n">LightOil</span> <span class="o">=</span> <span class="s2">&quot;light-oil&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">HeavyOil</span> <span class="o">=</span> <span class="s2">&quot;heavy-oil&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">ElectronicCircuit</span> <span class="o">=</span> <span class="s2">&quot;electronic-circuit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">AdvancedCircuit</span> <span class="o">=</span> <span class="s2">&quot;advanced-circuit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ProcessingUnit</span> <span class="o">=</span> <span class="s2">&quot;processing-unit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">EngineUnit</span> <span class="o">=</span> <span class="s2">&quot;engine-unit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ElectricEngineUnit</span> <span class="o">=</span> <span class="s2">&quot;electric-engine-unit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">Lab</span> <span class="o">=</span> <span class="s2">&quot;lab&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Lab</span>
+    <span class="n">Accumulator</span> <span class="o">=</span> <span class="s2">&quot;accumulator&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Accumulator</span>
+    <span class="n">GunTurret</span> <span class="o">=</span> <span class="s2">&quot;gun-turret&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">GunTurret</span>
+
+    <span class="n">PiercingRoundsMagazine</span> <span class="o">=</span> <span class="s2">&quot;piercing-rounds-magazine&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Ammo</span>
+    <span class="n">FirearmMagazine</span> <span class="o">=</span> <span class="s2">&quot;firearm-magazine&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Ammo</span>
+    <span class="n">Grenade</span> <span class="o">=</span> <span class="s2">&quot;grenade&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">Radar</span> <span class="o">=</span> <span class="s2">&quot;radar&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Entity</span>
+    <span class="n">StoneWall</span> <span class="o">=</span> <span class="s2">&quot;stone-wall&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Entity</span>
+    <span class="n">Gate</span> <span class="o">=</span> <span class="s2">&quot;gate&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Entity</span>
+    <span class="n">SmallLamp</span> <span class="o">=</span> <span class="s2">&quot;small-lamp&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Entity</span>
+
+    <span class="n">NuclearReactor</span> <span class="o">=</span> <span class="s2">&quot;nuclear-reactor&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Reactor</span>
+    <span class="n">UraniumFuelCell</span> <span class="o">=</span> <span class="s2">&quot;uranium-fuel-cell&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">HeatExchanger</span> <span class="o">=</span> <span class="s2">&quot;heat-exchanger&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">HeatExchanger</span>
+
+    <span class="n">AutomationSciencePack</span> <span class="o">=</span> <span class="s2">&quot;automation-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">MilitarySciencePack</span> <span class="o">=</span> <span class="s2">&quot;military-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">LogisticsSciencePack</span> <span class="o">=</span> <span class="s2">&quot;logistic-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ProductionSciencePack</span> <span class="o">=</span> <span class="s2">&quot;production-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">UtilitySciencePack</span> <span class="o">=</span> <span class="s2">&quot;utility-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ChemicalSciencePack</span> <span class="o">=</span> <span class="s2">&quot;chemical-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">ProductivityModule</span> <span class="o">=</span> <span class="s2">&quot;productivity-module&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ProductivityModule2</span> <span class="o">=</span> <span class="s2">&quot;productivity-module-2&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">ProductivityModule3</span> <span class="o">=</span> <span class="s2">&quot;productivity-module-3&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">FlyingRobotFrame</span> <span class="o">=</span> <span class="s2">&quot;flying-robot-frame&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">RocketSilo</span> <span class="o">=</span> <span class="s2">&quot;rocket-silo&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">RocketSilo</span>
+    <span class="n">Rocket</span> <span class="o">=</span> <span class="s2">&quot;rocket&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">Rocket</span>
+    <span class="n">Satellite</span> <span class="o">=</span> <span class="s2">&quot;satellite&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">RocketPart</span> <span class="o">=</span> <span class="s2">&quot;rocket-part&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">RocketControlUnit</span> <span class="o">=</span> <span class="s2">&quot;rocket-control-unit&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">LowDensityStructure</span> <span class="o">=</span> <span class="s2">&quot;low-density-structure&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">RocketFuel</span> <span class="o">=</span> <span class="s2">&quot;rocket-fuel&quot;</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">SpaceSciencePack</span> <span class="o">=</span> <span class="s2">&quot;space-science-pack&quot;</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">BeltGroup</span> <span class="o">=</span> <span class="s2">&quot;belt-group&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">BeltGroup</span>
+    <span class="n">PipeGroup</span> <span class="o">=</span> <span class="s2">&quot;pipe-group&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">PipeGroup</span>
+    <span class="n">ElectricityGroup</span> <span class="o">=</span> <span class="s2">&quot;electricity-group&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ElectricityGroup</span>
+
+<div class="viewcode-block" id="Prototype.__init__">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.Prototype.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prototype_name</span><span class="p">,</span> <span class="n">entity_class_name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prototype_name</span> <span class="o">=</span> <span class="n">prototype_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">entity_class</span> <span class="o">=</span> <span class="n">entity_class_name</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">WIDTH</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity_class</span><span class="o">.</span><span class="n">_width</span><span class="o">.</span><span class="n">default</span>  <span class="c1"># Access the class attribute directly</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">HEIGHT</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity_class</span><span class="o">.</span><span class="n">_height</span><span class="o">.</span><span class="n">default</span></div>
+
+
+
+<span class="n">prototype_by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">prototype</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">prototype</span> <span class="k">for</span> <span class="n">prototype</span> <span class="ow">in</span> <span class="n">Prototype</span><span class="p">}</span>
+<span class="n">prototype_by_title</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">prototype</span><span class="p">):</span> <span class="n">prototype</span> <span class="k">for</span> <span class="n">prototype</span> <span class="ow">in</span> <span class="n">Prototype</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="Technology">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.Technology">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Technology</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="c1"># Basic automation technologies</span>
+    <span class="n">Automation</span> <span class="o">=</span> <span class="s2">&quot;automation&quot;</span>  <span class="c1"># Unlocks assembling machine 1</span>
+    <span class="n">Automation2</span> <span class="o">=</span> <span class="s2">&quot;automation-2&quot;</span>  <span class="c1"># Unlocks assembling machine 2</span>
+    <span class="n">Automation3</span> <span class="o">=</span> <span class="s2">&quot;automation-3&quot;</span>  <span class="c1"># Unlocks assembling machine 3</span>
+
+    <span class="c1"># Logistics technologies</span>
+    <span class="n">Logistics</span> <span class="o">=</span> <span class="s2">&quot;logistics&quot;</span>  <span class="c1"># Unlocks basic belts and inserters</span>
+    <span class="n">Logistics2</span> <span class="o">=</span> <span class="s2">&quot;logistics-2&quot;</span>  <span class="c1"># Unlocks fast belts and inserters</span>
+    <span class="n">Logistics3</span> <span class="o">=</span> <span class="s2">&quot;logistics-3&quot;</span>  <span class="c1"># Unlocks express belts and inserters</span>
+
+    <span class="c1"># Circuit technologies</span>
+    <span class="c1"># CircuitNetwork = &quot;circuit-network&quot;</span>
+    <span class="n">AdvancedElectronics</span> <span class="o">=</span> <span class="s2">&quot;advanced-electronics&quot;</span>
+    <span class="n">AdvancedElectronics2</span> <span class="o">=</span> <span class="s2">&quot;advanced-electronics-2&quot;</span>
+
+    <span class="c1"># Power technologies</span>
+    <span class="n">Electronics</span> <span class="o">=</span> <span class="s2">&quot;electronics&quot;</span>
+    <span class="n">ElectricEnergy</span> <span class="o">=</span> <span class="s2">&quot;electric-energy-distribution-1&quot;</span>
+    <span class="n">ElectricEnergy2</span> <span class="o">=</span> <span class="s2">&quot;electric-energy-distribution-2&quot;</span>
+    <span class="n">SolarEnergy</span> <span class="o">=</span> <span class="s2">&quot;solar-energy&quot;</span>
+    <span class="n">ElectricEngineering</span> <span class="o">=</span> <span class="s2">&quot;electric-engine&quot;</span>
+    <span class="n">BatteryTechnology</span> <span class="o">=</span> <span class="s2">&quot;battery&quot;</span>
+    <span class="c1"># AdvancedBattery = &quot;battery-mk2-equipment&quot;</span>
+    <span class="n">NuclearPower</span> <span class="o">=</span> <span class="s2">&quot;nuclear-power&quot;</span>
+
+    <span class="c1"># Mining technologies</span>
+    <span class="n">SteelProcessing</span> <span class="o">=</span> <span class="s2">&quot;steel-processing&quot;</span>
+    <span class="n">AdvancedMaterialProcessing</span> <span class="o">=</span> <span class="s2">&quot;advanced-material-processing&quot;</span>
+    <span class="n">AdvancedMaterialProcessing2</span> <span class="o">=</span> <span class="s2">&quot;advanced-material-processing-2&quot;</span>
+
+    <span class="c1"># Military technologies</span>
+    <span class="n">MilitaryScience</span> <span class="o">=</span> <span class="s2">&quot;military&quot;</span>
+    <span class="c1"># MilitaryScience2 = &quot;military-2&quot;</span>
+    <span class="c1"># MilitaryScience3 = &quot;military-3&quot;</span>
+    <span class="c1"># MilitaryScience4 = &quot;military-4&quot;</span>
+    <span class="c1"># Artillery = &quot;artillery&quot;</span>
+    <span class="c1"># Flamethrower = &quot;flamethrower&quot;</span>
+    <span class="c1"># LandMines = &quot;land-mines&quot;</span>
+    <span class="c1"># Turrets = &quot;turrets&quot;</span>
+    <span class="c1"># LaserTurrets = &quot;laser-turrets&quot;</span>
+    <span class="c1"># RocketSilo = &quot;rocket-silo&quot;</span>
+
+    <span class="c1"># Armor and equipment</span>
+    <span class="n">ModularArmor</span> <span class="o">=</span> <span class="s2">&quot;modular-armor&quot;</span>
+    <span class="n">PowerArmor</span> <span class="o">=</span> <span class="s2">&quot;power-armor&quot;</span>
+    <span class="n">PowerArmor2</span> <span class="o">=</span> <span class="s2">&quot;power-armor-mk2&quot;</span>
+    <span class="n">NightVision</span> <span class="o">=</span> <span class="s2">&quot;night-vision-equipment&quot;</span>
+    <span class="n">EnergyShield</span> <span class="o">=</span> <span class="s2">&quot;energy-shields&quot;</span>
+    <span class="n">EnergyShield2</span> <span class="o">=</span> <span class="s2">&quot;energy-shields-mk2-equipment&quot;</span>
+
+    <span class="c1"># Train technologies</span>
+    <span class="n">RailwayTransportation</span> <span class="o">=</span> <span class="s2">&quot;railway&quot;</span>
+    <span class="c1"># AutomatedRailTransportation = &quot;automated-rail-transportation&quot;</span>
+    <span class="c1"># RailSignals = &quot;rail-signals&quot;</span>
+
+    <span class="c1"># Oil processing</span>
+    <span class="n">OilProcessing</span> <span class="o">=</span> <span class="s2">&quot;oil-processing&quot;</span>
+    <span class="n">AdvancedOilProcessing</span> <span class="o">=</span> <span class="s2">&quot;advanced-oil-processing&quot;</span>
+    <span class="n">SulfurProcessing</span> <span class="o">=</span> <span class="s2">&quot;sulfur-processing&quot;</span>
+    <span class="n">Plastics</span> <span class="o">=</span> <span class="s2">&quot;plastics&quot;</span>
+    <span class="n">Lubricant</span> <span class="o">=</span> <span class="s2">&quot;lubricant&quot;</span>
+
+    <span class="c1"># Modules</span>
+    <span class="c1"># Modules = &quot;modules&quot;</span>
+    <span class="c1"># SpeedModule = &quot;speed-module&quot;</span>
+    <span class="c1"># SpeedModule2 = &quot;speed-module-2&quot;</span>
+    <span class="c1"># SpeedModule3 = &quot;speed-module-3&quot;</span>
+    <span class="n">ProductivityModule</span> <span class="o">=</span> <span class="s2">&quot;productivity-module&quot;</span>
+    <span class="n">ProductivityModule2</span> <span class="o">=</span> <span class="s2">&quot;productivity-module-2&quot;</span>
+    <span class="n">ProductivityModule3</span> <span class="o">=</span> <span class="s2">&quot;productivity-module-3&quot;</span>
+    <span class="c1"># EfficiencyModule = &quot;efficiency-module&quot;</span>
+    <span class="c1"># EfficiencyModule2 = &quot;efficiency-module-2&quot;</span>
+    <span class="c1"># EfficiencyModule3 = &quot;efficiency-module-3&quot;</span>
+
+    <span class="c1"># Robot technologies</span>
+    <span class="n">Robotics</span> <span class="o">=</span> <span class="s2">&quot;robotics&quot;</span>
+    <span class="c1"># ConstructionRobotics = &quot;construction-robotics&quot;</span>
+    <span class="c1"># LogisticRobotics = &quot;logistic-robotics&quot;</span>
+    <span class="c1"># LogisticSystem = &quot;logistic-system&quot;</span>
+    <span class="c1"># CharacterLogisticSlots = &quot;character-logistic-slots&quot;</span>
+    <span class="c1"># CharacterLogisticSlots2 = &quot;character-logistic-slots-2&quot;</span>
+
+    <span class="c1"># Science technologies</span>
+    <span class="n">LogisticsSciencePack</span> <span class="o">=</span> <span class="s2">&quot;logistic-science-pack&quot;</span>
+    <span class="n">MilitarySciencePack</span> <span class="o">=</span> <span class="s2">&quot;military-science-pack&quot;</span>
+    <span class="n">ChemicalSciencePack</span> <span class="o">=</span> <span class="s2">&quot;chemical-science-pack&quot;</span>
+    <span class="n">ProductionSciencePack</span> <span class="o">=</span> <span class="s2">&quot;production-science-pack&quot;</span>
+    <span class="c1"># UtilitySciencePack = &quot;utility-science-pack&quot;</span>
+    <span class="c1"># SpaceSciencePack = &quot;space-science-pack&quot;</span>
+
+    <span class="c1"># Inserter technologies</span>
+    <span class="n">FastInserter</span> <span class="o">=</span> <span class="s2">&quot;fast-inserter&quot;</span>
+    <span class="n">StackInserter</span> <span class="o">=</span> <span class="s2">&quot;stack-inserter&quot;</span>
+    <span class="n">StackInserterCapacity1</span> <span class="o">=</span> <span class="s2">&quot;stack-inserter-capacity-bonus-1&quot;</span>
+    <span class="n">StackInserterCapacity2</span> <span class="o">=</span> <span class="s2">&quot;stack-inserter-capacity-bonus-2&quot;</span>
+
+    <span class="c1"># Storage technologies</span>
+    <span class="n">StorageTanks</span> <span class="o">=</span> <span class="s2">&quot;fluid-handling&quot;</span>
+    <span class="n">BarrelFilling</span> <span class="o">=</span> <span class="s2">&quot;barrel-filling&quot;</span>
+    <span class="c1"># Warehouses = &quot;warehousing&quot;</span>
+
+    <span class="c1"># Vehicle technologies</span>
+    <span class="c1"># Automobiles = &quot;automobilism&quot;</span>
+    <span class="c1"># TankTechnology = &quot;tank&quot;</span>
+    <span class="c1"># SpiderVehicle = &quot;spidertron&quot;</span>
+
+    <span class="c1"># Weapon technologies</span>
+    <span class="n">Grenades</span> <span class="o">=</span> <span class="s2">&quot;grenades&quot;</span>
+    <span class="c1"># ClusterGrenades = &quot;cluster-grenades&quot;</span>
+    <span class="c1"># RocketLauncher = &quot;rocketry&quot;</span>
+    <span class="c1"># ExplosiveRocketry = &quot;explosive-rocketry&quot;</span>
+    <span class="c1"># AtomicBomb = &quot;atomic-bomb&quot;</span>
+    <span class="c1"># CombatRobotics = &quot;combat-robotics&quot;</span>
+    <span class="c1"># CombatRobotics2 = &quot;combat-robotics-2&quot;</span>
+    <span class="c1"># CombatRobotics3 = &quot;combat-robotics-3&quot;</span>
+
+    <span class="c1"># Misc technologies</span>
+    <span class="n">Landfill</span> <span class="o">=</span> <span class="s2">&quot;landfill&quot;</span>
+    <span class="n">CharacterInventorySlots</span> <span class="o">=</span> <span class="s2">&quot;character-inventory-slots&quot;</span>
+    <span class="n">ResearchSpeed</span> <span class="o">=</span> <span class="s2">&quot;research-speed&quot;</span>
+    <span class="c1"># Toolbelt = &quot;toolbelt&quot;</span>
+    <span class="c1"># BrakinPower = &quot;braking-force&quot;</span>
+
+    <span class="c1"># # Endgame technologies</span>
+    <span class="n">SpaceScience</span> <span class="o">=</span> <span class="s2">&quot;space-science-pack&quot;</span>
+    <span class="n">RocketFuel</span> <span class="o">=</span> <span class="s2">&quot;rocket-fuel&quot;</span>
+    <span class="n">RocketControl</span> <span class="o">=</span> <span class="s2">&quot;rocket-control-unit&quot;</span>
+    <span class="n">LowDensityStructure</span> <span class="o">=</span> <span class="s2">&quot;low-density-structure&quot;</span>
+    <span class="n">RocketSiloTechnology</span> <span class="o">=</span> <span class="s2">&quot;rocket-silo&quot;</span></div>
+
+
+
+<span class="c1"># Helper dictionary to look up technology by name string</span>
+<span class="n">technology_by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">tech</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">tech</span> <span class="k">for</span> <span class="n">tech</span> <span class="ow">in</span> <span class="n">Technology</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="Resource">
+<a class="viewcode-back" href="../../../api/modules/fle.env.game_types.html#fle.env.game_types.Resource">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Resource</span><span class="p">:</span>
+    <span class="n">Coal</span> <span class="o">=</span> <span class="s2">&quot;coal&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">IronOre</span> <span class="o">=</span> <span class="s2">&quot;iron-ore&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">CopperOre</span> <span class="o">=</span> <span class="s2">&quot;copper-ore&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">Stone</span> <span class="o">=</span> <span class="s2">&quot;stone&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">Water</span> <span class="o">=</span> <span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">CrudeOil</span> <span class="o">=</span> <span class="s2">&quot;crude-oil&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">UraniumOre</span> <span class="o">=</span> <span class="s2">&quot;uranium-ore&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span>
+    <span class="n">Wood</span> <span class="o">=</span> <span class="s2">&quot;wood&quot;</span><span class="p">,</span> <span class="n">ent</span><span class="o">.</span><span class="n">ResourcePatch</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

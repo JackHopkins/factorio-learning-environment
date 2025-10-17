@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fle.eval.tasks.unbounded_throughput_task &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fle.eval.tasks.unbounded_throughput_task</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fle.eval.tasks.unbounded_throughput_task</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactorioInstance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.eval.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskABC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.eval.tasks</span><span class="w"> </span><span class="kn">import</span> <span class="n">LAB_PLAY_POPULATED_STARTING_INVENTORY</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.utils.achievements</span><span class="w"> </span><span class="kn">import</span> <span class="n">eval_program_with_achievements</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaskResponse</span>
+
+
+<span class="n">INSTRUCTIONS</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You must create an AUTOMATIC factory that automatically creates a target entity by itself. You are given the entity for which you need to create a factory for. Create the largest factory as you can that automatically creates the target entity.</span>
+<span class="s2">After each step the throughput of the factory is evaluated during 60 seconds of worktime and the results are supplied to you in the response. Iteratively expand your factory, i.e first make a small factory step by step and then expand the factory in subsequent steps.&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="UnboundedThroughputTask">
+<a class="viewcode-back" href="../../../../api/modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnboundedThroughputTask</span><span class="p">(</span><span class="n">TaskABC</span><span class="p">):</span>
+<div class="viewcode-block" id="UnboundedThroughputTask.__init__">
+<a class="viewcode-back" href="../../../../api/modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">trajectory_length</span><span class="p">,</span>
+        <span class="n">goal_description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">task_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">throughput_entity</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+        <span class="n">holdout_wait_period</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">pre_holdout_wait_period</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">show_number_of_steps_left_in_prompt</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">use_populated_inventory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">unlock_all_research</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">agent_instructions</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">goal_description</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="n">INSTRUCTIONS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">show_number_of_steps_left_in_prompt</span><span class="p">:</span>
+            <span class="n">goal_description</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">In total you have </span><span class="si">{</span><span class="n">trajectory_length</span><span class="si">}</span><span class="s2"> steps to build your factory&quot;</span>
+            <span class="p">)</span>
+        <span class="n">starting_inventory</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">LAB_PLAY_POPULATED_STARTING_INVENTORY</span> <span class="k">if</span> <span class="n">use_populated_inventory</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">trajectory_length</span><span class="p">,</span>
+            <span class="n">starting_inventory</span><span class="o">=</span><span class="n">starting_inventory</span><span class="p">,</span>
+            <span class="n">goal_description</span><span class="o">=</span><span class="n">goal_description</span><span class="p">,</span>
+            <span class="n">task_key</span><span class="o">=</span><span class="n">task_key</span><span class="p">,</span>
+            <span class="n">all_technology_reserached</span><span class="o">=</span><span class="n">unlock_all_research</span><span class="p">,</span>
+            <span class="n">agent_instructions</span><span class="o">=</span><span class="n">agent_instructions</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">throughput_entity</span> <span class="o">=</span> <span class="n">throughput_entity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">holdout_wait_period</span> <span class="o">=</span> <span class="n">holdout_wait_period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">starting_game_state</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_holdout_wait_period</span> <span class="o">=</span> <span class="n">pre_holdout_wait_period</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">show_number_of_steps_left_in_prompt</span> <span class="o">=</span> <span class="n">show_number_of_steps_left_in_prompt</span></div>
+
+
+<div class="viewcode-block" id="UnboundedThroughputTask.verify">
+<a class="viewcode-back" href="../../../../api/modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask.verify">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">score</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">FactorioInstance</span><span class="p">,</span> <span class="n">step_statistics</span><span class="p">:</span> <span class="n">Dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TaskResponse</span><span class="p">:</span>
+        <span class="n">max_achieved_throughput</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">max_achievements</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># wait the pre-holdout period</span>
+        <span class="c1"># instance.namespace.sleep(self.pre_holdout_wait_period)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">result_list</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">achievements</span> <span class="o">=</span> <span class="n">eval_program_with_achievements</span><span class="p">(</span>
+                <span class="n">program</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;sleep(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">holdout_wait_period</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="n">instance</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">max_achievements</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">max_achievements</span> <span class="o">=</span> <span class="n">achievements</span>
+            <span class="n">dynamic_achievements</span> <span class="o">=</span> <span class="n">achievements</span><span class="p">[</span><span class="s2">&quot;dynamic&quot;</span><span class="p">]</span>
+            <span class="n">target_throughput</span> <span class="o">=</span> <span class="n">dynamic_achievements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">throughput_entity</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">target_throughput</span> <span class="o">&gt;</span> <span class="n">max_achieved_throughput</span><span class="p">:</span>
+                <span class="n">max_achieved_throughput</span> <span class="o">=</span> <span class="n">target_throughput</span>
+                <span class="n">max_achievements</span> <span class="o">=</span> <span class="n">achievements</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">TaskResponse</span><span class="p">(</span>
+            <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;achievements&quot;</span><span class="p">:</span> <span class="n">max_achievements</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal_description</span><span class="p">,</span>
+            <span class="s2">&quot;throughput_entity&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">throughput_entity</span><span class="p">,</span>
+            <span class="s2">&quot;trajectory_length&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">trajectory_length</span><span class="p">,</span>
+            <span class="s2">&quot;starting_inventory&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">starting_inventory</span><span class="p">,</span>
+            <span class="s2">&quot;initial_state&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">starting_game_state</span><span class="o">.</span><span class="n">to_raw</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">starting_game_state</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;show_number_of_steps_left_in_prompt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_number_of_steps_left_in_prompt</span><span class="p">,</span>
+        <span class="p">}</span>
+
+<div class="viewcode-block" id="UnboundedThroughputTask.setup_instance">
+<a class="viewcode-back" href="../../../../api/modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask.setup_instance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Code to provision the task environment&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="UnboundedThroughputTask.enhance_response_with_task_output">
+<a class="viewcode-back" href="../../../../api/modules/fle.eval.tasks.html#fle.eval.tasks.UnboundedThroughputTask.enhance_response_with_task_output">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enhance_response_with_task_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task_response</span><span class="p">:</span> <span class="n">TaskResponse</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">task_throughputs</span> <span class="o">=</span> <span class="n">task_response</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;achievements&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">number_of_steps_left</span> <span class="o">=</span> <span class="n">task_response</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nr_of_steps_left&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">task_throughputs</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Here is the current throughput of your factory: </span><span class="si">{</span><span class="n">task_throughputs</span><span class="p">[</span><span class="s1">&#39;dynamic&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> created per 60 seconds&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">show_number_of_steps_left_in_prompt</span> <span class="ow">and</span> <span class="n">number_of_steps_left</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">You have: </span><span class="si">{</span><span class="n">number_of_steps_left</span><span class="si">}</span><span class="s2"> steps left to build or expand your factory&quot;</span>
+
+        <span class="k">return</span> <span class="n">response</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

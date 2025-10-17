@@ -1,0 +1,493 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basic Agent Example &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Visual Agent Example" href="visual_agent.html" />
+    <link rel="prev" title="Database Configuration" href="../customization/database.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basic Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#agent-overview">Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-implementation">Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-agent">Running the Agent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-configuration">Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-behavior">Agent Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-output">Example Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-metrics">Performance Metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-metrics">Example Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Basic Agent Example</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/basic_agent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="basic-agent-example">
+<h1>Basic Agent Example<a class="headerlink" href="#basic-agent-example" title="Link to this heading"></a></h1>
+<p>This example demonstrates how to create a basic agent that interacts with the Factorio Learning Environment.</p>
+<section id="agent-overview">
+<h2>Agent Overview<a class="headerlink" href="#agent-overview" title="Link to this heading"></a></h2>
+<p>The basic agent performs simple resource collection and automation tasks:</p>
+<ol class="arabic simple">
+<li><p><strong>Resource Discovery</strong>: Find and identify available resources</p></li>
+<li><p><strong>Mining Setup</strong>: Place mining drills on resource patches</p></li>
+<li><p><strong>Storage Management</strong>: Create storage for collected resources</p></li>
+<li><p><strong>Automation</strong>: Set up basic automation chains</p></li>
+</ol>
+</section>
+<section id="agent-implementation">
+<h2>Agent Implementation<a class="headerlink" href="#agent-implementation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.agent_abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.game_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Position</span><span class="p">,</span> <span class="n">Direction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BasicAgent</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;BasicAgent&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_resources</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">,</span> <span class="s1">&#39;copper-ore&#39;</span><span class="p">,</span> <span class="s1">&#39;coal&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mining_setups</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate action based on current observation&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Get current state</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;entities&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">inventory</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;inventory&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">game_info</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;game_info&#39;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="c1"># Generate action code</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initial_setup</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_setup_mining</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_and_optimize</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">inventory</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Action</span><span class="p">(</span>
+            <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span>
+            <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initial_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initial setup and exploration&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Initial setup and exploration</span>
+<span class="s1">print(&quot;Starting BasicAgent exploration&quot;)</span>
+
+<span class="s1"># Get current position</span>
+<span class="s1">position = get_position()</span>
+<span class="s1">print(f&quot;Starting position: </span><span class="si">{position}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Explore the area</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">print(f&quot;Found {len(entities)} entities&quot;)</span>
+
+<span class="s1"># Look for resources</span>
+<span class="s1">iron_pos = nearest(Resource.IRON_ORE)</span>
+<span class="s1">copper_pos = nearest(Resource.COPPER_ORE)</span>
+<span class="s1">coal_pos = nearest(Resource.COAL)</span>
+
+<span class="s1">print(f&quot;Iron ore at: </span><span class="si">{iron_pos}</span><span class="s1">&quot;)</span>
+<span class="s1">print(f&quot;Copper ore at: </span><span class="si">{copper_pos}</span><span class="s1">&quot;)</span>
+<span class="s1">print(f&quot;Coal at: </span><span class="si">{coal_pos}</span><span class="s1">&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_mining</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up mining operations&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Set up mining operations</span>
+<span class="s1">print(&quot;Setting up mining operations&quot;)</span>
+
+<span class="s1"># Find and place mining drills</span>
+<span class="s1">iron_pos = nearest(Resource.IRON_ORE)</span>
+<span class="s1">if iron_pos:</span>
+<span class="s1">    drill = place_entity(</span>
+<span class="s1">        entity=Prototype.MiningDrill,</span>
+<span class="s1">        position=iron_pos,</span>
+<span class="s1">        direction=Direction.NORTH</span>
+<span class="s1">    )</span>
+<span class="s1">    print(f&quot;Placed mining drill at </span><span class="si">{iron_pos}</span><span class="s1">&quot;)</span>
+
+<span class="s1">    # Add storage chest</span>
+<span class="s1">    chest = place_entity_next_to(</span>
+<span class="s1">        entity=Prototype.IronChest,</span>
+<span class="s1">        reference_position=drill.drop_position,</span>
+<span class="s1">        direction=Direction.SOUTH</span>
+<span class="s1">    )</span>
+<span class="s1">    print(f&quot;Placed chest at </span><span class="si">{chest.position}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Check inventory</span>
+<span class="s1">inventory = inspect_inventory()</span>
+<span class="s1">print(f&quot;Current inventory: </span><span class="si">{inventory}</span><span class="s1">&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_monitor_and_optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entities</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">inventory</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor and optimize operations&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Monitor and optimize operations</span>
+<span class="s1">print(&quot;Monitoring operations&quot;)</span>
+
+<span class="s1"># Check all entities</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">working_entities = [e for e in entities if hasattr(e, &#39;status&#39;) and e.status == EntityStatus.WORKING]</span>
+<span class="s1">print(f&quot;Working entities: {len(working_entities)}&quot;)</span>
+
+<span class="s1"># Check inventory</span>
+<span class="s1">inventory = inspect_inventory()</span>
+<span class="s1">total_items = sum(inventory.values())</span>
+<span class="s1">print(f&quot;Total items in inventory: </span><span class="si">{total_items}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Print detailed inventory</span>
+<span class="s1">for item, count in inventory.items():</span>
+<span class="s1">    if count &gt; 0:</span>
+<span class="s1">        print(f&quot;  </span><span class="si">{item}</span><span class="s1">: </span><span class="si">{count}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Check for any issues</span>
+<span class="s1">for entity in entities:</span>
+<span class="s1">    if hasattr(entity, &#39;status&#39;) and entity.status == EntityStatus.NO_POWER:</span>
+<span class="s1">        print(f&quot;Entity </span><span class="si">{entity.name}</span><span class="s1"> needs power&quot;)</span>
+<span class="s1">    elif hasattr(entity, &#39;status&#39;) and entity.status == EntityStatus.NO_FUEL:</span>
+<span class="s1">        print(f&quot;Entity </span><span class="si">{entity.name}</span><span class="s1"> needs fuel&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="running-the-agent">
+<h2>Running the Agent<a class="headerlink" href="#running-the-agent" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Environment Setup</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.basic_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasicAgent</span>
+
+<span class="c1"># Create environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create agent</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">BasicAgent</span><span class="p">({})</span>
+
+<span class="c1"># Run episode</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">while</span> <span class="ow">not</span> <span class="n">done</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="n">terminated</span> <span class="ow">or</span> <span class="n">truncated</span>
+    <span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: Reward = </span><span class="si">{</span><span class="n">reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Command Line Usage</strong></dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run basic agent evaluation</span>
+fle<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--agent<span class="w"> </span>basic_agent<span class="w"> </span>--config<span class="w"> </span>configs/basic_agent_config.json
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="agent-configuration">
+<h2>Agent Configuration<a class="headerlink" href="#agent-configuration" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Basic Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BasicAgent&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;target_resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;iron-ore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copper-ore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coal&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;max_mining_setups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;monitoring_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Advanced Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;BasicAgent&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;target_resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;iron-ore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;copper-ore&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;coal&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;stone&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;max_mining_setups&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;monitoring_interval&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;optimization_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;debug_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.8</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;throughput&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;efficiency&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;resource_utilization&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="agent-behavior">
+<h2>Agent Behavior<a class="headerlink" href="#agent-behavior" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Phase 1: Exploration (Steps 1-5)</strong></dt><dd><ul class="simple">
+<li><p>Explore the starting area</p></li>
+<li><p>Identify available resources</p></li>
+<li><p>Plan mining operations</p></li>
+</ul>
+</dd>
+<dt><strong>Phase 2: Setup (Steps 6-15)</strong></dt><dd><ul class="simple">
+<li><p>Place mining drills on resource patches</p></li>
+<li><p>Create storage chests</p></li>
+<li><p>Set up basic automation</p></li>
+</ul>
+</dd>
+<dt><strong>Phase 3: Monitoring (Steps 16+)</strong></dt><dd><ul class="simple">
+<li><p>Monitor entity status</p></li>
+<li><p>Check inventory levels</p></li>
+<li><p>Optimize operations</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Step 1: Initial Setup</strong></dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Starting</span> <span class="n">BasicAgent</span> <span class="n">exploration</span>
+<span class="n">Starting</span> <span class="n">position</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">Found</span> <span class="mi">0</span> <span class="n">entities</span>
+<span class="n">Iron</span> <span class="n">ore</span> <span class="n">at</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">61.0</span><span class="p">)</span>
+<span class="n">Copper</span> <span class="n">ore</span> <span class="n">at</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">45.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">30.0</span><span class="p">)</span>
+<span class="n">Coal</span> <span class="n">at</span><span class="p">:</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">15.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">20.0</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Step 5: Mining Setup</strong></dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Setting</span> <span class="n">up</span> <span class="n">mining</span> <span class="n">operations</span>
+<span class="n">Placed</span> <span class="n">mining</span> <span class="n">drill</span> <span class="n">at</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">61.0</span><span class="p">)</span>
+<span class="n">Placed</span> <span class="n">chest</span> <span class="n">at</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">)</span>
+<span class="n">Current</span> <span class="n">inventory</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;coal&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Step 20: Monitoring</strong></dt><dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Monitoring</span> <span class="n">operations</span>
+<span class="n">Working</span> <span class="n">entities</span><span class="p">:</span> <span class="mi">1</span>
+<span class="n">Total</span> <span class="n">items</span> <span class="ow">in</span> <span class="n">inventory</span><span class="p">:</span> <span class="mi">75</span>
+  <span class="n">iron</span><span class="o">-</span><span class="n">ore</span><span class="p">:</span> <span class="mi">75</span>
+  <span class="n">coal</span><span class="p">:</span> <span class="mi">4</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="performance-metrics">
+<h2>Performance Metrics<a class="headerlink" href="#performance-metrics" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Throughput</strong></dt><dd><ul class="simple">
+<li><p>Items produced per minute</p></li>
+<li><p>Resource utilization efficiency</p></li>
+<li><p>Automation chain performance</p></li>
+</ul>
+</dd>
+<dt><strong>Efficiency</strong></dt><dd><ul class="simple">
+<li><p>Power consumption per item</p></li>
+<li><p>Entity utilization rate</p></li>
+<li><p>Resource waste minimization</p></li>
+</ul>
+</dd>
+<dt><strong>Reliability</strong></dt><dd><ul class="simple">
+<li><p>System uptime</p></li>
+<li><p>Error rate</p></li>
+<li><p>Recovery time</p></li>
+</ul>
+</dd>
+</dl>
+<section id="example-metrics">
+<h3>Example Metrics<a class="headerlink" href="#example-metrics" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;throughput&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;iron_ore&quot;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span>  <span class="c1"># items per minute</span>
+        <span class="s2">&quot;copper_ore&quot;</span><span class="p">:</span> <span class="mf">1.8</span><span class="p">,</span>
+        <span class="s2">&quot;coal&quot;</span><span class="p">:</span> <span class="mf">3.2</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;efficiency&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;power_usage&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>  <span class="c1"># normalized power usage</span>
+        <span class="s2">&quot;entity_utilization&quot;</span><span class="p">:</span> <span class="mf">0.75</span><span class="p">,</span>  <span class="c1"># fraction of entities working</span>
+        <span class="s2">&quot;resource_waste&quot;</span><span class="p">:</span> <span class="mf">0.05</span>  <span class="c1"># fraction of resources wasted</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;reliability&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;uptime&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># fraction of time system is working</span>
+        <span class="s2">&quot;error_rate&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>  <span class="c1"># errors per step</span>
+        <span class="s2">&quot;recovery_time&quot;</span><span class="p">:</span> <span class="mf">5.0</span>  <span class="c1"># average recovery time in steps</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Common Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>No resources found</strong>: Check map generation and resource placement</p></li>
+<li><p><strong>Mining drills not working</strong>: Verify power and fuel supply</p></li>
+<li><p><strong>Inventory full</strong>: Add more storage or optimize collection</p></li>
+</ul>
+</dd>
+<dt><strong>Debug Mode</strong></dt><dd><p>Enable debug mode for detailed logging:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;debug_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;log_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DEBUG&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Performance Issues</strong></dt><dd><ul class="simple">
+<li><p>Monitor entity count and performance</p></li>
+<li><p>Check for resource bottlenecks</p></li>
+<li><p>Optimize automation chains</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Start Simple</strong>: Begin with basic operations</p></li>
+<li><p><strong>Monitor Progress</strong>: Track performance metrics</p></li>
+<li><p><strong>Handle Errors</strong>: Implement error recovery</p></li>
+<li><p><strong>Optimize Gradually</strong>: Improve efficiency over time</p></li>
+<li><p><strong>Test Thoroughly</strong>: Validate all scenarios</p></li>
+<li><p><strong>Document Behavior</strong>: Record agent decisions</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../customization/database.html" class="btn btn-neutral float-left" title="Database Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="visual_agent.html" class="btn btn-neutral float-right" title="Visual Agent Example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quickstart &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Cluster Setup" href="cluster.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#environment-overview">Environment Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-interaction">Example Interaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-concepts">Key Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quickstart</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/getting_started/quickstart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quickstart">
+<h1>Quickstart<a class="headerlink" href="#quickstart" title="Link to this heading"></a></h1>
+<p>Use the CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Start Factorio cluster</span>
+fle<span class="w"> </span>cluster<span class="w"> </span>start
+
+<span class="c1"># Run evaluation trajectories (requires [eval] dependencies)</span>
+fle<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--config<span class="w"> </span>configs/gym_run_config.json
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When you run <cite>fle init</cite> or <cite>fle eval</cite> for the first time, an <cite>.env</cite> file and a <cite>configs/</cite> directory with example configurations are created automatically</p>
+</div>
+<section id="environment-overview">
+<h2>Environment Overview<a class="headerlink" href="#environment-overview" title="Link to this heading"></a></h2>
+<p>FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.</p>
+<p>Agents interact with <strong>FLE</strong> by code synthesis through a <strong>REPL</strong> (Read-Eval-Print-Loop) pattern:</p>
+<ol class="arabic simple">
+<li><p><strong>Observation</strong>: The agent observes the world through the output streams (stderr/stdout) of their last program.</p></li>
+<li><p><strong>Action</strong>: The agent generates a Python program to perform their desired action.</p></li>
+<li><p><strong>Feedback</strong>: The environment executes the program, assigns variables, add classes/functions to the namespace, and provides an output stream.</p></li>
+</ol>
+</section>
+<section id="example-interaction">
+<h2>Example Interaction<a class="headerlink" href="#example-interaction" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Get iron patch and place mining drill</span>
+<span class="n">drill</span> <span class="o">=</span> <span class="n">place_entity</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">Prototype</span><span class="o">.</span><span class="n">MiningDrill</span><span class="p">,</span>
+    <span class="n">position</span><span class="o">=</span><span class="n">nearest</span><span class="p">(</span><span class="n">Resource</span><span class="o">.</span><span class="n">IronOre</span><span class="p">),</span>
+    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">NORTH</span>
+<span class="p">)</span>
+<span class="c1"># 2. Add output storage</span>
+<span class="n">chest</span> <span class="o">=</span> <span class="n">place_entity_next_to</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">Prototype</span><span class="o">.</span><span class="n">IronChest</span><span class="p">,</span>
+    <span class="n">reference_position</span><span class="o">=</span><span class="n">drill</span><span class="o">.</span><span class="n">drop_position</span><span class="p">,</span>
+    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">SOUTH</span>
+<span class="p">)</span>
+<span class="c1"># 3. Verify automation chain and observe entities</span>
+<span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># Sleep for 10 seconds</span>
+<span class="k">assert</span> <span class="n">drill</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">EntityStatus</span><span class="o">.</span><span class="n">WORKING</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">get_entities</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><strong>Feedback:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span> <span class="n">BurnerMiningDrill</span><span class="p">(</span><span class="n">fuel</span><span class="o">=</span><span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;coal&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">DOWN</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">61.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">energy</span><span class="o">=</span><span class="mf">2666.6666666667</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">tile_dimensions</span><span class="o">=</span><span class="n">TileDimensions</span><span class="p">(</span><span class="n">tile_width</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tile_height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">status</span><span class="o">=</span><span class="n">EntityStatus</span><span class="o">.</span><span class="n">WORKING</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">neighbours</span><span class="o">=</span><span class="p">[</span><span class="n">Entity</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">DOWN</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">)],</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">drop_position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">resources</span><span class="o">=</span><span class="p">[</span><span class="n">Ingredient</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="kc">None</span><span class="p">)]),</span>
+<span class="gp">&gt;&gt;&gt; </span>  <span class="n">Chest</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">UP</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">energy</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">tile_dimensions</span><span class="o">=</span><span class="n">TileDimensions</span><span class="p">(</span><span class="n">tile_width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">tile_height</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">status</span><span class="o">=</span><span class="n">EntityStatus</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">inventory</span><span class="o">=</span><span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">:</span> <span class="mi">75</span><span class="p">}))]</span>
+</pre></div>
+</div>
+</section>
+<section id="key-concepts">
+<h2>Key Concepts<a class="headerlink" href="#key-concepts" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Tools and Namespace</strong></dt><dd><p>Agents are provided with the Python standard library, and an API comprising <a class="reference internal" href="../api/tools.html"><span class="doc">tools</span></a> that they can use.</p>
+<p>Tools are functions that perform a game action and return a typed object (e.g an Inventory), which can be stored as a named <strong>variable</strong> in the Python namespace for later use.</p>
+<p>The namespace acts as an episodic symbolic memory system, and saved objects represent an observation of the environment at the moment of query.</p>
+<p>This enables agents to maintain complex state representations and build hierarchical abstractions as the factories scale.</p>
+</dd>
+<dt><strong>Observation Streams</strong></dt><dd><p>Agents observe <strong>stdout</strong> and <strong>stderr</strong> - the output streams of their program. Agents may intentionally choose to print relevant objects and computations to the output stream to construct observations.</p>
+<p>Mistakes in the code or invalid operations raise typed <strong>exceptions</strong> with detailed context that is written to stderr.</p>
+<p>This enables agents to reactively debug their programs after execution, and proactively use runtime assertions during execution to self-verify their actions.</p>
+</dd>
+<dt><strong>Code Enhancement</strong></dt><dd><p>Agents are able to enhance their internal representation of the game state by defining:</p>
+<ol class="arabic simple">
+<li><p>Utility functions for reuse throughout an episode, to encapsulate previously successful logic</p></li>
+<li><p>Classes in the namespace to better organize the data retrieved from the game.</p></li>
+</ol>
+</dd>
+</dl>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Learn about the <a class="reference internal" href="../api/environment.html"><span class="doc">environment API</span></a></p></li>
+<li><p>Explore available <a class="reference internal" href="../api/tools.html"><span class="doc">tools</span></a></p></li>
+<li><p>See <a class="reference internal" href="../examples/basic_agent.html"><span class="doc">examples</span></a> of agent implementations</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cluster.html" class="btn btn-neutral float-right" title="Cluster Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

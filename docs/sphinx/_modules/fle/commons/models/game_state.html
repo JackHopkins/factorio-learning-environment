@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fle.commons.models.game_state &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">fle.commons.models.game_state</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for fle.commons.models.game_state</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.models.research_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResearchState</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.models.technology_state</span><span class="w"> </span><span class="kn">import</span> <span class="n">TechnologyState</span>
+
+
+<div class="viewcode-block" id="GameState">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GameState</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serializable Factorio game state&quot;&quot;&quot;</span>
+
+    <span class="n">entities</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Serialized list of entities</span>
+    <span class="n">inventories</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>  <span class="c1"># List of inventories for all players</span>
+    <span class="n">research</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ResearchState</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">()</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">namespaces</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">agent_messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span>
+    <span class="p">)</span>  <span class="c1"># Can be List[Dict] or List[List[Dict]]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_multiagent</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inventories</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inventories</span><span class="p">)</span>
+
+<div class="viewcode-block" id="GameState.parse_agent_messages">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.parse_agent_messages">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_agent_messages</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="n">agent_messages</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;agent_messages&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">agent_messages</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;agent_messages must be a list&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">agent_messages</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">agent_messages</span>
+        <span class="p">):</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">agent_messages</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">continue</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                    <span class="c1"># Keep the list as-is, but validate its contents</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">message</span><span class="p">):</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                                <span class="sa">f</span><span class="s2">&quot;agent_messages[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] contains non-dictionary elements&quot;</span>
+                            <span class="p">)</span>
+                    <span class="c1"># Leave the list unchanged - don&#39;t convert to single dict</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;agent_messages[</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">] must be a dictionary or a list of dictionaries, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">message</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+        <span class="k">return</span> <span class="n">agent_messages</span></div>
+
+
+<div class="viewcode-block" id="GameState.from_instance">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.from_instance">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GameState&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Capture current game state from Factorio instances&quot;&quot;&quot;</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_save_entity_state</span><span class="p">(</span>
+            <span class="n">compress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">encode</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Get research state</span>
+        <span class="n">research_state</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_save_research_state</span><span class="p">()</span>
+
+        <span class="c1"># Filter and pickle only serializable variables</span>
+        <span class="n">namespaces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="s2">&quot;persistent_vars&quot;</span><span class="p">):</span>
+                <span class="n">serializable_vars</span> <span class="o">=</span> <span class="n">filter_serializable_vars</span><span class="p">(</span><span class="n">namespace</span><span class="o">.</span><span class="n">persistent_vars</span><span class="p">)</span>
+                <span class="n">namespaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">serializable_vars</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">namespaces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">bytes</span><span class="p">())</span>
+
+        <span class="c1"># Get inventories for all players</span>
+        <span class="n">inventories</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">namespace</span><span class="o">.</span><span class="n">inspect_inventory</span><span class="p">()</span> <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span>
+        <span class="p">]</span>
+        <span class="n">agent_messages</span> <span class="o">=</span> <span class="p">[</span><span class="n">namespace</span><span class="o">.</span><span class="n">get_messages</span><span class="p">()</span> <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">entities</span><span class="p">,</span>
+            <span class="n">inventories</span><span class="o">=</span><span class="n">inventories</span><span class="p">,</span>
+            <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">,</span>
+            <span class="n">research</span><span class="o">=</span><span class="n">research_state</span><span class="p">,</span>
+            <span class="n">agent_messages</span><span class="o">=</span><span class="n">agent_messages</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">readable_namespaces</span> <span class="o">=</span> <span class="p">[</span><span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span> <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">]</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;GameState(entities=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="si">}</span><span class="s2">, inventories=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">inventories</span><span class="si">}</span><span class="s2">, timestamp=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">, namespace=</span><span class="se">{{</span><span class="si">{</span><span class="n">readable_namespaces</span><span class="si">}</span><span class="se">}}</span><span class="s2">, agent_messages=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_messages</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="GameState.parse_raw">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.parse_raw">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_raw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GameState&quot;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>
+        <span class="n">namespaces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="s2">&quot;namespaces&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">namespaces</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span> <span class="k">if</span> <span class="n">ns</span> <span class="k">else</span> <span class="nb">bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">ns</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;namespaces&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="c1"># Parse research state if present</span>
+        <span class="n">research</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;research&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">research</span> <span class="o">=</span> <span class="n">ResearchState</span><span class="p">(</span>
+                <span class="n">technologies</span><span class="o">=</span><span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">TechnologyState</span><span class="p">(</span><span class="o">**</span><span class="n">tech</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tech</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;technologies&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">},</span>
+                <span class="n">current_research</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;current_research&quot;</span><span class="p">],</span>
+                <span class="n">research_progress</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;research_progress&quot;</span><span class="p">],</span>
+                <span class="n">research_queue</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;research_queue&quot;</span><span class="p">],</span>
+                <span class="n">progress</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;progress&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;progress&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">]</span>
+                    <span class="k">else</span> <span class="p">{}</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;entities&quot;</span><span class="p">],</span>
+            <span class="n">inventories</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;inventories&quot;</span><span class="p">],</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;timestamp&quot;</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">else</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">,</span>
+            <span class="n">research</span><span class="o">=</span><span class="n">research</span><span class="p">,</span>
+            <span class="n">agent_messages</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">parse_agent_messages</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameState.parse">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.parse">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;GameState&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;namespace&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;namespaces&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;namespace&quot;</span><span class="p">]]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;inventories&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;inventory&quot;</span><span class="p">]]</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;agent_messages&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">namespaces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="s2">&quot;namespaces&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">namespaces</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">ns</span><span class="p">)</span> <span class="k">if</span> <span class="n">ns</span> <span class="k">else</span> <span class="nb">bytes</span><span class="p">()</span> <span class="k">for</span> <span class="n">ns</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;namespaces&quot;</span><span class="p">]</span>
+            <span class="p">]</span>
+
+        <span class="c1"># Parse research state if present</span>
+        <span class="n">research</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;research&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">research</span> <span class="o">=</span> <span class="n">ResearchState</span><span class="p">(</span>
+                <span class="n">technologies</span><span class="o">=</span><span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">TechnologyState</span><span class="p">(</span><span class="o">**</span><span class="n">tech</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tech</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;technologies&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">},</span>
+                <span class="n">current_research</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;current_research&quot;</span><span class="p">],</span>
+                <span class="n">research_progress</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;research_progress&quot;</span><span class="p">],</span>
+                <span class="n">research_queue</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;research_queue&quot;</span><span class="p">],</span>
+                <span class="n">progress</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">][</span><span class="s2">&quot;progress&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;progress&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">]</span>
+                    <span class="k">else</span> <span class="p">{}</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;entities&quot;</span><span class="p">],</span>
+            <span class="n">inventories</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;inventories&quot;</span><span class="p">],</span>
+            <span class="n">timestamp</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;timestamp&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;timestamp&quot;</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">else</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="n">namespaces</span><span class="o">=</span><span class="n">namespaces</span><span class="p">,</span>
+            <span class="n">research</span><span class="o">=</span><span class="n">research</span><span class="p">,</span>
+            <span class="n">agent_messages</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">parse_agent_messages</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameState.to_raw">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.to_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert state to JSON string&quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">,</span>
+            <span class="s2">&quot;inventories&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">inventory</span><span class="o">.</span><span class="vm">__dict__</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">inventory</span><span class="p">,</span> <span class="s2">&quot;__dict__&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">inventory</span>
+                <span class="k">for</span> <span class="n">inventory</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventories</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="s2">&quot;namespaces&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">ns</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span> <span class="k">if</span> <span class="n">ns</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">ns</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">],</span>
+            <span class="s2">&quot;agent_messages&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Add research state if present</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;research&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;technologies&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">asdict</span><span class="p">(</span><span class="n">tech</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">tech</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="o">.</span><span class="n">technologies</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="p">},</span>
+                <span class="s2">&quot;current_research&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="o">.</span><span class="n">current_research</span><span class="p">,</span>
+                <span class="s2">&quot;research_progress&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="o">.</span><span class="n">research_progress</span><span class="p">,</span>
+                <span class="s2">&quot;research_queue&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="o">.</span><span class="n">research_queue</span><span class="p">,</span>
+                <span class="s2">&quot;progress&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="o">.</span><span class="n">progress</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GameState.to_instance">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.GameState.to_instance">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Restore game state to a Factorio instance&quot;&quot;&quot;</span>
+        <span class="c1"># Load entity state to all instances (since it&#39;s shared)</span>
+        <span class="k">assert</span> <span class="n">instance</span><span class="o">.</span><span class="n">num_agents</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;GameState can only be restored to a multiagent instance with the same number of agents (num_agents=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_agents</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span>
+        <span class="n">instance</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_load_entity_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">,</span> <span class="n">decompress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Set inventory for each player</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventories</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">inventory</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inventories</span><span class="p">):</span>
+                <span class="n">namespace</span><span class="o">.</span><span class="n">_set_inventory</span><span class="p">(</span><span class="n">inventory</span><span class="p">)</span>
+
+        <span class="c1"># Restore research state if present (only need to do this once)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="p">:</span>  <span class="c1"># Only do this for the first instance</span>
+            <span class="n">instance</span><span class="o">.</span><span class="n">first_namespace</span><span class="o">.</span><span class="n">_load_research_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">research</span><span class="p">)</span>
+
+        <span class="c1"># Load messages for each player</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">num_agents</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">):</span>
+                    <span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">load_messages</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agent_messages</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+        <span class="c1"># Merge pickled namespace with existing persistent_vars for each player</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespaces</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">namespace</span> <span class="ow">in</span> <span class="n">instance</span><span class="o">.</span><span class="n">namespaces</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">namespace</span><span class="p">:</span>
+                    <span class="n">restored_vars</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;persistent_vars&quot;</span><span class="p">)</span>
+                    <span class="ow">or</span> <span class="n">instance</span><span class="o">.</span><span class="n">persistent_vars</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="p">):</span>
+                    <span class="n">instance</span><span class="o">.</span><span class="n">persistent_vars</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">instance</span><span class="o">.</span><span class="n">persistent_vars</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">restored_vars</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="filter_serializable_vars">
+<a class="viewcode-back" href="../../../../api/modules/fle.commons.models.html#fle.commons.models.filter_serializable_vars">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_serializable_vars</span><span class="p">(</span><span class="n">vars_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter dictionary to only include serializable items&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">vars_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">is_serializable</span><span class="p">(</span><span class="n">value</span><span class="p">)}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">is_serializable</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test if an object can be serialized with pickle&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="o">==</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">obj</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>  <span class="c1"># noqa</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Skip type objects</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="c1"># Skip builtin types</span>
+        <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">==</span> <span class="s2">&quot;builtins&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">is_serializable</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># Common built-in types that are always serializable</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">PicklingError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

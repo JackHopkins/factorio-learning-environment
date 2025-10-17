@@ -21,6 +21,9 @@ uv.lock
 *.egg-info/
 uv.lock
 
+# Sphinx documentation build
+/docs/sphinx/build/
+
 # Docker
 **/docker-compose.yml
 

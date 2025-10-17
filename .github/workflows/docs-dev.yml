@@ -1,7 +1,8 @@
 name: Dev Documentation Build
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [docs/sphinx-minedojo-style]
 
 jobs:
   build-docs:

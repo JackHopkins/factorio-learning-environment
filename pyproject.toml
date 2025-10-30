@@ -49,7 +49,7 @@ dependencies = [
 [project.optional-dependencies]
 # For running experiments/evaluations (fle eval command)
 eval = [
-    "gym",
+    "gymnasium",
     "openai>=1.66.3",
     "anthropic>=0.49.0",
     "fastapi>=0.68.0", # multiagent

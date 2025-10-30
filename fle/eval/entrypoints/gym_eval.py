@@ -3,7 +3,7 @@ import json
 import multiprocessing
 import os
 
-import gym
+import gymnasium as gym
 import importlib.resources
 from dotenv import load_dotenv
 from fle.env.gym_env.observation_formatter import BasicObservationFormatter

@@ -9,7 +9,7 @@ from fle.env.gym_env.registry import list_available_environments
 
 from fle.env.protocols._mcp.models import FactorioServer, Recipe, ResourcePatch
 from fle.env.protocols._mcp.repository import FactorioMCPRepository
-import gym
+import gymnasium as gym
 
 
 class FactorioMCPState:

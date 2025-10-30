@@ -1,6 +1,6 @@
-import gym
+import gymnasium as gym
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from typing import Dict, Optional, Tuple, Any
 import pickle
 import datetime
@@ -25,7 +25,7 @@ from fle.eval.tasks import TaskABC
 np.bool8 = np.dtype(np.bool)
 
 
-class AllCharText(gym.spaces.Text):
+class AllCharText(spaces.Text):
     def __init__(self, max_length: int):
         # Use all printable characters except whitespace (or include whitespace if needed)
         charset = string.ascii_letters + string.digits + string.punctuation + " \n\t"

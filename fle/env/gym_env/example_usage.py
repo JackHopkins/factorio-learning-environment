@@ -16,7 +16,7 @@ Usage:
     python example_usage.py --gym-format      # Output in gym.make() format
 """
 
-import gym
+import gymnasium as gym
 import argparse
 import sys
 import os

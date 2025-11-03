@@ -121,6 +121,9 @@ dev = [
     "pytest-xdist>=3.8.0",
     "pre-commit",
     "ipykernel>=6.30.1",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinx-autodoc-typehints",
 ]
 
 # Research/internal evaluation development

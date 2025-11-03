@@ -1,0 +1,752 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Agent Example &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tools Documentation" href="../tools/index.html" />
+    <link rel="prev" title="Visual Agent Example" href="visual_agent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Multi-Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#multi-agent-overview">Multi-Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-architecture">Agent Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-agent-implementation">Multi-Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#specialized-agents">Specialized Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-multi-agent-systems">Running Multi-Agent Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-agent-configuration">Multi-Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-metrics">Performance Metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-metrics">Example Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Multi-Agent Example</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/multiagent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="multi-agent-example">
+<h1>Multi-Agent Example<a class="headerlink" href="#multi-agent-example" title="Link to this heading"></a></h1>
+<p>This example demonstrates how to create and coordinate multiple agents in the Factorio Learning Environment.</p>
+<section id="multi-agent-overview">
+<h2>Multi-Agent Overview<a class="headerlink" href="#multi-agent-overview" title="Link to this heading"></a></h2>
+<p>Multi-agent systems in FLE enable:</p>
+<ol class="arabic simple">
+<li><p><strong>Agent Coordination</strong>: Multiple agents working together</p></li>
+<li><p><strong>Task Distribution</strong>: Dividing tasks among agents</p></li>
+<li><p><strong>Communication</strong>: Inter-agent message passing</p></li>
+<li><p><strong>Collaborative Planning</strong>: Joint decision making</p></li>
+</ol>
+</section>
+<section id="agent-architecture">
+<h2>Agent Architecture<a class="headerlink" href="#agent-architecture" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Agent Roles</strong></dt><dd><ul class="simple">
+<li><p><strong>Coordinator</strong>: Manages overall strategy</p></li>
+<li><p><strong>Resource Specialist</strong>: Handles resource collection</p></li>
+<li><p><strong>Construction Specialist</strong>: Manages building operations</p></li>
+<li><p><strong>Research Specialist</strong>: Handles technology advancement</p></li>
+</ul>
+</dd>
+<dt><strong>Communication Protocol</strong></dt><dd><ul class="simple">
+<li><p>Message passing between agents</p></li>
+<li><p>Shared state information</p></li>
+<li><p>Task assignment and reporting</p></li>
+<li><p>Conflict resolution</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="multi-agent-implementation">
+<h2>Multi-Agent Implementation<a class="headerlink" href="#multi-agent-implementation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.agent_abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.game_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Position</span><span class="p">,</span> <span class="n">Direction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiAgentCoordinator</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;MultiAgentCoordinator&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agent_count</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;agent_count&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agents</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_agents</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_state</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_queue</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Agent</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize specialized agents&quot;&quot;&quot;</span>
+        <span class="n">agents</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Resource specialist</span>
+        <span class="n">agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ResourceSpecialist</span><span class="p">({</span>
+            <span class="s1">&#39;role&#39;</span><span class="p">:</span> <span class="s1">&#39;resource_specialist&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;target_resources&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">,</span> <span class="s1">&#39;copper-ore&#39;</span><span class="p">,</span> <span class="s1">&#39;coal&#39;</span><span class="p">]</span>
+        <span class="p">}))</span>
+
+        <span class="c1"># Construction specialist</span>
+        <span class="n">agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ConstructionSpecialist</span><span class="p">({</span>
+            <span class="s1">&#39;role&#39;</span><span class="p">:</span> <span class="s1">&#39;construction_specialist&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;building_types&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;assembling-machine&#39;</span><span class="p">,</span> <span class="s1">&#39;furnace&#39;</span><span class="p">,</span> <span class="s1">&#39;lab&#39;</span><span class="p">]</span>
+        <span class="p">}))</span>
+
+        <span class="c1"># Research specialist</span>
+        <span class="n">agents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ResearchSpecialist</span><span class="p">({</span>
+            <span class="s1">&#39;role&#39;</span><span class="p">:</span> <span class="s1">&#39;research_specialist&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;research_priorities&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;automation&#39;</span><span class="p">,</span> <span class="s1">&#39;logistics&#39;</span><span class="p">,</span> <span class="s1">&#39;production&#39;</span><span class="p">]</span>
+        <span class="p">}))</span>
+
+        <span class="k">return</span> <span class="n">agents</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coordinate multi-agent actions&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Get messages from other agents</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;messages&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Process messages and update shared state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_process_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span>
+
+        <span class="c1"># Coordinate agent actions</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initial_coordination</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_task_distribution</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring_and_optimization</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">Action</span><span class="p">(</span>
+            <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span>
+            <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_messages</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process messages from other agents&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;task_completion&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_task_completion</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;resource_request&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_resource_request</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;coordination_request&#39;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_handle_coordination_request</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initial_coordination</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initial coordination and planning&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Initial multi-agent coordination</span>
+<span class="s1">print(&quot;Starting multi-agent coordination&quot;)</span>
+
+<span class="s1"># Send initial messages to all agents</span>
+<span class="s1">send_message({</span>
+<span class="s1">    &#39;type&#39;: &#39;coordination_start&#39;,</span>
+<span class="s1">    &#39;content&#39;: &#39;Beginning multi-agent coordination&#39;,</span>
+<span class="s1">    &#39;target_agents&#39;: &#39;all&#39;</span>
+<span class="s1">})</span>
+
+<span class="s1"># Analyze current state</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">inventory = inspect_inventory()</span>
+
+<span class="s1">print(f&quot;Current state: {len(entities)} entities, {sum(inventory.values())} items&quot;)</span>
+
+<span class="s1"># Plan initial tasks</span>
+<span class="s1">tasks = [</span>
+<span class="s1">    {&#39;type&#39;: &#39;resource_collection&#39;, &#39;priority&#39;: &#39;high&#39;, &#39;agent&#39;: &#39;resource_specialist&#39;},</span>
+<span class="s1">    {&#39;type&#39;: &#39;basic_setup&#39;, &#39;priority&#39;: &#39;medium&#39;, &#39;agent&#39;: &#39;construction_specialist&#39;},</span>
+<span class="s1">    {&#39;type&#39;: &#39;research_planning&#39;, &#39;priority&#39;: &#39;low&#39;, &#39;agent&#39;: &#39;research_specialist&#39;}</span>
+<span class="s1">]</span>
+
+<span class="s1">print(f&quot;Planned tasks: </span><span class="si">{tasks}</span><span class="s1">&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_task_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Distribute tasks among agents&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Task distribution and coordination</span>
+<span class="s1">print(&quot;Distributing tasks among agents&quot;)</span>
+
+<span class="s1"># Check for available resources</span>
+<span class="s1">iron_pos = nearest(Resource.IRON_ORE)</span>
+<span class="s1">copper_pos = nearest(Resource.COPPER_ORE)</span>
+
+<span class="s1">if iron_pos:</span>
+<span class="s1">    # Assign resource collection task</span>
+<span class="s1">    send_message({</span>
+<span class="s1">        &#39;type&#39;: &#39;task_assignment&#39;,</span>
+<span class="s1">        &#39;content&#39;: {</span>
+<span class="s1">            &#39;task&#39;: &#39;collect_iron_ore&#39;,</span>
+<span class="s1">            &#39;location&#39;: str(iron_pos),</span>
+<span class="s1">            &#39;priority&#39;: &#39;high&#39;</span>
+<span class="s1">        },</span>
+<span class="s1">        &#39;target_agents&#39;: [&#39;resource_specialist&#39;]</span>
+<span class="s1">    })</span>
+
+<span class="s1">if copper_pos:</span>
+<span class="s1">    # Assign copper collection task</span>
+<span class="s1">    send_message({</span>
+<span class="s1">        &#39;type&#39;: &#39;task_assignment&#39;,</span>
+<span class="s1">        &#39;content&#39;: {</span>
+<span class="s1">            &#39;task&#39;: &#39;collect_copper_ore&#39;,</span>
+<span class="s1">            &#39;location&#39;: str(copper_pos),</span>
+<span class="s1">            &#39;priority&#39;: &#39;medium&#39;</span>
+<span class="s1">        },</span>
+<span class="s1">        &#39;target_agents&#39;: [&#39;resource_specialist&#39;]</span>
+<span class="s1">    })</span>
+
+<span class="s1"># Check construction needs</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">if len(entities) &lt; 5:</span>
+<span class="s1">    send_message({</span>
+<span class="s1">        &#39;type&#39;: &#39;task_assignment&#39;,</span>
+<span class="s1">        &#39;content&#39;: {</span>
+<span class="s1">            &#39;task&#39;: &#39;build_infrastructure&#39;,</span>
+<span class="s1">            &#39;requirements&#39;: [&#39;mining_drill&#39;, &#39;chest&#39;, &#39;furnace&#39;],</span>
+<span class="s1">            &#39;priority&#39;: &#39;high&#39;</span>
+<span class="s1">        },</span>
+<span class="s1">        &#39;target_agents&#39;: [&#39;construction_specialist&#39;]</span>
+<span class="s1">    })</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_monitoring_and_optimization</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor and optimize multi-agent operations&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Multi-agent monitoring and optimization</span>
+<span class="s1">print(&quot;Monitoring multi-agent operations&quot;)</span>
+
+<span class="s1"># Check agent status</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">inventory = inspect_inventory()</span>
+
+<span class="s1">print(f&quot;Current state: {len(entities)} entities, {sum(inventory.values())} items&quot;)</span>
+
+<span class="s1"># Check for coordination issues</span>
+<span class="s1">working_entities = [e for e in entities if hasattr(e, &#39;status&#39;) and e.status == EntityStatus.WORKING]</span>
+<span class="s1">print(f&quot;Working entities: {len(working_entities)}&quot;)</span>
+
+<span class="s1"># Send status updates</span>
+<span class="s1">send_message({</span>
+<span class="s1">    &#39;type&#39;: &#39;status_update&#39;,</span>
+<span class="s1">    &#39;content&#39;: {</span>
+<span class="s1">        &#39;entities&#39;: len(entities),</span>
+<span class="s1">        &#39;inventory&#39;: sum(inventory.values()),</span>
+<span class="s1">        &#39;working_entities&#39;: len(working_entities)</span>
+<span class="s1">    },</span>
+<span class="s1">    &#39;target_agents&#39;: &#39;all&#39;</span>
+<span class="s1">})</span>
+
+<span class="s1"># Check for optimization opportunities</span>
+<span class="s1">if len(working_entities) &lt; len(entities) * 0.8:</span>
+<span class="s1">    send_message({</span>
+<span class="s1">        &#39;type&#39;: &#39;optimization_request&#39;,</span>
+<span class="s1">        &#39;content&#39;: &#39;System efficiency below 80%&#39;,</span>
+<span class="s1">        &#39;target_agents&#39;: &#39;all&#39;</span>
+<span class="s1">    })</span>
+<span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="specialized-agents">
+<h2>Specialized Agents<a class="headerlink" href="#specialized-agents" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Resource Specialist</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ResourceSpecialist</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ResourceSpecialist&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_resources</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;target_resources&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mining_setups</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle resource collection tasks&quot;&quot;&quot;</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;messages&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Process task assignments</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;task_assignment&#39;</span><span class="p">:</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;collect_&#39;</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_collection_task</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+        <span class="c1"># Default resource collection behavior</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_resource_behavior</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_collection_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle specific collection tasks&quot;&quot;&quot;</span>
+        <span class="n">resource_type</span> <span class="o">=</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;location&#39;</span><span class="p">)</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p># Handle collection task: {task[‘task’]}
+print(“Resource specialist handling collection task”)</p>
+<p># Find and collect {resource_type}
+resource_pos = nearest(Resource.{resource_type.upper().replace(‘-’, ‘_’)})
+if resource_pos:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>drill = place_entity(</dt><dd><p>entity=Prototype.MiningDrill,
+position=resource_pos,
+direction=Direction.NORTH</p>
+</dd>
+</dl>
+<p>)
+print(f”Placed mining drill for {resource_type} at {resource_pos}”)</p>
+<p># Report task completion
+send_message({{</p>
+<blockquote>
+<div><p>‘type’: ‘task_completion’,
+‘content’: {{</p>
+<blockquote>
+<div><p>‘task’: ‘{task[‘task’]}’,
+‘status’: ‘completed’,
+‘location’: str(resource_pos)</p>
+</div></blockquote>
+<p>}},
+‘target_agents’: [‘coordinator’]</p>
+</div></blockquote>
+<p>}})</p>
+</div></blockquote>
+<p>‘’’</p>
+<blockquote>
+<div><p>return Action(agent_idx=1, code=code, game_state=None)</p>
+</div></blockquote>
+</dd>
+<dt><strong>Construction Specialist</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ConstructionSpecialist</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ConstructionSpecialist&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">building_types</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;building_types&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">construction_queue</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle construction tasks&quot;&quot;&quot;</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;messages&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Process construction requests</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;task_assignment&#39;</span><span class="p">:</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;build_infrastructure&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_infrastructure_task</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+        <span class="c1"># Default construction behavior</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_construction_behavior</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_infrastructure_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle infrastructure construction&quot;&quot;&quot;</span>
+        <span class="n">requirements</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;requirements&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p># Handle infrastructure construction
+print(“Construction specialist building infrastructure”)</p>
+<p># Build required entities
+entities = get_entities()
+current_types = [e.name for e in entities]</p>
+<dl>
+<dt>for requirement in {requirements}:</dt><dd><dl>
+<dt>if requirement not in current_types:</dt><dd><p># Build the required entity
+if requirement == ‘mining_drill’:</p>
+<blockquote>
+<div><p>resource_pos = nearest(Resource.IRON_ORE)
+if resource_pos:</p>
+<blockquote>
+<div><dl class="simple">
+<dt>drill = place_entity(</dt><dd><p>entity=Prototype.MiningDrill,
+position=resource_pos,
+direction=Direction.NORTH</p>
+</dd>
+</dl>
+<p>)
+print(f”Built {requirement} at {resource_pos}”)</p>
+</div></blockquote>
+</div></blockquote>
+<dl>
+<dt>elif requirement == ‘chest’:</dt><dd><p># Place chest near existing entities
+if entities:</p>
+<blockquote>
+<div><p>reference = entities[0]
+chest = place_entity_next_to(</p>
+<blockquote>
+<div><p>entity=Prototype.IronChest,
+reference_position=reference.position,
+direction=Direction.SOUTH</p>
+</div></blockquote>
+<p>)
+print(f”Built {requirement} at {chest.position}”)</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+</dl>
+<p># Report construction completion
+send_message({{</p>
+<blockquote>
+<div><p>‘type’: ‘task_completion’,
+‘content’: {{</p>
+<blockquote>
+<div><p>‘task’: ‘build_infrastructure’,
+‘status’: ‘completed’,
+‘entities_built’: len(get_entities())</p>
+</div></blockquote>
+<p>}},
+‘target_agents’: [‘coordinator’]</p>
+</div></blockquote>
+<blockquote>
+<div><p>return Action(agent_idx=2, code=code, game_state=None)</p>
+</div></blockquote>
+</dd>
+<dt><strong>Research Specialist</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ResearchSpecialist</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ResearchSpecialist&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">research_priorities</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;research_priorities&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">research_queue</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle research tasks&quot;&quot;&quot;</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;messages&#39;</span><span class="p">,</span> <span class="p">[])</span>
+
+        <span class="c1"># Process research requests</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">messages</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;task_assignment&#39;</span><span class="p">:</span>
+                <span class="n">task</span> <span class="o">=</span> <span class="n">message</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">task</span><span class="p">[</span><span class="s1">&#39;task&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;research_planning&#39;</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_research_planning</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+        <span class="c1"># Default research behavior</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_research_behavior</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_research_planning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle research planning tasks&quot;&quot;&quot;</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p># Handle research planning
+print(“Research specialist planning research”)</p>
+<p># Check current research status
+research = get_research_progress()
+print(f”Current research: {research}”)</p>
+<p># Plan research priorities
+priorities = [‘automation’, ‘logistics’, ‘production’]
+for priority in priorities:</p>
+<blockquote>
+<div><dl>
+<dt>if priority not in research.get(‘completed’, []):</dt><dd><p># Start research
+result = set_research(priority)
+if result:</p>
+<blockquote>
+<div><p>print(f”Started research: {priority}”)
+break</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+<p># Report research status
+send_message({</p>
+<blockquote>
+<div><p>‘type’: ‘task_completion’,
+‘content’: {</p>
+<blockquote>
+<div><p>‘task’: ‘research_planning’,
+‘status’: ‘completed’,
+‘research_started’: priority</p>
+</div></blockquote>
+<p>},
+‘target_agents’: [‘coordinator’]</p>
+</div></blockquote>
+<blockquote>
+<div><p>return Action(agent_idx=3, code=code, game_state=None)</p>
+</div></blockquote>
+</dd>
+</dl>
+</section>
+<section id="running-multi-agent-systems">
+<h2>Running Multi-Agent Systems<a class="headerlink" href="#running-multi-agent-systems" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Environment Setup</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.multiagent_coordinator</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiAgentCoordinator</span>
+
+<span class="c1"># Create environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create multi-agent coordinator</span>
+<span class="n">coordinator</span> <span class="o">=</span> <span class="n">MultiAgentCoordinator</span><span class="p">({</span>
+    <span class="s1">&#39;agent_count&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s1">&#39;coordination_enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;communication_enabled&#39;</span><span class="p">:</span> <span class="kc">True</span>
+<span class="p">})</span>
+
+<span class="c1"># Run episode</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">while</span> <span class="ow">not</span> <span class="n">done</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">coordinator</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="n">terminated</span> <span class="ow">or</span> <span class="n">truncated</span>
+    <span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: Reward = </span><span class="si">{</span><span class="n">reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Command Line Usage</strong></dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run multi-agent evaluation</span>
+fle<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--agent<span class="w"> </span>multiagent_coordinator<span class="w"> </span>--config<span class="w"> </span>configs/multiagent_config.json
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="multi-agent-configuration">
+<h2>Multi-Agent Configuration<a class="headerlink" href="#multi-agent-configuration" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Basic Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MultiAgentCoordinator&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;agent_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;coordination_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;communication_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;task_distribution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;round_robin&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Advanced Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MultiAgentCoordinator&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;agent_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;coordination_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;communication_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;task_distribution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;priority_based&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;conflict_resolution&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;voting&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;shared_state_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;message_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.8</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;coordination_effectiveness&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;communication_efficiency&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;task_completion_rate&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="performance-metrics">
+<h2>Performance Metrics<a class="headerlink" href="#performance-metrics" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Coordination Effectiveness</strong></dt><dd><ul class="simple">
+<li><p>Task completion rate</p></li>
+<li><p>Coordination efficiency</p></li>
+<li><p>Conflict resolution success</p></li>
+</ul>
+</dd>
+<dt><strong>Communication Efficiency</strong></dt><dd><ul class="simple">
+<li><p>Message delivery rate</p></li>
+<li><p>Communication latency</p></li>
+<li><p>Message processing time</p></li>
+</ul>
+</dd>
+<dt><strong>Multi-Agent Performance</strong></dt><dd><ul class="simple">
+<li><p>Overall system performance</p></li>
+<li><p>Agent specialization effectiveness</p></li>
+<li><p>Collaborative planning success</p></li>
+</ul>
+</dd>
+</dl>
+<section id="example-metrics">
+<h3>Example Metrics<a class="headerlink" href="#example-metrics" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;coordination_effectiveness&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;task_completion_rate&quot;</span><span class="p">:</span> <span class="mf">0.85</span><span class="p">,</span>  <span class="c1"># fraction of tasks completed</span>
+        <span class="s2">&quot;coordination_efficiency&quot;</span><span class="p">:</span> <span class="mf">0.75</span><span class="p">,</span>  <span class="c1"># fraction of coordinated actions</span>
+        <span class="s2">&quot;conflict_resolution_success&quot;</span><span class="p">:</span> <span class="mf">0.90</span>  <span class="c1"># fraction of conflicts resolved</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;communication_efficiency&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;message_delivery_rate&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span>  <span class="c1"># fraction of messages delivered</span>
+        <span class="s2">&quot;communication_latency&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># average latency in seconds</span>
+        <span class="s2">&quot;message_processing_time&quot;</span><span class="p">:</span> <span class="mf">0.05</span>  <span class="c1"># average processing time in seconds</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;multi_agent_performance&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;overall_system_performance&quot;</span><span class="p">:</span> <span class="mf">0.80</span><span class="p">,</span>  <span class="c1"># overall system effectiveness</span>
+        <span class="s2">&quot;agent_specialization_effectiveness&quot;</span><span class="p">:</span> <span class="mf">0.85</span><span class="p">,</span>  <span class="c1"># effectiveness of specialization</span>
+        <span class="s2">&quot;collaborative_planning_success&quot;</span><span class="p">:</span> <span class="mf">0.70</span>  <span class="c1"># success rate of collaborative plans</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Coordination Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>Task conflicts</strong>: Implement conflict resolution</p></li>
+<li><p><strong>Communication failures</strong>: Check message delivery</p></li>
+<li><p><strong>Coordination breakdown</strong>: Monitor coordination effectiveness</p></li>
+</ul>
+</dd>
+<dt><strong>Performance Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>Slow coordination</strong>: Optimize coordination algorithms</p></li>
+<li><p><strong>High communication overhead</strong>: Reduce message frequency</p></li>
+<li><p><strong>Memory issues</strong>: Limit shared state size</p></li>
+</ul>
+</dd>
+<dt><strong>Agent Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>Agent failures</strong>: Implement agent recovery</p></li>
+<li><p><strong>Specialization problems</strong>: Adjust agent roles</p></li>
+<li><p><strong>Communication errors</strong>: Handle message errors</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Clear Roles</strong>: Define clear agent roles and responsibilities</p></li>
+<li><p><strong>Effective Communication</strong>: Implement efficient communication protocols</p></li>
+<li><p><strong>Conflict Resolution</strong>: Handle conflicts between agents</p></li>
+<li><p><strong>Performance Monitoring</strong>: Monitor multi-agent performance</p></li>
+<li><p><strong>Scalability</strong>: Design for different numbers of agents</p></li>
+<li><p><strong>Error Handling</strong>: Implement robust error recovery</p></li>
+<li><p><strong>Testing</strong>: Test multi-agent coordination thoroughly</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="visual_agent.html" class="btn btn-neutral float-left" title="Visual Agent Example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tools/index.html" class="btn btn-neutral float-right" title="Tools Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

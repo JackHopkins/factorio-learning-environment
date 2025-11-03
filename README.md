@@ -40,7 +40,7 @@ pip install factorio-learning-environment[psql]      # For PostgreSQL support
 pip install factorio-learning-environment[eval,mcp,psql]  # All features
 
 # Using uv (recommended)
-uv add factorio-learning-environment[eval]
+uv sync
 ```
 
 ### Quickstart

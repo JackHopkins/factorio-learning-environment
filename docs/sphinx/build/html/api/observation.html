@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observation Space &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Action Space" href="action.html" />
+    <link rel="prev" title="Environment API" href="environment.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="environment.html">Environment API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Observation Space</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#observation-structure">Observation Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#entity-information">Entity Information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.entities.Entity"><code class="docutils literal notranslate"><span class="pre">Entity</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.id"><code class="docutils literal notranslate"><span class="pre">Entity.id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.energy"><code class="docutils literal notranslate"><span class="pre">Entity.energy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.type"><code class="docutils literal notranslate"><span class="pre">Entity.type</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.dimensions"><code class="docutils literal notranslate"><span class="pre">Entity.dimensions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.tile_dimensions"><code class="docutils literal notranslate"><span class="pre">Entity.tile_dimensions</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.prototype"><code class="docutils literal notranslate"><span class="pre">Entity.prototype</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.health"><code class="docutils literal notranslate"><span class="pre">Entity.health</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.warnings"><code class="docutils literal notranslate"><span class="pre">Entity.warnings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.status"><code class="docutils literal notranslate"><span class="pre">Entity.status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.width"><code class="docutils literal notranslate"><span class="pre">Entity.width</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.height"><code class="docutils literal notranslate"><span class="pre">Entity.height</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.model_config"><code class="docutils literal notranslate"><span class="pre">Entity.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.name"><code class="docutils literal notranslate"><span class="pre">Entity.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.direction"><code class="docutils literal notranslate"><span class="pre">Entity.direction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.entities.Entity.position"><code class="docutils literal notranslate"><span class="pre">Entity.position</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#entity-types">Entity Types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#position-and-direction">Position and Direction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#inventory-management">Inventory Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#research-system">Research System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#game-state-information">Game State Information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-verification">Task Verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-observation">Example Observation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Observation Space</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/observation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="observation-space">
+<h1>Observation Space<a class="headerlink" href="#observation-space" title="Link to this heading"></a></h1>
+<p>The observation space provides rich information about the current game state, allowing agents to make informed decisions.</p>
+<section id="observation-structure">
+<h2>Observation Structure<a class="headerlink" href="#observation-structure" title="Link to this heading"></a></h2>
+<p>The observation space includes the following components:</p>
+<dl class="simple">
+<dt><strong>raw_text</strong></dt><dd><p>Output from the last action (stdout/stderr)</p>
+</dd>
+<dt><strong>entities</strong></dt><dd><p>List of entities on the map with their current state</p>
+</dd>
+<dt><strong>inventory</strong></dt><dd><p>Current inventory state of the player</p>
+</dd>
+<dt><strong>research</strong></dt><dd><p>Research progress and available technologies</p>
+</dd>
+<dt><strong>game_info</strong></dt><dd><p>Game state information (tick, time, speed)</p>
+</dd>
+<dt><strong>score</strong></dt><dd><p>Current score and performance metrics</p>
+</dd>
+<dt><strong>flows</strong></dt><dd><p>Production statistics and resource flows</p>
+</dd>
+<dt><strong>task_verification</strong></dt><dd><p>Task completion status and progress</p>
+</dd>
+<dt><strong>messages</strong></dt><dd><p>Inter-agent communication messages</p>
+</dd>
+<dt><strong>serialized_functions</strong></dt><dd><p>Available functions and their signatures</p>
+</dd>
+<dt><strong>task_info</strong></dt><dd><p>Information about the current task</p>
+</dd>
+<dt><strong>map_image</strong></dt><dd><p>Base64 encoded PNG image of the current map</p>
+</dd>
+</dl>
+</section>
+<section id="entity-information">
+<h2>Entity Information<a class="headerlink" href="#entity-information" title="Link to this heading"></a></h2>
+<p>Entities provide detailed information about game objects:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fle.env.entities.Entity">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fle.env.entities.</span></span><span class="sig-name descname"><span class="pre">Entity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/entities.html#Entity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.entities.Entity" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityCore" title="fle.env.entities.EntityCore"><code class="xref py py-class docutils literal notranslate"><span class="pre">EntityCore</span></code></a></p>
+<p>Base class for all entities in the game.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.id">
+<span class="sig-name descname"><span class="pre">id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#fle.env.entities.Entity.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.energy">
+<span class="sig-name descname"><span class="pre">energy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.energy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.type">
+<span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#fle.env.entities.Entity.type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.dimensions">
+<span class="sig-name descname"><span class="pre">dimensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.Dimensions" title="fle.env.entities.Dimensions"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dimensions</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.dimensions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.tile_dimensions">
+<span class="sig-name descname"><span class="pre">tile_dimensions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.TileDimensions" title="fle.env.entities.TileDimensions"><code class="xref py py-class docutils literal notranslate"><span class="pre">TileDimensions</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.tile_dimensions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.prototype">
+<span class="sig-name descname"><span class="pre">prototype</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.prototype" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.health">
+<span class="sig-name descname"><span class="pre">health</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.health" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.warnings">
+<span class="sig-name descname"><span class="pre">warnings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a><span class="pre">]</span></em><a class="headerlink" href="#fle.env.entities.Entity.warnings" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.status">
+<span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="modules/fle.env.entities.html#fle.env.entities.EntityStatus" title="fle.env.entities.EntityStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">EntityStatus</span></code></a></em><a class="headerlink" href="#fle.env.entities.Entity.status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.width">
+<em class="property"><span class="pre">class</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">width</span></span><a class="headerlink" href="#fle.env.entities.Entity.width" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.height">
+<em class="property"><span class="pre">class</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">height</span></span><a class="headerlink" href="#fle.env.entities.Entity.height" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar[ConfigDict]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'extra':</span> <span class="pre">'allow'}</span></em><a class="headerlink" href="#fle.env.entities.Entity.model_config" title="Link to this definition"></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#fle.env.entities.Entity.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.direction">
+<span class="sig-name descname"><span class="pre">direction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Direction</span></em><a class="headerlink" href="#fle.env.entities.Entity.direction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.entities.Entity.position">
+<span class="sig-name descname"><span class="pre">position</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Position</span></em><a class="headerlink" href="#fle.env.entities.Entity.position" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<section id="entity-types">
+<h3>Entity Types<a class="headerlink" href="#entity-types" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt><strong>MiningDrill</strong></dt><dd><p>Mining drills for extracting resources</p>
+</dd>
+<dt><strong>Chest</strong></dt><dd><p>Storage containers for items</p>
+</dd>
+<dt><strong>AssemblingMachine</strong></dt><dd><p>Machines for crafting items</p>
+</dd>
+<dt><strong>Inserter</strong></dt><dd><p>Transport devices for moving items</p>
+</dd>
+<dt><strong>TransportBelt</strong></dt><dd><p>Conveyor belts for item transport</p>
+</dd>
+<dt><strong>Pipe</strong></dt><dd><p>Fluid transport systems</p>
+</dd>
+<dt><strong>PowerPole</strong></dt><dd><p>Electrical distribution</p>
+</dd>
+<dt><strong>Lab</strong></dt><dd><p>Research facilities</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="position-and-direction">
+<h2>Position and Direction<a class="headerlink" href="#position-and-direction" title="Link to this heading"></a></h2>
+</section>
+<section id="inventory-management">
+<h2>Inventory Management<a class="headerlink" href="#inventory-management" title="Link to this heading"></a></h2>
+<p>The inventory system provides:</p>
+<ul class="simple">
+<li><p><strong>Item Storage</strong>: Store and retrieve items</p></li>
+<li><p><strong>Count Methods</strong>: Query item quantities</p></li>
+<li><p><strong>Type Validation</strong>: Ensure item compatibility</p></li>
+<li><p><strong>Transfer Operations</strong>: Move items between inventories</p></li>
+</ul>
+</section>
+<section id="research-system">
+<h2>Research System<a class="headerlink" href="#research-system" title="Link to this heading"></a></h2>
+<p>Research provides:</p>
+<ul class="simple">
+<li><p><strong>Technology Tree</strong>: Available technologies</p></li>
+<li><p><strong>Prerequisites</strong>: Required research</p></li>
+<li><p><strong>Progress Tracking</strong>: Current research status</p></li>
+<li><p><strong>Unlock Management</strong>: New technologies and recipes</p></li>
+</ul>
+</section>
+<section id="game-state-information">
+<h2>Game State Information<a class="headerlink" href="#game-state-information" title="Link to this heading"></a></h2>
+<p>Game info includes:</p>
+<ul class="simple">
+<li><p><strong>Tick Information</strong>: Current game tick</p></li>
+<li><p><strong>Time Data</strong>: Game time and speed</p></li>
+<li><p><strong>Performance Metrics</strong>: FPS and UPS</p></li>
+<li><p><strong>Map Information</strong>: World size and generation</p></li>
+</ul>
+</section>
+<section id="task-verification">
+<h2>Task Verification<a class="headerlink" href="#task-verification" title="Link to this heading"></a></h2>
+<p>Task verification provides:</p>
+<ul class="simple">
+<li><p><strong>Completion Status</strong>: Whether the task is complete</p></li>
+<li><p><strong>Progress Metrics</strong>: Current progress toward goals</p></li>
+<li><p><strong>Objective Tracking</strong>: Individual objective status</p></li>
+<li><p><strong>Performance Data</strong>: Efficiency and throughput metrics</p></li>
+</ul>
+</section>
+<section id="example-observation">
+<h2>Example Observation<a class="headerlink" href="#example-observation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;raw_text&#39;</span><span class="p">:</span> <span class="s1">&#39;Hello Factorio!&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;entities&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="n">Entity</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">61.0</span><span class="p">),</span> <span class="o">...</span><span class="p">),</span>
+        <span class="n">Entity</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">),</span> <span class="o">...</span><span class="p">)</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;inventory&#39;</span><span class="p">:</span> <span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">:</span> <span class="mi">75</span><span class="p">,</span> <span class="s1">&#39;coal&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}),</span>
+    <span class="s1">&#39;research&#39;</span><span class="p">:</span> <span class="n">Research</span><span class="p">(</span><span class="n">technologies</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;automation&#39;</span><span class="p">],</span> <span class="n">progress</span><span class="o">=</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="s1">&#39;game_info&#39;</span><span class="p">:</span> <span class="n">GameInfo</span><span class="p">(</span><span class="n">tick</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="mf">16.67</span><span class="p">,</span> <span class="n">speed</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+    <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="mi">150</span><span class="p">,</span>
+    <span class="s1">&#39;flows&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span> <span class="s1">&#39;iron-plate&#39;</span><span class="p">:</span> <span class="mf">1.2</span><span class="p">},</span>
+    <span class="s1">&#39;task_verification&#39;</span><span class="p">:</span> <span class="n">TaskVerification</span><span class="p">(</span><span class="n">complete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="mf">0.3</span><span class="p">),</span>
+    <span class="s1">&#39;messages&#39;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s1">&#39;serialized_functions&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;place_entity&#39;</span><span class="p">,</span> <span class="s1">&#39;get_entities&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="s1">&#39;task_info&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;iron_ore_throughput&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">},</span>
+    <span class="s1">&#39;map_image&#39;</span><span class="p">:</span> <span class="s1">&#39;iVBORw0KGgoAAAANSUhEUgAA...&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="environment.html" class="btn btn-neutral float-left" title="Environment API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="action.html" class="btn btn-neutral float-right" title="Action Space" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Action Space &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tools API" href="tools.html" />
+    <link rel="prev" title="Observation Space" href="observation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="observation.html">Observation Space</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Action Space</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#action-structure">Action Structure</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.gym_env.action.Action"><code class="docutils literal notranslate"><span class="pre">Action</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.gym_env.action.Action.code"><code class="docutils literal notranslate"><span class="pre">Action.code</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.gym_env.action.Action.agent_idx"><code class="docutils literal notranslate"><span class="pre">Action.agent_idx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.gym_env.action.Action.game_state"><code class="docutils literal notranslate"><span class="pre">Action.game_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.gym_env.action.Action.to_dict"><code class="docutils literal notranslate"><span class="pre">Action.to_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.env.gym_env.action.Action.__init__"><code class="docutils literal notranslate"><span class="pre">Action.__init__()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#action-components">Action Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#action-space-definition">Action Space Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#code-execution">Code Execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-actions">Example Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-error-handling">Example Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multi-agent-actions">Multi-Agent Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#action-validation">Action Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Action Space</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/action.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="action-space">
+<h1>Action Space<a class="headerlink" href="#action-space" title="Link to this heading"></a></h1>
+<p>The action space defines how agents interact with the Factorio Learning Environment through Python code synthesis.</p>
+<section id="action-structure">
+<h2>Action Structure<a class="headerlink" href="#action-structure" title="Link to this heading"></a></h2>
+<p>Actions are defined by the Action class:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fle.env.gym_env.action.</span></span><span class="sig-name descname"><span class="pre">Action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">game_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/gym_env/action.html#Action"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.gym_env.action.Action" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Action for the Factorio gym environment</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action.code">
+<span class="sig-name descname"><span class="pre">code</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#fle.env.gym_env.action.Action.code" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action.agent_idx">
+<span class="sig-name descname"><span class="pre">agent_idx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#fle.env.gym_env.action.Action.agent_idx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action.game_state">
+<span class="sig-name descname"><span class="pre">game_state</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a><span class="pre">[</span><a class="reference internal" href="modules/fle.commons.models.html#fle.commons.models.GameState" title="fle.commons.models.game_state.GameState"><code class="xref py py-class docutils literal notranslate"><span class="pre">GameState</span></code></a><span class="pre">]</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#fle.env.gym_env.action.Action.game_state" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/gym_env/action.html#Action.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.gym_env.action.Action.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert action to dictionary format expected by the environment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.env.gym_env.action.Action.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">game_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fle.env.gym_env.action.Action.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="action-components">
+<h2>Action Components<a class="headerlink" href="#action-components" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>agent_idx</strong></dt><dd><p>Index of the agent taking the action (for multi-agent environments)</p>
+</dd>
+<dt><strong>code</strong></dt><dd><p>Python code to execute in the game environment</p>
+</dd>
+<dt><strong>game_state</strong></dt><dd><p>Optional game state to reset to before running code</p>
+</dd>
+</dl>
+</section>
+<section id="action-space-definition">
+<h2>Action Space Definition<a class="headerlink" href="#action-space-definition" title="Link to this heading"></a></h2>
+<p>The action space follows this structure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;agent_idx&#39;</span><span class="p">:</span> <span class="n">Discrete</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">num_agents</span><span class="p">),</span>  <span class="c1"># Index of the agent taking the action</span>
+    <span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">1000000</span><span class="p">),</span>      <span class="c1"># Optional: game state to reset to before running code</span>
+    <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>                <span class="c1"># Python code to execute</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="code-execution">
+<h2>Code Execution<a class="headerlink" href="#code-execution" title="Link to this heading"></a></h2>
+<p>The environment executes Python code in a controlled namespace that includes:</p>
+<dl class="simple">
+<dt><strong>Standard Library</strong></dt><dd><p>Full Python standard library access</p>
+</dd>
+<dt><strong>FLE Tools</strong></dt><dd><p>All available tools for game interaction</p>
+</dd>
+<dt><strong>Namespace Persistence</strong></dt><dd><p>Variables and functions persist between actions</p>
+</dd>
+<dt><strong>Error Handling</strong></dt><dd><p>Comprehensive exception handling with detailed error messages</p>
+</dd>
+</dl>
+</section>
+<section id="example-actions">
+<h2>Example Actions<a class="headerlink" href="#example-actions" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Basic Movement</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;position = get_position()&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Entity Placement</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">drill = place_entity(</span>
+<span class="s1">    entity=Prototype.MiningDrill,</span>
+<span class="s1">    position=nearest(Resource.IronOre),</span>
+<span class="s1">    direction=Direction.NORTH</span>
+<span class="s1">)</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Complex Automation</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Get iron patch and place mining drill</span>
+<span class="s1">drill = place_entity(</span>
+<span class="s1">    entity=Prototype.MiningDrill,</span>
+<span class="s1">    position=nearest(Resource.IronOre),</span>
+<span class="s1">    direction=Direction.NORTH</span>
+<span class="s1">)</span>
+<span class="s1"># Add output storage</span>
+<span class="s1">chest = place_entity_next_to(</span>
+<span class="s1">    entity=Prototype.IronChest,</span>
+<span class="s1">    reference_position=drill.drop_position,</span>
+<span class="s1">    direction=Direction.SOUTH</span>
+<span class="s1">)</span>
+<span class="s1"># Verify automation chain</span>
+<span class="s1">sleep(10)</span>
+<span class="s1">assert drill.status == EntityStatus.WORKING</span>
+<span class="s1">print(get_entities())</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Function Definition</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">def place_mining_setup(resource_type, direction):</span>
+<span class="s1">    drill = place_entity(</span>
+<span class="s1">        entity=Prototype.MiningDrill,</span>
+<span class="s1">        position=nearest(resource_type),</span>
+<span class="s1">        direction=direction</span>
+<span class="s1">    )</span>
+<span class="s1">    chest = place_entity_next_to(</span>
+<span class="s1">        entity=Prototype.IronChest,</span>
+<span class="s1">        reference_position=drill.drop_position,</span>
+<span class="s1">        direction=Direction.SOUTH</span>
+<span class="s1">    )</span>
+<span class="s1">    return drill, chest</span>
+
+<span class="s1"># Use the function</span>
+<span class="s1">drill, chest = place_mining_setup(Resource.IronOre, Direction.NORTH)</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Class Definition</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">class MiningOperation:</span>
+<span class="s1">    def __init__(self, resource_type, position):</span>
+<span class="s1">        self.resource_type = resource_type</span>
+<span class="s1">        self.position = position</span>
+<span class="s1">        self.drill = None</span>
+<span class="s1">        self.chest = None</span>
+
+<span class="s1">    def setup(self):</span>
+<span class="s1">        self.drill = place_entity(</span>
+<span class="s1">            entity=Prototype.MiningDrill,</span>
+<span class="s1">            position=self.position,</span>
+<span class="s1">            direction=Direction.NORTH</span>
+<span class="s1">        )</span>
+<span class="s1">        self.chest = place_entity_next_to(</span>
+<span class="s1">            entity=Prototype.IronChest,</span>
+<span class="s1">            reference_position=self.drill.drop_position,</span>
+<span class="s1">            direction=Direction.SOUTH</span>
+<span class="s1">        )</span>
+
+<span class="s1">    def is_working(self):</span>
+<span class="s1">        return self.drill.status == EntityStatus.WORKING</span>
+
+<span class="s1"># Create and use the class</span>
+<span class="s1">mining_op = MiningOperation(Resource.IronOre, nearest(Resource.IronOre))</span>
+<span class="s1">mining_op.setup()</span>
+<span class="s1">print(f&quot;Mining operation working: {mining_op.is_working()}&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The environment provides comprehensive error handling:</p>
+<dl class="simple">
+<dt><strong>Syntax Errors</strong></dt><dd><p>Python syntax errors are caught and reported with line numbers</p>
+</dd>
+<dt><strong>Runtime Errors</strong></dt><dd><p>Exceptions during code execution are captured with full stack traces</p>
+</dd>
+<dt><strong>Tool Errors</strong></dt><dd><p>Invalid tool usage is reported with detailed error messages</p>
+</dd>
+<dt><strong>Assertion Failures</strong></dt><dd><p>Failed assertions provide context about expected vs actual values</p>
+</dd>
+</dl>
+</section>
+<section id="example-error-handling">
+<h2>Example Error Handling<a class="headerlink" href="#example-error-handling" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Invalid tool usage</span>
+<span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;place_entity(entity=&quot;invalid&quot;, position=(0, 0))&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+
+<span class="c1"># Results in error message:</span>
+<span class="c1"># ValueError: Invalid entity type &#39;invalid&#39;. Expected Prototype enum value.</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt><strong>Debugging Support</strong></dt><dd><p>The environment provides debugging information:</p>
+<ul class="simple">
+<li><p><strong>Variable Inspection</strong>: Access to all namespace variables</p></li>
+<li><p><strong>Function Signatures</strong>: Available functions and their parameters</p></li>
+<li><p><strong>Entity State</strong>: Current state of all game entities</p></li>
+<li><p><strong>Error Context</strong>: Detailed error information with suggestions</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="multi-agent-actions">
+<h2>Multi-Agent Actions<a class="headerlink" href="#multi-agent-actions" title="Link to this heading"></a></h2>
+<p>For multi-agent environments, actions can be coordinated:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Agent 0 places a drill</span>
+<span class="n">action_0</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;drill = place_entity(entity=Prototype.MiningDrill, position=nearest(Resource.IronOre))&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+
+<span class="c1"># Agent 1 places a chest next to it</span>
+<span class="n">action_1</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;chest = place_entity_next_to(entity=Prototype.IronChest, reference_position=drill.drop_position)&#39;</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="action-validation">
+<h2>Action Validation<a class="headerlink" href="#action-validation" title="Link to this heading"></a></h2>
+<p>The environment validates actions before execution:</p>
+<ul class="simple">
+<li><p><strong>Agent Index</strong>: Ensures valid agent index</p></li>
+<li><p><strong>Code Length</strong>: Limits code to prevent resource exhaustion</p></li>
+<li><p><strong>Game State</strong>: Validates game state format if provided</p></li>
+<li><p><strong>Tool Availability</strong>: Ensures requested tools are available</p></li>
+</ul>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Use Descriptive Variable Names</strong>: Make code readable and maintainable</p></li>
+<li><p><strong>Handle Errors Gracefully</strong>: Use try-except blocks for robust code</p></li>
+<li><p><strong>Leverage Namespace</strong>: Store useful objects for later reference</p></li>
+<li><p><strong>Use Functions</strong>: Encapsulate common operations</p></li>
+<li><p><strong>Debug with Print</strong>: Use print statements to monitor execution</p></li>
+<li><p><strong>Assert Conditions</strong>: Use assertions to verify expected behavior</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="observation.html" class="btn btn-neutral float-left" title="Observation Space" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tools.html" class="btn btn-neutral float-right" title="Tools API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

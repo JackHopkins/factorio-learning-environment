@@ -100,16 +100,9 @@ Troubleshooting
 Building Documentation (Maintainers)
 ------------------------------------
 
-Install Sphinx tooling:
-
 .. code-block:: bash
 
-   pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+   cd docs/sphinx
+   python3 -m sphinx -b html source build/html
 
-Build the HTML documentation:
-
-.. code-block:: bash
-
-   cd factorio-learning-environment/docs/sphinx && python -m sphinx -b html source build/html
-
-The generated site will be in ``docs/sphinx/build/html``.
+The generated site will be in ``factorio-learning-environment/docs/sphinx/build/html``.

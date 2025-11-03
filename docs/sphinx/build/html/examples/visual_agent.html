@@ -1,0 +1,611 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual Agent Example &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Multi-Agent Example" href="multiagent.html" />
+    <link rel="prev" title="Basic Agent Example" href="basic_agent.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Visual Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#agent-overview">Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-implementation">Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visual-processing-features">Visual Processing Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-visual-analysis">Example Visual Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-visual-agent">Running the Visual Agent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#agent-configuration">Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-metrics">Performance Metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-metrics">Example Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Visual Agent Example</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/examples/visual_agent.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="visual-agent-example">
+<h1>Visual Agent Example<a class="headerlink" href="#visual-agent-example" title="Link to this heading"></a></h1>
+<p>This example demonstrates how to create a visual agent that processes visual information from the game environment.</p>
+<section id="agent-overview">
+<h2>Agent Overview<a class="headerlink" href="#agent-overview" title="Link to this heading"></a></h2>
+<p>The visual agent uses computer vision techniques to:</p>
+<ol class="arabic simple">
+<li><p><strong>Image Processing</strong>: Analyze game screenshots and map images</p></li>
+<li><p><strong>Object Detection</strong>: Identify entities and resources in the visual data</p></li>
+<li><p><strong>Spatial Reasoning</strong>: Understand spatial relationships between objects</p></li>
+<li><p><strong>Visual Planning</strong>: Plan actions based on visual information</p></li>
+</ol>
+</section>
+<section id="agent-implementation">
+<h2>Agent Implementation<a class="headerlink" href="#agent-implementation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.agent_abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.game_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Position</span><span class="p">,</span> <span class="n">Direction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">VisualAgent</span><span class="p">(</span><span class="n">Agent</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;VisualAgent&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vision_enabled</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;vision_enabled&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">image_processing</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;image_processing&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_reasoning</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;spatial_reasoning&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">visual_memory</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">act</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Action</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate action based on visual observation&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Get visual information</span>
+        <span class="n">map_image</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;map_image&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;entities&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">inventory</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;inventory&#39;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="c1"># Process visual information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">vision_enabled</span> <span class="ow">and</span> <span class="n">map_image</span><span class="p">:</span>
+            <span class="n">visual_analysis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_visual_data</span><span class="p">(</span><span class="n">map_image</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">visual_analysis</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Generate action based on visual analysis</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initial_visual_exploration</span><span class="p">(</span><span class="n">visual_analysis</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_count</span> <span class="o">&lt;=</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visual_setup</span><span class="p">(</span><span class="n">visual_analysis</span><span class="p">,</span> <span class="n">entities</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visual_monitoring</span><span class="p">(</span><span class="n">visual_analysis</span><span class="p">,</span> <span class="n">entities</span><span class="p">,</span> <span class="n">inventory</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Action</span><span class="p">(</span>
+            <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span>
+            <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyze_visual_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_image</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze visual data from map image&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Decode base64 image</span>
+            <span class="n">image_data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">map_image</span><span class="p">)</span>
+            <span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">image_data</span><span class="p">))</span>
+
+            <span class="c1"># Convert to numpy array</span>
+            <span class="n">img_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+
+            <span class="c1"># Perform visual analysis</span>
+            <span class="n">analysis</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;image_size&#39;</span><span class="p">:</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+                <span class="s1">&#39;image_mode&#39;</span><span class="p">:</span> <span class="n">image</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+                <span class="s1">&#39;dominant_colors&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_dominant_colors</span><span class="p">(</span><span class="n">img_array</span><span class="p">),</span>
+                <span class="s1">&#39;entity_locations&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_entities</span><span class="p">(</span><span class="n">img_array</span><span class="p">),</span>
+                <span class="s1">&#39;resource_patches&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_detect_resource_patches</span><span class="p">(</span><span class="n">img_array</span><span class="p">),</span>
+                <span class="s1">&#39;spatial_features&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_spatial_features</span><span class="p">(</span><span class="n">img_array</span><span class="p">)</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="n">analysis</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Visual analysis error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_dominant_colors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract dominant colors from image&quot;&quot;&quot;</span>
+        <span class="c1"># Reshape image to 2D array of pixels</span>
+        <span class="n">pixels</span> <span class="o">=</span> <span class="n">img_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Simple color extraction (in practice, use more sophisticated methods)</span>
+        <span class="n">unique_colors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">pixels</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">unique_colors</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>  <span class="c1"># Return top 10 colors</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Detect entities in the image&quot;&quot;&quot;</span>
+        <span class="c1"># Simple entity detection (in practice, use computer vision models)</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Look for specific color patterns that might indicate entities</span>
+        <span class="c1"># This is a simplified example</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">10</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">10</span><span class="p">):</span>
+                <span class="n">pixel</span> <span class="o">=</span> <span class="n">img_array</span><span class="p">[</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_entity_pixel</span><span class="p">(</span><span class="n">pixel</span><span class="p">):</span>
+                    <span class="n">entities</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_entity</span><span class="p">(</span><span class="n">pixel</span><span class="p">),</span>
+                        <span class="s1">&#39;confidence&#39;</span><span class="p">:</span> <span class="mf">0.8</span>
+                    <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">entities</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_detect_resource_patches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Detect resource patches in the image&quot;&quot;&quot;</span>
+        <span class="n">resource_patches</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Look for resource-specific color patterns</span>
+        <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">20</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">20</span><span class="p">):</span>
+                <span class="n">region</span> <span class="o">=</span> <span class="n">img_array</span><span class="p">[</span><span class="n">y</span><span class="p">:</span><span class="n">y</span><span class="o">+</span><span class="mi">20</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="o">+</span><span class="mi">20</span><span class="p">]</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_resource_region</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+                    <span class="n">resource_patches</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                        <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">),</span>
+                        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classify_resource</span><span class="p">(</span><span class="n">region</span><span class="p">),</span>
+                        <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_resource_size</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+                    <span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">resource_patches</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_spatial_features</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img_array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract spatial features from the image&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;image_center&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="s1">&#39;image_bounds&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">img_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="s1">&#39;density_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_density_map</span><span class="p">(</span><span class="n">img_array</span><span class="p">),</span>
+            <span class="s1">&#39;connectivity&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_analyze_connectivity</span><span class="p">(</span><span class="n">img_array</span><span class="p">)</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initial_visual_exploration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visual_analysis</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initial visual exploration&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Initial visual exploration</span>
+<span class="s1">print(&quot;Starting VisualAgent exploration&quot;)</span>
+
+<span class="s1"># Analyze visual data</span>
+<span class="s1">visual_analysis = </span><span class="si">{</span><span class="n">visual_analysis</span><span class="si">}</span>
+<span class="s1">print(f&quot;Visual analysis: </span><span class="si">{</span><span class="n">visual_analysis</span><span class="si">}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Get current position</span>
+<span class="s1">position = get_position()</span>
+<span class="s1">print(f&quot;Starting position: </span><span class="se">{{</span><span class="s1">position</span><span class="se">}}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Look for resources using visual analysis</span>
+<span class="s1">if visual_analysis.get(&#39;resource_patches&#39;):</span>
+<span class="s1">    for patch in visual_analysis[&#39;resource_patches&#39;]:</span>
+<span class="s1">        print(f&quot;Found resource patch: </span><span class="se">{{</span><span class="s1">patch[&#39;type&#39;]</span><span class="se">}}</span><span class="s1"> at </span><span class="se">{{</span><span class="s1">patch[&#39;position&#39;]</span><span class="se">}}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Look for entities using visual analysis</span>
+<span class="s1">if visual_analysis.get(&#39;entity_locations&#39;):</span>
+<span class="s1">    for entity in visual_analysis[&#39;entity_locations&#39;]:</span>
+<span class="s1">        print(f&quot;Found entity: </span><span class="se">{{</span><span class="s1">entity[&#39;type&#39;]</span><span class="se">}}</span><span class="s1"> at </span><span class="se">{{</span><span class="s1">entity[&#39;position&#39;]</span><span class="se">}}</span><span class="s1">&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_visual_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visual_analysis</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">entities</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up operations based on visual analysis&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Visual-based setup</span>
+<span class="s1">print(&quot;Setting up operations based on visual analysis&quot;)</span>
+
+<span class="s1"># Find resources using visual cues</span>
+<span class="s1">iron_pos = nearest(Resource.IRON_ORE)</span>
+<span class="s1">copper_pos = nearest(Resource.COPPER_ORE)</span>
+
+<span class="s1">if iron_pos:</span>
+<span class="s1">    # Place mining drill with visual guidance</span>
+<span class="s1">    drill = place_entity(</span>
+<span class="s1">        entity=Prototype.MiningDrill,</span>
+<span class="s1">        position=iron_pos,</span>
+<span class="s1">        direction=Direction.NORTH</span>
+<span class="s1">    )</span>
+<span class="s1">    print(f&quot;Placed mining drill at </span><span class="si">{iron_pos}</span><span class="s1"> based on visual analysis&quot;)</span>
+
+<span class="s1">    # Add storage with visual positioning</span>
+<span class="s1">    chest = place_entity_next_to(</span>
+<span class="s1">        entity=Prototype.IronChest,</span>
+<span class="s1">        reference_position=drill.drop_position,</span>
+<span class="s1">        direction=Direction.SOUTH</span>
+<span class="s1">    )</span>
+<span class="s1">    print(f&quot;Placed chest at </span><span class="si">{chest.position}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Check visual feedback</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">print(f&quot;Current entities: {len(entities)}&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_visual_monitoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">visual_analysis</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">entities</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">inventory</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor operations using visual feedback&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1"># Visual monitoring</span>
+<span class="s1">print(&quot;Monitoring operations with visual feedback&quot;)</span>
+
+<span class="s1"># Check entities</span>
+<span class="s1">entities = get_entities()</span>
+<span class="s1">working_entities = [e for e in entities if hasattr(e, &#39;status&#39;) and e.status == EntityStatus.WORKING]</span>
+<span class="s1">print(f&quot;Working entities: {len(working_entities)}&quot;)</span>
+
+<span class="s1"># Check inventory</span>
+<span class="s1">inventory = inspect_inventory()</span>
+<span class="s1">total_items = sum(inventory.values())</span>
+<span class="s1">print(f&quot;Total items: </span><span class="si">{total_items}</span><span class="s1">&quot;)</span>
+
+<span class="s1"># Visual analysis feedback</span>
+<span class="s1">if visual_analysis:</span>
+<span class="s1">    print(f&quot;Visual analysis: </span><span class="si">{visual_analysis}</span><span class="s1">&quot;)</span>
+<span class="s1">    if &#39;spatial_features&#39; in visual_analysis:</span>
+<span class="s1">        features = visual_analysis[&#39;spatial_features&#39;]</span>
+<span class="s1">        print(f&quot;Spatial features: </span><span class="si">{features}</span><span class="s1">&quot;)</span>
+<span class="s1">&#39;&#39;&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="visual-processing-features">
+<h2>Visual Processing Features<a class="headerlink" href="#visual-processing-features" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Image Analysis</strong></dt><dd><ul class="simple">
+<li><p>Dominant color extraction</p></li>
+<li><p>Entity detection and classification</p></li>
+<li><p>Resource patch identification</p></li>
+<li><p>Spatial feature extraction</p></li>
+</ul>
+</dd>
+<dt><strong>Computer Vision Techniques</strong></dt><dd><ul class="simple">
+<li><p>Edge detection</p></li>
+<li><p>Color segmentation</p></li>
+<li><p>Object recognition</p></li>
+<li><p>Spatial reasoning</p></li>
+</ul>
+</dd>
+<dt><strong>Visual Memory</strong></dt><dd><ul class="simple">
+<li><p>Store visual information across steps</p></li>
+<li><p>Track changes in visual data</p></li>
+<li><p>Maintain spatial maps</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="example-visual-analysis">
+<h2>Example Visual Analysis<a class="headerlink" href="#example-visual-analysis" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Input Image</strong></dt><dd><p>Base64 encoded PNG image of the game map</p>
+</dd>
+<dt><strong>Output Analysis</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;image_size&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">),</span>
+    <span class="s1">&#39;image_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;RGB&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;dominant_colors&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>      <span class="c1"># Black (background)</span>
+        <span class="p">[</span><span class="mi">139</span><span class="p">,</span> <span class="mi">69</span><span class="p">,</span> <span class="mi">19</span><span class="p">],</span>  <span class="c1"># Brown (dirt)</span>
+        <span class="p">[</span><span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="c1"># Gray (stone)</span>
+        <span class="p">[</span><span class="mi">255</span><span class="p">,</span> <span class="mi">215</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>   <span class="c1"># Gold (resources)</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;entity_locations&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">256</span><span class="p">),</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;mining_drill&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;confidence&#39;</span><span class="p">:</span> <span class="mf">0.9</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">520</span><span class="p">,</span> <span class="mi">264</span><span class="p">),</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;chest&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;confidence&#39;</span><span class="p">:</span> <span class="mf">0.8</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;resource_patches&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;iron_ore&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="s1">&#39;large&#39;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;copper_ore&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="s1">&#39;medium&#39;</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="s1">&#39;spatial_features&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;image_center&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">),</span>
+        <span class="s1">&#39;image_bounds&#39;</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="mi">1024</span><span class="p">),</span>
+        <span class="s1">&#39;density_map&#39;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+        <span class="s1">&#39;connectivity&#39;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="running-the-visual-agent">
+<h2>Running the Visual Agent<a class="headerlink" href="#running-the-visual-agent" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Environment Setup</strong></dt><dd><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents.visual_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">VisualAgent</span>
+
+<span class="c1"># Create environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create visual agent</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">VisualAgent</span><span class="p">({</span>
+    <span class="s1">&#39;vision_enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;image_processing&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;spatial_reasoning&#39;</span><span class="p">:</span> <span class="kc">True</span>
+<span class="p">})</span>
+
+<span class="c1"># Run episode</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="n">done</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">step</span> <span class="o">=</span> <span class="mi">0</span>
+
+<span class="k">while</span> <span class="ow">not</span> <span class="n">done</span> <span class="ow">and</span> <span class="n">step</span> <span class="o">&lt;</span> <span class="mi">100</span><span class="p">:</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">act</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="n">terminated</span> <span class="ow">or</span> <span class="n">truncated</span>
+    <span class="n">step</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: Reward = </span><span class="si">{</span><span class="n">reward</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Command Line Usage</strong></dt><dd><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run visual agent evaluation</span>
+fle<span class="w"> </span><span class="nb">eval</span><span class="w"> </span>--agent<span class="w"> </span>visual_agent<span class="w"> </span>--config<span class="w"> </span>configs/visual_agent_config.json
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="agent-configuration">
+<h2>Agent Configuration<a class="headerlink" href="#agent-configuration" title="Link to this heading"></a></h2>
+<dl>
+<dt><strong>Basic Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VisualAgent&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;vision_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;image_processing&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;spatial_reasoning&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;visual_memory_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.6</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Advanced Configuration</strong></dt><dd><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;agent_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VisualAgent&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;vision_enabled&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;image_processing&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;spatial_reasoning&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;visual_memory_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;computer_vision_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;object_detection_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.7</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;spatial_analysis_depth&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;evaluation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;episodes&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;max_steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2000</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;success_threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.8</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;visual_accuracy&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;spatial_reasoning&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;object_detection&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="performance-metrics">
+<h2>Performance Metrics<a class="headerlink" href="#performance-metrics" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Visual Accuracy</strong></dt><dd><ul class="simple">
+<li><p>Object detection accuracy</p></li>
+<li><p>Resource identification accuracy</p></li>
+<li><p>Spatial reasoning accuracy</p></li>
+</ul>
+</dd>
+<dt><strong>Processing Performance</strong></dt><dd><ul class="simple">
+<li><p>Image processing time</p></li>
+<li><p>Memory usage</p></li>
+<li><p>CPU utilization</p></li>
+</ul>
+</dd>
+<dt><strong>Visual Reasoning</strong></dt><dd><ul class="simple">
+<li><p>Spatial relationship understanding</p></li>
+<li><p>Object interaction prediction</p></li>
+<li><p>Visual planning effectiveness</p></li>
+</ul>
+</dd>
+</dl>
+<section id="example-metrics">
+<h3>Example Metrics<a class="headerlink" href="#example-metrics" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;visual_accuracy&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;object_detection&quot;</span><span class="p">:</span> <span class="mf">0.85</span><span class="p">,</span>  <span class="c1"># fraction of objects correctly identified</span>
+        <span class="s2">&quot;resource_identification&quot;</span><span class="p">:</span> <span class="mf">0.90</span><span class="p">,</span>  <span class="c1"># fraction of resources correctly identified</span>
+        <span class="s2">&quot;spatial_reasoning&quot;</span><span class="p">:</span> <span class="mf">0.75</span>  <span class="c1"># fraction of spatial relationships correctly understood</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;processing_performance&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;image_processing_time&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># seconds per image</span>
+        <span class="s2">&quot;memory_usage&quot;</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span>  <span class="c1"># MB</span>
+        <span class="s2">&quot;cpu_utilization&quot;</span><span class="p">:</span> <span class="mf">0.3</span>  <span class="c1"># fraction of CPU used</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;visual_reasoning&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;spatial_understanding&quot;</span><span class="p">:</span> <span class="mf">0.80</span><span class="p">,</span>  <span class="c1"># fraction of spatial relationships understood</span>
+        <span class="s2">&quot;object_interaction_prediction&quot;</span><span class="p">:</span> <span class="mf">0.70</span><span class="p">,</span>  <span class="c1"># fraction of interactions correctly predicted</span>
+        <span class="s2">&quot;visual_planning_effectiveness&quot;</span><span class="p">:</span> <span class="mf">0.65</span>  <span class="c1"># fraction of visual plans that succeed</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><strong>Visual Processing Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>Poor image quality</strong>: Check image resolution and format</p></li>
+<li><p><strong>Detection failures</strong>: Adjust detection thresholds</p></li>
+<li><p><strong>Memory issues</strong>: Reduce visual memory size</p></li>
+</ul>
+</dd>
+<dt><strong>Performance Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>Slow processing</strong>: Optimize image processing algorithms</p></li>
+<li><p><strong>High memory usage</strong>: Implement image compression</p></li>
+<li><p><strong>CPU bottlenecks</strong>: Use parallel processing</p></li>
+</ul>
+</dd>
+<dt><strong>Accuracy Issues</strong></dt><dd><ul class="simple">
+<li><p><strong>False positives</strong>: Adjust detection thresholds</p></li>
+<li><p><strong>Missed objects</strong>: Improve detection algorithms</p></li>
+<li><p><strong>Spatial errors</strong>: Enhance spatial reasoning</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Image Quality</strong>: Ensure high-quality input images</p></li>
+<li><p><strong>Detection Thresholds</strong>: Tune detection parameters</p></li>
+<li><p><strong>Memory Management</strong>: Monitor and optimize memory usage</p></li>
+<li><p><strong>Performance Optimization</strong>: Use efficient algorithms</p></li>
+<li><p><strong>Error Handling</strong>: Implement robust error recovery</p></li>
+<li><p><strong>Visual Memory</strong>: Maintain useful visual information</p></li>
+<li><p><strong>Spatial Reasoning</strong>: Develop strong spatial understanding</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic_agent.html" class="btn btn-neutral float-left" title="Basic Agent Example" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multiagent.html" class="btn btn-neutral float-right" title="Multi-Agent Example" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

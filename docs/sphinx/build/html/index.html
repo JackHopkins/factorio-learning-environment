@@ -1,0 +1,344 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Factorio Learning Environment’s documentation! &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="getting_started/installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Welcome to Factorio Learning Environment’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="welcome-to-factorio-learning-environment-s-documentation">
+<h1>Welcome to Factorio Learning Environment’s documentation!<a class="headerlink" href="#welcome-to-factorio-learning-environment-s-documentation" title="Link to this heading"></a></h1>
+<p>An open source framework for developing and evaluating LLM agents in the game of Factorio.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#id1">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#client-side-setup-optional">Client-side Setup (Optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#api-key-configuration">API Key Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/installation.html#building-documentation-maintainers">Building Documentation (Maintainers)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/quickstart.html">Quickstart</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/quickstart.html#environment-overview">Environment Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/quickstart.html#example-interaction">Example Interaction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/quickstart.html#key-concepts">Key Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/cluster.html">Cluster Setup</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#starting-a-cluster">Starting a Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#cluster-management">Cluster Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#scenarios">Scenarios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started/cluster.html#advanced-configuration">Advanced Configuration</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/environment.html">Environment API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#core-concepts">Core Concepts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#factorioinstance">FactorioInstance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#namespace-management">Namespace Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#gym-environment">Gym Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#environment-registry">Environment Registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#example-usage">Example Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/environment.html#error-handling">Error Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/observation.html">Observation Space</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#observation-structure">Observation Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#entity-information">Entity Information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#position-and-direction">Position and Direction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#inventory-management">Inventory Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#research-system">Research System</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#game-state-information">Game State Information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#task-verification">Task Verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/observation.html#example-observation">Example Observation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/action.html">Action Space</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#action-structure">Action Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#action-components">Action Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#action-space-definition">Action Space Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#code-execution">Code Execution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#example-actions">Example Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#example-error-handling">Example Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#multi-agent-actions">Multi-Agent Actions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#action-validation">Action Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/action.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/tools.html">Tools API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/tools.html#tool-architecture">Tool Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tools.html#core-tools">Core Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tools.html#tool-categories">Tool Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tools.html#creating-custom-tools">Creating Custom Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/tools.html#tool-documentation">Tool Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/modules.html">API Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/modules.html#core-environment">Core Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/modules.html#agents">Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/modules.html#evaluation">Evaluation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/modules.html#common-models">Common Models</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="customization/tasks.html">Creating Custom Tasks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-structure">Task Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-definition">Task Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-types">Task Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-implementation">Task Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-configuration">Task Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#task-registration">Task Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#example-task">Example Task</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#testing-tasks">Testing Tasks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#advanced-features">Advanced Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tasks.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="customization/tools.html">Creating Custom Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#tool-architecture">Tool Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#tool-structure">Tool Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#tool-development-process">Tool Development Process</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#example-tool-resource-scanner">Example Tool: Resource Scanner</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#testing-tools">Testing Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#tool-registration">Tool Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#advanced-features">Advanced Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/tools.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="customization/agents.html">Implementing Custom Agents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-architecture">Agent Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#base-agent-class">Base Agent Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-implementation">Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-types">Agent Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#example-agent-resource-collector">Example Agent: Resource Collector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-configuration">Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#example-configuration">Example Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-testing">Agent Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#advanced-agent-features">Advanced Agent Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#agent-registration">Agent Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#example-registration">Example Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/agents.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="customization/database.html">Database Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#database-types">Database Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#sqlite-configuration">SQLite Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#postgresql-configuration">PostgreSQL Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#database-schema">Database Schema</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#database-client">Database Client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#example-usage">Example Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#database-migration">Database Migration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#example-migration">Example Migration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#performance-optimization">Performance Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#example-optimization">Example Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#backup-and-recovery">Backup and Recovery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#example-backup">Example Backup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#monitoring-and-maintenance">Monitoring and Maintenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#example-monitoring">Example Monitoring</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="customization/database.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/basic_agent.html">Basic Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#agent-overview">Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#agent-implementation">Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#running-the-agent">Running the Agent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#agent-configuration">Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#agent-behavior">Agent Behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#example-output">Example Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#performance-metrics">Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/basic_agent.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/visual_agent.html">Visual Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#agent-overview">Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#agent-implementation">Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#visual-processing-features">Visual Processing Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#example-visual-analysis">Example Visual Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#running-the-visual-agent">Running the Visual Agent</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#agent-configuration">Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#performance-metrics">Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/visual_agent.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/multiagent.html">Multi-Agent Example</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#multi-agent-overview">Multi-Agent Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#agent-architecture">Agent Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#multi-agent-implementation">Multi-Agent Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#specialized-agents">Specialized Agents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#running-multi-agent-systems">Running Multi-Agent Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#multi-agent-configuration">Multi-Agent Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#performance-metrics">Performance Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/multiagent.html#best-practices">Best Practices</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tools/index.html">Tools Documentation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tools/index.html#tool-categories">Tool Categories</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/index.html#core-tools">Core Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/index.html#tool-usage-patterns">Tool Usage Patterns</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/index.html#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tools/index.html#tool-development">Tool Development</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started/installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Quickstart" href="quickstart.html" />
+    <link rel="prev" title="Welcome to Factorio Learning Environment’s documentation!" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#client-side-setup-optional">Client-side Setup (Optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-key-configuration">API Key Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-documentation-maintainers">Building Documentation (Maintainers)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cluster.html">Cluster Setup</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/environment.html">Environment API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/observation.html">Observation Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/action.html">Action Space</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/tools.html">Tools API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/modules.html">API Modules</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Customization</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tasks.html">Creating Custom Tasks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/tools.html">Creating Custom Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/agents.html">Implementing Custom Agents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../customization/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/basic_agent.html">Basic Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/visual_agent.html">Visual Agent Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/multiagent.html">Multi-Agent Example</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/index.html">Tools Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/getting_started/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Docker</p></li>
+<li><p>Python 3.10+</p></li>
+<li><p><a class="reference external" href="https://www.factorio.com/">Factorio</a> (version 1.1.110), only for optional rendering</p></li>
+</ul>
+</section>
+<section id="id1">
+<h2>Installation<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>Core FLE SDK package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment
+uv<span class="w"> </span>add<span class="w"> </span>factorio-learning-environment
+</pre></div>
+</div>
+<p>With optional features:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For running experiments</span>
+pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>eval<span class="o">]</span>
+
+<span class="c1"># For MCP protocol support</span>
+pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>mcp<span class="o">]</span>
+
+<span class="c1"># For PostgreSQL support</span>
+pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>psql<span class="o">]</span>
+
+<span class="c1"># All features</span>
+pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>eval,mcp,psql<span class="o">]</span>
+</pre></div>
+</div>
+<p>Using uv (recommended):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>add<span class="w"> </span>factorio-learning-environment<span class="o">[</span>eval<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="client-side-setup-optional">
+<h2>Client-side Setup (Optional)<a class="headerlink" href="#client-side-setup-optional" title="Link to this heading"></a></h2>
+<p>For rendering graphics, set up the Factorio client:</p>
+<ol class="arabic">
+<li><p><strong>Set up Factorio client</strong>:
+- Purchase Factorio from the <a class="reference external" href="https://www.factorio.com/">official website</a> (recommended) or on Steam.
+- Downgrade to version 1.1.110:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Steam: Right-click Factorio → Properties → Betas → Select 1.1.110</p></li>
+<li><p><strong>Important</strong>: Make sure to uncheck the Space Age DLC if you have it, as it forces the 2.x branch</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p><strong>Activate server</strong>:
+- Open Factorio client
+- Navigate to _Multiplayer_
+- Connect to <cite>localhost:34197</cite> (default) or your configured address in Docker.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Once connected, you can safely disconnect. This step confirms your Factorio license with the server.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ol>
+</section>
+<section id="api-key-configuration">
+<h2>API Key Configuration<a class="headerlink" href="#api-key-configuration" title="Link to this heading"></a></h2>
+<p>FLE supports multiple LLM providers for agent evaluation. To get started with API keys:</p>
+<ol class="arabic">
+<li><p><strong>Quick Setup</strong> (Recommended):
+.. code-block:: bash</p>
+<blockquote>
+<div><p>python fle/eval/infra/setup_api_keys.py</p>
+</div></blockquote>
+<p>This interactive script helps you:
+- Configure API keys for OpenAI, Anthropic, and other providers
+- Set up API key rotation for high-volume experiments
+- Generate provider-specific configuration files
+- Validate your API key setup</p>
+</li>
+<li><p><strong>Manual Setup</strong>:
+Add your API keys to the <cite>.env</cite> file:
+.. code-block:: bash</p>
+<blockquote>
+<div><p># OpenAI
+OPENAI_API_KEY=sk-…</p>
+<p># Anthropic
+ANTHROPIC_API_KEY=sk-ant-…</p>
+<p># Additional providers as needed</p>
+</div></blockquote>
+</li>
+<li><p><strong>Advanced Configuration</strong>:
+For large-scale experiments, you can set up API key rotation and provider-specific settings using the configuration files generated by <cite>setup_api_keys.py</cite>.</p></li>
+</ol>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>“No valid programs found for version X”</strong>: This is normal during initialization. The system will start generating programs shortly.</p></li>
+<li><p><strong>Database connection errors</strong>: Verify your database configuration in the .env file and ensure the database exists.</p></li>
+<li><p><strong>API key errors</strong>: Run <cite>python fle/eval/infra/setup_api_keys.py</cite> to verify your API key configuration.</p></li>
+<li><p><strong>Docker issues</strong>: Ensure your user has permission to run Docker without sudo.</p></li>
+<li><p><strong>Connection issues</strong>: Make sure the Factorio server is running and ports are properly configured.</p></li>
+</ul>
+</section>
+<section id="building-documentation-maintainers">
+<h2>Building Documentation (Maintainers)<a class="headerlink" href="#building-documentation-maintainers" title="Link to this heading"></a></h2>
+<p>Install Sphinx tooling:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>sphinx<span class="w"> </span>sphinx-rtd-theme<span class="w"> </span>sphinx-autodoc-typehints
+</pre></div>
+</div>
+<p>Build the HTML documentation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docs/sphinx
+python3<span class="w"> </span>-m<span class="w"> </span>sphinx<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span><span class="nb">source</span><span class="w"> </span>build/html
+</pre></div>
+</div>
+<p>The generated site will be in <code class="docutils literal notranslate"><span class="pre">factorio-learning-environment/docs/sphinx/build/html</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="Welcome to Factorio Learning Environment’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quickstart" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -12,12 +12,13 @@
 #
 import os
 import sys
+from datetime import datetime
 sys.path.insert(0, os.path.abspath('../../..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'Factorio Learning Environment'
-copyright = '2024, FLE Team'
+copyright = f"{datetime.now().year}, FLE Team"
 author = 'FLE Team'
 release = '0.3.0'
 

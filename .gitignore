@@ -23,6 +23,7 @@ uv.lock
 
 # Sphinx documentation build
 /docs/sphinx/build/
+!/docs/sphinx/build/html
 
 # Docker
 **/docker-compose.yml

@@ -96,3 +96,20 @@ Troubleshooting
 - **API key errors**: Run `python fle/eval/infra/setup_api_keys.py` to verify your API key configuration.
 - **Docker issues**: Ensure your user has permission to run Docker without sudo.
 - **Connection issues**: Make sure the Factorio server is running and ports are properly configured.
+
+Building Documentation (Maintainers)
+------------------------------------
+
+Install Sphinx tooling:
+
+.. code-block:: bash
+
+   pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+
+Build the HTML documentation:
+
+.. code-block:: bash
+
+   cd factorio-learning-environment/docs/sphinx && python -m sphinx -b html source build/html
+
+The generated site will be in ``docs/sphinx/build/html``.

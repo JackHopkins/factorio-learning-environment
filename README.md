@@ -27,8 +27,6 @@ An open source framework for developing and evaluating LLM agents in the game of
 - Python 3.10+
 - [Factorio](https://www.factorio.com/) (version 1.1.110), only for optional rendering.
 
-### Package
-
 ```bash
 # Core FLE SDK package
 pip install factorio-learning-environment

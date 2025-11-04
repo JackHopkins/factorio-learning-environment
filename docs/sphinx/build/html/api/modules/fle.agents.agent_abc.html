@@ -57,7 +57,11 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../modules.html">API Modules</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../modules.html#core-environment">Core Environment</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../modules.html#agents">Agents</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">fle.agents.agent_abc module</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">fle.agents.agent_abc module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#fle.agents.agent_abc.AgentABC"><code class="docutils literal notranslate"><span class="pre">AgentABC</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fle.agents.agent_abc.create_default_agent_card"><code class="docutils literal notranslate"><span class="pre">create_default_agent_card()</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="fle.agents.models.html">fle.agents.models module</a></li>
 </ul>
 </li>
@@ -109,8 +113,111 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="fle-agents-agent-abc-module">
-<h1>fle.agents.agent_abc module<a class="headerlink" href="#fle-agents-agent-abc-module" title="Link to this heading"></a></h1>
+  <section id="module-fle.agents.agent_abc">
+<span id="fle-agents-agent-abc-module"></span><h1>fle.agents.agent_abc module<a class="headerlink" href="#module-fle.agents.agent_abc" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fle.agents.agent_abc.</span></span><span class="sig-name descname"><span class="pre">AgentABC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_prompt</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">system_prompt</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.model">
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.model" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.system_prompt">
+<span class="sig-name descname"><span class="pre">system_prompt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></em><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.system_prompt" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.conversation">
+<span class="sig-name descname"><span class="pre">conversation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="fle.commons.models.html#fle.commons.models.Conversation" title="fle.commons.models.conversation.Conversation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Conversation</span></code></a></em><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.conversation" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.get_agent_card">
+<span class="sig-name descname"><span class="pre">get_agent_card</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.get_agent_card"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.get_agent_card" title="Link to this definition"></a></dt>
+<dd><p>Get the agent card for this agent</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AgentCard</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.set_conversation">
+<span class="sig-name descname"><span class="pre">set_conversation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.set_conversation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.set_conversation" title="Link to this definition"></a></dt>
+<dd><p>Overrides the current conversation state for this agent. This is useful for context modification strategies,
+such as summarisation or injection (i.e RAG).
+&#64;param conversation: The new conversation state.
+&#64;return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.step">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.step" title="Link to this definition"></a></dt>
+<dd><p>A single step in a trajectory. This method should return the next policy to be executed, based on the last response.
+&#64;param conversation: The current state of the conversation.
+&#64;param response: The most recent response from the environment.
+&#64;param namespace: The current namespace of the conversation, containing declared variables and functions.
+&#64;return:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Policy</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.end">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">end</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conversation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">completion</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.end" title="Link to this definition"></a></dt>
+<dd><p>Cleanup for when a trajectory ends</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.AgentABC.check_step_completion">
+<span class="sig-name descname"><span class="pre">check_step_completion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#AgentABC.check_step_completion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.AgentABC.check_step_completion" title="Link to this definition"></a></dt>
+<dd><p>Check if the agent should complete its turn and if the state should be updated
+:returns: bool, True if the state should be updated</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>completed: bool, True if the agent should complete its turn</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>update_state</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fle.agents.agent_abc.create_default_agent_card">
+<span class="sig-prename descclassname"><span class="pre">fle.agents.agent_abc.</span></span><span class="sig-name descname"><span class="pre">create_default_agent_card</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/fle/agents/agent_abc.html#create_default_agent_card"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.agents.agent_abc.create_default_agent_card" title="Link to this definition"></a></dt>
+<dd><p>Create a default A2A agent card describing a Factorio agent’s capabilities</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">AgentCard</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 

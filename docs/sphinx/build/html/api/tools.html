@@ -126,6 +126,10 @@
 <li><p><strong>client.py</strong>: Client-side implementation, a Python class that can be invoked by the agent</p></li>
 <li><p><strong>server.lua</strong>: Server-side implementation, which handles most of the logic and heavy lifting</p></li>
 </ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The tool workflow connects the agent’s synthesized Python program to the client-side <code class="docutils literal notranslate"><span class="pre">client.py</span></code> and then to the Factorio server’s <code class="docutils literal notranslate"><span class="pre">server.lua</span></code>, returning structured results back to the agent for the next step.</p>
+</div>
 </section>
 <section id="core-tools">
 <h2>Core Tools<a class="headerlink" href="#core-tools" title="Link to this heading"></a></h2>

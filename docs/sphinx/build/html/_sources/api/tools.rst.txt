@@ -12,32 +12,8 @@ Tools live in `fle/env/tools/agent/` and require 3 files:
 2. **client.py**: Client-side implementation, a Python class that can be invoked by the agent
 3. **server.lua**: Server-side implementation, which handles most of the logic and heavy lifting
 
-.. mermaid::
-   :config:
-     layout: fixed
-     flowchart:
-       defaultRenderer:
-         elk
-
-   flowchart LR
-       A("fa:fa-comment-dots Agent")
-       subgraph s1["Learning Environment"]
-           B("fa:fa-code Interpreter")
-           n1("client.py")
-       end
-       subgraph s2["Factorio Server"]
-           E1["fa:fa-shapes server.lua"]
-           F("fa:fa-cog Factorio Engine")
-       end
-       A -- Synthesises Python --> B
-       B -- Invokes --> n1
-       n1 -. Exceptions .-> B
-       n1 -. Objects .-> B
-       n1 --Remote TCP Call--> E1
-       E1 -- Execute --> F
-       F-. Result .-> E1
-       E1 -. TCP Response .-> n1
-       B -. Observation .-> A
+.. note::
+   The tool workflow connects the agent's synthesized Python program to the client-side ``client.py`` and then to the Factorio server's ``server.lua``, returning structured results back to the agent for the next step.
 
 Core Tools
 ----------

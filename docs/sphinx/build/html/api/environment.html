@@ -84,6 +84,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#namespace-management">Namespace Management</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gym-environment">Gym Environment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#environment-registry">Environment Registry</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.gym_env.registry.list_available_environments"><code class="docutils literal notranslate"><span class="pre">list_available_environments()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.gym_env.registry.get_environment_info"><code class="docutils literal notranslate"><span class="pre">get_environment_info()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle.env.gym_env.registry.register_all_environments"><code class="docutils literal notranslate"><span class="pre">register_all_environments()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#available-environments">Available Environments</a></li>
 </ul>
 </li>
@@ -311,6 +314,39 @@ These are converted to their signatures - leaving out the implementations.
 <section id="environment-registry">
 <h2>Environment Registry<a class="headerlink" href="#environment-registry" title="Link to this heading"></a></h2>
 <p>FLE uses a gym environment registry to automatically discover and register all available tasks.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="fle.env.gym_env.registry.list_available_environments">
+<span class="sig-prename descclassname"><span class="pre">fle.env.gym_env.registry.</span></span><span class="sig-name descname"><span class="pre">list_available_environments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/gym_env/registry.html#list_available_environments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.gym_env.registry.list_available_environments" title="Link to this definition"></a></dt>
+<dd><p>List all available gym environment IDs</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fle.env.gym_env.registry.get_environment_info">
+<span class="sig-prename descclassname"><span class="pre">fle.env.gym_env.registry.</span></span><span class="sig-name descname"><span class="pre">get_environment_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/gym_env/registry.html#get_environment_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.gym_env.registry.get_environment_info" title="Link to this definition"></a></dt>
+<dd><p>Get detailed information about a specific environment</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fle.env.gym_env.registry.register_all_environments">
+<span class="sig-prename descclassname"><span class="pre">fle.env.gym_env.registry.</span></span><span class="sig-name descname"><span class="pre">register_all_environments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/fle/env/gym_env/registry.html#register_all_environments"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fle.env.gym_env.registry.register_all_environments" title="Link to this definition"></a></dt>
+<dd><p>Register all discovered environments with gym</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <section id="available-environments">
 <h3>Available Environments<a class="headerlink" href="#available-environments" title="Link to this heading"></a></h3>
 <dl>

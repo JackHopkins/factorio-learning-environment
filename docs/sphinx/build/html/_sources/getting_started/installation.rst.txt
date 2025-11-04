@@ -100,14 +100,6 @@ Troubleshooting
 Building Documentation (Maintainers)
 ------------------------------------
 
-Install Sphinx tooling:
-
-.. code-block:: bash
-
-   pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
-
-Build the HTML documentation:
-
 .. code-block:: bash
 
    cd docs/sphinx

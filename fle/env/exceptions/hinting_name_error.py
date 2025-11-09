@@ -36,8 +36,21 @@ def get_value_type_str(value: Any) -> str:
             return_type = type_hints.get("return", Any).__name__
 
             return f"def ({', '.join(params)}) -> {return_type}"
-        except Exception:
-            return "function"
+        except Exception as e:
+            # Provide more helpful fallback information for functions
+            try:
+                # Try to get at least the function signature without type hints
+                sig = inspect.signature(value)
+                param_names = [param for param in sig.parameters.keys()]
+                func_name = getattr(value, '__name__', 'function')
+                if param_names:
+                    return f"function {func_name}({', '.join(param_names)})"
+                else:
+                    return f"function {func_name}()"
+            except Exception:
+                # Last resort fallback with function name if available
+                func_name = getattr(value, '__name__', 'unknown')
+                return f"function {func_name} (signature unavailable)"
 
     # Handle class instances
     if hasattr(value, "__class__"):
@@ -47,5 +60,13 @@ def get_value_type_str(value: Any) -> str:
         # For custom classes, include the module name
         return f"{value.__class__.__module__}.{value.__class__.__name__}"
 
-    # Fallback
-    return type(value).__name__
+    # Improved fallback with more context
+    try:
+        type_name = type(value).__name__
+        # Try to get the module to provide more context
+        if hasattr(type(value), '__module__') and type(value).__module__ not in ('builtins', '__main__'):
+            return f"{type(value).__module__}.{type_name}"
+        return type_name
+    except Exception:
+        # Absolute last resort - provide as much info as possible
+        return f"<object of unknown type: {repr(value)[:50]}>" if hasattr(value, '__repr__') else "<object of unknown type>"

@@ -282,32 +282,49 @@ class FactorioNamespace:
     def _get_suggestions_from_name_error(
         self, eval_dict, error_msg
     ) -> List[Tuple[str, str]]:
-        var_name = error_msg.split("'")[1]
+        try:
+            # Safely extract variable name from error message
+            if "'" in error_msg:
+                var_name = error_msg.split("'")[1]
+            else:
+                # Fallback: return empty list if we can't parse the error message
+                return []
 
-        # Get available variables from both eval_dict and class attributes
-        available_vars = {}
+            # Get available variables from both eval_dict and class attributes
+            available_vars = {}
 
-        # Add variables from eval_dict with their types
-        for name, value in eval_dict.items():
-            if not name.startswith("_"):
-                available_vars[name] = value
+            # Add variables from eval_dict with their types
+            for name, value in eval_dict.items():
+                if not name.startswith("_"):
+                    available_vars[name] = value
 
-        # Add class attributes
-        for name in dir(self):
-            if not name.startswith("_"):
-                available_vars[name] = getattr(self, name)
+            # Add class attributes
+            for name in dir(self):
+                if not name.startswith("_"):
+                    try:
+                        available_vars[name] = getattr(self, name)
+                    except Exception:
+                        # Skip attributes that can't be accessed
+                        continue
 
-        # Get close matches using difflib
-        matches = get_close_matches(var_name, available_vars.keys(), n=3, cutoff=0.6)
+            # Get close matches using difflib
+            matches = get_close_matches(var_name, available_vars.keys(), n=3, cutoff=0.6)
 
-        # Create suggestions with type information
-        suggestions = []
-        for match in matches:
-            value = available_vars[match]
-            type_hint = get_value_type_str(value)
-            suggestions.append((match, type_hint))
+            # Create suggestions with type information
+            suggestions = []
+            for match in matches:
+                try:
+                    value = available_vars[match]
+                    type_hint = get_value_type_str(value)
+                    suggestions.append((match, type_hint))
+                except Exception:
+                    # If we can't get type info, still include the suggestion without type
+                    suggestions.append((match, "unknown type"))
 
-        return suggestions
+            return suggestions
+        except Exception:
+            # If anything goes wrong, return empty list rather than crashing
+            return []
 
     def _extract_error_lines(self, expr, traceback_str):
         lines = expr.splitlines()
@@ -1083,15 +1100,32 @@ class FactorioNamespace:
                     and "name '" in str(e)
                     and "' is not defined" in str(e)
                 ):
+                    suggestion_tuples = self._get_suggestions_from_name_error(
+                        eval_dict, str(e)
+                    )
                     suggestions = [
                         f"{sug} ({_type})"
-                        for sug, _type in self._get_suggestions_from_name_error(
-                            eval_dict, str(e)
-                        )
+                        for sug, _type in suggestion_tuples
                     ]
                     error_message += f"\n{error_type}"
                     if suggestions:
                         error_message += f"\nDid you mean one of these?\n{suggestions}"
+                    else:
+                        # Provide helpful fallback when no close matches are found
+                        try:
+                            var_name = str(e).split("'")[1]
+                            error_message += f"\nNo similar variable names found for '{var_name}'."
+                            error_message += f"\nTip: Check that the variable is defined before use, or verify the spelling."
+                            # Optionally show some available variables as hints
+                            available_names = [name for name in eval_dict.keys() if not name.startswith("_")]
+                            if available_names:
+                                # Show first few available variables
+                                sample_vars = sorted(available_names)[:10]
+                                error_message += f"\nSome available variables: {', '.join(sample_vars)}"
+                                if len(available_names) > 10:
+                                    error_message += f" (and {len(available_names) - 10} more)"
+                        except Exception:
+                            error_message += "\nTip: Check that the variable is defined before use."
                 else:
                     error_message += f"\n{error_type}"
 

@@ -256,15 +256,17 @@ class FactorioMCPState:
         if self.recipes_loaded:
             return self.recipes
 
+        # Navigate from fle/env/protocols/_mcp/state.py to project root
         recipes_path = (
-            Path(__file__).parent.parent / "data" / "recipes" / "recipes.jsonl"
+            Path(__file__).parent.parent.parent.parent.parent / "data" / "recipes" / "recipes.jsonl"
         )
 
         if not recipes_path.exists():
-            # Fall back to absolute path if relative path fails
-            recipes_path = Path(
-                "/Users/jackhopkins/PycharmProjects/PaperclipMaximiser/data/recipes/recipes.jsonl"
-            )
+            # If file doesn't exist, log a warning and return empty dict
+            print(f"Warning: Recipes file not found at {recipes_path}")
+            print("To generate recipes.jsonl, run: cd data/recipes && python main.py")
+            self.recipes_loaded = True
+            return {}
 
         try:
             recipes = {}

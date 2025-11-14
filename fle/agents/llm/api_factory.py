@@ -213,6 +213,9 @@ class APIFactory:
                 "stream": False,
             }
 
+            # Remove None values to avoid API errors
+            api_params = {k: v for k, v in api_params.items() if v is not None}
+
             # Standard API call for all providers
             response = await client.chat.completions.create(**api_params)
             # Mark key as successful

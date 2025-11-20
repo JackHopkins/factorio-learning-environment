@@ -93,7 +93,7 @@ class FactorioGymRegistry:
 _registry = FactorioGymRegistry()
 
 
-def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
+def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int, **kwargs) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment"""
     # Create task from the task definition
     task = TaskFactory.create_task(spec.task_config_path)
@@ -146,8 +146,10 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
         task.setup(instance)
 
         # Create and return the gym environment
+        # Allow enable_vision to be overridden via kwargs, otherwise use spec default
+        enable_vision = kwargs.get('enable_vision', spec.enable_vision)
         env = FactorioGymEnv(
-            instance=instance, task=task, enable_vision=spec.enable_vision
+            instance=instance, task=task, enable_vision=enable_vision
         )
 
         return env

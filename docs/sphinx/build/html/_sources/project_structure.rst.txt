@@ -310,4 +310,4 @@ Building Documentation
 
 .. code-block:: bash
 
-   cd factorio-learning-environment/docs/sphinx && python -m sphinx -b html source build/html
+   cd docs/sphinx && python -m sphinx -b html source build/html

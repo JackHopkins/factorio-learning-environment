@@ -13,14 +13,15 @@
 import os
 import sys
 from datetime import datetime
-sys.path.insert(0, os.path.abspath('../../..'))
+
+sys.path.insert(0, os.path.abspath("../../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = 'Factorio Learning Environment'
+project = "Factorio Learning Environment"
 copyright = f"{datetime.now().year}, FLE Team"
-author = 'FLE Team'
-release = '0.3.0'
+author = "FLE Team"
+release = "0.3.0"
 
 # -- General configuration ---------------------------------------------------
 
@@ -28,15 +29,15 @@ release = '0.3.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.intersphinx',
-    'sphinx_autodoc_typehints',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx_autodoc_typehints",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -47,7 +48,7 @@ exclude_patterns = []
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Disable "View page source" links on all pages
 html_show_sourcelink = False
@@ -55,24 +56,24 @@ html_show_sourcelink = False
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # -- Extension configuration -------------------------------------------------
 
 # -- Options for autodoc extension -------------------------------------------
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__'
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
 }
 
 # -- Options for intersphinx extension ---------------------------------------
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'numpy': ('https://numpy.org/doc/stable/', None),
-    'gym': ('https://gymnasium.farama.org/', None),
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "gym": ("https://gymnasium.farama.org/", None),
 }
 
 # -- Options for Napoleon extension -----------------------------------------

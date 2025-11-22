@@ -1,0 +1,317 @@
+Project Structure
+=================
+
+This page provides an overview of the FLE codebase organization.
+
+Directory Layout
+----------------
+
+.. code-block:: text
+
+   factorio-learning-environment/
+   ├── .github/                        # GitHub workflows and CI/CD
+   ├── .fle/                           # Runtime data (saves, scenarios, trajectory logs)
+   ├── docs/                           # Documentation and website
+   ├── examples/                       # Example agent implementations
+   ├── fle/                            # Main codebase
+   │   ├── agents/                     # Agent implementations
+   │   ├── cluster/                    # Docker orchestration and scenarios
+   │   ├── commons/                    # Shared utilities and models
+   │   ├── configs/                    # Configuration files
+   │   ├── data/                       # Data files and replays
+   │   ├── env/                        # Core environment
+   │   ├── eval/                       # Evaluation framework
+   │   ├── run.py                      # CLI entry point
+   │   └── server.py                   # RCON server
+   ├── tests/                          # Test suite
+   ├── .example.env                    # Environment variables template
+   ├── BUILD.md                        # Build instructions
+   ├── CONTRIBUTING.md                 # Contribution guidelines
+   ├── pyproject.toml                  # Python project config
+   └── uv.lock                         # Dependency lock file
+
+Core Directories
+----------------
+
+fle/agents/
+~~~~~~~~~~~
+
+Agent implementations including:
+
+- ``BasicAgent``: Simple text-based agent
+- ``VisualAgent``: Vision-enabled agent
+- ``MultiAgent``: Multi-agent coordination
+- Base classes and interfaces
+
+**Key Files:**
+
+- ``agent_abc.py``: Abstract base class for agents
+- ``models.py``: Agent configuration models
+
+fle/cluster/
+~~~~~~~~~~~~
+
+Docker orchestration and scenario management:
+
+- Factorio server containers
+- Docker Compose configurations
+- Scenario definitions
+- Server management utilities
+
+**Key Files:**
+
+- ``docker-compose.yml``: Container orchestration
+- ``scenarios/``: Pre-built game scenarios
+
+fle/commons/
+~~~~~~~~~~~~
+
+Shared utilities and models used across the codebase:
+
+- Data models (Position, Entity, Inventory, etc.)
+- Utility functions
+- Constants and enumerations
+- Database client interface
+
+**Key Files:**
+
+- ``models.py``: Core data models
+- ``db_client.py``: Database abstraction layer
+- ``utils.py``: Helper functions
+
+fle/env/
+~~~~~~~~
+
+Core environment implementation:
+
+.. code-block:: text
+
+   env/
+   ├── gym_env/                # OpenAI Gym interface
+   │   ├── action.py           # Action definitions
+   │   ├── observation.py      # Observation space
+   │   ├── registry.py         # Environment registry
+   │   └── gym_env.py          # Main gym environment
+   ├── tools/                  # Agent-accessible tools
+   │   ├── agent/              # Agent tools
+   │   └── admin/              # Admin tools
+   ├── protocols/              # Communication protocols
+   │   ├── _mcp/               # Model Context Protocol
+   │   └── a2a/                # Agent-to-Agent protocol
+   ├── exceptions/             # Custom exceptions
+   ├── entities.py             # Entity definitions
+   ├── instance.py             # Game instance management
+   └── namespace.py            # Python namespace management
+
+**Key Components:**
+
+- **gym_env/**: Standard gym interface for RL frameworks
+- **tools/**: All agent-callable functions
+- **protocols/**: Communication layer implementations
+- **exceptions/**: Typed exceptions for error handling
+
+fle/eval/
+~~~~~~~~~
+
+Evaluation framework for running experiments:
+
+.. code-block:: text
+
+   eval/
+   ├── algorithms/             # Search algorithms
+   │   ├── beam_search.py      # Beam search implementation
+   │   ├── mcts.py             # Monte Carlo Tree Search
+   │   └── independent.py      # Independent evaluation
+   ├── analysis/               # Analysis tools
+   ├── tasks/                  # Task definitions
+   │   └── task_definitions/   # JSON task configs
+   │       ├── lab_play/       # Structured tasks
+   │       └── open_play/      # Open-ended tasks
+   ├── infra/                  # Infrastructure
+   │   ├── setup_api_keys.py   # API key configuration
+   │   └── cluster_manager.py  # Cluster management
+   └── evaluator.py            # Main evaluation logic
+
+**Key Files:**
+
+- ``evaluator.py``: Runs agent evaluations
+- ``tasks/task_definitions/``: Task configurations
+- ``algorithms/``: Search and optimization algorithms
+
+tests/
+~~~~~~
+
+Comprehensive test suite:
+
+.. code-block:: text
+
+   tests/
+   ├── actions/                # Tool tests
+   ├── benchmarks/             # Performance benchmarks
+   ├── functional/             # End-to-end tests
+   ├── gym_env/                # Gym interface tests
+   └── integration/            # Integration tests
+
+Configuration Files
+-------------------
+
+pyproject.toml
+~~~~~~~~~~~~~~
+
+Python project configuration:
+
+- Package metadata
+- Dependencies
+- Optional feature groups (``[eval]``, ``[mcp]``, ``[psql]``)
+- Build system configuration
+
+.env
+~~~~
+
+Environment variables (created from ``.example.env``):
+
+- API keys (OpenAI, Anthropic, etc.)
+- Database configuration
+- Cluster settings
+- Feature flags
+
+Key Modules
+-----------
+
+fle/run.py
+~~~~~~~~~~
+
+CLI entry point providing commands:
+
+- ``fle cluster start``: Start Factorio cluster
+- ``fle eval``: Run evaluations
+- ``fle sprites``: Manage sprites
+- ``fle init``: Initialize configuration
+
+fle/server.py
+~~~~~~~~~~~~~
+
+RCON server for communicating with Factorio instances:
+
+- Handles tool invocations
+- Manages game state
+- Executes Lua commands
+
+fle/env/instance.py
+~~~~~~~~~~~~~~~~~~~
+
+Manages individual Factorio game instances:
+
+- Instance lifecycle
+- State management
+- Connection handling
+- Resource cleanup
+
+fle/env/namespace.py
+~~~~~~~~~~~~~~~~~~~~
+
+Python namespace management for agent code:
+
+- Variable storage
+- Function definitions
+- Class definitions
+- Namespace isolation
+
+Data Flow
+---------
+
+.. code-block:: text
+
+   Agent
+     │
+     ├─> Synthesizes Python Code
+     │
+     ▼
+   Environment (gym_env)
+     │
+     ├─> Interprets Code
+     │
+     ├─> Executes Tools (client.py)
+     │       │
+     │       ├─> Calls server.py (RCON)
+     │       │       │
+     │       │       ├─> Executes server.lua
+     │       │       │       │
+     │       │       │       └─> Factorio Engine
+     │       │       │
+     │       │       └─> Returns Results
+     │       │
+     │       └─> Returns Typed Objects
+     │
+     ├─> Updates Namespace
+     │
+     └─> Returns Observation
+           │
+           └─> Agent
+
+Important Files
+---------------
+
+Core Environment
+~~~~~~~~~~~~~~~~
+
+- ``fle/env/gym_env/gym_env.py``: Main gym environment
+- ``fle/env/instance.py``: Game instance management
+- ``fle/env/namespace.py``: Python namespace handling
+
+Tools System
+~~~~~~~~~~~~
+
+- ``fle/env/tools/tool.py``: Base tool class
+- ``fle/env/tools/agent/**/client.py``: Tool implementations
+- ``fle/server.py``: Server-side execution
+
+Registry & Tasks
+~~~~~~~~~~~~~~~~
+
+- ``fle/env/gym_env/registry.py``: Environment registry
+- ``fle/eval/tasks/task_definitions/``: Task JSON files
+- ``fle/eval/evaluator.py``: Evaluation orchestration
+
+Development Workflow
+--------------------
+
+Adding a New Tool
+~~~~~~~~~~~~~~~~~
+
+1. Create directory: ``fle/env/tools/agent/my_tool/``
+2. Add ``client.py``, ``server.lua``, ``agent.md``
+3. Create test: ``tests/actions/test_my_tool.py``
+4. Tool is automatically discovered
+
+Adding a New Task
+~~~~~~~~~~~~~~~~~
+
+1. Create JSON file: ``fle/eval/tasks/task_definitions/my_task.json``
+2. Task is automatically registered
+3. Access via: ``gym.make("my_task")``
+
+Running Tests
+~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Run all tests
+   pytest tests/
+
+   # Run specific test file
+   pytest tests/actions/test_place_entity.py
+
+   # Run with coverage
+   pytest --cov=fle tests/
+
+Building Documentation
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   cd docs/sphinx
+   make html
+
+   # View docs
+   open build/html/index.html

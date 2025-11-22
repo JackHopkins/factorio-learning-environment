@@ -46,6 +46,9 @@ uv sync
 Use the CLI:
 
 ```bash
+# Activate venv
+source .venv/bin/activate
+
 # Start Factorio cluster
 fle cluster start
 

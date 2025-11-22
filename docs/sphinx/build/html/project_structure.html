@@ -1,0 +1,472 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Structure &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e259d695"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Database Configuration" href="advanced/database.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Project Structure</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#directory-layout">Directory Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-directories">Core Directories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle-agents">fle/agents/</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-cluster">fle/cluster/</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-commons">fle/commons/</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-env">fle/env/</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-eval">fle/eval/</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tests">tests/</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-files">Configuration Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#pyproject-toml">pyproject.toml</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#env">.env</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#key-modules">Key Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fle-run-py">fle/run.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-server-py">fle/server.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-env-instance-py">fle/env/instance.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fle-env-namespace-py">fle/env/namespace.py</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#data-flow">Data Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#important-files">Important Files</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#core-environment">Core Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tools-system">Tools System</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#registry-tasks">Registry &amp; Tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#development-workflow">Development Workflow</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-new-tool">Adding a New Tool</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adding-a-new-task">Adding a New Task</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-tests">Running Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-documentation">Building Documentation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Project Structure</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="project-structure">
+<h1>Project Structure<a class="headerlink" href="#project-structure" title="Link to this heading"></a></h1>
+<p>This page provides an overview of the FLE codebase organization.</p>
+<section id="directory-layout">
+<h2>Directory Layout<a class="headerlink" href="#directory-layout" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>factorio-learning-environment/
+├── .github/                        # GitHub workflows and CI/CD
+├── .fle/                           # Runtime data (saves, scenarios, trajectory logs)
+├── docs/                           # Documentation and website
+├── examples/                       # Example agent implementations
+├── fle/                            # Main codebase
+│   ├── agents/                     # Agent implementations
+│   ├── cluster/                    # Docker orchestration and scenarios
+│   ├── commons/                    # Shared utilities and models
+│   ├── configs/                    # Configuration files
+│   ├── data/                       # Data files and replays
+│   ├── env/                        # Core environment
+│   ├── eval/                       # Evaluation framework
+│   ├── run.py                      # CLI entry point
+│   └── server.py                   # RCON server
+├── tests/                          # Test suite
+├── .example.env                    # Environment variables template
+├── BUILD.md                        # Build instructions
+├── CONTRIBUTING.md                 # Contribution guidelines
+├── pyproject.toml                  # Python project config
+└── uv.lock                         # Dependency lock file
+</pre></div>
+</div>
+</section>
+<section id="core-directories">
+<h2>Core Directories<a class="headerlink" href="#core-directories" title="Link to this heading"></a></h2>
+<section id="fle-agents">
+<h3>fle/agents/<a class="headerlink" href="#fle-agents" title="Link to this heading"></a></h3>
+<p>Agent implementations including:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BasicAgent</span></code>: Simple text-based agent</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VisualAgent</span></code>: Vision-enabled agent</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MultiAgent</span></code>: Multi-agent coordination</p></li>
+<li><p>Base classes and interfaces</p></li>
+</ul>
+<p><strong>Key Files:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">agent_abc.py</span></code>: Abstract base class for agents</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">models.py</span></code>: Agent configuration models</p></li>
+</ul>
+</section>
+<section id="fle-cluster">
+<h3>fle/cluster/<a class="headerlink" href="#fle-cluster" title="Link to this heading"></a></h3>
+<p>Docker orchestration and scenario management:</p>
+<ul class="simple">
+<li><p>Factorio server containers</p></li>
+<li><p>Docker Compose configurations</p></li>
+<li><p>Scenario definitions</p></li>
+<li><p>Server management utilities</p></li>
+</ul>
+<p><strong>Key Files:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>: Container orchestration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scenarios/</span></code>: Pre-built game scenarios</p></li>
+</ul>
+</section>
+<section id="fle-commons">
+<h3>fle/commons/<a class="headerlink" href="#fle-commons" title="Link to this heading"></a></h3>
+<p>Shared utilities and models used across the codebase:</p>
+<ul class="simple">
+<li><p>Data models (Position, Entity, Inventory, etc.)</p></li>
+<li><p>Utility functions</p></li>
+<li><p>Constants and enumerations</p></li>
+<li><p>Database client interface</p></li>
+</ul>
+<p><strong>Key Files:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">models.py</span></code>: Core data models</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">db_client.py</span></code>: Database abstraction layer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utils.py</span></code>: Helper functions</p></li>
+</ul>
+</section>
+<section id="fle-env">
+<h3>fle/env/<a class="headerlink" href="#fle-env" title="Link to this heading"></a></h3>
+<p>Core environment implementation:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>env/
+├── gym_env/                # OpenAI Gym interface
+│   ├── action.py           # Action definitions
+│   ├── observation.py      # Observation space
+│   ├── registry.py         # Environment registry
+│   └── gym_env.py          # Main gym environment
+├── tools/                  # Agent-accessible tools
+│   ├── agent/              # Agent tools
+│   └── admin/              # Admin tools
+├── protocols/              # Communication protocols
+│   ├── _mcp/               # Model Context Protocol
+│   └── a2a/                # Agent-to-Agent protocol
+├── exceptions/             # Custom exceptions
+├── entities.py             # Entity definitions
+├── instance.py             # Game instance management
+└── namespace.py            # Python namespace management
+</pre></div>
+</div>
+<p><strong>Key Components:</strong></p>
+<ul class="simple">
+<li><p><strong>gym_env/</strong>: Standard gym interface for RL frameworks</p></li>
+<li><p><strong>tools/</strong>: All agent-callable functions</p></li>
+<li><p><strong>protocols/</strong>: Communication layer implementations</p></li>
+<li><p><strong>exceptions/</strong>: Typed exceptions for error handling</p></li>
+</ul>
+</section>
+<section id="fle-eval">
+<h3>fle/eval/<a class="headerlink" href="#fle-eval" title="Link to this heading"></a></h3>
+<p>Evaluation framework for running experiments:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>eval/
+├── algorithms/             # Search algorithms
+│   ├── beam_search.py      # Beam search implementation
+│   ├── mcts.py             # Monte Carlo Tree Search
+│   └── independent.py      # Independent evaluation
+├── analysis/               # Analysis tools
+├── tasks/                  # Task definitions
+│   └── task_definitions/   # JSON task configs
+│       ├── lab_play/       # Structured tasks
+│       └── open_play/      # Open-ended tasks
+├── infra/                  # Infrastructure
+│   ├── setup_api_keys.py   # API key configuration
+│   └── cluster_manager.py  # Cluster management
+└── evaluator.py            # Main evaluation logic
+</pre></div>
+</div>
+<p><strong>Key Files:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">evaluator.py</span></code>: Runs agent evaluations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tasks/task_definitions/</span></code>: Task configurations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">algorithms/</span></code>: Search and optimization algorithms</p></li>
+</ul>
+</section>
+<section id="tests">
+<h3>tests/<a class="headerlink" href="#tests" title="Link to this heading"></a></h3>
+<p>Comprehensive test suite:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>tests/
+├── actions/                # Tool tests
+├── benchmarks/             # Performance benchmarks
+├── functional/             # End-to-end tests
+├── gym_env/                # Gym interface tests
+└── integration/            # Integration tests
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration-files">
+<h2>Configuration Files<a class="headerlink" href="#configuration-files" title="Link to this heading"></a></h2>
+<section id="pyproject-toml">
+<h3>pyproject.toml<a class="headerlink" href="#pyproject-toml" title="Link to this heading"></a></h3>
+<p>Python project configuration:</p>
+<ul class="simple">
+<li><p>Package metadata</p></li>
+<li><p>Dependencies</p></li>
+<li><p>Optional feature groups (<code class="docutils literal notranslate"><span class="pre">[eval]</span></code>, <code class="docutils literal notranslate"><span class="pre">[mcp]</span></code>, <code class="docutils literal notranslate"><span class="pre">[psql]</span></code>)</p></li>
+<li><p>Build system configuration</p></li>
+</ul>
+</section>
+<section id="env">
+<h3>.env<a class="headerlink" href="#env" title="Link to this heading"></a></h3>
+<p>Environment variables (created from <code class="docutils literal notranslate"><span class="pre">.example.env</span></code>):</p>
+<ul class="simple">
+<li><p>API keys (OpenAI, Anthropic, etc.)</p></li>
+<li><p>Database configuration</p></li>
+<li><p>Cluster settings</p></li>
+<li><p>Feature flags</p></li>
+</ul>
+</section>
+</section>
+<section id="key-modules">
+<h2>Key Modules<a class="headerlink" href="#key-modules" title="Link to this heading"></a></h2>
+<section id="fle-run-py">
+<h3>fle/run.py<a class="headerlink" href="#fle-run-py" title="Link to this heading"></a></h3>
+<p>CLI entry point providing commands:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">cluster</span> <span class="pre">start</span></code>: Start Factorio cluster</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">eval</span></code>: Run evaluations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">sprites</span></code>: Manage sprites</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">init</span></code>: Initialize configuration</p></li>
+</ul>
+</section>
+<section id="fle-server-py">
+<h3>fle/server.py<a class="headerlink" href="#fle-server-py" title="Link to this heading"></a></h3>
+<p>RCON server for communicating with Factorio instances:</p>
+<ul class="simple">
+<li><p>Handles tool invocations</p></li>
+<li><p>Manages game state</p></li>
+<li><p>Executes Lua commands</p></li>
+</ul>
+</section>
+<section id="fle-env-instance-py">
+<h3>fle/env/instance.py<a class="headerlink" href="#fle-env-instance-py" title="Link to this heading"></a></h3>
+<p>Manages individual Factorio game instances:</p>
+<ul class="simple">
+<li><p>Instance lifecycle</p></li>
+<li><p>State management</p></li>
+<li><p>Connection handling</p></li>
+<li><p>Resource cleanup</p></li>
+</ul>
+</section>
+<section id="fle-env-namespace-py">
+<h3>fle/env/namespace.py<a class="headerlink" href="#fle-env-namespace-py" title="Link to this heading"></a></h3>
+<p>Python namespace management for agent code:</p>
+<ul class="simple">
+<li><p>Variable storage</p></li>
+<li><p>Function definitions</p></li>
+<li><p>Class definitions</p></li>
+<li><p>Namespace isolation</p></li>
+</ul>
+</section>
+</section>
+<section id="data-flow">
+<h2>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Agent
+  │
+  ├─&gt; Synthesizes Python Code
+  │
+  ▼
+Environment (gym_env)
+  │
+  ├─&gt; Interprets Code
+  │
+  ├─&gt; Executes Tools (client.py)
+  │       │
+  │       ├─&gt; Calls server.py (RCON)
+  │       │       │
+  │       │       ├─&gt; Executes server.lua
+  │       │       │       │
+  │       │       │       └─&gt; Factorio Engine
+  │       │       │
+  │       │       └─&gt; Returns Results
+  │       │
+  │       └─&gt; Returns Typed Objects
+  │
+  ├─&gt; Updates Namespace
+  │
+  └─&gt; Returns Observation
+        │
+        └─&gt; Agent
+</pre></div>
+</div>
+</section>
+<section id="important-files">
+<h2>Important Files<a class="headerlink" href="#important-files" title="Link to this heading"></a></h2>
+<section id="core-environment">
+<h3>Core Environment<a class="headerlink" href="#core-environment" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/gym_env/gym_env.py</span></code>: Main gym environment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/instance.py</span></code>: Game instance management</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/namespace.py</span></code>: Python namespace handling</p></li>
+</ul>
+</section>
+<section id="tools-system">
+<h3>Tools System<a class="headerlink" href="#tools-system" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/tools/tool.py</span></code>: Base tool class</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/tools/agent/**/client.py</span></code>: Tool implementations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/server.py</span></code>: Server-side execution</p></li>
+</ul>
+</section>
+<section id="registry-tasks">
+<h3>Registry &amp; Tasks<a class="headerlink" href="#registry-tasks" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/gym_env/registry.py</span></code>: Environment registry</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/</span></code>: Task JSON files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/eval/evaluator.py</span></code>: Evaluation orchestration</p></li>
+</ul>
+</section>
+</section>
+<section id="development-workflow">
+<h2>Development Workflow<a class="headerlink" href="#development-workflow" title="Link to this heading"></a></h2>
+<section id="adding-a-new-tool">
+<h3>Adding a New Tool<a class="headerlink" href="#adding-a-new-tool" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Create directory: <code class="docutils literal notranslate"><span class="pre">fle/env/tools/agent/my_tool/</span></code></p></li>
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">client.py</span></code>, <code class="docutils literal notranslate"><span class="pre">server.lua</span></code>, <code class="docutils literal notranslate"><span class="pre">agent.md</span></code></p></li>
+<li><p>Create test: <code class="docutils literal notranslate"><span class="pre">tests/actions/test_my_tool.py</span></code></p></li>
+<li><p>Tool is automatically discovered</p></li>
+</ol>
+</section>
+<section id="adding-a-new-task">
+<h3>Adding a New Task<a class="headerlink" href="#adding-a-new-task" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Create JSON file: <code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/my_task.json</span></code></p></li>
+<li><p>Task is automatically registered</p></li>
+<li><p>Access via: <code class="docutils literal notranslate"><span class="pre">gym.make(&quot;my_task&quot;)</span></code></p></li>
+</ol>
+</section>
+<section id="running-tests">
+<h3>Running Tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all tests</span>
+pytest<span class="w"> </span>tests/
+
+<span class="c1"># Run specific test file</span>
+pytest<span class="w"> </span>tests/actions/test_place_entity.py
+
+<span class="c1"># Run with coverage</span>
+pytest<span class="w"> </span>--cov<span class="o">=</span>fle<span class="w"> </span>tests/
+</pre></div>
+</div>
+</section>
+<section id="building-documentation">
+<h3>Building Documentation<a class="headerlink" href="#building-documentation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>factorio-learning-environment/docs/sphinx<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>sphinx<span class="w"> </span>-b<span class="w"> </span>html<span class="w"> </span><span class="nb">source</span><span class="w"> </span>build/html
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="advanced/database.html" class="btn btn-neutral float-left" title="Database Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

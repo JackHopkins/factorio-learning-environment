@@ -1,0 +1,577 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Configuration &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Project Structure" href="../project_structure.html" />
+    <link rel="prev" title="Sprites" href="sprites.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sprites.html">Sprites</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Database Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-databases">Supported Databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sqlite-configuration">SQLite Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup">Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#benefits">Benefits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#postgresql-configuration">PostgreSQL Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup-with-docker">Setup with Docker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#manual-postgresql-setup">Manual PostgreSQL Setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Benefits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#database-schema">Database Schema</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#trajectories">Trajectories</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#steps">Steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#game-states">Game States</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#using-the-database">Using the Database</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-the-database">Accessing the Database</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#saving-checkpoints">Saving Checkpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resuming-from-checkpoint">Resuming from Checkpoint</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#database-client-api">Database Client API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#core-methods">Core Methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query-methods">Query Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#migration">Migration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#switching-databases">Switching Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#backup-and-restore">Backup and Restore</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sqlite-backup">SQLite Backup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#postgresql-backup">PostgreSQL Backup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sqlite-optimization">SQLite Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#postgresql-optimization">PostgreSQL Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#connection-errors">Connection Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-issues">Performance Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#disk-space">Disk Space</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Database Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="database-configuration">
+<h1>Database Configuration<a class="headerlink" href="#database-configuration" title="Link to this heading"></a></h1>
+<p>FLE supports database checkpointing for long-running trajectories. The database stores agent outputs, environment feedback, game states, and histories of trajectories.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The database system enables:</p>
+<ul class="simple">
+<li><p><strong>Checkpointing</strong>: Save game state at every agent step</p></li>
+<li><p><strong>Resume Capability</strong>: Continue trajectories from any checkpoint</p></li>
+<li><p><strong>Trajectory History</strong>: Track complete agent interaction history</p></li>
+<li><p><strong>Analytics</strong>: Analyze agent behavior across runs</p></li>
+</ul>
+</section>
+<section id="supported-databases">
+<h2>Supported Databases<a class="headerlink" href="#supported-databases" title="Link to this heading"></a></h2>
+<p>FLE supports two database backends out of the box:</p>
+<ol class="arabic simple">
+<li><p><strong>SQLite</strong> (Default): File-based, zero-configuration</p></li>
+<li><p><strong>PostgreSQL</strong>: Client-server, better for concurrent access</p></li>
+</ol>
+</section>
+<section id="sqlite-configuration">
+<h2>SQLite Configuration<a class="headerlink" href="#sqlite-configuration" title="Link to this heading"></a></h2>
+<p>SQLite is the default database and requires minimal configuration.</p>
+<section id="setup">
+<h3>Setup<a class="headerlink" href="#setup" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p>Set the database type in <code class="docutils literal notranslate"><span class="pre">.env</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">FLE_DB_TYPE</span><span class="o">=</span><span class="s2">&quot;sqlite&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Configure the database file location:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">SQLITE_DB_FILE</span><span class="o">=</span><span class="s2">&quot;.fle/data.db&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>The SQLite file will be created automatically in the specified location if it doesn’t exist.</p>
+</section>
+<section id="benefits">
+<h3>Benefits<a class="headerlink" href="#benefits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Zero Setup</strong>: No server required</p></li>
+<li><p><strong>Portable</strong>: Single file contains all data</p></li>
+<li><p><strong>Simple</strong>: Easy to backup and share</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h3>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Not suitable for concurrent writes</p></li>
+<li><p>Limited scalability for very large datasets</p></li>
+<li><p>Single-threaded access</p></li>
+</ul>
+</section>
+</section>
+<section id="postgresql-configuration">
+<h2>PostgreSQL Configuration<a class="headerlink" href="#postgresql-configuration" title="Link to this heading"></a></h2>
+<p>PostgreSQL provides better performance for large-scale experiments and concurrent access.</p>
+<section id="setup-with-docker">
+<h3>Setup with Docker<a class="headerlink" href="#setup-with-docker" title="Link to this heading"></a></h3>
+<p>The easiest way to set up PostgreSQL is using Docker:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>--name<span class="w"> </span>fle-postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>fle123<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">POSTGRES_USER</span><span class="o">=</span>fle_user<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-e<span class="w"> </span><span class="nv">POSTGRES_DB</span><span class="o">=</span>fle_database<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span><span class="m">5432</span>:5432<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span>postgres:15
+</pre></div>
+</div>
+</section>
+<section id="environment-variables">
+<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h3>
+<p>Configure PostgreSQL in your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Database Configuration - Set to postgres to use PostgreSQL</span>
+<span class="nv">FLE_DB_TYPE</span><span class="o">=</span><span class="s2">&quot;postgres&quot;</span>
+
+<span class="c1"># PostgreSQL Configuration</span>
+<span class="nv">SKILLS_DB_HOST</span><span class="o">=</span>localhost
+<span class="nv">SKILLS_DB_PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">SKILLS_DB_NAME</span><span class="o">=</span>fle_database
+<span class="nv">SKILLS_DB_USER</span><span class="o">=</span>fle_user
+<span class="nv">SKILLS_DB_PASSWORD</span><span class="o">=</span>fle123
+</pre></div>
+</div>
+</section>
+<section id="manual-postgresql-setup">
+<h3>Manual PostgreSQL Setup<a class="headerlink" href="#manual-postgresql-setup" title="Link to this heading"></a></h3>
+<p>If you prefer to install PostgreSQL manually:</p>
+<ol class="arabic">
+<li><p>Install PostgreSQL 15+</p></li>
+<li><p>Create a database:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">fle_database</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fle_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;fle123&#39;</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">fle_database</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">fle_user</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">.env</span></code> with your connection details</p></li>
+</ol>
+</section>
+<section id="id1">
+<h3>Benefits<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Concurrent Access</strong>: Multiple processes can write simultaneously</p></li>
+<li><p><strong>Scalability</strong>: Handles large datasets efficiently</p></li>
+<li><p><strong>Advanced Features</strong>: Better query optimization, indexes, etc.</p></li>
+</ul>
+</section>
+<section id="id2">
+<h3>Limitations<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Requires server setup and management</p></li>
+<li><p>More complex configuration</p></li>
+<li><p>Network dependency</p></li>
+</ul>
+</section>
+</section>
+<section id="database-schema">
+<h2>Database Schema<a class="headerlink" href="#database-schema" title="Link to this heading"></a></h2>
+<p>The FLE database stores:</p>
+<section id="trajectories">
+<h3>Trajectories<a class="headerlink" href="#trajectories" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: Unique trajectory identifier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">task_id</span></code>: Associated task</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">start_time</span></code>: When trajectory began</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">end_time</span></code>: When trajectory completed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">status</span></code>: Current status (running, completed, failed)</p></li>
+</ul>
+</section>
+<section id="steps">
+<h3>Steps<a class="headerlink" href="#steps" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: Unique step identifier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">trajectory_id</span></code>: Parent trajectory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">step_number</span></code>: Sequential step number</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">agent_code</span></code>: Code executed by agent</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">environment_feedback</span></code>: Response from environment</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">game_state</span></code>: Serialized game state</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timestamp</span></code>: When step occurred</p></li>
+</ul>
+</section>
+<section id="game-states">
+<h3>Game States<a class="headerlink" href="#game-states" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">id</span></code>: Unique state identifier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">trajectory_id</span></code>: Associated trajectory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">step_id</span></code>: Associated step</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">state_data</span></code>: Serialized game state</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">timestamp</span></code>: When state was captured</p></li>
+</ul>
+</section>
+</section>
+<section id="using-the-database">
+<h2>Using the Database<a class="headerlink" href="#using-the-database" title="Link to this heading"></a></h2>
+<section id="accessing-the-database">
+<h3>Accessing the Database<a class="headerlink" href="#accessing-the-database" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_client</span>
+
+<span class="c1"># Get database client (auto-detects type from .env)</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">get_db_client</span><span class="p">()</span>
+
+<span class="c1"># Query trajectories</span>
+<span class="n">trajectories</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_all_trajectories</span><span class="p">()</span>
+
+<span class="c1"># Get specific trajectory</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_trajectory</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+
+<span class="c1"># Get steps for a trajectory</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_trajectory_steps</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="saving-checkpoints">
+<h3>Saving Checkpoints<a class="headerlink" href="#saving-checkpoints" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save a checkpoint</span>
+<span class="n">db</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span>
+    <span class="n">trajectory_id</span><span class="o">=</span><span class="n">trajectory_id</span><span class="p">,</span>
+    <span class="n">step_number</span><span class="o">=</span><span class="n">step_num</span><span class="p">,</span>
+    <span class="n">agent_code</span><span class="o">=</span><span class="n">code</span><span class="p">,</span>
+    <span class="n">environment_feedback</span><span class="o">=</span><span class="n">feedback</span><span class="p">,</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="n">state</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="resuming-from-checkpoint">
+<h3>Resuming from Checkpoint<a class="headerlink" href="#resuming-from-checkpoint" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load checkpoint</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_checkpoint</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">,</span> <span class="n">step_number</span><span class="p">)</span>
+
+<span class="c1"># Resume environment from checkpoint</span>
+<span class="n">env</span><span class="o">.</span><span class="n">load_state</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">[</span><span class="s1">&#39;game_state&#39;</span><span class="p">])</span>
+
+<span class="c1"># Continue execution</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">next_action</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="database-client-api">
+<h2>Database Client API<a class="headerlink" href="#database-client-api" title="Link to this heading"></a></h2>
+<section id="core-methods">
+<h3>Core Methods<a class="headerlink" href="#core-methods" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create new trajectory</span>
+<span class="n">trajectory_id</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">create_trajectory</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">metadata</span><span class="p">)</span>
+
+<span class="c1"># Save step</span>
+<span class="n">db</span><span class="o">.</span><span class="n">save_step</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">,</span> <span class="n">step_data</span><span class="p">)</span>
+
+<span class="c1"># Get trajectory</span>
+<span class="n">trajectory</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_trajectory</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+
+<span class="c1"># Get all trajectories for a task</span>
+<span class="n">trajectories</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_task_trajectories</span><span class="p">(</span><span class="n">task_id</span><span class="p">)</span>
+
+<span class="c1"># Delete trajectory</span>
+<span class="n">db</span><span class="o">.</span><span class="n">delete_trajectory</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="query-methods">
+<h3>Query Methods<a class="headerlink" href="#query-methods" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get latest checkpoint</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_latest_checkpoint</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+
+<span class="c1"># Get checkpoint at specific step</span>
+<span class="n">checkpoint</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_checkpoint</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">,</span> <span class="n">step_number</span><span class="p">)</span>
+
+<span class="c1"># Count steps in trajectory</span>
+<span class="n">count</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">count_steps</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+
+<span class="c1"># Check if trajectory exists</span>
+<span class="n">exists</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">trajectory_exists</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="migration">
+<h2>Migration<a class="headerlink" href="#migration" title="Link to this heading"></a></h2>
+<section id="switching-databases">
+<h3>Switching Databases<a class="headerlink" href="#switching-databases" title="Link to this heading"></a></h3>
+<p>To migrate from SQLite to PostgreSQL:</p>
+<ol class="arabic">
+<li><p>Export data from SQLite:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQLiteClient</span>
+
+<span class="n">sqlite_db</span> <span class="o">=</span> <span class="n">SQLiteClient</span><span class="p">(</span><span class="n">db_file</span><span class="o">=</span><span class="s1">&#39;.fle/data.db&#39;</span><span class="p">)</span>
+<span class="n">trajectories</span> <span class="o">=</span> <span class="n">sqlite_db</span><span class="o">.</span><span class="n">export_all</span><span class="p">()</span>
+</pre></div>
+</div>
+</li>
+<li><p>Import into PostgreSQL:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.commons.db_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgreSQLClient</span>
+
+<span class="n">pg_db</span> <span class="o">=</span> <span class="n">PostgreSQLClient</span><span class="p">(</span>
+    <span class="n">host</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">5432</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;fle_database&#39;</span><span class="p">,</span>
+    <span class="n">user</span><span class="o">=</span><span class="s1">&#39;fle_user&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;fle123&#39;</span>
+<span class="p">)</span>
+<span class="n">pg_db</span><span class="o">.</span><span class="n">import_all</span><span class="p">(</span><span class="n">trajectories</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">.env</span></code> to use PostgreSQL</p></li>
+</ol>
+</section>
+</section>
+<section id="backup-and-restore">
+<h2>Backup and Restore<a class="headerlink" href="#backup-and-restore" title="Link to this heading"></a></h2>
+<section id="sqlite-backup">
+<h3>SQLite Backup<a class="headerlink" href="#sqlite-backup" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Simple file copy</span>
+cp<span class="w"> </span>.fle/data.db<span class="w"> </span>.fle/data.db.backup
+
+<span class="c1"># Or use SQLite command</span>
+sqlite3<span class="w"> </span>.fle/data.db<span class="w"> </span><span class="s2">&quot;.backup &#39;.fle/data.db.backup&#39;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="postgresql-backup">
+<h3>PostgreSQL Backup<a class="headerlink" href="#postgresql-backup" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Dump database</span>
+pg_dump<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>fle_user<span class="w"> </span>fle_database<span class="w"> </span>&gt;<span class="w"> </span>backup.sql
+
+<span class="c1"># Restore database</span>
+psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>fle_user<span class="w"> </span>fle_database<span class="w"> </span>&lt;<span class="w"> </span>backup.sql
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<section id="sqlite-optimization">
+<h3>SQLite Optimization<a class="headerlink" href="#sqlite-optimization" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use WAL mode for better concurrency</span>
+<span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA journal_mode=WAL&quot;</span><span class="p">)</span>
+
+<span class="c1"># Increase cache size</span>
+<span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;PRAGMA cache_size=-64000&quot;</span><span class="p">)</span>  <span class="c1"># 64MB</span>
+</pre></div>
+</div>
+</section>
+<section id="postgresql-optimization">
+<h3>PostgreSQL Optimization<a class="headerlink" href="#postgresql-optimization" title="Link to this heading"></a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Create indexes for common queries</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_trajectory_task</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">trajectories</span><span class="p">(</span><span class="n">task_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_step_trajectory</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">steps</span><span class="p">(</span><span class="n">trajectory_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_step_timestamp</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">steps</span><span class="p">(</span><span class="k">timestamp</span><span class="p">);</span>
+
+<span class="c1">-- Analyze tables</span>
+<span class="k">ANALYZE</span><span class="w"> </span><span class="n">trajectories</span><span class="p">;</span>
+<span class="k">ANALYZE</span><span class="w"> </span><span class="n">steps</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="connection-errors">
+<h3>Connection Errors<a class="headerlink" href="#connection-errors" title="Link to this heading"></a></h3>
+<p><strong>SQLite</strong>:</p>
+<ul class="simple">
+<li><p>Verify file path exists and is writable</p></li>
+<li><p>Check file permissions</p></li>
+<li><p>Ensure parent directory exists</p></li>
+</ul>
+<p><strong>PostgreSQL</strong>:</p>
+<ul class="simple">
+<li><p>Verify server is running: <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">ps</span></code> or <code class="docutils literal notranslate"><span class="pre">systemctl</span> <span class="pre">status</span> <span class="pre">postgresql</span></code></p></li>
+<li><p>Check connection details in <code class="docutils literal notranslate"><span class="pre">.env</span></code></p></li>
+<li><p>Test connection: <code class="docutils literal notranslate"><span class="pre">psql</span> <span class="pre">-h</span> <span class="pre">localhost</span> <span class="pre">-U</span> <span class="pre">fle_user</span> <span class="pre">fle_database</span></code></p></li>
+</ul>
+</section>
+<section id="performance-issues">
+<h3>Performance Issues<a class="headerlink" href="#performance-issues" title="Link to this heading"></a></h3>
+<p><strong>SQLite</strong>:</p>
+<ul class="simple">
+<li><p>Enable WAL mode</p></li>
+<li><p>Increase cache size</p></li>
+<li><p>Consider switching to PostgreSQL for large datasets</p></li>
+</ul>
+<p><strong>PostgreSQL</strong>:</p>
+<ul class="simple">
+<li><p>Add indexes on frequently queried columns</p></li>
+<li><p>Tune PostgreSQL configuration (<code class="docutils literal notranslate"><span class="pre">postgresql.conf</span></code>)</p></li>
+<li><p>Monitor query performance with <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span> <span class="pre">ANALYZE</span></code></p></li>
+</ul>
+</section>
+<section id="disk-space">
+<h3>Disk Space<a class="headerlink" href="#disk-space" title="Link to this heading"></a></h3>
+<p><strong>SQLite</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check database size</span>
+du<span class="w"> </span>-h<span class="w"> </span>.fle/data.db
+
+<span class="c1"># Vacuum to reclaim space</span>
+sqlite3<span class="w"> </span>.fle/data.db<span class="w"> </span><span class="s2">&quot;VACUUM;&quot;</span>
+</pre></div>
+</div>
+<p><strong>PostgreSQL</strong>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Check database size</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_database_size</span><span class="p">(</span><span class="s1">&#39;fle_database&#39;</span><span class="p">));</span>
+
+<span class="c1">-- Vacuum to reclaim space</span>
+<span class="k">VACUUM</span><span class="w"> </span><span class="k">ANALYZE</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Regular Backups</strong>: Back up your database regularly, especially before major experiments</p></li>
+<li><p><strong>Use PostgreSQL for Large Runs</strong>: For experiments with &gt;1000 steps, use PostgreSQL</p></li>
+<li><p><strong>Clean Up Old Data</strong>: Periodically remove old trajectories you no longer need</p></li>
+<li><p><strong>Monitor Disk Space</strong>: Keep an eye on database size, especially with SQLite</p></li>
+<li><p><strong>Use Transactions</strong>: Batch multiple operations in transactions for better performance</p></li>
+</ol>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Review <a class="reference internal" href="../getting_started/quickstart.html"><span class="doc">Quickstart</span></a> for basic usage</p></li>
+<li><p>See <a class="reference internal" href="../environment/overview.html"><span class="doc">Environment Overview</span></a> for environment context</p></li>
+<li><p>Check <a class="reference internal" href="../getting_started/troubleshooting.html"><span class="doc">Troubleshooting</span></a> for common issues</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sprites.html" class="btn btn-neutral float-left" title="Sprites" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../project_structure.html" class="btn btn-neutral float-right" title="Project Structure" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

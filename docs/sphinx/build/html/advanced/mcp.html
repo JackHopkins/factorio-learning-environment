@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model Context Protocol (MCP) &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sprites" href="sprites.html" />
+    <link rel="prev" title="Creating Custom Tools" href="../tools/custom_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Model Context Protocol (MCP)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-is-mcp">What is MCP?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#benefits">Benefits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-mcp">Using MCP</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#starting-the-mcp-server">Starting the MCP Server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tool-discovery">Tool Discovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#invoking-tools">Invoking Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration-with-llm-clients">Integration with LLM Clients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mcp-compatible-clients">MCP-Compatible Clients</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-integration">Example Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-definitions">Tool Definitions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-tool-definition">Example Tool Definition</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#custom-mcp-tools">Custom MCP Tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state-management">State Management</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#connection-issues">Connection Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tool-not-found">Tool Not Found</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#invalid-parameters">Invalid Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Model Context Protocol (MCP)</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="model-context-protocol-mcp">
+<h1>Model Context Protocol (MCP)<a class="headerlink" href="#model-context-protocol-mcp" title="Link to this heading"></a></h1>
+<p>FLE supports the <a class="reference external" href="https://github.com/modelcontextprotocol">Model Context Protocol</a> (MCP) to enable LLM reasoning models to invoke tools directly.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The Model Context Protocol is a standardized interface that allows AI models to interact with external tools and services. FLE’s MCP integration enables:</p>
+<ul class="simple">
+<li><p>Direct tool invocation from LLM reasoning models</p></li>
+<li><p>Standardized request/response formats</p></li>
+<li><p>Seamless integration with MCP-compatible clients</p></li>
+</ul>
+</section>
+<section id="what-is-mcp">
+<h2>What is MCP?<a class="headerlink" href="#what-is-mcp" title="Link to this heading"></a></h2>
+<p>MCP provides a universal interface for:</p>
+<ol class="arabic simple">
+<li><p><strong>Tool Discovery</strong>: Models can discover available tools and their capabilities</p></li>
+<li><p><strong>Tool Invocation</strong>: Models can call tools with structured parameters</p></li>
+<li><p><strong>Result Handling</strong>: Models receive typed responses from tool calls</p></li>
+</ol>
+</section>
+<section id="benefits">
+<h2>Benefits<a class="headerlink" href="#benefits" title="Link to this heading"></a></h2>
+<p>Using MCP with FLE provides:</p>
+<ul class="simple">
+<li><p><strong>Standardization</strong>: Works with any MCP-compatible client</p></li>
+<li><p><strong>Type Safety</strong>: Structured tool definitions with parameter types</p></li>
+<li><p><strong>Extensibility</strong>: Easy to add new tools to the MCP interface</p></li>
+<li><p><strong>Interoperability</strong>: Compatible with the broader MCP ecosystem</p></li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>To use MCP features, install FLE with MCP support:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>mcp<span class="o">]</span>
+
+<span class="c1"># Or with uv</span>
+uv<span class="w"> </span>add<span class="w"> </span>factorio-learning-environment<span class="o">[</span>mcp<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>MCP configuration is located in <code class="docutils literal notranslate"><span class="pre">fle/env/protocols/_mcp/</span></code>. The MCP server automatically exposes all agent-accessible tools.</p>
+</section>
+<section id="using-mcp">
+<h2>Using MCP<a class="headerlink" href="#using-mcp" title="Link to this heading"></a></h2>
+<section id="starting-the-mcp-server">
+<h3>Starting the MCP Server<a class="headerlink" href="#starting-the-mcp-server" title="Link to this heading"></a></h3>
+<p>The MCP server can be started alongside the FLE environment:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.protocols.mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPServer</span>
+
+<span class="c1"># Initialize MCP server</span>
+<span class="n">server</span> <span class="o">=</span> <span class="n">MCPServer</span><span class="p">()</span>
+<span class="n">server</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="tool-discovery">
+<h3>Tool Discovery<a class="headerlink" href="#tool-discovery" title="Link to this heading"></a></h3>
+<p>MCP clients can discover available tools:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># List all available tools</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">list_tools</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">tool</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tool: </span><span class="si">{</span><span class="n">tool</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Description: </span><span class="si">{</span><span class="n">tool</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameters: </span><span class="si">{</span><span class="n">tool</span><span class="o">.</span><span class="n">parameters</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="invoking-tools">
+<h3>Invoking Tools<a class="headerlink" href="#invoking-tools" title="Link to this heading"></a></h3>
+<p>Tools can be invoked through the MCP interface:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Invoke a tool</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="n">invoke_tool</span><span class="p">(</span>
+    <span class="n">tool_name</span><span class="o">=</span><span class="s2">&quot;place_entity&quot;</span><span class="p">,</span>
+    <span class="n">parameters</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;burner-mining-drill&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
+        <span class="s2">&quot;direction&quot;</span><span class="p">:</span> <span class="s2">&quot;north&quot;</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-llm-clients">
+<h2>Integration with LLM Clients<a class="headerlink" href="#integration-with-llm-clients" title="Link to this heading"></a></h2>
+<section id="mcp-compatible-clients">
+<h3>MCP-Compatible Clients<a class="headerlink" href="#mcp-compatible-clients" title="Link to this heading"></a></h3>
+<p>FLE’s MCP implementation works with:</p>
+<ul class="simple">
+<li><p>Claude Desktop</p></li>
+<li><p>Other MCP-compatible AI assistants</p></li>
+<li><p>Custom MCP clients</p></li>
+</ul>
+</section>
+<section id="example-integration">
+<h3>Example Integration<a class="headerlink" href="#example-integration" title="Link to this heading"></a></h3>
+<p>Here’s how to integrate FLE with an MCP-compatible client:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;factorio&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;fle.env.protocols.mcp.server&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;env&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;FLE_CLUSTER_HOST&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;FLE_CLUSTER_PORT&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;34197&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="tool-definitions">
+<h2>Tool Definitions<a class="headerlink" href="#tool-definitions" title="Link to this heading"></a></h2>
+<p>MCP tools are automatically generated from FLE’s tool definitions. Each tool includes:</p>
+<ul class="simple">
+<li><p><strong>Name</strong>: The tool identifier</p></li>
+<li><p><strong>Description</strong>: What the tool does (from <code class="docutils literal notranslate"><span class="pre">agent.md</span></code>)</p></li>
+<li><p><strong>Parameters</strong>: Typed parameter schema</p></li>
+<li><p><strong>Return Type</strong>: Expected response format</p></li>
+</ul>
+<section id="example-tool-definition">
+<h3>Example Tool Definition<a class="headerlink" href="#example-tool-definition" title="Link to this heading"></a></h3>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;place_entity&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Places an entity in the world at a specified position&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;entity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;The entity prototype to place&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;position&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;x&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">},</span>
+<span class="w">          </span><span class="nt">&quot;y&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;direction&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;north&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;south&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;east&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;west&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;entity&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;position&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<section id="custom-mcp-tools">
+<h3>Custom MCP Tools<a class="headerlink" href="#custom-mcp-tools" title="Link to this heading"></a></h3>
+<p>You can create custom MCP-specific tools by following the <a class="reference internal" href="../tools/custom_tools.html"><span class="doc">Creating Custom Tools</span></a> guide. Tools created this way are automatically exposed via MCP.</p>
+</section>
+<section id="error-handling">
+<h3>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h3>
+<p>MCP calls return structured errors:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;InvalidParameters&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Entity &#39;invalid-entity&#39; not found&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;details&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;entity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;invalid-entity&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;available_entities&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;burner-mining-drill&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;iron-chest&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="state-management">
+<h3>State Management<a class="headerlink" href="#state-management" title="Link to this heading"></a></h3>
+<p>MCP maintains state between tool calls:</p>
+<ul class="simple">
+<li><p>Variables persist in the namespace</p></li>
+<li><p>Entities remain referenced across calls</p></li>
+<li><p>Game state is preserved</p></li>
+</ul>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌─────────────────────┐
+│   MCP Client        │
+│  (Claude, etc.)     │
+└──────────┬──────────┘
+           │
+           │ MCP Protocol
+           │
+┌──────────▼──────────┐
+│   MCP Server        │
+│  (FLE Protocol)     │
+└──────────┬──────────┘
+           │
+           │ Tool Calls
+           │
+┌──────────▼──────────┐
+│   FLE Environment   │
+│  (Game Instance)    │
+└─────────────────────┘
+</pre></div>
+</div>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+<p>For detailed MCP documentation, see:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/modelcontextprotocol">Official MCP Documentation</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fle/env/protocols/_mcp/README.md</span></code> in the repository</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="connection-issues">
+<h3>Connection Issues<a class="headerlink" href="#connection-issues" title="Link to this heading"></a></h3>
+<p>If MCP clients can’t connect:</p>
+<ol class="arabic simple">
+<li><p>Verify the MCP server is running</p></li>
+<li><p>Check port configuration</p></li>
+<li><p>Ensure Factorio cluster is started</p></li>
+</ol>
+</section>
+<section id="tool-not-found">
+<h3>Tool Not Found<a class="headerlink" href="#tool-not-found" title="Link to this heading"></a></h3>
+<p>If a tool is not available via MCP:</p>
+<ol class="arabic simple">
+<li><p>Verify the tool exists in <code class="docutils literal notranslate"><span class="pre">fle/env/tools/agent/</span></code></p></li>
+<li><p>Check that the tool has all required files (<code class="docutils literal notranslate"><span class="pre">client.py</span></code>, <code class="docutils literal notranslate"><span class="pre">server.lua</span></code>, <code class="docutils literal notranslate"><span class="pre">agent.md</span></code>)</p></li>
+<li><p>Restart the MCP server</p></li>
+</ol>
+</section>
+<section id="invalid-parameters">
+<h3>Invalid Parameters<a class="headerlink" href="#invalid-parameters" title="Link to this heading"></a></h3>
+<p>If tool calls fail with parameter errors:</p>
+<ol class="arabic simple">
+<li><p>Check the tool’s parameter schema</p></li>
+<li><p>Verify parameter types match the schema</p></li>
+<li><p>Ensure required parameters are provided</p></li>
+</ol>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Review <a class="reference internal" href="../tools/overview.html"><span class="doc">Tools Overview</span></a> to understand available tools</p></li>
+<li><p>See <a class="reference internal" href="../tools/custom_tools.html"><span class="doc">Creating Custom Tools</span></a> to create MCP-compatible tools</p></li>
+<li><p>Check the official MCP documentation for client integration</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../tools/custom_tools.html" class="btn btn-neutral float-left" title="Creating Custom Tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sprites.html" class="btn btn-neutral float-right" title="Sprites" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

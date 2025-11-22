@@ -1,0 +1,583 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Creating Custom Tools &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Model Context Protocol (MCP)" href="../advanced/mcp.html" />
+    <link rel="prev" title="Core Tools Reference" href="core_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Creating Custom Tools</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-structure">Tool Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-by-step-guide">Step-by-Step Guide</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#step-1-create-tool-directory">Step 1: Create Tool Directory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-2-create-client-py">Step 2: Create client.py</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-3-create-server-lua">Step 3: Create server.lua</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-4-create-agent-md">Step 4: Create agent.md</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#step-5-test-your-tool">Step 5: Test Your Tool</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#complete-example">Complete Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-registration">Automatic Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tips-best-practices">Tips &amp; Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-patterns">Common Patterns</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#querying-entity-state">Querying Entity State</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#modifying-inventory">Modifying Inventory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#moving-entities">Moving Entities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#checking-validity">Checking Validity</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Creating Custom Tools</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="creating-custom-tools">
+<h1>Creating Custom Tools<a class="headerlink" href="#creating-custom-tools" title="Link to this heading"></a></h1>
+<p>This guide explains how to create custom tools for FLE to extend agent capabilities with specialized functionality.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>A custom tool requires three components:</p>
+<ol class="arabic simple">
+<li><p><strong>agent.md</strong>: Documentation for the agent</p></li>
+<li><p><strong>client.py</strong>: Python interface</p></li>
+<li><p><strong>server.lua</strong>: Lua implementation</p></li>
+</ol>
+</section>
+<section id="tool-structure">
+<h2>Tool Structure<a class="headerlink" href="#tool-structure" title="Link to this heading"></a></h2>
+<p>Tools live in <code class="docutils literal notranslate"><span class="pre">fle/env/tools/</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>fle/env/tools/
+├── admin/          # Non-agent accessible tools
+└── agent/          # Agent-accessible tools
+    └── my_tool/    # Your custom tool
+        ├── agent.md
+        ├── client.py
+        └── server.lua
+</pre></div>
+</div>
+</section>
+<section id="step-by-step-guide">
+<h2>Step-by-Step Guide<a class="headerlink" href="#step-by-step-guide" title="Link to this heading"></a></h2>
+<section id="step-1-create-tool-directory">
+<h3>Step 1: Create Tool Directory<a class="headerlink" href="#step-1-create-tool-directory" title="Link to this heading"></a></h3>
+<p>Create a new directory in <code class="docutils literal notranslate"><span class="pre">fle/env/tools/agent/</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>fle/env/tools/agent/my_tool
+</pre></div>
+</div>
+</section>
+<section id="step-2-create-client-py">
+<h3>Step 2: Create client.py<a class="headerlink" href="#step-2-create-client-py" title="Link to this heading"></a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">client.py</span></code> with a class inheriting from <code class="docutils literal notranslate"><span class="pre">Tool</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.tools.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Position</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyTool</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Brief description of what your tool does.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">entity</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+                 <span class="n">target_position</span><span class="p">:</span> <span class="n">Position</span><span class="p">,</span>
+                 <span class="n">quantity</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detailed description of the tool&#39;s functionality.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            entity: The entity to operate on</span>
+<span class="sd">            target_position: Where to perform the action</span>
+<span class="sd">            quantity: Optional quantity parameter</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary containing result information</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidParameterException: If parameters are invalid</span>
+<span class="sd">            EntityNotFoundException: If entity doesn&#39;t exist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Call server-side implementation</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">entity</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">target_position</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="n">quantity</span><span class="o">=</span><span class="n">quantity</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+</div>
+<p><strong>Key Requirements:</strong></p>
+<ul class="simple">
+<li><p>Inherit from <code class="docutils literal notranslate"><span class="pre">Tool</span></code></p></li>
+<li><p>Implement <code class="docutils literal notranslate"><span class="pre">__call__</span></code> method</p></li>
+<li><p>Use type annotations</p></li>
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">self.execute()</span></code> to invoke server-side logic</p></li>
+<li><p>Document parameters, return values, and exceptions</p></li>
+</ul>
+</section>
+<section id="step-3-create-server-lua">
+<h3>Step 3: Create server.lua<a class="headerlink" href="#step-3-create-server-lua" title="Link to this heading"></a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">server.lua</span></code> with the game logic:</p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Register the tool action</span>
+<span class="nv">global</span><span class="p">.</span><span class="py">actions</span><span class="p">.</span><span class="py">my_tool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">params</span><span class="p">)</span>
+<span class="w">    </span><span class="c1">-- Extract parameters</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">entity_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">entity</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">position</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">position</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">quantity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">quantity</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="w">    </span><span class="c1">-- Validate parameters</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">entity_name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">position</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Missing required parameters&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Find the entity</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">game</span><span class="p">.</span><span class="py">surfaces</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">find_entity</span><span class="p">(</span><span class="nv">entity_name</span><span class="p">,</span><span class="w"> </span><span class="nv">position</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Entity not found at position&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Perform the action using Factorio API</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">entity</span><span class="p">.</span><span class="nf">some_action</span><span class="p">(</span><span class="nv">quantity</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">-- Return serialized result</span>
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">serialize_entity</span><span class="p">(</span><span class="nv">entity</span><span class="p">),</span>
+<span class="w">        </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">result</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<p><strong>Key Requirements:</strong></p>
+<ul class="simple">
+<li><p>Register function in <code class="docutils literal notranslate"><span class="pre">global.actions</span></code></p></li>
+<li><p>Validate all parameters</p></li>
+<li><p>Use <a class="reference external" href="https://lua-api.factorio.com/1.1.110/">Factorio API</a></p></li>
+<li><p>Return a serializable table</p></li>
+<li><p>Include error handling</p></li>
+</ul>
+</section>
+<section id="step-4-create-agent-md">
+<h3>Step 4: Create agent.md<a class="headerlink" href="#step-4-create-agent-md" title="Link to this heading"></a></h3>
+<p>Create <code class="docutils literal notranslate"><span class="pre">agent.md</span></code> with agent-facing documentation:</p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gh"># My Tool</span>
+
+<span class="gu">## Description</span>
+
+Brief description of what the tool does and when to use it.
+
+<span class="gu">## Usage</span>
+
+<span class="sb">```python</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">my_tool</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">my_entity</span><span class="p">,</span>
+    <span class="n">target_position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">20</span><span class="p">),</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+<span class="sb">```</span>
+
+<span class="gu">## Parameters</span>
+
+<span class="k">-</span><span class="w"> </span><span class="sb">`entity`</span> (Entity): The entity to operate on
+<span class="k">-</span><span class="w"> </span><span class="sb">`target_position`</span> (Position): Where to perform the action
+<span class="k">-</span><span class="w"> </span><span class="sb">`quantity`</span> (int, optional): How many items to process. Defaults to 1.
+
+<span class="gu">## Returns</span>
+
+Dictionary containing:
+<span class="k">-</span><span class="w"> </span><span class="sb">`success`</span> (bool): Whether the operation succeeded
+<span class="k">-</span><span class="w"> </span><span class="sb">`entity`</span> (Entity): Updated entity object
+<span class="k">-</span><span class="w"> </span><span class="sb">`result`</span>: Operation-specific result data
+
+<span class="gu">## Best Practices</span>
+
+<span class="k">1.</span> Always check entity status before calling
+<span class="k">2.</span> Use reasonable quantity values
+<span class="k">3.</span> Verify results with assertions
+
+<span class="gu">## Common Pitfalls</span>
+
+<span class="k">-</span><span class="w"> </span>Entity must exist at the specified position
+<span class="k">-</span><span class="w"> </span>Target position must be valid
+<span class="k">-</span><span class="w"> </span>Quantity cannot exceed inventory limits
+
+<span class="gu">## Examples</span>
+
+<span class="gu">### Basic Usage</span>
+
+<span class="sb">```python</span>
+<span class="n">entity</span> <span class="o">=</span> <span class="n">get_entity</span><span class="p">(</span><span class="n">Prototype</span><span class="o">.</span><span class="n">Chest</span><span class="p">,</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">my_tool</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">quantity</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;success&#39;</span><span class="p">]</span>
+<span class="sb">```</span>
+
+<span class="gu">### Error Handling</span>
+
+<span class="sb">```python</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">my_tool</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">InvalidParameterException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid parameters: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="sb">```</span>
+</pre></div>
+</div>
+</section>
+<section id="step-5-test-your-tool">
+<h3>Step 5: Test Your Tool<a class="headerlink" href="#step-5-test-your-tool" title="Link to this heading"></a></h3>
+<p>Create a test in <code class="docutils literal notranslate"><span class="pre">fle/env/tests/actions/</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env</span><span class="w"> </span><span class="kn">import</span> <span class="n">FactorioGymEnv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Position</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_my_tool</span><span class="p">():</span>
+    <span class="n">env</span> <span class="o">=</span> <span class="n">FactorioGymEnv</span><span class="p">()</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+    <span class="c1"># Setup test scenario</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">entity = place_entity(</span>
+<span class="s2">    Prototype.Chest,</span>
+<span class="s2">    Position(x=0, y=0),</span>
+<span class="s2">    Direction.NORTH</span>
+<span class="s2">)</span>
+
+<span class="s2"># Test your tool</span>
+<span class="s2">result = my_tool(</span>
+<span class="s2">    entity=entity,</span>
+<span class="s2">    target_position=Position(x=5, y=5),</span>
+<span class="s2">    quantity=10</span>
+<span class="s2">)</span>
+
+<span class="s2">print(result)</span>
+<span class="s2">assert result[&#39;success&#39;]</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span><span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="n">code</span><span class="p">)</span>
+    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+    <span class="c1"># Verify results</span>
+    <span class="k">assert</span> <span class="s2">&quot;success&quot;</span> <span class="ow">in</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;raw_text&#39;</span><span class="p">]</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-example">
+<h2>Complete Example<a class="headerlink" href="#complete-example" title="Link to this heading"></a></h2>
+<p>Here’s a complete example of a tool that transfers items between two chests:</p>
+<p><strong>client.py:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.tools.tool</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">Entity</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TransferItems</span><span class="p">(</span><span class="n">Tool</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transfers items between two entities.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">source</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+                 <span class="n">destination</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+                 <span class="n">item</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Transfer items from source to destination.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            source: Entity to take items from</span>
+<span class="sd">            destination: Entity to place items into</span>
+<span class="sd">            item: Item prototype name</span>
+<span class="sd">            quantity: Number of items to transfer</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dictionary with transfer results</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InsufficientItemsException: Not enough items in source</span>
+<span class="sd">            InventoryFullException: Destination inventory is full</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">source_position</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="n">destination</span><span class="o">=</span><span class="n">destination</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">destination_position</span><span class="o">=</span><span class="n">destination</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="n">item</span><span class="o">=</span><span class="n">item</span><span class="p">,</span>
+            <span class="n">quantity</span><span class="o">=</span><span class="n">quantity</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+</div>
+<p><strong>server.lua:</strong></p>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="nv">global</span><span class="p">.</span><span class="py">actions</span><span class="p">.</span><span class="py">transfer_items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">function</span><span class="p">(</span><span class="nv">params</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">game</span><span class="p">.</span><span class="py">surfaces</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">find_entity</span><span class="p">(</span>
+<span class="w">        </span><span class="nv">params</span><span class="p">.</span><span class="py">source</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">params</span><span class="p">.</span><span class="py">source_position</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">game</span><span class="p">.</span><span class="py">surfaces</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">find_entity</span><span class="p">(</span>
+<span class="w">        </span><span class="nv">params</span><span class="p">.</span><span class="py">destination</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">params</span><span class="p">.</span><span class="py">destination_position</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">source</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">destination</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Entity not found&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Get source inventory</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">source_inv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">source</span><span class="p">.</span><span class="nf">get_inventory</span><span class="p">(</span><span class="nv">defines</span><span class="p">.</span><span class="py">inventory</span><span class="p">.</span><span class="py">chest</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">source_inv</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;No source inventory&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Check if enough items</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">available</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">source_inv</span><span class="p">.</span><span class="nf">get_item_count</span><span class="p">(</span><span class="nv">params</span><span class="p">.</span><span class="py">item</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="nv">available</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">quantity</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Insufficient items&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nv">available</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">available</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Transfer items</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">removed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">source_inv</span><span class="p">.</span><span class="nf">remove</span><span class="p">({</span>
+<span class="w">        </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">item</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">quantity</span>
+<span class="w">    </span><span class="p">})</span>
+
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">dest_inv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">destination</span><span class="p">.</span><span class="nf">get_inventory</span><span class="p">(</span><span class="nv">defines</span><span class="p">.</span><span class="py">inventory</span><span class="p">.</span><span class="py">chest</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">inserted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">dest_inv</span><span class="p">.</span><span class="nf">insert</span><span class="p">({</span>
+<span class="w">        </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">item</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">removed</span>
+<span class="w">    </span><span class="p">})</span>
+
+<span class="w">    </span><span class="c1">-- Return any excess</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="nv">inserted</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nv">removed</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="nv">source_inv</span><span class="p">.</span><span class="nf">insert</span><span class="p">({</span>
+<span class="w">            </span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">params</span><span class="p">.</span><span class="py">item</span><span class="p">,</span>
+<span class="w">            </span><span class="nv">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">removed</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">inserted</span>
+<span class="w">        </span><span class="p">})</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">transferred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">inserted</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">serialize_entity</span><span class="p">(</span><span class="nv">source</span><span class="p">),</span>
+<span class="w">        </span><span class="nv">destination</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">serialize_entity</span><span class="p">(</span><span class="nv">destination</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+<p><strong>agent.md:</strong></p>
+<div class="highlight-markdown notranslate"><div class="highlight"><pre><span></span><span class="gh"># Transfer Items</span>
+
+Transfer items between two entities&#39; inventories.
+
+<span class="gu">## Usage</span>
+
+<span class="sb">```python</span>
+<span class="n">source_chest</span> <span class="o">=</span> <span class="n">get_entity</span><span class="p">(</span><span class="n">Prototype</span><span class="o">.</span><span class="n">IronChest</span><span class="p">,</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">dest_chest</span> <span class="o">=</span> <span class="n">get_entity</span><span class="p">(</span><span class="n">Prototype</span><span class="o">.</span><span class="n">IronChest</span><span class="p">,</span> <span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">transfer_items</span><span class="p">(</span>
+    <span class="n">source</span><span class="o">=</span><span class="n">source_chest</span><span class="p">,</span>
+    <span class="n">destination</span><span class="o">=</span><span class="n">dest_chest</span><span class="p">,</span>
+    <span class="n">item</span><span class="o">=</span><span class="s1">&#39;iron-plate&#39;</span><span class="p">,</span>
+    <span class="n">quantity</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+<span class="sb">```</span>
+
+<span class="gu">## Best Practices</span>
+
+<span class="k">1.</span> Check source has enough items before transferring
+<span class="k">2.</span> Verify destination has space
+<span class="k">3.</span> Handle partial transfers gracefully
+</pre></div>
+</div>
+</section>
+<section id="automatic-registration">
+<h2>Automatic Registration<a class="headerlink" href="#automatic-registration" title="Link to this heading"></a></h2>
+<p>Once your tool is created, it will be automatically:</p>
+<ol class="arabic simple">
+<li><p>Discovered by the environment</p></li>
+<li><p>Available to agents in the Python namespace</p></li>
+<li><p>Documented in agent context with the <code class="docutils literal notranslate"><span class="pre">agent.md</span></code> content</p></li>
+</ol>
+<p>No additional registration steps are needed!</p>
+</section>
+<section id="tips-best-practices">
+<h2>Tips &amp; Best Practices<a class="headerlink" href="#tips-best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Keep It Simple</strong>: Tools should do one thing well</p></li>
+<li><p><strong>Validate Early</strong>: Check parameters in both client and server</p></li>
+<li><p><strong>Document Thoroughly</strong>: Agents rely on good documentation</p></li>
+<li><p><strong>Handle Errors</strong>: Provide clear error messages</p></li>
+<li><p><strong>Test Extensively</strong>: Create comprehensive test cases</p></li>
+<li><p><strong>Use Type Hints</strong>: Make the interface clear with Python type annotations</p></li>
+<li><p><strong>Serialize Carefully</strong>: Ensure all return values are JSON-serializable</p></li>
+</ol>
+</section>
+<section id="common-patterns">
+<h2>Common Patterns<a class="headerlink" href="#common-patterns" title="Link to this heading"></a></h2>
+<section id="querying-entity-state">
+<h3>Querying Entity State<a class="headerlink" href="#querying-entity-state" title="Link to this heading"></a></h3>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="kd">local</span><span class="w"> </span><span class="nv">entity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">game</span><span class="p">.</span><span class="py">surfaces</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">find_entity</span><span class="p">(</span><span class="nv">name</span><span class="p">,</span><span class="w"> </span><span class="nv">position</span><span class="p">)</span>
+<span class="kr">return</span><span class="w"> </span><span class="nf">serialize_entity</span><span class="p">(</span><span class="nv">entity</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="modifying-inventory">
+<h3>Modifying Inventory<a class="headerlink" href="#modifying-inventory" title="Link to this heading"></a></h3>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="kd">local</span><span class="w"> </span><span class="nv">inventory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">entity</span><span class="p">.</span><span class="nf">get_inventory</span><span class="p">(</span><span class="nv">defines</span><span class="p">.</span><span class="py">inventory</span><span class="p">.</span><span class="py">chest</span><span class="p">)</span>
+<span class="nv">inventory</span><span class="p">.</span><span class="nf">insert</span><span class="p">({</span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">item</span><span class="p">,</span><span class="w"> </span><span class="nv">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">quantity</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="moving-entities">
+<h3>Moving Entities<a class="headerlink" href="#moving-entities" title="Link to this heading"></a></h3>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="kd">local</span><span class="w"> </span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">entity</span><span class="p">.</span><span class="nf">teleport</span><span class="p">(</span><span class="nv">new_position</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="checking-validity">
+<h3>Checking Validity<a class="headerlink" href="#checking-validity" title="Link to this heading"></a></h3>
+<div class="highlight-lua notranslate"><div class="highlight"><pre><span></span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">entity</span><span class="p">.</span><span class="py">valid</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span><span class="nv">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nb">error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Entity no longer exists&quot;</span><span class="p">}</span>
+<span class="kr">end</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Review <a class="reference internal" href="core_tools.html"><span class="doc">Core Tools Reference</span></a> for implementation patterns</p></li>
+<li><p>See <a class="reference internal" href="overview.html"><span class="doc">Tools Overview</span></a> for architecture details</p></li>
+<li><p>Check the <a class="reference external" href="https://lua-api.factorio.com/1.1.110/">Factorio Lua API</a></p></li>
+<li><p>Join the <a class="reference external" href="https://discord.gg/zKaV2skewa">Discord</a> for help</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="core_tools.html" class="btn btn-neutral float-left" title="Core Tools Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../advanced/mcp.html" class="btn btn-neutral float-right" title="Model Context Protocol (MCP)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

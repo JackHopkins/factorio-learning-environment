@@ -1,0 +1,510 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sprites &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Database Configuration" href="database.html" />
+    <link rel="prev" title="Model Context Protocol (MCP)" href="mcp.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sprites</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-use-sprites">Why Use Sprites?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#default-locations">Default Locations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cli-usage">CLI Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-command">Basic Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#programmatic-usage">Programmatic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#loading-sprites">Loading Sprites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-sprites-with-agents">Using Sprites with Agents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#visual-observations">Visual Observations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sprite-categories">Sprite Categories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#entity-sprites">Entity Sprites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#item-icons">Item Icons</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-considerations">Performance Considerations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sprite-loading">Sprite Loading</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#caching">Caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resolution">Resolution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#custom-sprite-sources">Custom Sprite Sources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-processing">Batch Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#export-sprites">Export Sprites</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration-with-vision-models">Integration with Vision Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#gpt-4-vision">GPT-4 Vision</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#claude-vision">Claude Vision</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#download-fails">Download Fails</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#missing-sprites">Missing Sprites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#memory-issues">Memory Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#image-format-issues">Image Format Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sprites</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sprites">
+<h1>Sprites<a class="headerlink" href="#sprites" title="Link to this heading"></a></h1>
+<p>FLE includes sprite management functionality for downloading spritemaps, extracting individual entity sprites, icons, and other visual assets from HuggingFace for use in visual reasoning tasks.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The sprite system provides:</p>
+<ul class="simple">
+<li><p><strong>Sprite Downloads</strong>: Automatic downloading of Factorio sprite assets</p></li>
+<li><p><strong>Extraction</strong>: Processing spritemaps into individual entity sprites</p></li>
+<li><p><strong>Icons</strong>: Entity and item icons for visual identification</p></li>
+<li><p><strong>Visual Reasoning</strong>: Support for vision-enabled agents</p></li>
+</ul>
+</section>
+<section id="why-use-sprites">
+<h2>Why Use Sprites?<a class="headerlink" href="#why-use-sprites" title="Link to this heading"></a></h2>
+<p>Sprites enable visual reasoning capabilities for agents:</p>
+<ol class="arabic simple">
+<li><p><strong>Visual Observations</strong>: Agents can see the game state as images</p></li>
+<li><p><strong>Entity Recognition</strong>: Identify entities by their visual appearance</p></li>
+<li><p><strong>Spatial Reasoning</strong>: Understand layouts and positioning visually</p></li>
+<li><p><strong>Multimodal Learning</strong>: Combine text and visual information</p></li>
+</ol>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>Sprites are automatically downloaded when needed, but you can pre-download them:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download and generate sprites</span>
+fle<span class="w"> </span>sprites
+
+<span class="c1"># Force re-download even if sprites exist</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--force
+
+<span class="c1"># Use custom directories and worker count</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--spritemap-dir<span class="w"> </span>.fle/spritemaps<span class="w"> </span>--sprite-dir<span class="w"> </span>.fle/sprites<span class="w"> </span>--workers<span class="w"> </span><span class="m">5</span>
+</pre></div>
+</div>
+</section>
+<section id="default-locations">
+<h2>Default Locations<a class="headerlink" href="#default-locations" title="Link to this heading"></a></h2>
+<p>By default, sprites are stored in:</p>
+<ul class="simple">
+<li><p><strong>Spritemaps</strong>: <code class="docutils literal notranslate"><span class="pre">.fle/spritemaps/</span></code> - Raw spritemap files from HuggingFace</p></li>
+<li><p><strong>Sprites</strong>: <code class="docutils literal notranslate"><span class="pre">.fle/sprites/</span></code> - Extracted individual entity/item sprites</p></li>
+</ul>
+<p>You can customize these locations using command-line arguments.</p>
+</section>
+<section id="cli-usage">
+<h2>CLI Usage<a class="headerlink" href="#cli-usage" title="Link to this heading"></a></h2>
+<section id="basic-command">
+<h3>Basic Command<a class="headerlink" href="#basic-command" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download and extract sprites</span>
+fle<span class="w"> </span>sprites
+</pre></div>
+</div>
+</section>
+<section id="options">
+<h3>Options<a class="headerlink" href="#options" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Force re-download</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--force
+
+<span class="c1"># Custom directories</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--spritemap-dir<span class="w"> </span>/path/to/spritemaps<span class="w"> </span>--sprite-dir<span class="w"> </span>/path/to/sprites
+
+<span class="c1"># Parallel processing (default: 4 workers)</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--workers<span class="w"> </span><span class="m">8</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="programmatic-usage">
+<h2>Programmatic Usage<a class="headerlink" href="#programmatic-usage" title="Link to this heading"></a></h2>
+<section id="loading-sprites">
+<h3>Loading Sprites<a class="headerlink" href="#loading-sprites" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.sprites</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpriteManager</span>
+
+<span class="c1"># Initialize sprite manager</span>
+<span class="n">sprite_manager</span> <span class="o">=</span> <span class="n">SpriteManager</span><span class="p">()</span>
+
+<span class="c1"># Get sprite for an entity</span>
+<span class="n">sprite</span> <span class="o">=</span> <span class="n">sprite_manager</span><span class="o">.</span><span class="n">get_sprite</span><span class="p">(</span><span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">)</span>
+
+<span class="c1"># Get icon for an item</span>
+<span class="n">icon</span> <span class="o">=</span> <span class="n">sprite_manager</span><span class="o">.</span><span class="n">get_icon</span><span class="p">(</span><span class="s1">&#39;iron-plate&#39;</span><span class="p">)</span>
+
+<span class="c1"># Get all available sprites</span>
+<span class="n">available</span> <span class="o">=</span> <span class="n">sprite_manager</span><span class="o">.</span><span class="n">list_sprites</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="using-sprites-with-agents">
+<h3>Using Sprites with Agents<a class="headerlink" href="#using-sprites-with-agents" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.agents</span><span class="w"> </span><span class="kn">import</span> <span class="n">VisualAgent</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+
+<span class="c1"># Create environment with visual observations</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create visual agent</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">VisualAgent</span><span class="p">(</span>
+    <span class="n">sprite_manager</span><span class="o">=</span><span class="n">SpriteManager</span><span class="p">(),</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4-vision&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Agent can now use visual information</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+<span class="n">action</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">get_action</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">include_visual</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visual-observations">
+<h2>Visual Observations<a class="headerlink" href="#visual-observations" title="Link to this heading"></a></h2>
+<p>Visual observations include:</p>
+<ul class="simple">
+<li><p><strong>Map Image</strong>: Base64 encoded PNG of the game map</p></li>
+<li><p><strong>Entity Sprites</strong>: Individual entity appearances</p></li>
+<li><p><strong>Overlays</strong>: Visual indicators for status, connections, etc.</p></li>
+</ul>
+<p>Example observation with visuals:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;raw_text&#39;</span><span class="p">:</span> <span class="s1">&#39;...&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;entities&#39;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">],</span>
+    <span class="s1">&#39;map_image&#39;</span><span class="p">:</span> <span class="s1">&#39;data:image/png;base64,...&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;sprites&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">:</span> <span class="s1">&#39;data:image/png;base64,...&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;iron-chest&#39;</span><span class="p">:</span> <span class="s1">&#39;data:image/png;base64,...&#39;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="sprite-categories">
+<h2>Sprite Categories<a class="headerlink" href="#sprite-categories" title="Link to this heading"></a></h2>
+<section id="entity-sprites">
+<h3>Entity Sprites<a class="headerlink" href="#entity-sprites" title="Link to this heading"></a></h3>
+<p>Visual representations of game entities:</p>
+<ul class="simple">
+<li><p>Mining drills</p></li>
+<li><p>Furnaces</p></li>
+<li><p>Assembling machines</p></li>
+<li><p>Inserters</p></li>
+<li><p>Transport belts</p></li>
+<li><p>Pipes</p></li>
+<li><p>Power poles</p></li>
+</ul>
+</section>
+<section id="item-icons">
+<h3>Item Icons<a class="headerlink" href="#item-icons" title="Link to this heading"></a></h3>
+<p>Icons for items and resources:</p>
+<ul class="simple">
+<li><p>Raw materials (ore, wood, stone)</p></li>
+<li><p>Plates (iron, copper, steel)</p></li>
+<li><p>Intermediate products</p></li>
+<li><p>Science packs</p></li>
+<li><p>Modules</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="sprite-loading">
+<h3>Sprite Loading<a class="headerlink" href="#sprite-loading" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Sprites are loaded on-demand by default</p></li>
+<li><p>Pre-loading all sprites increases memory usage but improves performance</p></li>
+<li><p>Use worker processes for faster initial extraction</p></li>
+</ul>
+</section>
+<section id="caching">
+<h3>Caching<a class="headerlink" href="#caching" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Extracted sprites are cached on disk</p></li>
+<li><p>Subsequent loads are much faster</p></li>
+<li><p>Clear cache with <code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">sprites</span> <span class="pre">--force</span></code></p></li>
+</ul>
+</section>
+<section id="resolution">
+<h3>Resolution<a class="headerlink" href="#resolution" title="Link to this heading"></a></h3>
+<p>Sprites are provided at their native resolution. You can resize them as needed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="c1"># Decode base64 sprite</span>
+<span class="n">sprite_data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">sprite_base64</span><span class="p">)</span>
+<span class="n">image</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">sprite_data</span><span class="p">))</span>
+
+<span class="c1"># Resize</span>
+<span class="n">resized</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<section id="custom-sprite-sources">
+<h3>Custom Sprite Sources<a class="headerlink" href="#custom-sprite-sources" title="Link to this heading"></a></h3>
+<p>You can provide custom sprite sources:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sprite_manager</span> <span class="o">=</span> <span class="n">SpriteManager</span><span class="p">(</span>
+    <span class="n">spritemap_dir</span><span class="o">=</span><span class="s1">&#39;/custom/path/spritemaps&#39;</span><span class="p">,</span>
+    <span class="n">sprite_dir</span><span class="o">=</span><span class="s1">&#39;/custom/path/sprites&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-processing">
+<h3>Batch Processing<a class="headerlink" href="#batch-processing" title="Link to this heading"></a></h3>
+<p>Process multiple sprites efficiently:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get multiple sprites at once</span>
+<span class="n">sprites</span> <span class="o">=</span> <span class="n">sprite_manager</span><span class="o">.</span><span class="n">get_sprites</span><span class="p">([</span>
+    <span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;stone-furnace&#39;</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="export-sprites">
+<h3>Export Sprites<a class="headerlink" href="#export-sprites" title="Link to this heading"></a></h3>
+<p>Export sprites to individual files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export all sprites to directory</span>
+fle<span class="w"> </span>sprites<span class="w"> </span>--export-dir<span class="w"> </span>./exported_sprites
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-vision-models">
+<h2>Integration with Vision Models<a class="headerlink" href="#integration-with-vision-models" title="Link to this heading"></a></h2>
+<section id="gpt-4-vision">
+<h3>GPT-4 Vision<a class="headerlink" href="#gpt-4-vision" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">openai</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+
+<span class="c1"># Get map image</span>
+<span class="n">map_image</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;map_image&#39;</span><span class="p">]</span>
+
+<span class="c1"># Send to GPT-4 Vision</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">openai</span><span class="o">.</span><span class="n">ChatCompletion</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4-vision-preview&quot;</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;Analyze this Factorio base layout:&quot;</span><span class="p">},</span>
+                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image_url&quot;</span><span class="p">,</span> <span class="s2">&quot;image_url&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">map_image</span><span class="p">}}</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="claude-vision">
+<h3>Claude Vision<a class="headerlink" href="#claude-vision" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">anthropic</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">anthropic</span><span class="o">.</span><span class="n">Anthropic</span><span class="p">()</span>
+
+<span class="c1"># Get map image (remove data URL prefix)</span>
+<span class="n">map_image_data</span> <span class="o">=</span> <span class="n">obs</span><span class="p">[</span><span class="s1">&#39;map_image&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="n">message</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-3-opus-20240229&quot;</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;image&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;base64&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;media_type&quot;</span><span class="p">:</span> <span class="s2">&quot;image/png&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">map_image_data</span>
+                    <span class="p">}</span>
+                <span class="p">},</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;What entities do you see in this layout?&quot;</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="download-fails">
+<h3>Download Fails<a class="headerlink" href="#download-fails" title="Link to this heading"></a></h3>
+<p>If sprite download fails:</p>
+<ol class="arabic simple">
+<li><p>Check your internet connection</p></li>
+<li><p>Verify access to HuggingFace</p></li>
+<li><p>Try again with <code class="docutils literal notranslate"><span class="pre">--force</span></code> flag</p></li>
+</ol>
+</section>
+<section id="missing-sprites">
+<h3>Missing Sprites<a class="headerlink" href="#missing-sprites" title="Link to this heading"></a></h3>
+<p>If specific sprites are missing:</p>
+<ol class="arabic simple">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">fle</span> <span class="pre">sprites</span> <span class="pre">--force</span></code> to re-download</p></li>
+<li><p>Check the sprite directory exists</p></li>
+<li><p>Verify sprite names match Factorio prototypes</p></li>
+</ol>
+</section>
+<section id="memory-issues">
+<h3>Memory Issues<a class="headerlink" href="#memory-issues" title="Link to this heading"></a></h3>
+<p>If you encounter memory issues:</p>
+<ol class="arabic simple">
+<li><p>Don’t pre-load all sprites</p></li>
+<li><p>Use on-demand loading</p></li>
+<li><p>Clear sprite cache periodically</p></li>
+</ol>
+</section>
+<section id="image-format-issues">
+<h3>Image Format Issues<a class="headerlink" href="#image-format-issues" title="Link to this heading"></a></h3>
+<p>If image decoding fails:</p>
+<ol class="arabic simple">
+<li><p>Verify base64 encoding is correct</p></li>
+<li><p>Check image format (should be PNG)</p></li>
+<li><p>Ensure data URL prefix is handled correctly</p></li>
+</ol>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Learn about <a class="reference internal" href="../tools/overview.html"><span class="doc">Tools Overview</span></a> for non-visual interactions</p></li>
+<li><p>See the <a class="reference external" href="https://github.com/JackHopkins/factorio-learning-environment/tree/main/examples">Visual Agent example</a></p></li>
+<li><p>Review <a class="reference internal" href="../environment/overview.html"><span class="doc">Environment Overview</span></a> for context</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mcp.html" class="btn btn-neutral float-left" title="Model Context Protocol (MCP)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="database.html" class="btn btn-neutral float-right" title="Database Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

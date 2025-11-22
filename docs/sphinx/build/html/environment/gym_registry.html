@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gym Environment Registry &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Tools Overview" href="../tools/overview.html" />
+    <link rel="prev" title="Environment Overview" href="overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">Environment Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Gym Environment Registry</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#list-available-environments">1. List Available Environments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#create-an-environment">2. Create an Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-the-environment">3. Use the Environment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#available-environments">Available Environments</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#throughput-tasks-lab-play">Throughput Tasks (Lab Play)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open-play-environment">Open Play Environment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-usage">Example Usage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-tools">Command-Line Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-interface">Environment Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#action-space">Action Space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#observation-space">Observation Space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#methods">Methods</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#api-reference">API Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#registry-functions">Registry Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-creation">Environment Creation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#complete-example">Complete Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#environment-creation-fails">Environment Creation Fails</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-environments-found">No Environments Found</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#import-errors">Import Errors</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Gym Environment Registry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="gym-environment-registry">
+<h1>Gym Environment Registry<a class="headerlink" href="#gym-environment-registry" title="Link to this heading"></a></h1>
+<p>The Factorio Learning Environment uses a gym environment registry to automatically discover and register all available tasks. This allows you to use <code class="docutils literal notranslate"><span class="pre">gym.make()</span></code> to create environments and reference them by their environment IDs.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The registry system automatically discovers all task definitions in <code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/</span></code> and registers them as gym environments. This means you can create any Factorio environment using the familiar <code class="docutils literal notranslate"><span class="pre">gym.make()</span></code> pattern.</p>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Automatic Discovery</strong>: Automatically discovers all task definitions in <code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/</span></code></p></li>
+<li><p><strong>Gym Integration</strong>: All environments are registered with <code class="docutils literal notranslate"><span class="pre">gym</span></code> and can be created using <code class="docutils literal notranslate"><span class="pre">gym.make()</span></code></p></li>
+<li><p><strong>Task Metadata</strong>: Provides access to task descriptions, configurations, and metadata</p></li>
+<li><p><strong>Multi-agent Support</strong>: Supports both single-agent and multi-agent environments</p></li>
+<li><p><strong>Command-line Tools</strong>: Built-in tools for exploring and testing environments</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="list-available-environments">
+<h3>1. List Available Environments<a class="headerlink" href="#list-available-environments" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_available_environments</span>
+
+<span class="c1"># Get all available environment IDs</span>
+<span class="n">env_ids</span> <span class="o">=</span> <span class="n">list_available_environments</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available environments: </span><span class="si">{</span><span class="n">env_ids</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Or use the command-line tool:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--list
+</pre></div>
+</div>
+</section>
+<section id="create-an-environment">
+<h3>2. Create an Environment<a class="headerlink" href="#create-an-environment" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+
+<span class="c1"># Create any available environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="use-the-environment">
+<h3>3. Use the Environment<a class="headerlink" href="#use-the-environment" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+
+<span class="c1"># Reset the environment</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+
+<span class="c1"># Take an action</span>
+<span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+    <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Which agent takes the action</span>
+    <span class="n">code</span><span class="o">=</span><span class="s1">&#39;print(&quot;Hello Factorio!&quot;)&#39;</span><span class="p">,</span>  <span class="c1"># Python code to execute</span>
+    <span class="n">game_state</span><span class="o">=</span><span class="kc">None</span>  <span class="c1"># Optional: game state to reset to before running code</span>
+<span class="p">)</span>
+
+<span class="c1"># Execute the action</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+
+<span class="c1"># Clean up</span>
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="available-environments">
+<h2>Available Environments<a class="headerlink" href="#available-environments" title="Link to this heading"></a></h2>
+<section id="throughput-tasks-lab-play">
+<h3>Throughput Tasks (Lab Play)<a class="headerlink" href="#throughput-tasks-lab-play" title="Link to this heading"></a></h3>
+<p>All throughput tasks are defined in <code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/lab_play/throughput_tasks.py</span></code>. The 24 available tasks are:</p>
+<p><strong>Circuits</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">advanced_circuit_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">electronic_circuit_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">processing_unit_throughput</span></code></p></li>
+</ul>
+<p><strong>Science Packs</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">automation_science_pack_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logistics_science_pack_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chemical_science_pack_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">military_science_pack_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">production_science_pack_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utility_science_pack_throughput</span></code></p></li>
+</ul>
+<p><strong>Components</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">battery_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">engine_unit_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inserter_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iron_gear_wheel_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">low_density_structure_throughput</span></code></p></li>
+</ul>
+<p><strong>Raw Materials</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">iron_ore_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iron_plate_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">steel_plate_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plastic_bar_throughput</span></code></p></li>
+</ul>
+<p><strong>Oil &amp; Chemicals</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">crude_oil_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">petroleum_gas_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sulfuric_acid_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sulfur_throughput</span></code></p></li>
+</ul>
+<p><strong>Military</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">piercing_round_throughput</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">stone_wall_throughput</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Most tasks require 16 items per 60 seconds; fluid tasks require 250 units per 60 seconds.</p>
+</div>
+</section>
+<section id="open-play-environment">
+<h3>Open Play Environment<a class="headerlink" href="#open-play-environment" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">open_play</span></code> - An unbounded task of building the largest possible factory</p></li>
+</ul>
+</section>
+<section id="example-usage">
+<h3>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+
+<span class="c1"># Create throughput environments</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_plate_throughput&quot;</span><span class="p">)</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;automation_science_pack_throughput&quot;</span><span class="p">)</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;crude_oil_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create open play environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;open_play&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="command-line-tools">
+<h2>Command-Line Tools<a class="headerlink" href="#command-line-tools" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">example_usage.py</span></code> script provides both interactive examples and command-line tools:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run interactive examples</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py
+
+<span class="c1"># List all environments</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--list
+
+<span class="c1"># Show detailed information</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--detail
+
+<span class="c1"># Search for specific environments</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--search<span class="w"> </span>iron
+
+<span class="c1"># Output in gym.make() format</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--gym-format
+</pre></div>
+</div>
+</section>
+<section id="environment-interface">
+<h2>Environment Interface<a class="headerlink" href="#environment-interface" title="Link to this heading"></a></h2>
+<section id="action-space">
+<h3>Action Space<a class="headerlink" href="#action-space" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;agent_idx&#39;</span><span class="p">:</span> <span class="n">Discrete</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">num_agents</span><span class="p">),</span>  <span class="c1"># Index of the agent taking the action</span>
+    <span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">1000000</span><span class="p">),</span>      <span class="c1"># Optional: game state to reset to</span>
+    <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>               <span class="c1"># Python code to execute</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="observation-space">
+<h3>Observation Space<a class="headerlink" href="#observation-space" title="Link to this heading"></a></h3>
+<p>The observation space includes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">raw_text</span></code>: Output from the last action</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">entities</span></code>: List of entities on the map</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inventory</span></code>: Current inventory state</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">research</span></code>: Research progress and technologies</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">game_info</span></code>: Game state (tick, time, speed)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">score</span></code>: Current score</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flows</span></code>: Production statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">task_verification</span></code>: Task completion status</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">messages</span></code>: Inter-agent messages</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">serialized_functions</span></code>: Available functions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">task_info</span></code>: Information about the task</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">map_image</span></code>: Base64 encoded PNG image</p></li>
+</ul>
+</section>
+<section id="methods">
+<h3>Methods<a class="headerlink" href="#methods" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reset the environment</span>
+<span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+<span class="c1"># Take a step</span>
+<span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+
+<span class="c1"># Clean up</span>
+<span class="n">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<section id="registry-functions">
+<h3>Registry Functions<a class="headerlink" href="#registry-functions" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Returns a list of all registered environment IDs</span>
+<span class="n">list_available_environments</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+<span class="c1"># Returns detailed information about a specific environment</span>
+<span class="n">get_environment_info</span><span class="p">(</span><span class="n">env_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+
+<span class="c1"># Manually trigger environment discovery and registration</span>
+<span class="n">register_all_environments</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-creation">
+<h3>Environment Creation<a class="headerlink" href="#environment-creation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Creates a Factorio gym environment</span>
+<span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">env_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FactorioGymEnv</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-example">
+<h2>Complete Example<a class="headerlink" href="#complete-example" title="Link to this heading"></a></h2>
+<p>Here’s a complete example that demonstrates the full workflow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">gym</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_available_environments</span><span class="p">,</span> <span class="n">get_environment_info</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fle.env.gym_env.action</span><span class="w"> </span><span class="kn">import</span> <span class="n">Action</span>
+
+<span class="c1"># 1. List available environments</span>
+<span class="n">env_ids</span> <span class="o">=</span> <span class="n">list_available_environments</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">env_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> environments&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. Get information about a specific environment</span>
+<span class="n">info</span> <span class="o">=</span> <span class="n">get_environment_info</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Description: </span><span class="si">{</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;description&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 3. Create the environment</span>
+<span class="n">env</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="s2">&quot;iron_ore_throughput&quot;</span><span class="p">)</span>
+
+<span class="c1"># 4. Use the environment</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Initial observation keys: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 5. Take actions</span>
+<span class="n">current_state</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+    <span class="n">action</span> <span class="o">=</span> <span class="n">Action</span><span class="p">(</span>
+        <span class="n">agent_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">game_state</span><span class="o">=</span><span class="n">current_state</span><span class="p">,</span>
+        <span class="n">code</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;print(&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s1">: Hello Factorio!&quot;)&#39;</span>
+    <span class="p">)</span>
+    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+    <span class="n">done</span> <span class="o">=</span> <span class="n">terminated</span> <span class="ow">or</span> <span class="n">truncated</span>
+    <span class="n">current_state</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;output_game_state&#39;</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step </span><span class="si">{</span><span class="n">step</span><span class="si">}</span><span class="s2">: Reward=</span><span class="si">{</span><span class="n">reward</span><span class="si">}</span><span class="s2">, Done=</span><span class="si">{</span><span class="n">done</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">done</span><span class="p">:</span>
+        <span class="k">break</span>
+
+<span class="c1"># 6. Clean up</span>
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The registry includes error handling for:</p>
+<ul class="simple">
+<li><p>Missing task definition files</p></li>
+<li><p>Invalid JSON configurations</p></li>
+<li><p>Missing Factorio containers</p></li>
+<li><p>Environment creation failures</p></li>
+</ul>
+<p>If an environment fails to load, a warning will be printed but the registry will continue to load other environments.</p>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="environment-creation-fails">
+<h3>Environment Creation Fails<a class="headerlink" href="#environment-creation-fails" title="Link to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">gym.make()</span></code> fails with connection errors:</p>
+<ol class="arabic simple">
+<li><p>Ensure Factorio containers are running</p></li>
+<li><p>Check that the cluster setup is working</p></li>
+<li><p>Verify network connectivity</p></li>
+</ol>
+</section>
+<section id="no-environments-found">
+<h3>No Environments Found<a class="headerlink" href="#no-environments-found" title="Link to this heading"></a></h3>
+<p>If no environments are listed:</p>
+<ol class="arabic simple">
+<li><p>Check that the task definitions directory exists</p></li>
+<li><p>Verify JSON files are valid</p></li>
+<li><p>Check file permissions</p></li>
+</ol>
+</section>
+<section id="import-errors">
+<h3>Import Errors<a class="headerlink" href="#import-errors" title="Link to this heading"></a></h3>
+<p>If you get import errors:</p>
+<ol class="arabic simple">
+<li><p>Ensure you’re running from the correct directory</p></li>
+<li><p>Check that all dependencies are installed</p></li>
+<li><p>Verify the Python path includes the project root</p></li>
+</ol>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Run the test suite to verify the registry is working correctly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>fle/env/tests/gym_env/test_registry.py
+</pre></div>
+</div>
+<p>This registry system provides a clean, standardized interface for working with Factorio gym environments, making it easy to experiment with different tasks and integrate with existing gym-based frameworks.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="overview.html" class="btn btn-neutral float-left" title="Environment Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../tools/overview.html" class="btn btn-neutral float-right" title="Tools Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

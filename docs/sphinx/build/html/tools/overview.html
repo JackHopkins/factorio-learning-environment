@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tools Overview &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Core Tools Reference" href="core_tools.html" />
+    <link rel="prev" title="Gym Environment Registry" href="../environment/gym_registry.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tools Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-are-tools">What are Tools?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-architecture">Tool Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#anatomy-of-a-tool">Anatomy of a Tool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tool-categories">Tool Categories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inventory-management">Inventory Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#entity-manipulation">Entity Manipulation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resource-operations">Resource Operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connections">Connections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#crafting-research">Crafting &amp; Research</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#movement-utility">Movement &amp; Utility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#using-tools">Using Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#return-values">Return Values</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#common-return-types">Common Return Types</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tools Overview</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tools-overview">
+<h1>Tools Overview<a class="headerlink" href="#tools-overview" title="Link to this heading"></a></h1>
+<p>Agents interact with the game using <em>tools</em>, which represent a narrow API into the game. Tools are functions that agents can call to perform actions and retrieve information.</p>
+<section id="what-are-tools">
+<h2>What are Tools?<a class="headerlink" href="#what-are-tools" title="Link to this heading"></a></h2>
+<p><strong>Tools</strong> are functions that:</p>
+<ul class="simple">
+<li><p>Perform a game action (e.g., placing an entity, crafting an item)</p></li>
+<li><p>Return a typed object (e.g., <code class="docutils literal notranslate"><span class="pre">Entity</span></code>, <code class="docutils literal notranslate"><span class="pre">Inventory</span></code>, <code class="docutils literal notranslate"><span class="pre">Recipe</span></code>)</p></li>
+<li><p>Can be stored as named variables in the Python namespace for later use</p></li>
+</ul>
+<p>Tools live in <code class="docutils literal notranslate"><span class="pre">fle/env/tools/</span></code>, and are either:</p>
+<ul class="simple">
+<li><p><strong>Admin tools</strong>: Non-agent accessible, used for environment management</p></li>
+<li><p><strong>Agent tools</strong>: Used by agents to interact with the game</p></li>
+</ul>
+</section>
+<section id="tool-architecture">
+<h2>Tool Architecture<a class="headerlink" href="#tool-architecture" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌─────────────────┐
+│     Agent       │
+│  (Synthesizes   │
+│  Python Code)   │
+└────────┬────────┘
+         │
+┌────────▼────────────────────┐
+│  Learning Environment       │
+│  ┌────────────────────┐    │
+│  │   Interpreter      │    │
+│  └─────────┬──────────┘    │
+│            │                 │
+│  ┌─────────▼──────────┐    │
+│  │   client.py        │◄───┼─── Exceptions
+│  │  (Python Interface)│    │
+│  └─────────┬──────────┘    │
+│            │                 │
+│            │ Objects         │
+└────────────┼─────────────────┘
+             │
+             │ Remote TCP Call
+             │
+┌────────────▼─────────────────┐
+│   Factorio Server            │
+│  ┌─────────────────────┐    │
+│  │   server.lua        │    │
+│  │  (Game Logic)       │    │
+│  └─────────┬───────────┘    │
+│            │                  │
+│  ┌─────────▼───────────┐    │
+│  │  Factorio Engine    │    │
+│  │  (Game Simulation)  │    │
+│  └─────────────────────┘    │
+└──────────────────────────────┘
+</pre></div>
+</div>
+</section>
+<section id="anatomy-of-a-tool">
+<h2>Anatomy of a Tool<a class="headerlink" href="#anatomy-of-a-tool" title="Link to this heading"></a></h2>
+<p>A tool requires 3 files:</p>
+<ol class="arabic simple">
+<li><p><strong>agent.md</strong>: The agent documentation for the tool, including usage patterns, best practices, and failure modes</p></li>
+<li><p><strong>client.py</strong>: The client-side implementation - a Python class that can be invoked by the agent</p></li>
+<li><p><strong>server.lua</strong>: The server-side implementation - handles most of the logic and heavy lifting</p></li>
+</ol>
+</section>
+<section id="tool-categories">
+<h2>Tool Categories<a class="headerlink" href="#tool-categories" title="Link to this heading"></a></h2>
+<p>Tools can be grouped into several categories:</p>
+<section id="inventory-management">
+<h3>Inventory Management<a class="headerlink" href="#inventory-management" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">inspect_inventory</span></code>: Check contents of player or entity inventories</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">insert_item</span></code>: Place items from player inventory into entities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">extract_item</span></code>: Remove items from entity inventories</p></li>
+</ul>
+</section>
+<section id="entity-manipulation">
+<h3>Entity Manipulation<a class="headerlink" href="#entity-manipulation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">place_entity</span></code>: Place entities in the world</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">place_entity_next_to</span></code>: Place entities relative to others</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pickup_entity</span></code>: Remove entities from the world</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rotate_entity</span></code>: Change entity orientation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_entity</span></code>: Retrieve entity objects at positions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_entities</span></code>: Find multiple entities in an area</p></li>
+</ul>
+</section>
+<section id="resource-operations">
+<h3>Resource Operations<a class="headerlink" href="#resource-operations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest</span></code>: Locate closest resources/entities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_resource_patch</span></code>: Analyze resource deposits</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">harvest_resource</span></code>: Gather resources from the world</p></li>
+</ul>
+</section>
+<section id="connections">
+<h3>Connections<a class="headerlink" href="#connections" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">connect_entities</span></code>: Create connections between entities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_connection_amount</span></code>: Calculate required connection items</p></li>
+</ul>
+</section>
+<section id="crafting-research">
+<h3>Crafting &amp; Research<a class="headerlink" href="#crafting-research" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">craft_item</span></code>: Create items from components</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_prototype_recipe</span></code>: Retrieve crafting requirements</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_entity_recipe</span></code>: Configure machine crafting recipes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">set_research</span></code>: Initiate technology research</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_research_progress</span></code>: Monitor research status</p></li>
+</ul>
+</section>
+<section id="movement-utility">
+<h3>Movement &amp; Utility<a class="headerlink" href="#movement-utility" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">move_to</span></code>: Move player to position</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nearest_buildable</span></code>: Find valid building locations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sleep</span></code>: Pause execution</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">launch_rocket</span></code>: Control rocket silo launches</p></li>
+</ul>
+</section>
+<section id="output">
+<h3>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">print</span></code>: Output debug information to stdout</p></li>
+</ul>
+</section>
+</section>
+<section id="using-tools">
+<h2>Using Tools<a class="headerlink" href="#using-tools" title="Link to this heading"></a></h2>
+<p>Tools are called like normal Python functions within agent code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find nearest iron ore</span>
+<span class="n">iron_position</span> <span class="o">=</span> <span class="n">nearest</span><span class="p">(</span><span class="n">Resource</span><span class="o">.</span><span class="n">IronOre</span><span class="p">)</span>
+
+<span class="c1"># Place a mining drill</span>
+<span class="n">drill</span> <span class="o">=</span> <span class="n">place_entity</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">Prototype</span><span class="o">.</span><span class="n">MiningDrill</span><span class="p">,</span>
+    <span class="n">position</span><span class="o">=</span><span class="n">iron_position</span><span class="p">,</span>
+    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">NORTH</span>
+<span class="p">)</span>
+
+<span class="c1"># Check the drill&#39;s status</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Drill status: </span><span class="si">{</span><span class="n">drill</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Store result for later use</span>
+<span class="n">my_first_drill</span> <span class="o">=</span> <span class="n">drill</span>
+</pre></div>
+</div>
+</section>
+<section id="return-values">
+<h2>Return Values<a class="headerlink" href="#return-values" title="Link to this heading"></a></h2>
+<p>Tools return typed objects that can be:</p>
+<ul class="simple">
+<li><p><strong>Inspected</strong>: Access attributes like <code class="docutils literal notranslate"><span class="pre">drill.status</span></code> or <code class="docutils literal notranslate"><span class="pre">inventory.items</span></code></p></li>
+<li><p><strong>Stored</strong>: Save as variables for future reference</p></li>
+<li><p><strong>Printed</strong>: Display information to stdout for observation</p></li>
+</ul>
+<section id="common-return-types">
+<h3>Common Return Types<a class="headerlink" href="#common-return-types" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Entity</span></code>: Represents a game entity (drill, chest, inserter, etc.)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Inventory</span></code>: Contains items and quantities</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Recipe</span></code>: Describes crafting requirements</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Position</span></code>: X, Y coordinates</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ResourcePatch</span></code>: Information about resource deposits</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>Tools raise typed exceptions with detailed context when:</p>
+<ul class="simple">
+<li><p>Invalid parameters are provided</p></li>
+<li><p>Required resources are unavailable</p></li>
+<li><p>Game constraints are violated (e.g., invalid placement)</p></li>
+<li><p>Entities don’t exist or have been destroyed</p></li>
+</ul>
+<p>Example error:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">InvalidEntityPlacementException</span><span class="p">:</span> <span class="n">Cannot</span> <span class="n">place</span> <span class="n">burner</span><span class="o">-</span><span class="n">mining</span><span class="o">-</span><span class="n">drill</span> <span class="n">at</span>
+<span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span> <span class="o">-</span> <span class="n">location</span> <span class="ow">is</span> <span class="n">occupied</span> <span class="n">by</span> <span class="n">iron</span><span class="o">-</span><span class="n">chest</span>
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>See <a class="reference internal" href="core_tools.html"><span class="doc">Core Tools Reference</span></a> for detailed documentation on each tool</p></li>
+<li><p>Learn how to <a class="reference internal" href="custom_tools.html"><span class="doc">Creating Custom Tools</span></a> for specialized functionality</p></li>
+<li><p>Review the <a class="reference internal" href="../environment/overview.html"><span class="doc">Environment Overview</span></a> to understand the full context</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../environment/gym_registry.html" class="btn btn-neutral float-left" title="Gym Environment Registry" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="core_tools.html" class="btn btn-neutral float-right" title="Core Tools Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

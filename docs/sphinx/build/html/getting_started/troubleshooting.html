@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Environment Overview" href="../environment/overview.html" />
+    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#common-issues">Common Issues</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#no-valid-programs-found-for-version-x">“No valid programs found for version X”</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#database-connection-errors">Database Connection Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#api-key-errors">API Key Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#docker-issues">Docker Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connection-issues">Connection Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-creation-fails">Environment Creation Fails</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-environments-found">No Environments Found</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#import-errors">Import Errors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#space-age-dlc-issues">Space Age DLC Issues</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#testing-your-installation">Testing Your Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-help">Getting Help</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging-tips">Debugging Tips</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#enable-verbose-logging">Enable Verbose Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#check-docker-logs">Check Docker Logs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verify-environment-variables">Verify Environment Variables</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../environment/overview.html">Environment Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../environment/gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troubleshooting</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troubleshooting">
+<h1>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h1>
+<p>This page addresses common issues you may encounter when using FLE.</p>
+<section id="common-issues">
+<h2>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h2>
+<section id="no-valid-programs-found-for-version-x">
+<h3>“No valid programs found for version X”<a class="headerlink" href="#no-valid-programs-found-for-version-x" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: You see this message during initialization.</p>
+<p><strong>Solution</strong>: This is normal during initialization. The system will start generating programs shortly. No action needed.</p>
+</section>
+<section id="database-connection-errors">
+<h3>Database Connection Errors<a class="headerlink" href="#database-connection-errors" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: Errors connecting to the database when running evaluations.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Verify your database configuration in the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file</p></li>
+<li><p>Ensure the database exists</p></li>
+<li><p>For SQLite: Check that the directory for the database file exists</p></li>
+<li><p>For PostgreSQL: Verify the database server is running</p></li>
+</ol>
+</section>
+<section id="api-key-errors">
+<h3>API Key Errors<a class="headerlink" href="#api-key-errors" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: Authentication errors when running agent evaluations.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic">
+<li><p>Run the API key setup script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>fle/eval/infra/setup_api_keys.py
+</pre></div>
+</div>
+</li>
+<li><p>Verify your API keys are correctly set in the <code class="docutils literal notranslate"><span class="pre">.env</span></code> file</p></li>
+<li><p>Check that you’re using the correct provider (OpenAI, Anthropic, etc.)</p></li>
+</ol>
+</section>
+<section id="docker-issues">
+<h3>Docker Issues<a class="headerlink" href="#docker-issues" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: Permission denied or Docker connection errors.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic">
+<li><p>Ensure Docker is installed and running</p></li>
+<li><p>Verify your user has permission to run Docker without sudo:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>usermod<span class="w"> </span>-aG<span class="w"> </span>docker<span class="w"> </span><span class="nv">$USER</span>
+</pre></div>
+</div>
+</li>
+<li><p>Log out and log back in for the group change to take effect</p></li>
+<li><p>Test Docker access:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="connection-issues">
+<h3>Connection Issues<a class="headerlink" href="#connection-issues" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: Cannot connect to Factorio server.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic">
+<li><p>Make sure the Factorio server is running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>fle<span class="w"> </span>cluster<span class="w"> </span>start
+</pre></div>
+</div>
+</li>
+<li><p>Check that ports are properly configured</p></li>
+<li><p>Verify Docker containers are running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps
+</pre></div>
+</div>
+</li>
+<li><p>Check Docker logs for errors:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>logs<span class="w"> </span>&lt;container_id&gt;
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="environment-creation-fails">
+<h3>Environment Creation Fails<a class="headerlink" href="#environment-creation-fails" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: <code class="docutils literal notranslate"><span class="pre">gym.make()</span></code> fails with connection errors.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Ensure Factorio containers are running</p></li>
+<li><p>Check that the cluster setup is working</p></li>
+<li><p>Verify network connectivity</p></li>
+</ol>
+</section>
+<section id="no-environments-found">
+<h3>No Environments Found<a class="headerlink" href="#no-environments-found" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: <code class="docutils literal notranslate"><span class="pre">list_available_environments()</span></code> returns an empty list.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Check that the task definitions directory exists</p></li>
+<li><p>Verify JSON files in <code class="docutils literal notranslate"><span class="pre">fle/eval/tasks/task_definitions/</span></code> are valid</p></li>
+<li><p>Check file permissions</p></li>
+<li><p>Ensure you’re running from the correct directory</p></li>
+</ol>
+</section>
+<section id="import-errors">
+<h3>Import Errors<a class="headerlink" href="#import-errors" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: <code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError</span></code> or import errors.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic">
+<li><p>Ensure you’re running from the correct directory</p></li>
+<li><p>Check that all dependencies are installed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>factorio-learning-environment<span class="o">[</span>eval<span class="o">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify the Python path includes the project root</p></li>
+<li><p>Try reinstalling the package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>--force-reinstall<span class="w"> </span>factorio-learning-environment
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="space-age-dlc-issues">
+<h3>Space Age DLC Issues<a class="headerlink" href="#space-age-dlc-issues" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>: Factorio client is on version 2.x instead of 1.1.110.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Open Steam library</p></li>
+<li><p>Right-click Factorio → Properties</p></li>
+<li><p>Navigate to DLC section</p></li>
+<li><p><strong>Uncheck Space Age DLC</strong> (this forces the 2.x branch)</p></li>
+<li><p>Go to Betas tab</p></li>
+<li><p>Select version <code class="docutils literal notranslate"><span class="pre">1.1.110</span></code></p></li>
+</ol>
+</section>
+</section>
+<section id="testing-your-installation">
+<h2>Testing Your Installation<a class="headerlink" href="#testing-your-installation" title="Link to this heading"></a></h2>
+<p>Run the test suite to verify everything is working:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test the gym registry</span>
+python<span class="w"> </span>fle/env/tests/gym_env/test_registry.py
+
+<span class="c1"># List available environments</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--list
+
+<span class="c1"># Run with detailed output</span>
+python<span class="w"> </span>fle/env/gym_env/example_usage.py<span class="w"> </span>--detail
+</pre></div>
+</div>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
+<p>If you continue to experience issues:</p>
+<ol class="arabic simple">
+<li><p>Check the <a class="reference external" href="https://github.com/JackHopkins/factorio-learning-environment/issues">GitHub Issues</a></p></li>
+<li><p>Join the <a class="reference external" href="https://discord.gg/zKaV2skewa">Discord (#factorio-learning-env)</a></p></li>
+<li><p>Review the <a class="reference internal" href="../project_structure.html"><span class="doc">Project Structure</span></a> to understand the codebase layout</p></li>
+</ol>
+</section>
+<section id="debugging-tips">
+<h2>Debugging Tips<a class="headerlink" href="#debugging-tips" title="Link to this heading"></a></h2>
+<section id="enable-verbose-logging">
+<h3>Enable Verbose Logging<a class="headerlink" href="#enable-verbose-logging" title="Link to this heading"></a></h3>
+<p>Set environment variables for more detailed output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">FLE_LOG_LEVEL</span><span class="o">=</span>DEBUG
+</pre></div>
+</div>
+</section>
+<section id="check-docker-logs">
+<h3>Check Docker Logs<a class="headerlink" href="#check-docker-logs" title="Link to this heading"></a></h3>
+<p>View logs from Factorio containers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List running containers</span>
+docker<span class="w"> </span>ps
+
+<span class="c1"># View logs for a specific container</span>
+docker<span class="w"> </span>logs<span class="w"> </span>&lt;container_id&gt;
+
+<span class="c1"># Follow logs in real-time</span>
+docker<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>&lt;container_id&gt;
+</pre></div>
+</div>
+</section>
+<section id="verify-environment-variables">
+<h3>Verify Environment Variables<a class="headerlink" href="#verify-environment-variables" title="Link to this heading"></a></h3>
+<p>Check that your <code class="docutils literal notranslate"><span class="pre">.env</span></code> file is properly loaded:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="n">load_dotenv</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;OPENAI_API_KEY&#39;</span><span class="p">))</span>  <span class="c1"># Should show your API key (masked)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;FLE_DB_TYPE&#39;</span><span class="p">))</span>     <span class="c1"># Should show sqlite or postgres</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../environment/overview.html" class="btn btn-neutral float-right" title="Environment Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

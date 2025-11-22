@@ -1,0 +1,377 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Environment Overview &mdash; Factorio Learning Environment 0.3.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e259d695"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Gym Environment Registry" href="gym_registry.html" />
+    <link rel="prev" title="Troubleshooting" href="../getting_started/troubleshooting.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Factorio Learning Environment
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Environment</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Environment Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-repl-pattern">The REPL Pattern</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-interaction">Example Interaction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#available-tools">Available Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-namespace">The Namespace</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#observations">Observations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-functions-and-classes">Custom Functions and Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#action-space">Action Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#observation-space">Observation Space</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-methods">Environment Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#standard-gym-interface">Standard Gym Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#task-types">Task Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#lab-play">Lab-Play</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#open-play">Open-Play</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gym_registry.html">Gym Environment Registry</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tools</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tools/overview.html">Tools Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/core_tools.html">Core Tools Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools/custom_tools.html">Creating Custom Tools</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Advanced Topics</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/mcp.html">Model Context Protocol (MCP)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/sprites.html">Sprites</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../advanced/database.html">Database Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_structure.html">Project Structure</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Factorio Learning Environment</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Environment Overview</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="environment-overview">
+<h1>Environment Overview<a class="headerlink" href="#environment-overview" title="Link to this heading"></a></h1>
+<p>FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.</p>
+<section id="the-repl-pattern">
+<h2>The REPL Pattern<a class="headerlink" href="#the-repl-pattern" title="Link to this heading"></a></h2>
+<p>Agents interact with FLE through code synthesis using a <strong>REPL</strong> (Read-Eval-Print-Loop) pattern:</p>
+<ol class="arabic simple">
+<li><p><strong>Observation</strong>: The agent observes the world through the output streams (stderr/stdout) of their last program</p></li>
+<li><p><strong>Action</strong>: The agent generates a Python program to perform their desired action</p></li>
+<li><p><strong>Feedback</strong>: The environment executes the program, assigns variables, adds classes/functions to the namespace, and provides an output stream</p></li>
+</ol>
+<section id="example-interaction">
+<h3>Example Interaction<a class="headerlink" href="#example-interaction" title="Link to this heading"></a></h3>
+<p><strong>Action:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Get iron patch and place mining drill</span>
+<span class="n">drill</span> <span class="o">=</span> <span class="n">place_entity</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">Prototype</span><span class="o">.</span><span class="n">MiningDrill</span><span class="p">,</span>
+    <span class="n">position</span><span class="o">=</span><span class="n">nearest</span><span class="p">(</span><span class="n">Resource</span><span class="o">.</span><span class="n">IronOre</span><span class="p">),</span>
+    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">NORTH</span>
+<span class="p">)</span>
+<span class="c1"># 2. Add output storage</span>
+<span class="n">chest</span> <span class="o">=</span> <span class="n">place_entity_next_to</span><span class="p">(</span>
+    <span class="n">entity</span><span class="o">=</span><span class="n">Prototype</span><span class="o">.</span><span class="n">IronChest</span><span class="p">,</span>
+    <span class="n">reference_position</span><span class="o">=</span><span class="n">drill</span><span class="o">.</span><span class="n">drop_position</span><span class="p">,</span>
+    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">SOUTH</span>
+<span class="p">)</span>
+<span class="c1"># 3. Verify automation chain and observe entities</span>
+<span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># Sleep for 10 seconds</span>
+<span class="k">assert</span> <span class="n">drill</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="n">EntityStatus</span><span class="o">.</span><span class="n">WORKING</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">get_entities</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><strong>Feedback:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span> <span class="n">BurnerMiningDrill</span><span class="p">(</span><span class="n">fuel</span><span class="o">=</span><span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;coal&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;burner-mining-drill&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">DOWN</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">28.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">61.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">energy</span><span class="o">=</span><span class="mf">2666.6666666667</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">tile_dimensions</span><span class="o">=</span><span class="n">TileDimensions</span><span class="p">(</span><span class="n">tile_width</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">tile_height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">status</span><span class="o">=</span><span class="n">EntityStatus</span><span class="o">.</span><span class="n">WORKING</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">neighbours</span><span class="o">=</span><span class="p">[</span><span class="n">Entity</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">DOWN</span><span class="p">,</span> <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">)],</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">drop_position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>                    <span class="n">resources</span><span class="o">=</span><span class="p">[</span><span class="n">Ingredient</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="kc">None</span><span class="p">)]),</span>
+<span class="gp">&gt;&gt;&gt; </span>  <span class="n">Chest</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;iron-chest&#39;</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">UP</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">position</span><span class="o">=</span><span class="n">Position</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">27.5</span><span class="p">,</span> <span class="n">y</span><span class="o">=-</span><span class="mf">59.5</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">energy</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">tile_dimensions</span><span class="o">=</span><span class="n">TileDimensions</span><span class="p">(</span><span class="n">tile_width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">tile_height</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">status</span><span class="o">=</span><span class="n">EntityStatus</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
+<span class="gp">&gt;&gt;&gt; </span>        <span class="n">inventory</span><span class="o">=</span><span class="n">Inventory</span><span class="p">({</span><span class="s1">&#39;iron-ore&#39;</span><span class="p">:</span> <span class="mi">75</span><span class="p">}))]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="available-tools">
+<h2>Available Tools<a class="headerlink" href="#available-tools" title="Link to this heading"></a></h2>
+<p>Agents are provided with the Python standard library and an API comprising <a class="reference internal" href="../tools/overview.html"><span class="doc">Tools Overview</span></a> that they can use.</p>
+<p><strong>Tools</strong> are functions that:</p>
+<ul class="simple">
+<li><p>Perform a game action</p></li>
+<li><p>Return a typed object (e.g. an <code class="docutils literal notranslate"><span class="pre">Inventory</span></code>)</p></li>
+<li><p>Can be stored as a named <strong>variable</strong> in the Python namespace for later use</p></li>
+</ul>
+</section>
+<section id="the-namespace">
+<h2>The Namespace<a class="headerlink" href="#the-namespace" title="Link to this heading"></a></h2>
+<p>The namespace acts as an <strong>episodic symbolic memory system</strong>. Saved objects represent an observation of the environment at the moment of query.</p>
+<p>This enables agents to:</p>
+<ul class="simple">
+<li><p>Maintain complex state representations</p></li>
+<li><p>Build hierarchical abstractions as factories scale</p></li>
+<li><p>Reference previous observations and computations</p></li>
+</ul>
+</section>
+<section id="observations">
+<h2>Observations<a class="headerlink" href="#observations" title="Link to this heading"></a></h2>
+<p>Agents observe <strong>stdout</strong> and <strong>stderr</strong> - the output streams of their program.</p>
+<p>Agents may intentionally:</p>
+<ul class="simple">
+<li><p>Print relevant objects to construct observations</p></li>
+<li><p>Print computations and intermediate results</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">print()</span></code> strategically to monitor state</p></li>
+</ul>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>Mistakes in code or invalid operations raise typed <strong>exceptions</strong> with detailed context that is written to stderr.</p>
+<p>This enables agents to:</p>
+<ul class="simple">
+<li><p><strong>Reactively debug</strong> their programs after execution</p></li>
+<li><p><strong>Proactively use</strong> runtime assertions during execution to self-verify actions</p></li>
+<li><p>Learn from detailed error messages</p></li>
+</ul>
+</section>
+<section id="custom-functions-and-classes">
+<h2>Custom Functions and Classes<a class="headerlink" href="#custom-functions-and-classes" title="Link to this heading"></a></h2>
+<p>Agents can enhance their internal representation of the game state by defining:</p>
+<ol class="arabic simple">
+<li><p><strong>Utility functions</strong> for reuse throughout an episode, to encapsulate previously successful logic</p></li>
+<li><p><strong>Classes</strong> in the namespace to better organize the data retrieved from the game</p></li>
+</ol>
+<p>These definitions persist in the namespace across actions within an episode.</p>
+</section>
+<section id="action-space">
+<h2>Action Space<a class="headerlink" href="#action-space" title="Link to this heading"></a></h2>
+<p>The action space is defined as:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;agent_idx&#39;</span><span class="p">:</span> <span class="n">Discrete</span><span class="p">(</span><span class="n">instance</span><span class="o">.</span><span class="n">num_agents</span><span class="p">),</span>  <span class="c1"># Index of the agent taking the action</span>
+    <span class="s1">&#39;game_state&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">1000000</span><span class="p">),</span>      <span class="c1"># Optional: game state to reset to</span>
+    <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="n">Text</span><span class="p">(</span><span class="n">max_length</span><span class="o">=</span><span class="mi">10000</span><span class="p">)</span>               <span class="c1"># Python code to execute</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="observation-space">
+<h2>Observation Space<a class="headerlink" href="#observation-space" title="Link to this heading"></a></h2>
+<p>The observation space includes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">raw_text</span></code>: Output from the last action</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">entities</span></code>: List of entities on the map</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">inventory</span></code>: Current inventory state</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">research</span></code>: Research progress and technologies</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">game_info</span></code>: Game state (tick, time, speed)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">score</span></code>: Current score</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">flows</span></code>: Production statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">task_verification</span></code>: Task completion status</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">messages</span></code>: Inter-agent messages (for multi-agent scenarios)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">serialized_functions</span></code>: Available functions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">task_info</span></code>: Information about the task</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">map_image</span></code>: Base64 encoded PNG image</p></li>
+</ul>
+</section>
+<section id="environment-methods">
+<h2>Environment Methods<a class="headerlink" href="#environment-methods" title="Link to this heading"></a></h2>
+<section id="standard-gym-interface">
+<h3>Standard Gym Interface<a class="headerlink" href="#standard-gym-interface" title="Link to this heading"></a></h3>
+<p>All FLE environments follow the standard OpenAI Gym interface:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Reset the environment</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+<span class="c1"># Take a step</span>
+<span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">:</span> <span class="n">Action</span><span class="p">)</span>
+
+<span class="c1"># Clean up</span>
+<span class="n">env</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>┌─────────────────┐
+│     Agent       │
+│ (Synthesizes    │
+│  Python Code)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  Learning Environment       │
+│  ┌─────────────────────┐   │
+│  │   Interpreter       │   │
+│  │   - Executes code   │   │
+│  │   - Manages         │   │
+│  │     namespace       │   │
+│  └──────┬──────────────┘   │
+│         │                   │
+│  ┌──────▼──────────────┐   │
+│  │   client.py         │   │
+│  │   (Tool Interface)  │   │
+│  └──────┬──────────────┘   │
+└─────────┼──────────────────┘
+          │ Remote TCP Call
+          ▼
+┌─────────────────────────────┐
+│   Factorio Server           │
+│  ┌─────────────────────┐   │
+│  │   server.lua        │   │
+│  │   (Game Logic)      │   │
+│  └──────┬──────────────┘   │
+│         │                   │
+│  ┌──────▼──────────────┐   │
+│  │  Factorio Engine    │   │
+│  │  (Game Simulation)  │   │
+│  └─────────────────────┘   │
+└─────────────────────────────┘
+</pre></div>
+</div>
+</section>
+<section id="task-types">
+<h2>Task Types<a class="headerlink" href="#task-types" title="Link to this heading"></a></h2>
+<p>FLE provides two main evaluation settings:</p>
+<section id="lab-play">
+<h3>Lab-Play<a class="headerlink" href="#lab-play" title="Link to this heading"></a></h3>
+<p>24 structured tasks with fixed resources, testing specific capabilities:</p>
+<ul class="simple">
+<li><p><strong>Circuits</strong>: Advanced circuits, electronic circuits, processing units</p></li>
+<li><p><strong>Science Packs</strong>: Automation, logistics, chemical, military, production, utility</p></li>
+<li><p><strong>Components</strong>: Batteries, engines, inserters, gears, low density structures</p></li>
+<li><p><strong>Raw Materials</strong>: Iron ore, iron plates, steel plates, plastic bars</p></li>
+<li><p><strong>Oil &amp; Chemicals</strong>: Crude oil, petroleum gas, sulfuric acid, sulfur</p></li>
+<li><p><strong>Military</strong>: Piercing rounds, stone walls</p></li>
+</ul>
+<p>Most tasks require 16 items per 60 seconds; fluid tasks require 250 units per 60 seconds.</p>
+</section>
+<section id="open-play">
+<h3>Open-Play<a class="headerlink" href="#open-play" title="Link to this heading"></a></h3>
+<p>An unbounded task of building the largest possible factory on a procedurally generated map. This tests:</p>
+<ul class="simple">
+<li><p>Long-term planning</p></li>
+<li><p>Resource optimization</p></li>
+<li><p>Scaling strategies</p></li>
+<li><p>Error recovery</p></li>
+</ul>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Explore the <a class="reference internal" href="gym_registry.html"><span class="doc">Gym Environment Registry</span></a> to see all available tasks</p></li>
+<li><p>Learn about <a class="reference internal" href="../tools/overview.html"><span class="doc">Tools Overview</span></a> available to agents</p></li>
+<li><p>See <a class="reference internal" href="../getting_started/quickstart.html"><span class="doc">Quickstart</span></a> for usage examples</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../getting_started/troubleshooting.html" class="btn btn-neutral float-left" title="Troubleshooting" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gym_registry.html" class="btn btn-neutral float-right" title="Gym Environment Registry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, FLE Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

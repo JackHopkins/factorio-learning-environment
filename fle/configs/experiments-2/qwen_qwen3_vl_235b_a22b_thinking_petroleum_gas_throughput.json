@@ -1,34 +1,34 @@
 [
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     },
     {
-        "env_id": "advanced_circuit_throughput",
+        "env_id": "petroleum_gas_throughput",
         "model": "qwen/qwen3-vl-235b-a22b-thinking"
     }
-] 
+]

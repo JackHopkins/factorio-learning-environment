@@ -238,7 +238,9 @@ class Observation:
                 "progress": [
                     {"name": name, "value": value}
                     for name, value in self.research.progress.items()
-                ],
+                ]
+                if self.research.progress
+                else "None",
             },
             "game_info": {
                 "tick": self.game_info.tick,

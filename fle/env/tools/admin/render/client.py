@@ -73,7 +73,7 @@ class Render(Tool):
         if not blueprint:
             # Create renderer with decoded data
             renderer = self.get_renderer_from_map(
-                include_status, radius, compression_level, max_render_radius
+                include_status, radius, compression_level, max_render_radius, position
             )
         else:
             renderer = self.get_renderer_from_blueprint(blueprint)
@@ -132,6 +132,7 @@ class Render(Tool):
         radius: int = 64,
         compression_level: str = "binary",
         max_render_radius: Optional[float] = None,
+        position: Optional[Position] = None,
     ) -> Renderer:
         result = self._get_map_entities(include_status, radius, compression_level)
 
@@ -143,8 +144,9 @@ class Render(Tool):
             for c in list(filter(lambda x: x["name"] == "character", entities))
         ]
 
-        char_pos = Position(character_position[0]["x"], character_position[0]["y"])
-        ent = self.get_entities(position=char_pos, radius=radius)
+        if not position:
+            position = Position(character_position[0]["x"], character_position[0]["y"])
+        ent = self.get_entities(position=position, radius=radius)
         if ent:
             entities.extend(ent)
             pass

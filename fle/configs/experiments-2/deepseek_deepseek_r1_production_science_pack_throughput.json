@@ -1,0 +1,34 @@
+[
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "production_science_pack_throughput",
+        "model": "deepseek/deepseek-r1"
+    }
+]

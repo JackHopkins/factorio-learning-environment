@@ -1066,7 +1066,7 @@ class FactorioNamespace:
                     break
 
                 last_successful_state = dict(self.persistent_vars)
-            except (Exception, NameError) as e:
+            except (Exception, NameError, SystemExit) as e:
                 self._sequential_exception_count += 1
                 error_traceback = traceback.format_exc()
                 error_lines = self._extract_error_lines(expr, error_traceback)

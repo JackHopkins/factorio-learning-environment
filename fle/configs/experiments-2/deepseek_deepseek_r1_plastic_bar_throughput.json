@@ -1,0 +1,34 @@
+[
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "plastic_bar_throughput",
+        "model": "deepseek/deepseek-r1"
+    }
+]

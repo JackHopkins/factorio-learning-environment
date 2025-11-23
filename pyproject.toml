@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.2.2"
+version = "0.3.1"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},
@@ -39,24 +39,27 @@ dependencies = [
     "numpy>=2.2.3",
     "gym",
     "a2a-sdk",
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
     "tenacity>=9.0.0",
-    "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
     "gym",
     "a2a-sdk",
-    "anthropic>=0.49.0",
-    "openai>=1.66.3",
     "tenacity>=9.0.0",
-    "psycopg2>=2.9.10",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",
     "pytest>=8.4.1",
     "mcp[cli]>=1.11.0",
     "black>=25.1.0",
     "memoization>=0.4.0",
+    "inspect-ai>=0.3.139",
+    "docker>=7.1.0",
+    "openai>=2.0.0",
+    "matplotlib>=3.10.7",
+    "huggingface-hub>=0.35.3",
+    "anthropic>=0.69.0",
+    "jinja2>=3.1.6",
+    "hf>=0.0.14",
+    "psycopg2-binary>=2.9.10",
 ]
 
 [project.optional-dependencies]

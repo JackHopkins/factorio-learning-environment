@@ -467,3 +467,8 @@ def generate_sprites(
 
         traceback.print_exc()
         return False
+
+
+if __name__ == "__main__":
+    download_sprites_from_hf()
+    generate_sprites()

@@ -882,6 +882,10 @@ global.utils.serialize_entity = function(entity)
     if entity.type == "inserter" then
         serialized.pickup_position = entity.pickup_position
         serialized.drop_position = entity.drop_position
+        -- Add max energy usage from prototype for consumption rate
+        if entity.prototype and entity.prototype.max_energy_usage then
+            serialized.max_energy_usage = entity.prototype.max_energy_usage
+        end
 
         ---- round to the nearest 0.5
         serialized.pickup_position.x = math.round(serialized.pickup_position.x * 2 ) / 2
@@ -1173,6 +1177,11 @@ global.utils.serialize_entity = function(entity)
         if burner then
             add_burner_inventory(serialized, burner)
         end
+        -- Add prototype rate data
+        if entity.prototype then
+            serialized.target_temperature = entity.prototype.target_temperature
+            serialized.max_energy_usage = entity.prototype.max_energy_usage
+        end
 
         --local direction = entity.direction
         local x, y = entity.position.x, entity.position.y
@@ -1256,11 +1265,21 @@ global.utils.serialize_entity = function(entity)
         --serialized.power_usage = entity.power_usage
         --serialized.emissions = entity.emissions
         serialized.energy = entity.energy
+        -- Add max energy usage from prototype for consumption rate
+        if entity.prototype and entity.prototype.max_energy_usage then
+            serialized.max_energy_usage = entity.prototype.max_energy_usage
+        end
     end
 
     if entity.type == "generator" then
         serialized.connection_points = global.utils.get_generator_connection_positions(entity)
         serialized.energy_generated_last_tick = entity.energy_generated_last_tick
+        -- Add prototype rate data for max capacity
+        if entity.prototype then
+            serialized.max_power_output = entity.prototype.max_power_output
+            serialized.fluid_usage_per_tick = entity.prototype.fluid_usage_per_tick
+            serialized.effectivity = entity.prototype.effectivity
+        end
         --serialized.power_production = entity.power_production
     end
 
@@ -1289,6 +1308,10 @@ global.utils.serialize_entity = function(entity)
     -- Add fluid box if the entity is an offshore pump
     if entity.type == "offshore-pump" then
         serialized.connection_points = global.utils.get_offshore_pump_connection_points(entity)
+        -- Add pumping speed from prototype
+        if entity.prototype and entity.prototype.pumping_speed then
+            serialized.pumping_speed = entity.prototype.pumping_speed
+        end
     end
 
     -- If entity has a fluidbox
@@ -1296,12 +1319,15 @@ global.utils.serialize_entity = function(entity)
         local fluid_box = entity.fluidbox
         if fluid_box and #fluid_box > 0 then
             serialized.fluid_box = {}
+            serialized.fluidbox_flows = {}  -- Array of flow rates per fluidbox slot
             for i = 1, #fluid_box do
                 -- game.print("Fluid!")
                 local fluid = fluid_box[i]
                 if fluid then
                     table.insert(serialized.fluid_box, {name = "\""..fluid.name.."\"", amount = fluid.amount, temperature = fluid.temperature})
                 end
+                -- Always add flow rate for this slot (even if 0)
+                table.insert(serialized.fluidbox_flows, fluid_box.get_flow(i) or 0)
             end
         end
     end
@@ -1321,14 +1347,15 @@ global.utils.serialize_entity = function(entity)
             local has_fluid = false
             local fluid_contents = nil
             for i = 1, #entity.fluidbox do
+                local system_id = entity.fluidbox.get_fluid_system_id(i)
+                if system_id then
+                    table.insert(fluid_systems, system_id)
+                end
                 if entity.fluidbox[i] then
-                    local system_id = entity.fluidbox.get_fluid_system_id(i)
-                    if system_id then
-                        table.insert(fluid_systems, system_id)
-                    end
                     has_fluid = true
-                    fluid_contents =  "\""..entity.fluidbox[i].name.."\""
-                    break
+                    if not fluid_contents then
+                        fluid_contents = "\""..entity.fluidbox[i].name.."\""
+                    end
                 end
             end
             serialized.fluid_systems = fluid_systems

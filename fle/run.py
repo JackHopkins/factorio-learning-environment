@@ -206,7 +206,7 @@ Examples:
     start_parser.add_argument(
         "-s",
         "--scenario",
-        choices=["open_world", "default_lab_scenario"],
+        choices=["open_world", "default_lab_scenario", "MetaCALM"],
         default="default_lab_scenario",
         help="Scenario to run (default: default_lab_scenario)",
     )

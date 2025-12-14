@@ -1113,6 +1113,8 @@ class TreeObservationFormatter(BasicObservationFormatter):
 
         # Build children by recursing on each group
         children = []
+        # Pass parent's shared keys as exclusions to children
+        child_excluded = excluded | set(shared.keys())
         for group_value, group_entities in sorted(groups.items()):
             # Remove the grouping key from entities before recursing
             sub_entities = []
@@ -1122,7 +1124,7 @@ class TreeObservationFormatter(BasicObservationFormatter):
 
             child_trie = cls.build_nested_trie(
                 sub_entities,
-                excluded_keys=excluded,
+                excluded_keys=child_excluded,
                 depth=depth + 1,
                 max_depth=max_depth,
             )
@@ -1225,14 +1227,157 @@ class TreeObservationFormatter(BasicObservationFormatter):
 
         return lines
 
+    # Default keys to exclude from entity output (internal/unimportant fields)
+    DEFAULT_EXCLUDED_KEYS = {
+        # "dimensions",
+        "prototype",
+        "type",
+        # "health",
+        "game",
+        "id",
+        # "tile_dimensions",
+        # "energy",
+        # "warnings",
+        # "electrical_id",
+    }
+
+    @classmethod
+    def format_value_from_object(cls, key: str, value: Any) -> str:
+        """Format a Python object value for display.
+
+        Args:
+            key: The attribute name
+            value: The Python object value
+
+        Returns:
+            Formatted string representation
+        """
+        from fle.env.entities import Position, Direction, EntityStatus, Inventory
+
+        # Handle None
+        if value is None:
+            return "None"
+
+        # Handle Position objects
+        if isinstance(value, Position):
+            return f"({value.x:.1f}, {value.y:.1f})"
+
+        # Handle Direction enum
+        if isinstance(value, Direction):
+            return value.name
+
+        # Handle EntityStatus enum
+        if isinstance(value, EntityStatus):
+            return value.name
+
+        # Handle Inventory objects
+        if isinstance(value, Inventory):
+            items = dict(value)
+            if not items:
+                return "[]"
+            item_strs = [f"{k}:{v}" for k, v in items.items() if v > 0]
+            return "[" + ", ".join(item_strs) + "]" if item_strs else "[]"
+
+        # Handle other enums
+        if hasattr(value, "name") and hasattr(value, "value"):
+            return value.name
+
+        # Handle lists
+        if isinstance(value, list):
+            if not value:
+                return "[]"
+            # Format list items
+            formatted_items = [
+                cls.format_value_from_object(key, item) for item in value
+            ]
+            return "[" + ", ".join(formatted_items) + "]"
+
+        # Handle dicts (like recipes)
+        if isinstance(value, dict):
+            if not value:
+                return "{}"
+            # Check if it's a recipe-like dict
+            if "category" in value:
+                parts = []
+                if value.get("category"):
+                    parts.append(str(value["category"]))
+                ingredients = value.get("ingredients", [])
+                if ingredients:
+                    ing_names = [
+                        i.get("name", "?") for i in ingredients if isinstance(i, dict)
+                    ]
+                    if ing_names:
+                        parts.append(f"in:{'+'.join(ing_names)}")
+                products = value.get("products", [])
+                if products:
+                    prod_names = [
+                        p.get("name", "?") for p in products if isinstance(p, dict)
+                    ]
+                    if prod_names:
+                        parts.append(f"out:{'+'.join(prod_names)}")
+                if parts:
+                    return "{" + ", ".join(parts) + "}"
+            # Generic dict formatting
+            return str(value)
+
+        # Handle floats
+        if isinstance(value, float):
+            if value == int(value):
+                return str(int(value))
+            return f"{value:.1f}"
+
+        # Handle ints
+        if isinstance(value, int):
+            return str(value)
+
+        # Handle strings - remove quotes
+        if isinstance(value, str):
+            return value
+
+        # Fallback to string representation
+        return str(value)
+
+    @classmethod
+    def entity_dict_to_formatted(
+        cls, entity_dict: Dict[str, Any], excluded_keys: Optional[set] = None
+    ) -> Dict[str, str]:
+        """Convert an entity dict (from Pydantic __dict__) to a formatted dict.
+
+        Args:
+            entity_dict: Raw entity dictionary from Pydantic __dict__
+            excluded_keys: Keys to exclude from output
+
+        Returns:
+            Dict with string keys and formatted string values
+        """
+        excluded = excluded_keys or cls.DEFAULT_EXCLUDED_KEYS
+        result = {}
+
+        for key, value in entity_dict.items():
+            # Remove leading underscore from Pydantic internal fields
+            clean_key = key.lstrip("_")
+
+            # Skip excluded keys
+            if clean_key in excluded:
+                continue
+
+            # Skip private attributes
+            if clean_key.startswith("__"):
+                continue
+
+            # Format the value
+            result[clean_key] = cls.format_value_from_object(clean_key, value)
+
+        return result
+
     @classmethod
     def format_entities(
-        cls, entities: List[str], excluded_keys: Optional[set] = None
+        cls, entities: List[Any], excluded_keys: Optional[set] = None
     ) -> str:
         """Format entity information using nested trie-based compression.
 
         Args:
-            entities: List of entity strings to format
+            entities: List of entity dicts (from Pydantic __dict__) or strings
             excluded_keys: Optional set of keys to exclude from output
 
         Returns:
@@ -1241,49 +1386,53 @@ class TreeObservationFormatter(BasicObservationFormatter):
         if not entities:
             return "### Entities\nNone found"
 
-        excluded = excluded_keys or set()
+        excluded = (
+            excluded_keys if excluded_keys is not None else cls.DEFAULT_EXCLUDED_KEYS
+        )
 
-        # Group entities by type
-        entity_groups: Dict[str, List[str]] = {}
-        name_pattern = re.compile(r"\bname\s*=\s*'?([A-Za-z0-9_-]+)'?")
-        group_pattern = re.compile(r"^\s*([A-Za-z]+Group)\(")
-        class_pattern = re.compile(r"^\s*\\?n?\\?t?([A-Za-z]+)\(")
+        # Group entities by type (name field)
+        entity_groups: Dict[str, List[Dict[str, str]]] = {}
 
-        for entity_str in entities:
-            type_match = None
+        for entity in entities:
+            # Handle both dict and string formats for backwards compatibility
+            if isinstance(entity, dict):
+                # Get entity name for grouping
+                entity_name = entity.get("name") or entity.get("_name") or "unknown"
+                if hasattr(entity_name, "lstrip"):
+                    entity_name = entity_name.lstrip("_")
 
-            # Try to get name from the string
-            n = name_pattern.search(entity_str)
-            if n:
-                type_match = n.group(1)
+                # Convert to formatted dict
+                formatted = cls.entity_dict_to_formatted(entity, excluded)
 
-            # Fallback: recognize group objects
-            if not type_match:
-                g = group_pattern.match(entity_str)
-                if g:
-                    type_match = g.group(1)
+                if entity_name not in entity_groups:
+                    entity_groups[entity_name] = []
+                entity_groups[entity_name].append(formatted)
+            elif isinstance(entity, str):
+                # Legacy string format - parse it
+                name_pattern = re.compile(r"\bname\s*=\s*'?\"?([A-Za-z0-9_-]+)'?\"?")
+                n = name_pattern.search(entity)
+                entity_name = n.group(1) if n else "unknown"
 
-            # Fallback: use class name
-            if not type_match:
-                c = class_pattern.match(entity_str.strip())
-                if c:
-                    type_match = c.group(1)
+                parsed = cls.parse_entity_to_dict(entity)
+                # Format the parsed values
+                formatted = {}
+                for k, v in parsed.items():
+                    if k not in excluded:
+                        formatted[k] = cls.format_value(k, v)
 
-            if type_match:
-                if type_match not in entity_groups:
-                    entity_groups[type_match] = []
-                entity_groups[type_match].append(entity_str)
+                if entity_name not in entity_groups:
+                    entity_groups[entity_name] = []
+                entity_groups[entity_name].append(formatted)
 
         # Format each entity group using nested trie structure
         group_strs = []
         for entity_type, group in sorted(entity_groups.items()):
             count = len(group)
 
-            # Parse all entities in this group
-            parsed_entities = [cls.parse_entity_to_dict(e) for e in group]
-
-            # Build nested trie structure
-            trie = cls.build_nested_trie(parsed_entities, excluded_keys=excluded)
+            # Build nested trie structure (group is already list of formatted dicts)
+            trie = cls.build_nested_trie(
+                group, excluded_keys=set()
+            )  # Already excluded above
 
             # Format the header
             lines = [f"- {entity_type}: {count}"]

@@ -42,7 +42,7 @@ class Observation:
     """Complete observation of the game state"""
 
     raw_text: str
-    entities: List[str]
+    entities: List[Dict[str, Any]]  # Entity dicts from Pydantic __dict__
     inventory: Inventory
     research: ResearchState
     game_info: GameInfo

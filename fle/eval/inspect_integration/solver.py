@@ -11,6 +11,7 @@ import time
 import traceback
 from typing import List, Optional, Tuple
 
+from inspect_ai.scorer import score
 from pydantic import Field
 from inspect_ai.log import transcript
 from inspect_ai.solver import solver
@@ -22,6 +23,7 @@ from inspect_ai.model import (
     get_model,
     ContentImage,
     ContentText,
+    CachePolicy,
 )
 from inspect_ai.util import StoreModel, store_as
 
@@ -37,6 +39,7 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
 from fle.eval.inspect_integration.simple_server_pool import get_simple_server_pool
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
+from fle.env.tools.agent.sleep.client import Sleep
 
 
 import importlib.resources
@@ -135,6 +138,24 @@ class TrajectoryData(StoreModel):
     scores: List[float] = Field(default_factory=list)
     steps: List[dict] = Field(default_factory=list)  # Using dict for step data
     error: str = Field(default="")
+    ticks: List[int] = Field(default_factory=list)  # Game ticks at each step
+
+    # Latency tracking fields
+    inference_latencies: List[float] = Field(
+        default_factory=list
+    )  # Time for model generation (seconds)
+    env_execution_latencies: List[float] = Field(
+        default_factory=list
+    )  # Time for gym_env.step() (seconds)
+    policy_execution_latencies: List[float] = Field(
+        default_factory=list
+    )  # Time for Python code execution (seconds)
+    sleep_durations: List[float] = Field(
+        default_factory=list
+    )  # Accumulated sleep time per step (seconds)
+    total_step_latencies: List[float] = Field(
+        default_factory=list
+    )  # Total wall-clock time per step (seconds)
 
 
 @solver
@@ -251,6 +272,7 @@ Now begin working toward this objective step by step."""
             # Controlled trajectory execution - WE control the 64 steps
             production_scores = []
             step_results = []
+            game_ticks = []  # Track game ticks at each step
 
             for step in range(trajectory_length):
                 step_start = time.time()
@@ -267,7 +289,7 @@ Now begin working toward this objective step by step."""
 
                     # Create step message with current game state
                     current_score = production_scores[-1] if production_scores else 0
-                    step_content = f"""## Step {step + 1}/{trajectory_length} - Game State Analysis
+                    step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Current production score: {current_score:.1f}/{quota}
 Progress: {(step / trajectory_length) * 100:.1f}% complete
@@ -350,6 +372,14 @@ Analyze the current state and write a Python program using the FLE API to progre
                     production_score = obs["score"] if obs["score"] else 0
                     production_scores.append(production_score)
 
+                    # Record game ticks
+                    try:
+                        current_ticks = gym_env.instance.get_elapsed_ticks()
+                        game_ticks.append(current_ticks)
+                    except Exception as tick_err:
+                        logger.debug(f"Could not get game ticks: {tick_err}")
+                        game_ticks.append(0)
+
                     if not program_output:
                         if not program.code:
                             program_output = (
@@ -372,8 +402,8 @@ Analyze the current state and write a Python program using the FLE API to progre
 - Production score: {production_score:.1f} (was {current_score:.1f})
 - Score change: {production_score - current_score:+.1f}
 
-**Flows**
-{flow}
+**Flows:**
+{TreeObservationFormatter.format_flows_compact(flow)}
 
 Continue to step {step + 2}."""
                     logger.debug(str(obs))
@@ -459,6 +489,7 @@ Continue to step {step + 2}."""
                     trajectory_data.total_steps = step + 1
                     trajectory_data.steps = step_results
                     trajectory_data.scores = production_scores
+                    trajectory_data.ticks = game_ticks
 
                     # Apply intermediate scoring for real-time metrics tracking
                     try:
@@ -511,6 +542,7 @@ Continue to step {step + 2}."""
             trajectory_data.total_steps = len(step_results)
             trajectory_data.steps = step_results
             trajectory_data.scores = production_scores
+            trajectory_data.ticks = game_ticks
 
             # Set final model output with summary
             state.output = ModelOutput(
@@ -599,14 +631,14 @@ def factorio_unbounded_solver():
             # Get server allocation
             pool = await get_simple_server_pool()
             run_idx = await pool.get_run_idx()
-            logger.info(f"📡 Allocated server factorio_{run_idx}")
+            logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment - always use open_play for unbounded tasks
             # open_play uses DefaultTask which has no throughput requirements
             gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
             gym_env.reset()
 
-            logger.info("🎮 Connected to Factorio server")
+            logger.info("Connected to Factorio server")
 
             # Generate system prompt
             generator = SystemPromptGenerator(
@@ -670,11 +702,30 @@ Now begin building your factory step by step."""
             # Trajectory execution
             production_scores = []
             step_results = []
+            game_ticks = []  # Track game ticks at each step
+            game_states = []
+
+            # Latency tracking lists
+            inference_latencies = []
+            env_execution_latencies = []
+            policy_execution_latencies = []
+            sleep_durations = []
+            total_step_latencies = []
 
             for step in range(trajectory_length):
                 step_start = time.time()
 
+                # Reset sleep duration tracking for this step
+                Sleep.reset_step_sleep_duration()
+
                 try:
+                    try:
+                        # Clear enemies before each step to prevent interference
+                        gym_env.clear_enemies()
+                    except Exception as ee:
+                        logger.warning(f"Environment error: Clearing enemies: {ee}")
+                        raise Exception(f"Clearing enemies: {ee}") from ee
+
                     # Get current observation from Factorio
                     observation: Observation = gym_env.get_observation()
                     # Don't include flows in pre-step observation since they're cumulative totals
@@ -686,7 +737,7 @@ Now begin building your factory step by step."""
 
                     # Create step message with current game state
                     current_score = production_scores[-1] if production_scores else 0
-                    step_content = f"""## Step {step + 1}/{trajectory_length} - Game State Analysis
+                    step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Current production score: {current_score:.1f} (maximize this!)
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
@@ -702,15 +753,23 @@ Analyze the current state and write a Python program using the FLE API to expand
 
                     # Generate response using Inspect's model
                     generation_config = {
-                        "max_tokens": 4096,
-                        "transforms": ["middle-out"],
+                        # "max_tokens": 4096,
+                        "reasoning_tokens": 1024,
+                        "cache": CachePolicy(per_epoch=False),
                         # "reasoning_effort": "minimal",
                     }
+                    _model = get_model()
+                    if "openrouter" in _model.name:
+                        generation_config["transforms"] = ["middle-out"]
 
-                    state.output = await get_model().generate(
+                    # Track inference latency
+                    inference_start = time.time()
+                    state.output = await _model.generate(
                         input=state.messages,
                         config=generation_config,
                     )
+                    inference_time = int(time.time() - inference_start)
+                    inference_latencies.append(inference_time)
 
                     # Log reasoning usage if available
                     if hasattr(state.output, "usage") and hasattr(
@@ -736,21 +795,45 @@ Analyze the current state and write a Python program using the FLE API to expand
                     )
 
                     # Execute action in Factorio and capture results
-                    action = Action(agent_idx=0, code=program.code)
+                    action = Action(
+                        agent_idx=0, code=program.code
+                    )  # , game_state=game_states[-1] if game_states else None
                     try:
+                        # Track environment execution latency
+                        env_start = time.time()
                         obs, reward, terminated, truncated, info = gym_env.step(action)
-                        # Clear enemies after each step to prevent interference
-                        gym_env.clear_enemies()
+                        env_time = time.time() - env_start
+                        env_execution_latencies.append(env_time)
+
+                        game_states.append(info["output_game_state"])
+
+                        # Get policy execution time from info (time for Python code execution)
+                        policy_time = info.get("policy_execution_time", 0.0)
+                        if policy_time:
+                            logger.warning(policy_time)
+                            policy_execution_latencies.append(float(policy_time))
+
+                        # Get accumulated sleep duration for this step
+                        step_sleep_duration = Sleep.get_step_sleep_duration()
+                        sleep_durations.append(step_sleep_duration)
                     except Exception as ee:
-                        logger.warning(f"Environment error: {ee}")
+                        logger.warning(f"Environment error: {ee} - {type(gym_env)}")
                         state.messages.append(
                             ChatMessageUser(content=f"Environment error: {ee}")
                         )
+                        if not game_states:
+                            raise Exception(f"Environment error: {ee}") from ee
+
+                        gym_env.reset({"game_state": game_states.pop()})
+                        logger.warning(
+                            f"Resetting environment after error to previous game state: {ee}"
+                        )
                         continue
 
-                    # Log execution details
+                    # Log execution details with latency info
                     logger.info(
-                        f"🎮 Step {step + 1}: reward={reward}, terminated={terminated}"
+                        f"🎮 Step {step + 1}: reward={reward}, terminated={terminated}, "
+                        f"inference={inference_time}s, env={env_time}s, policy={policy_time}s, sleep={step_sleep_duration}s"
                     )
 
                     # Get program output
@@ -768,6 +851,14 @@ Analyze the current state and write a Python program using the FLE API to expand
                     production_score = info.get("production_score", 0)
                     production_scores.append(production_score)
 
+                    # Record game ticks
+                    try:
+                        current_ticks = gym_env.instance.get_elapsed_ticks()
+                        game_ticks.append(current_ticks)
+                    except Exception as tick_err:
+                        logger.debug(f"Could not get game ticks: {tick_err}")
+                        game_ticks.append(0)
+
                     if not program_output:
                         if not program.code:
                             program_output = (
@@ -777,7 +868,7 @@ Analyze the current state and write a Python program using the FLE API to expand
                             program_output = "None"
 
                     # Create comprehensive feedback message
-                    feedback_content = f"""## Step {step + 1} Execution Results
+                    feedback_content = f"""
 
 **Program Output (STDOUT/STDERR):**
 ```
@@ -791,23 +882,26 @@ Analyze the current state and write a Python program using the FLE API to expand
 - Total production score: {production_score:.1f} (was {current_score:.1f})
 - Score increase: {production_score - current_score:+.1f}
 
-**Flows**
-{flow}
+**Flows:**
+{TreeObservationFormatter.format_flows_compact(flow)}
 
 Continue to step {step + 2}."""
 
                     logger.debug(str(obs))
 
-                    if vision_enabled:
-                        # Use full sprite renderer with viewport info
-                        updated_image_data_url, viewport_info = render_vision_image(
-                            gym_env
-                        )
-                        if viewport_info:
-                            feedback_content += f"\n\n{viewport_info}"
-                    else:
-                        # Fall back to simple render from observation
-                        updated_image_data_url = obs.get("map_image")
+                    try:
+                        if vision_enabled:
+                            # Use full sprite renderer with viewport info
+                            updated_image_data_url, viewport_info = render_vision_image(
+                                gym_env
+                            )
+                            if viewport_info:
+                                feedback_content += f"\n\n{viewport_info}"
+                        else:
+                            # Fall back to simple render from observation
+                            updated_image_data_url = obs.get("map_image")
+                    except Exception as e:
+                        raise Exception(f"Vision rendering error: {e}") from e
 
                     # Create feedback message with both image and text
                     if updated_image_data_url:
@@ -817,10 +911,8 @@ Continue to step {step + 2}."""
                                 ContentText(text=feedback_content),
                             ]
                         )
-                        logger.info(f"🖼️  Step {step + 1}:")
                     else:
                         feedback_message = ChatMessageUser(content=feedback_content)
-                        logger.info(f"📝 Step {step + 1}:")
 
                     state.messages.append(feedback_message)
 
@@ -831,18 +923,19 @@ Continue to step {step + 2}."""
                             and state.messages[0].role == "system"
                         ):
                             system_message = state.messages[0]
-                            recent_messages = state.messages[-24:]
+                            recent_messages = state.messages[-16:]
                             state.messages = [system_message] + recent_messages
                             logger.info(
                                 f"🧹 Trimmed conversation to {len(state.messages)} messages"
                             )
                         else:
-                            state.messages = state.messages[-24:]
+                            state.messages = state.messages[-16:]
                             logger.warning(
                                 f"⚠️ No valid system message found - kept last {len(state.messages)} messages only"
                             )
 
                     step_time = time.time() - step_start
+                    total_step_latencies.append(step_time)
 
                     step_result = {
                         "step": step + 1,
@@ -855,6 +948,11 @@ Continue to step {step + 2}."""
                         "program_output": program_output[:200] + "..."
                         if len(str(program_output)) > 200
                         else str(program_output),
+                        # Include latency breakdown in step result
+                        "inference_latency": inference_time,
+                        "env_execution_latency": env_time,
+                        "policy_execution_latency": policy_time,
+                        "sleep_duration": step_sleep_duration,
                     }
                     step_results.append(step_result)
 
@@ -869,23 +967,35 @@ Continue to step {step + 2}."""
                     trajectory_data.total_steps = step + 1
                     trajectory_data.steps = step_results
                     trajectory_data.scores = production_scores
+                    trajectory_data.ticks = game_ticks
+
+                    # Store latency data
+                    trajectory_data.inference_latencies = inference_latencies
+                    trajectory_data.env_execution_latencies = env_execution_latencies
+                    trajectory_data.policy_execution_latencies = (
+                        policy_execution_latencies
+                    )
+                    trajectory_data.sleep_durations = sleep_durations
+                    trajectory_data.total_step_latencies = total_step_latencies
 
                     # Apply intermediate scoring for real-time metrics tracking
-                    try:
-                        from fle.eval.inspect_integration.scorers import (
-                            apply_unbounded_intermediate_scoring,
-                        )
-
-                        await apply_unbounded_intermediate_scoring(
-                            state=state,
-                            step_num=step + 1,
-                            production_score=production_score,
-                            scores_history=production_scores,
-                        )
-                    except Exception as scoring_error:
-                        logger.warning(
-                            f"Intermediate scoring error at step {step + 1}: {scoring_error}"
-                        )
+                    # try:
+                    #     from fle.eval.inspect_integration.scorers import (
+                    #         apply_unbounded_intermediate_scoring,
+                    #     )
+                    #
+                    #     await apply_unbounded_intermediate_scoring(
+                    #         state=state,
+                    #         step_num=step + 1,
+                    #         production_score=production_score,
+                    #         scores_history=production_scores,
+                    #     )
+                    # except Exception as scoring_error:
+                    #     logger.warning(
+                    #         f"Intermediate scoring error at step {step + 1}: {scoring_error}"
+                    #     )
+                    # Apply scoring
+                    await score(state)
 
                     # For unbounded tasks, we don't terminate early based on quota
                     # Only terminate if the environment says so (e.g., crash, error)
@@ -905,6 +1015,7 @@ Continue to step {step + 2}."""
                         content=f"❌ Step {step + 1} error: {step_error}"
                     )
                     state.messages.append(feedback_message)
+                    state.e
                     # Continue with next step rather than failing completely
 
             # Final results
@@ -917,6 +1028,38 @@ Continue to step {step + 2}."""
             trajectory_data.total_steps = len(step_results)
             trajectory_data.steps = step_results
             trajectory_data.scores = production_scores
+            trajectory_data.ticks = game_ticks
+
+            # Store final latency data
+            trajectory_data.inference_latencies = inference_latencies
+            trajectory_data.env_execution_latencies = env_execution_latencies
+            trajectory_data.policy_execution_latencies = policy_execution_latencies
+            trajectory_data.sleep_durations = sleep_durations
+            trajectory_data.total_step_latencies = total_step_latencies
+
+            # Log latency summary
+            if total_step_latencies:
+                avg_total = sum(total_step_latencies) / len(total_step_latencies)
+                avg_inference = (
+                    sum(inference_latencies) / len(inference_latencies)
+                    if inference_latencies
+                    else 0
+                )
+                avg_env = (
+                    sum(env_execution_latencies) / len(env_execution_latencies)
+                    if env_execution_latencies
+                    else 0
+                )
+                avg_policy = (
+                    sum(policy_execution_latencies) / len(policy_execution_latencies)
+                    if policy_execution_latencies
+                    else 0
+                )
+                total_sleep = sum(sleep_durations)
+                logger.info(
+                    f"⏱️ Latency summary: avg_total={avg_total:.2f}s, avg_inference={avg_inference:.2f}s, "
+                    f"avg_env={avg_env:.2f}s, avg_policy={avg_policy:.2f}s, total_sleep={total_sleep:.2f}s"
+                )
 
             # Set final model output with summary
             state.output = ModelOutput(

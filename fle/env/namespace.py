@@ -1109,13 +1109,13 @@ class FactorioNamespace:
                 if isinstance(value, SerializableFunction):
                     eval_dict[key] = value.bind(self)
 
-        score, goal = self.score()
+        score, automated_score = self.score()
         result_output = parse_result_into_str(self.logging_results)
 
         # if had_error:
         # raise Exception(result_output)
 
-        return score, goal, result_output
+        return score, automated_score, result_output
 
     def get_messages(self) -> List[Dict]:
         return []

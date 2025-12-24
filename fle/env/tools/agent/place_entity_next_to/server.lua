@@ -139,7 +139,8 @@ end
 
 
 global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local ref_position = {x = ref_x, y = ref_y}
 
     local function table_contains(tbl, element)

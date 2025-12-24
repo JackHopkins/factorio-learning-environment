@@ -6,6 +6,7 @@ Contains two solvers:
 """
 
 import logging
+import math
 import os
 import time
 import traceback
@@ -36,7 +37,9 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
 
-from fle.eval.inspect_integration.simple_server_pool import get_simple_server_pool
+from fle.eval.inspect_integration.simple_server_pool import (
+    get_simple_server_pool,
+)
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
@@ -132,13 +135,30 @@ class TrajectoryData(StoreModel):
     """Store model for trajectory tracking data"""
 
     production_score: float = Field(default=0.0)
+    automated_production_score: float = Field(
+        default=0.0
+    )  # Score excluding harvested/crafted
     total_steps: int = Field(default=0)
     current_score: float = Field(default=0.0)
     final_score: float = Field(default=0.0)
+    final_automated_score: float = Field(default=0.0)  # Final automated score
     scores: List[float] = Field(default_factory=list)
+    automated_scores: List[float] = Field(
+        default_factory=list
+    )  # Automated scores per step
     steps: List[dict] = Field(default_factory=list)  # Using dict for step data
     error: str = Field(default="")
     ticks: List[int] = Field(default_factory=list)  # Game ticks at each step
+
+    # Achievement tracking - unique item types produced
+    produced_item_types: List[str] = Field(
+        default_factory=list
+    )  # List of unique item type names produced during trajectory
+
+    # Research tracking - technologies researched during trajectory
+    researched_technologies: List[str] = Field(
+        default_factory=list
+    )  # List of technology names that have been researched
 
     # Latency tracking fields
     inference_latencies: List[float] = Field(
@@ -184,10 +204,16 @@ def factorio_controlled_solver():
                 f"🎯 Target: {trajectory_length} steps using model {model_name}"
             )
 
-            # Get server allocation
+            # Get server allocation with round-robin API key assignment
             pool = await get_simple_server_pool()
-            run_idx = await pool.get_run_idx()
-            logger.info(f"📡 Allocated server factorio_{run_idx}")
+            allocation = await pool.get_server_allocation()
+            run_idx = allocation.run_idx
+            if allocation.api_key:
+                logger.info(
+                    f"📡 Allocated server factorio_{run_idx} with API key index {allocation.api_key_index}"
+                )
+            else:
+                logger.info(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
             gym_env: FactorioGymEnv = gym.make(env_id, run_idx=run_idx)
@@ -372,13 +398,24 @@ Analyze the current state and write a Python program using the FLE API to progre
                     production_score = obs["score"] if obs["score"] else 0
                     production_scores.append(production_score)
 
-                    # Record game ticks
+                    # Record game ticks and calculate cost
                     try:
                         current_ticks = gym_env.instance.get_elapsed_ticks()
+                        previous_ticks = game_ticks[-1] if game_ticks else 0
+                        ticks_cost = current_ticks - previous_ticks
                         game_ticks.append(current_ticks)
                     except Exception as tick_err:
                         logger.debug(f"Could not get game ticks: {tick_err}")
+                        current_ticks = 0
+                        ticks_cost = 0
                         game_ticks.append(0)
+
+                    # Format elapsed time from ticks (60 ticks per second)
+                    total_seconds = current_ticks // 60
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    elapsed_time_str = f"{hours}:{minutes:02d}:{seconds:02d}"
 
                     if not program_output:
                         if not program.code:
@@ -401,6 +438,9 @@ Analyze the current state and write a Python program using the FLE API to progre
 **Performance Results:**
 - Production score: {production_score:.1f} (was {current_score:.1f})
 - Score change: {production_score - current_score:+.1f}
+- Elapsed time: {elapsed_time_str}
+- Ticks: {current_ticks}
+- Ticks cost: +{ticks_cost}
 
 **Flows:**
 {TreeObservationFormatter.format_flows_compact(flow)}
@@ -616,7 +656,7 @@ def factorio_unbounded_solver():
             trajectory_length = metadata.get("trajectory_length", 5000)
             goal_description = metadata.get(
                 "goal_description",
-                "Build the biggest possible factory. Maximize automation, efficiency and scale.",
+                "Achieve the highest automatic production score rate",
             )
             # Check if vision mode is enabled
             vision_enabled = os.environ.get("FLE_VISION", "").lower() == "true"
@@ -628,10 +668,18 @@ def factorio_unbounded_solver():
                 f"🎯 Target: {trajectory_length} steps using model {model_name}"
             )
 
-            # Get server allocation
+            # Get server allocation with round-robin API key assignment
             pool = await get_simple_server_pool()
-            run_idx = await pool.get_run_idx()
-            logger.warning(f"📡 Allocated server factorio_{run_idx}")
+            allocation = await pool.get_server_allocation()
+            run_idx = allocation.run_idx
+            if allocation.api_key:
+                logger.warning(
+                    f"📡 Allocated server factorio_{run_idx} with API key index {allocation.api_key_index}"
+                )
+            else:
+                logger.warning(f"📡 Allocated server factorio_{run_idx}")
+
+            AGENT_ID = 0
 
             # Create gym environment - always use open_play for unbounded tasks
             # open_play uses DefaultTask which has no throughput requirements
@@ -644,38 +692,12 @@ def factorio_unbounded_solver():
             generator = SystemPromptGenerator(
                 str(importlib.resources.files("fle") / "env")
             )
-            base_system_prompt = generator.generate_for_agent(agent_idx=0, num_agents=1)
-
-            # Unbounded task instructions - no quota, maximize everything
-            task_instructions = f"""
-## TASK OBJECTIVE
-{goal_description}
-
-## SUCCESS CRITERIA
-- There is NO specific quota or target - your goal is to maximize total production
-- Build the largest, most productive factory possible
-- The "Production Score" measures the total economic value of everything produced
-- Higher production score = better performance
-
-## STRATEGY GUIDANCE
-- Start with basic resource extraction (iron, copper, coal)
-- Establish power generation early
-- Scale up production chains progressively
-- Automate everything - manual work doesn't scale
-- Consider efficiency: more complex items have higher value
-- Balance between expanding production and optimizing existing systems
-
-## IMPORTANT NOTES
-- You have {trajectory_length} steps - use them wisely
-- Each step should make meaningful progress
-- Think long-term: early investments in infrastructure pay off later
-- The production score is cumulative - it grows as your factory produces items
-"""
+            base_system_prompt = generator.generate_for_agent(
+                agent_idx=AGENT_ID, num_agents=1
+            )
 
             # Combine base instructions with task-specific instructions
             full_system_prompt = f"""{base_system_prompt}
-
-{task_instructions}
 
 Now begin building your factory step by step."""
 
@@ -701,9 +723,16 @@ Now begin building your factory step by step."""
 
             # Trajectory execution
             production_scores = []
+            automated_production_scores = []  # Automated production scores (excluding harvested/crafted)
             step_results = []
             game_ticks = []  # Track game ticks at each step
             game_states = []
+
+            # Achievement tracking - unique item types produced
+            produced_item_types_set: set = set()
+
+            # Research tracking - technologies researched
+            researched_technologies_set: set = set()
 
             # Latency tracking lists
             inference_latencies = []
@@ -713,6 +742,11 @@ Now begin building your factory step by step."""
             total_step_latencies = []
 
             for step in range(trajectory_length):
+                # Incrementally increase the charted area
+                gym_env.instance.rcon_client.send_command(
+                    f"/c game.players[{AGENT_ID}].surface.request_to_generate_chunks({{x=0,y=0}}, {step})"
+                )
+
                 step_start = time.time()
 
                 # Reset sleep duration tracking for this step
@@ -739,7 +773,6 @@ Now begin building your factory step by step."""
                     current_score = production_scores[-1] if production_scores else 0
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
-Current production score: {current_score:.1f} (maximize this!)
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
@@ -754,7 +787,7 @@ Analyze the current state and write a Python program using the FLE API to expand
                     # Generate response using Inspect's model
                     generation_config = {
                         # "max_tokens": 4096,
-                        "reasoning_tokens": 1024,
+                        "reasoning_tokens": 1024 * 4,
                         "cache": CachePolicy(per_epoch=False),
                         # "reasoning_effort": "minimal",
                     }
@@ -810,7 +843,10 @@ Analyze the current state and write a Python program using the FLE API to expand
                         # Get policy execution time from info (time for Python code execution)
                         policy_time = info.get("policy_execution_time", 0.0)
                         if policy_time:
-                            logger.warning(policy_time)
+                            logger.warning(
+                                str(math.ceil(policy_time * 10) / 10)
+                                + " seconds to execute policy"
+                            )
                             policy_execution_latencies.append(float(policy_time))
 
                         # Get accumulated sleep duration for this step
@@ -851,13 +887,58 @@ Analyze the current state and write a Python program using the FLE API to expand
                     production_score = info.get("production_score", 0)
                     production_scores.append(production_score)
 
-                    # Record game ticks
+                    # Track automated production score (excludes harvested/crafted items)
+                    automated_score = info.get("automated_production_score", 0)
+                    automated_production_scores.append(automated_score)
+
+                    # Extract unique item types from flows
+                    # flow is obs["flows"] dict with harvested/output as lists of dicts
+                    # Format: [{"type": "coal", "amount": 50.0}, ...]
+                    if "harvested" in flow:
+                        for item in flow["harvested"]:
+                            if isinstance(item, dict) and "type" in item:
+                                produced_item_types_set.add(item["type"])
+                    if "output" in flow:
+                        for item in flow["output"]:
+                            if isinstance(item, dict) and "type" in item:
+                                produced_item_types_set.add(item["type"])
+                    if "crafted" in flow:
+                        for craft in flow["crafted"]:
+                            if isinstance(craft, dict) and "outputs" in craft:
+                                produced_item_types_set.update(craft["outputs"].keys())
+
+                    # Extract researched technologies from observation
+                    # observation.research.technologies is a dict of TechnologyState objects
+                    try:
+                        for (
+                            tech_name,
+                            tech_state,
+                        ) in observation.research.technologies.items():
+                            if tech_state.researched:
+                                researched_technologies_set.add(tech_name)
+                    except Exception as research_err:
+                        logger.debug(
+                            f"Could not extract research state: {research_err}"
+                        )
+
+                    # Record game ticks and calculate cost
                     try:
                         current_ticks = gym_env.instance.get_elapsed_ticks()
+                        previous_ticks = game_ticks[-1] if game_ticks else 0
+                        ticks_cost = current_ticks - previous_ticks
                         game_ticks.append(current_ticks)
                     except Exception as tick_err:
                         logger.debug(f"Could not get game ticks: {tick_err}")
+                        current_ticks = 0
+                        ticks_cost = 0
                         game_ticks.append(0)
+
+                    # Format elapsed time from ticks (60 ticks per second)
+                    total_seconds = current_ticks // 60
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    elapsed_time_str = f"{hours}:{minutes:02d}:{seconds:02d}"
 
                     if not program_output:
                         if not program.code:
@@ -875,12 +956,12 @@ Analyze the current state and write a Python program using the FLE API to expand
 {program_output}
 ```
 
-**Execution Info:**
-- Reward this step: {reward}
-
 **Performance Results:**
 - Total production score: {production_score:.1f} (was {current_score:.1f})
 - Score increase: {production_score - current_score:+.1f}
+- Elapsed time: {elapsed_time_str}
+- Ticks: {current_ticks}
+- Ticks cost: +{ticks_cost}
 
 **Flows:**
 {TreeObservationFormatter.format_flows_compact(flow)}
@@ -963,11 +1044,17 @@ Continue to step {step + 2}."""
                     # Store intermediate progress using typed store
                     trajectory_data = store_as(TrajectoryData)
                     trajectory_data.production_score = production_score
+                    trajectory_data.automated_production_score = automated_score
                     trajectory_data.current_score = production_score
                     trajectory_data.total_steps = step + 1
                     trajectory_data.steps = step_results
                     trajectory_data.scores = production_scores
+                    trajectory_data.automated_scores = automated_production_scores
                     trajectory_data.ticks = game_ticks
+                    trajectory_data.produced_item_types = list(produced_item_types_set)
+                    trajectory_data.researched_technologies = list(
+                        researched_technologies_set
+                    )
 
                     # Store latency data
                     trajectory_data.inference_latencies = inference_latencies
@@ -978,22 +1065,6 @@ Continue to step {step + 2}."""
                     trajectory_data.sleep_durations = sleep_durations
                     trajectory_data.total_step_latencies = total_step_latencies
 
-                    # Apply intermediate scoring for real-time metrics tracking
-                    # try:
-                    #     from fle.eval.inspect_integration.scorers import (
-                    #         apply_unbounded_intermediate_scoring,
-                    #     )
-                    #
-                    #     await apply_unbounded_intermediate_scoring(
-                    #         state=state,
-                    #         step_num=step + 1,
-                    #         production_score=production_score,
-                    #         scores_history=production_scores,
-                    #     )
-                    # except Exception as scoring_error:
-                    #     logger.warning(
-                    #         f"Intermediate scoring error at step {step + 1}: {scoring_error}"
-                    #     )
                     # Apply scoring
                     await score(state)
 
@@ -1015,20 +1086,27 @@ Continue to step {step + 2}."""
                         content=f"❌ Step {step + 1} error: {step_error}"
                     )
                     state.messages.append(feedback_message)
-                    state.e
                     # Continue with next step rather than failing completely
 
             # Final results
             final_score = production_scores[-1] if production_scores else 0.0
+            final_automated_score = (
+                automated_production_scores[-1] if automated_production_scores else 0.0
+            )
 
             # Store final results using typed store
             trajectory_data = store_as(TrajectoryData)
             trajectory_data.production_score = final_score
+            trajectory_data.automated_production_score = final_automated_score
             trajectory_data.final_score = final_score
+            trajectory_data.final_automated_score = final_automated_score
             trajectory_data.total_steps = len(step_results)
             trajectory_data.steps = step_results
             trajectory_data.scores = production_scores
+            trajectory_data.automated_scores = automated_production_scores
             trajectory_data.ticks = game_ticks
+            trajectory_data.produced_item_types = list(produced_item_types_set)
+            trajectory_data.researched_technologies = list(researched_technologies_set)
 
             # Store final latency data
             trajectory_data.inference_latencies = inference_latencies

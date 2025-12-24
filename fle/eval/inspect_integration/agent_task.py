@@ -5,8 +5,8 @@ from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 from typing import List
 
-from fle.eval.inspect_integration.controlled_solver import factorio_controlled_solver
-from fle.eval.inspect_integration.simple_scorer import simple_production_score
+from fle.eval.inspect_integration.solver import factorio_controlled_solver
+from fle.eval.inspect_integration.scorers import simple_production_score
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 
 

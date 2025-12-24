@@ -13,21 +13,13 @@ class Reward(Tool):
         if self.game_state.instance.initial_score:
             response["player"] -= self.game_state.instance.initial_score
 
-        if "goal" in response:
-            goal = response["goal"]
-        else:
-            goal = ""
-
         if isinstance(response, str):
             raise Exception("Could not get player score", response)
 
         if "player" not in response:
             response["player"] = 0
 
-        return response["player"], goal
+        # Get automated production score (excludes harvested and manually crafted items)
+        automated_score = response.get("automated", 0)
 
-
-# if __name__ == "__main__":
-#     score = Reward("connection", 0)
-#     score.load()
-#     pass
+        return response["player"], automated_score

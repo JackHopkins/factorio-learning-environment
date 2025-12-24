@@ -347,6 +347,11 @@ class BasicObservationFormatter:
 
         flow_str = "### Production Flows (for *entire* previous step)\n"
 
+        # Build harvested lookup to subtract from production
+        harvested_by_type = {}
+        for item in flows.get("harvested", []):
+            harvested_by_type[item["type"]] = item.get("amount", 0)
+
         # Format input flows
         if flows.get("input"):
             flow_str += "#### Inputs\n"
@@ -354,14 +359,17 @@ class BasicObservationFormatter:
                 if item["rate"] > 0:
                     flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
 
-        # Format output flows
+        # Format output flows (subtract harvested since production includes both automated and harvested)
         if flows.get("output"):
             if flows.get("input"):
                 flow_str += "\n"
             flow_str += "#### Outputs\n"
             for item in flows["output"]:
-                if item["rate"] > 0:
-                    flow_str += f"- {item['type']}: {item['rate']:.2f}\n"
+                # Subtract harvested amount from production
+                harvested_amount = harvested_by_type.get(item["type"], 0)
+                adjusted_rate = item["rate"] - harvested_amount
+                if adjusted_rate > 0:
+                    flow_str += f"- {item['type']}: {adjusted_rate:.2f}\n"
 
         # Format crafted items
         if flows.get("crafted"):
@@ -412,6 +420,83 @@ class BasicObservationFormatter:
                 flow_str += f"- {item['type']}: {item['value']:.2f}\n"
 
         return flow_str
+
+    @staticmethod
+    def format_flows_compact(flows: Dict[str, Any]) -> str:
+        """Format production flows into compact sub-bullets.
+
+        Args:
+            flows: Dict with keys 'input', 'output', 'crafted', 'harvested'
+                  - input: list of {"type": str, "rate": float} (consumed items)
+                  - output: list of {"type": str, "rate": float} (produced items)
+                  - crafted: list of crafted item dicts
+                  - harvested: list of {"type": str, "amount": float}
+
+        Returns:
+            Formatted string with sub-bullets for each flow type
+        """
+        lines = []
+
+        # Build harvested lookup to subtract from production
+        harvested_by_type = {}
+        for item in flows.get("harvested", []):
+            harvested_by_type[item["type"]] = item.get("amount", 0)
+
+        # Consumed (input)
+        consumed = flows.get("input", [])
+        if consumed:
+            items = ", ".join(
+                f"{item['type']}: {item['rate']:.1f}"
+                for item in consumed
+                if item.get("rate", 0) > 0
+            )
+            lines.append(f"  - Consumed: {items}" if items else "  - Consumed: none")
+        else:
+            lines.append("  - Consumed: none")
+
+        # Produced (output) - subtract harvested since production includes both automated and harvested
+        produced = flows.get("output", [])
+        if produced:
+            adjusted_items = []
+            for item in produced:
+                harvested_amount = harvested_by_type.get(item["type"], 0)
+                adjusted_rate = item.get("rate", 0) - harvested_amount
+                if adjusted_rate > 0:
+                    adjusted_items.append(f"{item['type']}: {adjusted_rate:.1f}")
+            items = ", ".join(adjusted_items)
+            lines.append(f"  - Produced: {items}" if items else "  - Produced: none")
+        else:
+            lines.append("  - Produced: none")
+
+        # Crafted
+        crafted = flows.get("crafted", [])
+        if crafted:
+            crafted_items = []
+            for item in crafted:
+                count = item.get("crafted_count", 1)
+                outputs = item.get("outputs", {})
+                for name, amount in outputs.items():
+                    crafted_items.append(f"{name}: {amount} (x{count})")
+            if crafted_items:
+                lines.append(f"  - Crafted: {', '.join(crafted_items)}")
+            else:
+                lines.append("  - Crafted: none")
+        else:
+            lines.append("  - Crafted: none")
+
+        # Harvested
+        harvested = flows.get("harvested", [])
+        if harvested:
+            items = ", ".join(
+                f"{item['type']}: {item['amount']:.1f}"
+                for item in harvested
+                if item.get("amount", 0) > 0
+            )
+            lines.append(f"  - Harvested: {items}" if items else "  - Harvested: none")
+        else:
+            lines.append("  - Harvested: none")
+
+        return "\n".join(lines)
 
     @staticmethod
     def format_research(research: Dict[str, Any]) -> str:
@@ -469,8 +554,12 @@ class BasicObservationFormatter:
         return research_str
 
     @staticmethod
-    def format_game_info(game_info: Dict[str, Any]) -> str:
-        """Format game timing information"""
+    def format_game_info(
+        game_info: Dict[str, Any],
+        score: float = 0.0,
+        automated_score: float = 0.0,
+    ) -> str:
+        """Format game timing and score information"""
         if not game_info:
             return "### Game Info\nNo game information available"
 
@@ -487,6 +576,10 @@ class BasicObservationFormatter:
         # Add tick information
         if "tick" in game_info:
             info_str += f"- Ticks: {game_info['tick']}\n"
+
+        # Add score information
+        info_str += f"- Production Score: {score:.1f}\n"
+        info_str += f"- Automated Score: {automated_score:.1f}\n"
 
         return info_str
 
@@ -623,7 +716,11 @@ class BasicObservationFormatter:
 
         # Add game info
         if self.include_game_info:
-            game_info_str = self.format_game_info(obs_dict.get("game_info", {}))
+            game_info_str = self.format_game_info(
+                obs_dict.get("game_info", {}),
+                score=obs_dict.get("score", 0.0),
+                automated_score=obs_dict.get("automated_score", 0.0),
+            )
             formatted_parts.append(game_info_str)
 
         # Add optional components if they exist and are enabled
@@ -679,7 +776,11 @@ class BasicObservationFormatter:
             )
             if self.include_functions
             else "",
-            game_info_str=self.format_game_info(obs_dict.get("game_info", {}))
+            game_info_str=self.format_game_info(
+                obs_dict.get("game_info", {}),
+                score=obs_dict.get("score", 0.0),
+                automated_score=obs_dict.get("automated_score", 0.0),
+            )
             if self.include_game_info
             else "",
             raw_text_str=self.format_raw_text(obs_dict.get("raw_text", ""))
@@ -1236,8 +1337,8 @@ class TreeObservationFormatter(BasicObservationFormatter):
         "game",
         "id",
         # "tile_dimensions",
-        # "energy",
-        # "warnings",
+        "energy",
+        "warnings",
         # "electrical_id",
     }
 

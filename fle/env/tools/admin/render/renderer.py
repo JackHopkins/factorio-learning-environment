@@ -144,11 +144,15 @@ class Renderer:
         # Make dimensions square by using the maximum dimension
         max_dimension = max(content_width, content_height)
 
+        # Add minimum padding of 1 tile on each side to prevent clipping
+        padding = 1.0
+        max_dimension = max_dimension + (padding * 2)
+
         # Calculate how much to expand on each direction
         width_diff = max_dimension - content_width
         height_diff = max_dimension - content_height
 
-        # Expand bounds to create a square area
+        # Expand bounds to create a square area with padding
         adjusted_min_x = bounds["min_width"] - width_diff / 2
         adjusted_max_x = bounds["max_width"] + width_diff / 2
         adjusted_min_y = bounds["min_height"] - height_diff / 2
@@ -613,10 +617,17 @@ class Renderer:
             for e in self.entities
             if is_rock_entity(e.name)
         ]
+        # Separate character entities to render them on top of other entities
+        character_entities = [e for e in self.entities if e.name == "character"]
+        # Separate inserter entities to render them on top of belts
+        inserter_entities = [e for e in self.entities if e.name.endswith("inserter")]
         player_entities = [
             e
             for e in self.entities
-            if not is_tree_entity(e.name) and not is_rock_entity(e.name)
+            if not is_tree_entity(e.name)
+            and not is_rock_entity(e.name)
+            and e.name != "character"
+            and not e.name.endswith("inserter")
         ]
 
         # Expand consolidate underground belts into pairs
@@ -629,10 +640,11 @@ class Renderer:
         profiler.increment_counter("tree_entities", len(tree_entities))
         profiler.increment_counter("rock_entities", len(rock_entities))
         profiler.increment_counter("player_entities", len(player_entities))
+        profiler.increment_counter("inserter_entities", len(inserter_entities))
         profiler.increment_counter("resources", len(self.resources))
         profiler.increment_counter("water_tiles", len(self.water_tiles))
 
-        # Render in order: water -> resources -> tree shadows -> trees -> entity shadows -> rails -> entities
+        # Render in order: water -> resources -> tree shadows -> trees -> entity shadows -> rails -> entities -> inserters -> character
         self._render_water_tiles(img, size, scaling, image_resolver)
         self._render_resources(img, size, scaling, image_resolver)
         self._render_tree_shadows(
@@ -644,6 +656,14 @@ class Renderer:
         self._render_entity_shadows(
             img, player_entities, size, scaling, grid_view, image_resolver
         )
+        # Render inserter shadows
+        self._render_entity_shadows(
+            img, inserter_entities, size, scaling, grid_view, image_resolver
+        )
+        # Render character shadows before other shadows so they appear underneath
+        self._render_entity_shadows(
+            img, character_entities, size, scaling, grid_view, image_resolver
+        )
         self._render_rails(img, player_entities, size, scaling, image_resolver)
         self._render_entities(
             img, player_entities, size, scaling, grid_view, image_resolver
@@ -654,8 +674,22 @@ class Renderer:
             img, player_entities, size, scaling, grid_view, image_resolver
         )
 
+        # Render inserters on top of belts so their arms are visible
+        self._render_entities(
+            img, inserter_entities, size, scaling, grid_view, image_resolver
+        )
+
+        # Render character on top of all other entities (belts, splitters, etc.)
+        self._render_entities(
+            img, character_entities, size, scaling, grid_view, image_resolver
+        )
+
         # This should be last so alerts appear on top of everything
         self._render_alert_overlays(img, player_entities, size, scaling, image_resolver)
+        # Also render alerts for inserters
+        self._render_alert_overlays(
+            img, inserter_entities, size, scaling, image_resolver
+        )
         return img
 
     def _disintegrate_underground_belts(self, player_entities):

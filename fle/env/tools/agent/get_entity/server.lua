@@ -1,5 +1,6 @@
 global.actions.get_entity = function(player_index, entity, x, y)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local position = {x=x, y=y}
 
     if game.entity_prototypes[entity] == nil then

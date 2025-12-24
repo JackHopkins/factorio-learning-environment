@@ -1,3 +1,4 @@
+import json
 import time
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
@@ -146,7 +147,21 @@ class Controller:
             wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
             lua_response = self.connection.rcon_client.send_command(wrapped)
 
-            parsed, elapsed = _lua2python(invocation, lua_response, start=start)
+            try:
+                possible_json = lua_response.split('["b"] = ')[
+                    1
+                ]  # get a possible json blob
+                possible_json = possible_json.replace(
+                    ",}", ""
+                )  # hacky lua table to json
+                parsed1 = json.loads(possible_json)
+                if isinstance(parsed1, dict):
+                    parsed = {"a": True, "b": parsed1}
+                else:
+                    parsed, _ = _lua2python(invocation, lua_response, start=start)
+            except Exception:
+                parsed, _ = _lua2python(invocation, lua_response, start=start)
+
             if parsed is None:
                 return {}, lua_response  # elapsed
 

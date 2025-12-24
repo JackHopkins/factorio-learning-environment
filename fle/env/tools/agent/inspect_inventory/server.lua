@@ -1,6 +1,7 @@
 global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local surface = player.surface
     local is_fast = global.fast
     local automatic_close = True

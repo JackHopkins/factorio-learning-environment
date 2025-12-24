@@ -13,19 +13,69 @@ from fle.eval.inspect_integration.solver import (
     factorio_controlled_solver,
     factorio_unbounded_solver,
 )
+from fle.eval.inspect_integration.solver_variants import (
+    factorio_no_image_history_solver,
+    factorio_aggressive_trim_solver,
+    factorio_text_only_solver,
+    factorio_minimal_context_solver,
+    factorio_hud_solver,
+    factorio_hud_text_only_solver,
+    factorio_fat_hud_solver,
+    factorio_balanced_solver,
+    factorio_reasoning_only_solver,
+    factorio_pruned_gamestate_solver,
+)
 from fle.eval.inspect_integration.scorers import (
     comprehensive_factorio_scorer,
     throughput_proportion_scorer,
     production_score_tracker,
     step_change_tracker,
-    unbounded_production_scorer,
-    unbounded_growth_scorer,
+    production_score,
+    technologies,
+    achievements,
+    automated_production_score,
 )
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.eval.tasks.task_definitions.unbounded.unbounded_tasks import (
     UNBOUNDED_PRODUCTION_TASKS,
     OPEN_PLAY_PRODUCTION,
 )
+
+
+# Solver mapping for dynamic selection via FLE_SOLVER env var
+SOLVER_MAP = {
+    "unbounded": factorio_unbounded_solver,
+    "controlled": factorio_controlled_solver,
+    "no_image_history": factorio_no_image_history_solver,
+    "aggressive_trim": factorio_aggressive_trim_solver,
+    "text_only": factorio_text_only_solver,
+    "minimal_context": factorio_minimal_context_solver,
+    "hud": factorio_hud_solver,
+    "hud_text_only": factorio_hud_text_only_solver,
+    "fat_hud": factorio_fat_hud_solver,
+    "balanced": factorio_balanced_solver,
+    "reasoning_only": factorio_reasoning_only_solver,
+    "pruned_gamestate": factorio_pruned_gamestate_solver,
+}
+
+
+def get_solver_for_task(task_type: str = "throughput"):
+    """Get the appropriate solver based on FLE_SOLVER env var or task type.
+
+    Args:
+        task_type: "throughput" or "unbounded"
+
+    Returns:
+        Solver function to use
+    """
+    solver_name = os.getenv("FLE_SOLVER")
+    if solver_name and solver_name in SOLVER_MAP:
+        return SOLVER_MAP[solver_name]()
+
+    # Default based on task type
+    if task_type == "unbounded":
+        return factorio_unbounded_solver()
+    return factorio_controlled_solver()
 
 
 def _create_throughput_task(env_id: str, target=16) -> Task:
@@ -44,7 +94,7 @@ def _create_throughput_task(env_id: str, target=16) -> Task:
                 id=f"{env_id}_eval",
             )
         ],
-        solver=factorio_controlled_solver(),
+        solver=get_solver_for_task("throughput"),
         scorer=comprehensive_factorio_scorer(),
         name=env_id,
     )
@@ -211,7 +261,7 @@ def _create_proportion_task(env_id: str) -> Task:
                 id=f"{env_id}_proportion_eval",
             )
         ],
-        solver=factorio_controlled_solver(),
+        solver=get_solver_for_task("throughput"),
         scorer=throughput_proportion_scorer(),
         name=f"{env_id}_proportion",
     )
@@ -233,7 +283,7 @@ def _create_production_tracking_task(env_id: str) -> Task:
                 id=f"{env_id}_production_eval",
             )
         ],
-        solver=factorio_controlled_solver(),
+        solver=get_solver_for_task("throughput"),
         scorer=production_score_tracker(),
         name=f"{env_id}_production",
     )
@@ -255,7 +305,7 @@ def _create_step_change_task(env_id: str) -> Task:
                 id=f"{env_id}_change_eval",
             )
         ],
-        solver=factorio_controlled_solver(),
+        solver=get_solver_for_task("throughput"),
         scorer=step_change_tracker(),
         name=f"{env_id}_step_change",
     )
@@ -283,8 +333,6 @@ def iron_ore_throughput_step_change():
 # =============================================================================
 # Unbounded Production Tasks (Open-Play / Build Biggest Factory)
 # =============================================================================
-
-
 def _create_unbounded_production_task(env_id: str) -> Task:
     """Create an unbounded production task for open-play evaluation.
 
@@ -316,39 +364,14 @@ def _create_unbounded_production_task(env_id: str) -> Task:
                 id=f"{env_id}_eval",
             )
         ],
-        solver=factorio_unbounded_solver(),
-        scorer=unbounded_production_scorer(),
-        name=env_id,
-    )
-
-
-def _create_unbounded_growth_task(env_id: str) -> Task:
-    """Create an unbounded task focused on growth rate metric."""
-    task_config = UNBOUNDED_PRODUCTION_TASKS.get(env_id)
-    if not task_config:
-        raise ValueError(f"Unknown unbounded production task: {env_id}")
-
-    return Task(
-        dataset=[
-            Sample(
-                input=f"Begin task: {task_config.goal_description}",
-                target="maximize",
-                metadata={
-                    "env_id": env_id,
-                    "trajectory_length": int(
-                        os.getenv(
-                            "FLE_TRAJECTORY_LENGTH", str(task_config.trajectory_length)
-                        )
-                    ),
-                    "goal_description": task_config.goal_description,
-                    "task_type": "unbounded_production",
-                },
-                id=f"{env_id}_growth_eval",
-            )
+        solver=get_solver_for_task("unbounded"),
+        scorer=[
+            production_score(),
+            technologies(),
+            achievements(),
+            automated_production_score(),
         ],
-        solver=factorio_unbounded_solver(),
-        scorer=unbounded_growth_scorer(),
-        name=f"{env_id}_growth",
+        name=env_id,
     )
 
 
@@ -363,14 +386,130 @@ def open_play_production():
     return _create_unbounded_production_task(OPEN_PLAY_PRODUCTION)
 
 
-@task
-def open_play_production_growth():
-    """Build the biggest factory - tracked by production growth rate.
+# =============================================================================
+# Solver Variant Tasks (for parallel comparison)
+# =============================================================================
+# These tasks use explicit solver variants, allowing parallel execution with:
+#   inspect eval eval_set.py@open_play_unbounded,eval_set.py@open_play_reasoning_only,...
+#   --max-tasks 6 --max-connections 32
 
-    Same as open_play_production but scored by average growth per step
-    rather than final production score.
+
+def _create_solver_variant_task(solver_name: str) -> Task:
+    """Create an open_play task with a specific solver variant."""
+    task_config = UNBOUNDED_PRODUCTION_TASKS.get(OPEN_PLAY_PRODUCTION)
+
+    # Get the solver function from the map
+    solver_fn = SOLVER_MAP.get(solver_name)
+    if not solver_fn:
+        raise ValueError(f"Unknown solver: {solver_name}")
+
+    return Task(
+        dataset=[
+            Sample(
+                input=f"Begin task: {task_config.goal_description}",
+                target="maximize",
+                metadata={
+                    "env_id": OPEN_PLAY_PRODUCTION,
+                    "trajectory_length": int(
+                        os.getenv(
+                            "FLE_TRAJECTORY_LENGTH", str(task_config.trajectory_length)
+                        )
+                    ),
+                    "goal_description": task_config.goal_description,
+                    "task_type": "unbounded_production",
+                    "solver_variant": solver_name,
+                },
+                id=f"open_play_{solver_name}_eval_{i}",
+            )
+            for i in range(32)
+        ],
+        solver=solver_fn(),
+        scorer=[production_score(), technologies(), achievements()],
+        name=f"open_play_{solver_name}",
+    )
+
+
+@task
+def open_play_unbounded():
+    """Open play with unbounded solver (baseline)."""
+    return _create_solver_variant_task("unbounded")
+
+
+@task
+def open_play_reasoning_only():
+    """Open play with reasoning-only solver (strips code from history)."""
+    return _create_solver_variant_task("reasoning_only")
+
+
+@task
+def open_play_text_only():
+    """Open play with text-only solver (no images)."""
+    return _create_solver_variant_task("text_only")
+
+
+@task
+def open_play_hud():
+    """Open play with HUD solver (fixed 3-message context + visual rendering)."""
+    return _create_solver_variant_task("hud")
+
+
+@task
+def open_play_hud_text_only():
+    """Open play with HUD solver, text only (no images)."""
+    return _create_solver_variant_task("hud_text_only")
+
+
+@task
+def open_play_balanced():
+    """Open play with balanced solver (moderate optimizations)."""
+    return _create_solver_variant_task("balanced")
+
+
+@task
+def open_play_minimal_context():
+    """Open play with minimal context solver (most aggressive optimization)."""
+    return _create_solver_variant_task("minimal_context")
+
+
+@task
+def open_play_no_image_history():
+    """Open play with no-image-history solver (strips images from history)."""
+    return _create_solver_variant_task("no_image_history")
+
+
+@task
+def open_play_fat_hud():
+    """Open play with fat HUD solver (3 images at zoom levels 16, 32, 64).
+
+    This solver provides multi-scale visual feedback with:
+    - Zoom 16: Close-up view (32x32 tiles) - detailed view of nearby entities
+    - Zoom 32: Medium view (64x64 tiles) - factory overview
+    - Zoom 64: Far view (128x128 tiles) - large-scale factory layout
+
+    All images have the same pixel dimensions but show different amounts of the world.
+    Higher token usage per step but enables better spatial reasoning across scales.
     """
-    return _create_unbounded_growth_task(OPEN_PLAY_PRODUCTION)
+    return _create_solver_variant_task("fat_hud")
+
+
+@task
+def open_play_pruned_gamestate():
+    """Open play with pruned gamestate solver (strips game state from history).
+
+    This solver prunes historical user messages to only keep program output:
+    - System prompt: Full (cached)
+    - Assistant messages: Full (reasoning and code preserved)
+    - Historical user messages: Only program output (stdout/stderr) - game state [omitted]
+    - Latest user message: Full game state observation
+
+    The key insight: Program output tells the model what happened (success/error),
+    while the current game state tells it what to do next. Historical game states
+    are largely redundant since the current state reflects cumulative changes.
+
+    Optimization: ~40-60% context reduction on user messages
+    Trade-off: Model can't reference exact historical game states
+    """
+    return _create_solver_variant_task("pruned_gamestate")
 
 
 # =============================================================================

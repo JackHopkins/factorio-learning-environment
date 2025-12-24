@@ -116,7 +116,7 @@ class SimpleFactorioEvaluator:
                 self.instance.namespaces[agent_idx]._get_production_stats()
             )
 
-            initial_value, start_time = self.instance.namespaces[agent_idx].score()
+            initial_value, _ = self.instance.namespaces[agent_idx].score()
             reward, time, result = self.instance.eval(
                 program.code, agent_idx=agent_idx, timeout=60
             )

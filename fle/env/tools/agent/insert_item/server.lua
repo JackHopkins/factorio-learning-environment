@@ -26,7 +26,8 @@ local function get_inventory_info(entity)
 end
 
 global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local position = {x=x, y=y}
     local surface = player.surface
 

@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import shutil
 import subprocess
@@ -79,14 +80,71 @@ def fle_inspect_eval(args):
             time.sleep(2)  # Give view server time to start
             print("🌐 Inspect view server started in background")
 
+        # Determine task type and build appropriate command
+        task_type = getattr(args, "task_type", None) or "throughput"
+
+        # Handle --tasks parameter (comma-separated task names)
+        task_names = []
+        if hasattr(args, "tasks") and args.tasks:
+            task_names = [t.strip() for t in args.tasks.split(",")]
+            print(f"🎯 Running {len(task_names)} tasks: {task_names}")
+
+        # Handle --solver parameter
+        solver_name = getattr(args, "solver", None)
+        if solver_name:
+            os.environ["FLE_SOLVER"] = solver_name
+            print(f"🔧 Using solver variant: {solver_name}")
+
         # Build evaluation command
-        if args.eval_set:
+        if task_names:
+            # Multiple tasks specified via --tasks
+            if len(task_names) == 1:
+                # Single task
+                cmd = [
+                    "inspect",
+                    "eval",
+                    f"eval/inspect_integration/eval_set.py@{task_names[0]}",
+                ]
+            else:
+                # Multiple tasks - use eval with multiple task specs
+                task_specs = " ".join(
+                    [f"eval/inspect_integration/eval_set.py@{t}" for t in task_names]
+                )
+                cmd = [
+                    "inspect",
+                    "eval",
+                    task_specs,
+                ]
+        elif args.eval_set_file:
+            # Use custom eval-set file
+            cmd = [
+                "inspect",
+                "eval-set",
+                args.eval_set_file,
+            ]
+            print(f"📦 Running custom eval-set: {args.eval_set_file}")
+        elif args.eval_set:
             # Use eval-set for multiple tasks
             cmd = [
                 "inspect",
                 "eval-set",
-                "eval/inspect_integration/factorio_eval_set.py",
-                #  "-M \"transforms=['middle-out']\""
+                "eval/inspect_integration/eval_set.py",
+            ]
+        elif task_type == "unbounded":
+            # Use unbounded production task
+            task_name = args.env_id if args.env_id else "open_play_production"
+            cmd = [
+                "inspect",
+                "eval",
+                f"eval/inspect_integration/eval_set.py@{task_name}",
+            ]
+            print(f"🏭 Running unbounded production task: {task_name}")
+        elif args.env_id:
+            # Use specific task from eval set
+            cmd = [
+                "inspect",
+                "eval",
+                f"eval/inspect_integration/eval_set.py@{args.env_id}",
             ]
         else:
             # Use the working controlled solver via agent_task.py
@@ -94,7 +152,6 @@ def fle_inspect_eval(args):
                 "inspect",
                 "eval",
                 "eval/inspect_integration/agent_task.py@factorio_agent_evaluation",
-                # "-M \"transforms=['middle-out']\""
             ]
 
         # Add optional arguments with custom log subdir for eval-sets
@@ -102,7 +159,7 @@ def fle_inspect_eval(args):
             cmd.extend(["--log-dir", args.log_dir])
         else:
             # Create timestamped subdirectory for eval-sets to avoid conflicts
-            if args.eval_set:
+            if args.eval_set or args.eval_set_file:
                 import datetime
 
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -117,7 +174,7 @@ def fle_inspect_eval(args):
             cmd.extend(["--max-connections", "8"])
 
         # Configure max-tasks for eval-set mode
-        if args.eval_set:
+        if args.eval_set or args.eval_set_file:
             if hasattr(args, "max_tasks") and args.max_tasks:
                 cmd.extend(["--max-tasks", str(args.max_tasks)])
             else:
@@ -144,21 +201,29 @@ def fle_inspect_eval(args):
         if hasattr(args, "reasoning_tokens") and args.reasoning_tokens:
             cmd.extend(["--reasoning-tokens", str(args.reasoning_tokens)])
 
+        if hasattr(args, "cache_prompt") and args.cache_prompt:
+            cmd.extend(["--cache-prompt", "true"])
+
         # Add Pass@N configuration
+        # For unbounded tasks, use mean score instead of pass_at reducer
         if hasattr(args, "epochs") and args.epochs:
             cmd.extend(["--epochs", str(args.epochs)])
         elif hasattr(args, "pass_n") and args.pass_n:
-            # Default: use pass_n as epochs for Pass@N evaluation
             cmd.extend(["--epochs", str(args.pass_n)])
-            cmd.extend(["--epochs-reducer", f"pass_at_{args.pass_n}"])
+            # Only use pass_at reducer for throughput tasks
+            # Unbounded tasks should report mean score
+            if task_type != "unbounded":
+                cmd.extend(["--epochs-reducer", f"pass_at_{args.pass_n}"])
 
         if hasattr(args, "epochs_reducer") and args.epochs_reducer:
             cmd.extend(["--epochs-reducer", args.epochs_reducer])
+        elif task_type == "unbounded":
+            # Unbounded tasks use mean reducer by default
+            cmd.extend(["--epochs-reducer", "mean"])
 
-        cmd.extend(["-M", "transforms=['middle-out']"])
+        if "openrouter" in args.model:
+            cmd.extend(["-M", "transforms=['middle-out']"])
         # Set environment variables for dynamic task configuration
-        import os
-
         if args.env_id:
             os.environ["FLE_ENV_ID"] = args.env_id
             print(f"🎯 Targeting specific task: {args.env_id}")
@@ -170,10 +235,19 @@ def fle_inspect_eval(args):
             os.environ["FLE_LIMIT"] = str(args.limit)
 
         # Set trajectory length from CLI argument
+        # For unbounded tasks, default to 5000 steps; for throughput, default to 64
         if hasattr(args, "trajectory_length") and args.trajectory_length:
             os.environ["FLE_TRAJECTORY_LENGTH"] = str(args.trajectory_length)
+        elif task_type == "unbounded":
+            os.environ["FLE_TRAJECTORY_LENGTH"] = "5000"  # Unbounded default
+            print("📏 Using default trajectory length of 5000 for unbounded task")
         else:
-            os.environ["FLE_TRAJECTORY_LENGTH"] = "64"  # Ensure default is 64
+            os.environ["FLE_TRAJECTORY_LENGTH"] = "64"  # Throughput default
+
+        # Set vision mode from CLI argument
+        if hasattr(args, "vision") and args.vision:
+            os.environ["FLE_VISION"] = "true"
+            print("👁️  Vision mode enabled: rendering images after each step")
 
         # Check if Factorio servers are reachable before starting evaluation
         print("🔍 Checking Factorio server availability...")
@@ -285,8 +359,24 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Run throughput evaluation (quota-based tasks)
+  fle inspect-eval --env-id iron_plate_throughput --model openai/gpt-4o
+
+  # Run unbounded production evaluation (build biggest factory)
+  fle inspect-eval --task-type unbounded --model openai/gpt-4o
+
+  # Run unbounded with custom trajectory length
+  fle inspect-eval --task-type unbounded --trajectory-length 1000
+
+  # Run eval-set for multiple throughput tasks
+  fle inspect-eval --eval-set --max-tasks 4
+
+  # Run custom eval-set file (e.g., solver experiments)
+  fle inspect-eval --eval-set-file eval/inspect_integration/solver_experiments.py \\
+      --log-dir s3://bucket/logs/ --max-tasks 8
+
+  # Other commands
   fle eval --config configs/gym_run_config.json
-  fle inspect-eval [--config CONFIG] [--cache] [--max-connections N]
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
   fle sprites [--force] [--workers N]
         """,
@@ -347,10 +437,34 @@ Examples:
         "--env-id", help="Specific environment/task to evaluate (default: all tasks)"
     )
     parser_inspect.add_argument(
+        "--tasks",
+        help="Comma-separated list of task names to run (e.g., 'open_play_production,iron_plate_throughput')",
+    )
+    parser_inspect.add_argument(
+        "--solver",
+        choices=[
+            "unbounded",
+            "controlled",
+            "no_image_history",
+            "aggressive_trim",
+            "text_only",
+            "minimal_context",
+            "hud",
+            "balanced",
+            "reasoning_only",
+        ],
+        help="Solver variant to use (default depends on task type)",
+    )
+    parser_inspect.add_argument(
+        "--cache-prompt",
+        action="store_true",
+        help="Caches the prompt for faster trajectories",
+    )
+    parser_inspect.add_argument(
         "--trajectory-length",
         type=int,
-        default=64,
-        help="Number of trajectory steps (default: 64)",
+        default=None,
+        help="Number of trajectory steps (default: 64 for throughput, 5000 for unbounded)",
     )
     parser_inspect.add_argument(
         "--reasoning-effort",
@@ -368,6 +482,10 @@ Examples:
         help="Run multiple Factorio tasks as an evaluation set",
     )
     parser_inspect.add_argument(
+        "--eval-set-file",
+        help="Path to custom eval-set file (e.g., eval/inspect_integration/solver_experiments.py)",
+    )
+    parser_inspect.add_argument(
         "--pass-n",
         type=int,
         default=8,
@@ -378,6 +496,17 @@ Examples:
     )
     parser_inspect.add_argument(
         "--epochs-reducer", help="Epochs reducer (e.g., pass_at_1, pass_at_8)"
+    )
+    parser_inspect.add_argument(
+        "--task-type",
+        choices=["throughput", "unbounded"],
+        default="throughput",
+        help="Task type: 'throughput' for quota-based tasks, 'unbounded' for open-play (default: throughput)",
+    )
+    parser_inspect.add_argument(
+        "--vision",
+        action="store_true",
+        help="Enable vision mode: render images centered on player after each step for multimodal models",
     )
 
     parser_sprites = subparsers.add_parser(

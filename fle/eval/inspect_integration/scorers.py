@@ -2,13 +2,24 @@
 
 Contains scorers for:
 - Throughput tasks (quota-based): simple_production_score, throughput_proportion_scorer, comprehensive_factorio_scorer
-- Unbounded tasks (open-play): unbounded_production_scorer, unbounded_growth_scorer
+- Unbounded tasks (open-play): production_score, automated_production_score, production_score_growth
+- Achievement scorers: achievements (tracks unique item types produced), technologies (tracks researched technologies)
 - Utility scorers: production_score_tracker, step_change_tracker
+- Latency scorers: latency_scorer, inference_latency_scorer, sleep_duration_scorer
 """
 
 import logging
 from typing import List
-from inspect_ai.scorer import scorer, Score, Target, Scorer, accuracy, mean, score
+from inspect_ai.scorer import (
+    scorer,
+    Score,
+    Target,
+    Scorer,
+    accuracy,
+    mean,
+    score,
+    stderr,
+)
 from inspect_ai.agent import AgentState
 from inspect_ai.util import store_as
 
@@ -129,7 +140,7 @@ def production_score_tracker() -> Scorer:
 
             return Score(
                 value=production_score,
-                answer=f"{production_score:.2f}",
+                answer=str(total_steps),  # f"{production_score:.2f}",
                 explanation=f"Production score: {production_score:.2f} over {total_steps} steps"
                 + (f" (Error: {error})" if error else ""),
                 metadata={
@@ -319,7 +330,7 @@ def comprehensive_factorio_scorer() -> Scorer:
 
 
 @scorer(metrics=[mean()])
-def unbounded_production_scorer() -> Scorer:
+def production_score() -> Scorer:
     """Scorer for unbounded/open-play tasks that tracks cumulative production score.
 
     Unlike throughput scorers, this scorer:
@@ -409,8 +420,128 @@ def unbounded_production_scorer() -> Scorer:
     return score
 
 
-@scorer(metrics=[mean()])
-def unbounded_growth_scorer() -> Scorer:
+@scorer(metrics=[mean(), stderr()])
+def automated_production_score() -> Scorer:
+    """Scorer for tracking automated production score (excluding harvested/crafted items).
+
+    This scorer tracks the production score that comes only from automated machines,
+    excluding:
+    - Raw resources harvested manually or by drills (harvested_value)
+    - Net value added by manual crafting (crafted_net_value)
+
+    This is useful for measuring true factory automation performance,
+    as it rewards building automated production chains rather than
+    manual gathering and crafting.
+
+    Formula: automated_score = total_production_score - harvested_delta - crafted_delta
+    """
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            automated_score = (
+                trajectory_data.final_automated_score
+                or trajectory_data.automated_production_score
+                or 0.0
+            )
+            automated_scores = trajectory_data.automated_scores or []
+            total_production_score = (
+                trajectory_data.final_score or trajectory_data.production_score or 0.0
+            )
+            error = trajectory_data.error
+            total_steps = trajectory_data.total_steps or 0
+
+            # Calculate trajectory metrics
+            score_per_step = automated_score / total_steps if total_steps > 0 else 0.0
+
+            # Calculate growth metrics for automated score
+            if len(automated_scores) >= 2:
+                total_growth = automated_scores[-1] - automated_scores[0]
+                avg_growth_per_step = total_growth / (len(automated_scores) - 1)
+                max_single_step_gain = max(
+                    (
+                        automated_scores[i] - automated_scores[i - 1]
+                        for i in range(1, len(automated_scores))
+                    ),
+                    default=0.0,
+                )
+                # Find when automated production really started (first positive score)
+                first_automated_step = next(
+                    (i for i, s in enumerate(automated_scores) if s > 0),
+                    len(automated_scores),
+                )
+            else:
+                total_growth = 0.0
+                avg_growth_per_step = 0.0
+                max_single_step_gain = 0.0
+                first_automated_step = 0
+
+            # Calculate automation ratio (what % of production is automated)
+            automation_ratio = (
+                (automated_score / total_production_score * 100)
+                if total_production_score > 0
+                else 0.0
+            )
+
+            explanation_parts = [
+                f"Automated score: {automated_score:.2f}",
+                f"Total score: {total_production_score:.2f}",
+                f"Automation: {automation_ratio:.1f}%",
+                f"Steps: {total_steps}",
+                f"Score/step: {score_per_step:.3f}",
+            ]
+
+            if error:
+                explanation_parts.append(f"Error: {error}")
+
+            explanation = ", ".join(explanation_parts)
+
+            return Score(
+                value=automated_score,  # Automated production score - higher is better
+                answer=f"{automated_score:.2f}",
+                explanation=explanation,
+                metadata={
+                    # Core metrics
+                    "automated_production_score": automated_score,
+                    "total_production_score": total_production_score,
+                    "automation_ratio": automation_ratio,
+                    "total_steps": total_steps,
+                    "score_per_step": score_per_step,
+                    # Growth analysis
+                    "total_growth": total_growth,
+                    "average_growth_per_step": avg_growth_per_step,
+                    "max_single_step_gain": max_single_step_gain,
+                    "first_automated_step": first_automated_step,
+                    # Trajectory data
+                    "automated_scores_count": len(automated_scores),
+                    "final_10_automated_scores": automated_scores[-10:]
+                    if len(automated_scores) > 10
+                    else automated_scores,
+                    "first_10_automated_scores": automated_scores[:10]
+                    if len(automated_scores) > 10
+                    else automated_scores,
+                    # Error tracking
+                    "has_error": bool(error),
+                    "error": error or "",
+                    # Task context
+                    "task_type": "unbounded_production",
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in automated production scorer: {e}")
+            return Score(
+                value=0.0,
+                answer="0.00",
+                explanation=f"Scorer error: {str(e)}",
+                metadata={"scorer_error": str(e)},
+            )
+
+    return score
+
+
+@scorer(metrics=[mean(), stderr()])
+def production_score_growth() -> Scorer:
     """Scorer focused on production growth rate for unbounded tasks.
 
     This scorer emphasizes how quickly the factory scales up production,
@@ -473,6 +604,472 @@ def unbounded_growth_scorer() -> Scorer:
                 answer="0.00",
                 explanation=f"Scorer error: {str(e)}",
                 metadata={"scorer_error": str(e)},
+            )
+
+    return score
+
+
+# =============================================================================
+# Achievement Scorers
+# =============================================================================
+
+
+@scorer(metrics=[mean(), stderr()])
+def achievements() -> Scorer:
+    """Scorer tracking unique item types produced during the trajectory.
+
+    This scorer reports the number of unique item types that have been
+    created (either statically through crafting/harvesting or dynamically
+    through automated production).
+
+    The main score value is the count of unique item types.
+    The metadata includes the full set of item type names.
+
+    This is useful for measuring:
+    - How diverse the agent's production is
+    - Whether the agent is exploring the tech tree
+    - Progress toward more complex items
+    """
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            produced_item_types = trajectory_data.produced_item_types or []
+
+            # Convert to set to ensure uniqueness (should already be unique, but just in case)
+            unique_items = set(produced_item_types)
+            num_unique_items = len(unique_items)
+
+            # Sort for consistent display
+            sorted_items = sorted(unique_items)
+
+            # Create a summary of item categories
+            raw_resources = [
+                i
+                for i in sorted_items
+                if i
+                in {
+                    "iron-ore",
+                    "copper-ore",
+                    "coal",
+                    "stone",
+                    "wood",
+                    "crude-oil",
+                    "water",
+                    "uranium-ore",
+                }
+            ]
+            basic_intermediates = [
+                i
+                for i in sorted_items
+                if i
+                in {
+                    "iron-plate",
+                    "copper-plate",
+                    "steel-plate",
+                    "stone-brick",
+                    "copper-cable",
+                    "iron-gear-wheel",
+                    "iron-stick",
+                }
+            ]
+            advanced_items = [
+                i for i in sorted_items if i not in raw_resources + basic_intermediates
+            ]
+
+            explanation_parts = [
+                f"Unique items: {num_unique_items}",
+                f"Raw: {len(raw_resources)}",
+                f"Basic: {len(basic_intermediates)}",
+                f"Advanced: {len(advanced_items)}",
+            ]
+
+            return Score(
+                value=num_unique_items,
+                answer=str(num_unique_items),
+                explanation=", ".join(explanation_parts),
+                metadata={
+                    "num_unique_items": num_unique_items,
+                    "produced_item_types": sorted_items,
+                    "raw_resources": raw_resources,
+                    "basic_intermediates": basic_intermediates,
+                    "advanced_items": advanced_items,
+                    "num_raw_resources": len(raw_resources),
+                    "num_basic_intermediates": len(basic_intermediates),
+                    "num_advanced_items": len(advanced_items),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in achievement scorer: {e}")
+            return Score(
+                value=0,
+                answer="0",
+                explanation=f"Scorer error: {str(e)}",
+                metadata={"scorer_error": str(e)},
+            )
+
+    return score
+
+
+@scorer(metrics=[mean(), stderr()])
+def technologies() -> Scorer:
+    """Scorer tracking technologies researched during the trajectory.
+
+    This scorer reports the number of technologies that have been researched
+    during the trajectory. Technologies are considered "researched" when their
+    research is complete (not just in progress).
+
+    The main score value is the count of researched technologies.
+    The metadata includes the full list of technology names.
+
+    This is useful for measuring:
+    - How far the agent has progressed in the tech tree
+    - Whether the agent is pursuing research actively
+    - Progress toward unlocking advanced capabilities
+    """
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            researched_technologies = trajectory_data.researched_technologies or []
+
+            # Convert to set to ensure uniqueness (should already be unique, but just in case)
+            unique_techs = set(researched_technologies)
+            num_researched = len(unique_techs)
+
+            # Sort for consistent display
+            sorted_techs = sorted(unique_techs)
+
+            # Categorize technologies by tier/type
+            # Tier 1: Basic automation and logistics
+            tier1_techs = {
+                "automation",
+                "logistics",
+                "optics",
+                "turrets",
+                "stone-wall",
+                "electronics",
+                "steel-processing",
+            }
+            # Tier 2: Intermediate techs
+            tier2_techs = {
+                "automation-2",
+                "logistics-2",
+                "fast-inserter",
+                "steel-axe",
+                "military",
+                "military-2",
+                "engine",
+                "fluid-handling",
+                "oil-processing",
+                "plastics",
+                "sulfur-processing",
+            }
+            # Tier 3: Advanced techs
+            tier3_techs = {
+                "automation-3",
+                "logistics-3",
+                "advanced-electronics",
+                "advanced-electronics-2",
+                "advanced-oil-processing",
+                "chemical-science-pack",
+                "production-science-pack",
+                "utility-science-pack",
+                "rocket-silo",
+                "space-science-pack",
+            }
+
+            tier1_researched = [t for t in sorted_techs if t in tier1_techs]
+            tier2_researched = [t for t in sorted_techs if t in tier2_techs]
+            tier3_researched = [t for t in sorted_techs if t in tier3_techs]
+            other_researched = [
+                t
+                for t in sorted_techs
+                if t not in tier1_techs | tier2_techs | tier3_techs
+            ]
+
+            explanation_parts = [
+                f"Researched: {num_researched}",
+                f"Tier1: {len(tier1_researched)}",
+                f"Tier2: {len(tier2_researched)}",
+                f"Tier3: {len(tier3_researched)}",
+                f"Other: {len(other_researched)}",
+            ]
+
+            return Score(
+                value=num_researched,
+                answer=str(num_researched),
+                explanation=", ".join(explanation_parts),
+                metadata={
+                    "num_researched_technologies": num_researched,
+                    "researched_technologies": sorted_techs,
+                    "tier1_technologies": tier1_researched,
+                    "tier2_technologies": tier2_researched,
+                    "tier3_technologies": tier3_researched,
+                    "other_technologies": other_researched,
+                    "num_tier1": len(tier1_researched),
+                    "num_tier2": len(tier2_researched),
+                    "num_tier3": len(tier3_researched),
+                    "num_other": len(other_researched),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in research scorer: {e}")
+            return Score(
+                value=0,
+                answer="0",
+                explanation=f"Scorer error: {str(e)}",
+                metadata={"scorer_error": str(e)},
+            )
+
+    return score
+
+
+# =============================================================================
+# Latency Scorers
+# =============================================================================
+
+
+@scorer(metrics=[mean(), stderr()])
+def latency_scorer() -> Scorer:
+    """Comprehensive latency scorer tracking all timing metrics.
+
+    Tracks:
+    - Inference latency (time for model to generate response)
+    - Environment execution latency (time for gym_env.step())
+    - Policy execution latency (time for Python code execution)
+    - Sleep duration (time environment was blocking during sleep actions)
+    - Total step latency (wall-clock time per step)
+    """
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+
+            # Get latency lists
+            inference_latencies = trajectory_data.inference_latencies or []
+            env_execution_latencies = trajectory_data.env_execution_latencies or []
+            policy_execution_latencies = (
+                trajectory_data.policy_execution_latencies or []
+            )
+            sleep_durations = trajectory_data.sleep_durations or []
+            total_step_latencies = trajectory_data.total_step_latencies or []
+
+            if not total_step_latencies:
+                return Score(
+                    value=0.0,
+                    answer="0.00",
+                    explanation="No latency data available",
+                    metadata={"has_latency_data": False},
+                )
+
+            # Calculate summary statistics
+            num_steps = len(total_step_latencies)
+
+            # Total latency stats
+            total_latency_sum = sum(total_step_latencies)
+            avg_total_latency = total_latency_sum / num_steps
+            max_total_latency = max(total_step_latencies)
+            min_total_latency = min(total_step_latencies)
+
+            # Inference latency stats
+            avg_inference = (
+                sum(inference_latencies) / len(inference_latencies)
+                if inference_latencies
+                else 0
+            )
+            max_inference = max(inference_latencies) if inference_latencies else 0
+            total_inference = sum(inference_latencies)
+
+            # Environment execution latency stats
+            avg_env = (
+                sum(env_execution_latencies) / len(env_execution_latencies)
+                if env_execution_latencies
+                else 0
+            )
+            max_env = max(env_execution_latencies) if env_execution_latencies else 0
+            total_env = sum(env_execution_latencies)
+
+            # Policy execution latency stats
+            avg_policy = (
+                sum(policy_execution_latencies) / len(policy_execution_latencies)
+                if policy_execution_latencies
+                else 0
+            )
+            max_policy = (
+                max(policy_execution_latencies) if policy_execution_latencies else 0
+            )
+            total_policy = sum(policy_execution_latencies)
+
+            # Sleep duration stats
+            total_sleep = sum(sleep_durations)
+            avg_sleep = total_sleep / num_steps if num_steps > 0 else 0
+            steps_with_sleep = sum(1 for s in sleep_durations if s > 0)
+
+            # Calculate percentage breakdown
+            inference_pct = (
+                (total_inference / total_latency_sum * 100)
+                if total_latency_sum > 0
+                else 0
+            )
+            env_pct = (
+                (total_env / total_latency_sum * 100) if total_latency_sum > 0 else 0
+            )
+            sleep_pct = (
+                (total_sleep / total_latency_sum * 100) if total_latency_sum > 0 else 0
+            )
+
+            explanation = (
+                f"Avg step: {avg_total_latency:.2f}s "
+                f"(inference: {avg_inference:.2f}s [{inference_pct:.1f}%], "
+                f"env: {avg_env:.2f}s [{env_pct:.1f}%], "
+                f"sleep: {avg_sleep:.2f}s [{sleep_pct:.1f}%])"
+            )
+
+            return Score(
+                value=avg_total_latency,  # Use average step latency as the score value
+                answer=f"{avg_total_latency:.2f}",
+                explanation=explanation,
+                metadata={
+                    # Summary stats
+                    "num_steps": num_steps,
+                    "total_wall_clock_time": total_latency_sum,
+                    # Average latencies
+                    "avg_total_step_latency": avg_total_latency,
+                    "avg_inference_latency": avg_inference,
+                    "avg_env_execution_latency": avg_env,
+                    "avg_policy_execution_latency": avg_policy,
+                    "avg_sleep_duration": avg_sleep,
+                    # Max latencies
+                    "max_total_step_latency": max_total_latency,
+                    "max_inference_latency": max_inference,
+                    "max_env_execution_latency": max_env,
+                    "max_policy_execution_latency": max_policy,
+                    # Min latencies
+                    "min_total_step_latency": min_total_latency,
+                    # Totals
+                    "total_inference_time": total_inference,
+                    "total_env_execution_time": total_env,
+                    "total_policy_execution_time": total_policy,
+                    "total_sleep_time": total_sleep,
+                    # Percentages
+                    "inference_time_pct": inference_pct,
+                    "env_execution_time_pct": env_pct,
+                    "sleep_time_pct": sleep_pct,
+                    # Sleep specifics
+                    "steps_with_sleep": steps_with_sleep,
+                    "steps_without_sleep": num_steps - steps_with_sleep,
+                    # Last 10 step latencies for analysis
+                    "last_10_total_latencies": total_step_latencies[-10:]
+                    if len(total_step_latencies) > 10
+                    else total_step_latencies,
+                    "last_10_inference_latencies": inference_latencies[-10:]
+                    if len(inference_latencies) > 10
+                    else inference_latencies,
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in latency scorer: {e}")
+            return Score(
+                value=0.0,
+                answer="0.00",
+                explanation=f"Scorer error: {str(e)}",
+                metadata={"scorer_error": str(e)},
+            )
+
+    return score
+
+
+@scorer(metrics=[mean()])
+def inference_latency_scorer() -> Scorer:
+    """Track inference latency (time for model to generate response)."""
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            inference_latencies = trajectory_data.inference_latencies or []
+
+            if not inference_latencies:
+                return Score(
+                    value=0.0,
+                    answer="0.00",
+                    explanation="No inference latency data available",
+                )
+
+            avg_latency = sum(inference_latencies) / len(inference_latencies)
+            total_latency = sum(inference_latencies)
+            max_latency = max(inference_latencies)
+            min_latency = min(inference_latencies)
+
+            return Score(
+                value=avg_latency,
+                answer=f"{avg_latency:.2f}",
+                explanation=f"Avg inference: {avg_latency:.2f}s, Total: {total_latency:.1f}s, Max: {max_latency:.2f}s",
+                metadata={
+                    "avg_inference_latency": avg_latency,
+                    "total_inference_time": total_latency,
+                    "max_inference_latency": max_latency,
+                    "min_inference_latency": min_latency,
+                    "num_inferences": len(inference_latencies),
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in inference latency scorer: {e}")
+            return Score(
+                value=0.0, answer="0.00", explanation=f"Scorer error: {str(e)}"
+            )
+
+    return score
+
+
+@scorer(metrics=[mean(), stderr()])
+def sleep_duration_scorer() -> Scorer:
+    """Track sleep duration (time environment was blocking during sleep actions)."""
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            sleep_durations = trajectory_data.sleep_durations or []
+            total_step_latencies = trajectory_data.total_step_latencies or []
+
+            if not sleep_durations:
+                return Score(
+                    value=0.0,
+                    answer="0.00",
+                    explanation="No sleep duration data available",
+                )
+
+            total_sleep = sum(sleep_durations)
+            avg_sleep = total_sleep / len(sleep_durations)
+            max_sleep = max(sleep_durations)
+            steps_with_sleep = sum(1 for s in sleep_durations if s > 0)
+
+            # Calculate percentage of total time spent sleeping
+            total_time = sum(total_step_latencies) if total_step_latencies else 0
+            sleep_pct = (total_sleep / total_time * 100) if total_time > 0 else 0
+
+            return Score(
+                value=total_sleep,  # Total sleep time as the score
+                answer=f"{total_sleep:.2f}",
+                explanation=f"Total sleep: {total_sleep:.2f}s ({sleep_pct:.1f}% of total), {steps_with_sleep}/{len(sleep_durations)} steps had sleep",
+                metadata={
+                    "total_sleep_time": total_sleep,
+                    "avg_sleep_per_step": avg_sleep,
+                    "max_sleep_duration": max_sleep,
+                    "steps_with_sleep": steps_with_sleep,
+                    "steps_without_sleep": len(sleep_durations) - steps_with_sleep,
+                    "sleep_time_percentage": sleep_pct,
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in sleep duration scorer: {e}")
+            return Score(
+                value=0.0, answer="0.00", explanation=f"Scorer error: {str(e)}"
             )
 
     return score

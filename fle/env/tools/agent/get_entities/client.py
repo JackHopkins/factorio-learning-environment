@@ -1,6 +1,5 @@
 from time import sleep
 from typing import List, Set, Union
-from memoization import cached
 
 from fle.env.entities import Position, Entity, EntityGroup
 from fle.env.game_types import Prototype
@@ -14,7 +13,7 @@ class GetEntities(Tool):
     def __init__(self, connection, game_state):
         super().__init__(connection, game_state)
 
-    @cached(max_size=16, ttl=1)
+    # @cached(max_size=16, ttl=0.15)
     def __call__(
         self,
         entities: Union[Set[Prototype], Prototype] = set(),
@@ -84,7 +83,7 @@ class GetEntities(Tool):
             )
 
             # We need to add a small 50ms sleep to ensure that the entities have updated after previous actions
-            sleep(0.05)
+            sleep(0.1)
 
             if position is None:
                 response, time_elapsed = self.execute(
@@ -117,9 +116,10 @@ class GetEntities(Tool):
                         break
 
                 if matching_prototype is None:
-                    print(
-                        f"Warning: No matching Prototype found for {entity_data['name']}"
-                    )
+                    if "name" in entity_data and entity_data["name"] != "entity-ghost":
+                        print(
+                            f"Warning: No matching Prototype found for {entity_data['name']}"
+                        )
                     continue
 
                 # Apply standard filtering - check against expanded entities too
@@ -327,7 +327,14 @@ class GetEntities(Tool):
             return entities_list
 
         except Exception as e:
-            raise Exception(f"Error in GetEntities: {e}")
+            # Include more context in error message for debugging
+            entity_info = (
+                f"entities={[e.value[0] for e in entities] if entities else 'all'}"
+            )
+            position_info = f"position={position}" if position else "position=player"
+            raise Exception(
+                f"Error in GetEntities ({entity_info}, {position_info}, radius={radius}): {e}"
+            )
 
     def process_nested_dict(self, nested_dict):
         """Helper method to process nested dictionaries"""

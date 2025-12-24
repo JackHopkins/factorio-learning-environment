@@ -104,7 +104,8 @@ local function find_offshore_pump_position(player, center_pos)
 end
 
 global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local position = {x = x, y = y}
 
     if not direction then
@@ -277,10 +278,16 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
                 local entities = player.surface.find_entities_filtered{area = area, force = "player"}
                 if #entities ~= 0 then
+                    -- Build a list of blocking entity names and positions
+                    local blocking_info = {}
+                    for _, blocking_entity in ipairs(entities) do
+                        table.insert(blocking_info, blocking_entity.name .. " at x=" .. blocking_entity.position.x .. " y=" .. blocking_entity.position.y)
+                    end
+                    local blocking_str = table.concat(blocking_info, ", ")
                     if #entities == 1 then
-                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way\"")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location x=" .. position.x .. " y=" .. position.y .. ", as there is an existing object in the way: " .. blocking_str .. "\"")
                     else
-                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there are existing objects in the way\"")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location x=" .. position.x .. " y=" .. position.y .. ", as there are existing objects in the way: " .. blocking_str .. "\"")
                     end
                 end
             end
@@ -312,7 +319,44 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     time_to_live = 60000
                 }
 
-                error("\"Cannot place " .. entity .. " at the target location - something is in the way or part of the terrain is unplaceable (water)\"")
+                -- Find what's blocking placement for a better error message
+                local blocking_area = {
+                    {position.x - entity_width / 2, position.y - entity_height / 2},
+                    {position.x + entity_width / 2, position.y + entity_height / 2}
+                }
+                local blocking_entities = player.surface.find_entities_filtered{area = blocking_area}
+                local blocking_info = {}
+                for _, blocking_entity in ipairs(blocking_entities) do
+                    if blocking_entity.name ~= "character" then
+                        table.insert(blocking_info, blocking_entity.name .. " at x=" .. blocking_entity.position.x .. " y=" .. blocking_entity.position.y)
+                    end
+                end
+
+                -- Check for water tiles
+                local has_water = false
+                for check_x = math.floor(blocking_area[1][1]), math.ceil(blocking_area[2][1]) do
+                    for check_y = math.floor(blocking_area[1][2]), math.ceil(blocking_area[2][2]) do
+                        local tile = player.surface.get_tile(check_x, check_y)
+                        if tile.name == "water" or tile.name == "deepwater" or tile.name == "water-green" or tile.name == "deepwater-green" or tile.name == "water-shallow" or tile.name == "water-mud" then
+                            has_water = true
+                            break
+                        end
+                    end
+                    if has_water then break end
+                end
+
+                local error_msg = "\"Cannot place " .. entity .. " at x=" .. position.x .. " y=" .. position.y
+                if #blocking_info > 0 then
+                    error_msg = error_msg .. " - blocked by: " .. table.concat(blocking_info, ", ")
+                end
+                if has_water then
+                    error_msg = error_msg .. " - terrain includes water"
+                end
+                if #blocking_info == 0 and not has_water then
+                    error_msg = error_msg .. " - something is in the way or terrain is unplaceable"
+                end
+                error_msg = error_msg .. "\""
+                error(error_msg)
             end
         end
 

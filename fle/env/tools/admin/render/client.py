@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Union, List, Tuple
 
-from fle.commons.models.rendered_image import RenderedImage
+from fle.commons.models.rendered_image import RenderedImage, Viewport
 from fle.env import Position, Layer
 from fle.env.tools import Tool
 from fle.env.tools.admin.render.constants import DEFAULT_SCALING
@@ -46,7 +46,7 @@ class Render(Tool):
         compression_level: str = "binary",
         blueprint: Union[str, List[Dict]] = None,
         return_renderer=False,
-        max_render_radius: Optional[float] = None,
+        max_render_radius: Optional[float] = 32,
     ) -> Union[RenderedImage, Tuple[RenderedImage, Renderer]]:
         """
         Returns information about all entities, tiles, and resources within the specified radius of the player.
@@ -103,13 +103,33 @@ class Render(Tool):
         width = max(1, width)
         height = max(1, height)
 
+        # Calculate the actual scaling used for rendering
+        actual_scaling = min(width / size["width"], height / size["height"])
+
         # Render the blueprint - the renderer will calculate the appropriate scaling
         image = renderer.render(width, height, self.image_resolver)
 
+        # Create viewport with world coordinates
+        # The renderer normalizes coordinates by subtracting offset_x/offset_y
+        # So to get world coordinates, we add the offset back
+        viewport = Viewport(
+            world_min_x=size["minX"] + renderer.offset_x,
+            world_min_y=size["minY"] + renderer.offset_y,
+            world_max_x=size["maxX"] + renderer.offset_x,
+            world_max_y=size["maxY"] + renderer.offset_y,
+            center_x=renderer.offset_x,  # The center is at the offset (player position)
+            center_y=renderer.offset_y,
+            width_tiles=size["width"],
+            height_tiles=size["height"],
+            image_width=width,
+            image_height=height,
+            scaling=actual_scaling,
+        )
+
         if return_renderer:
-            return RenderedImage(image), renderer
+            return RenderedImage(image, viewport), renderer
         else:
-            return RenderedImage(image)
+            return RenderedImage(image, viewport)
 
     def get_renderer_from_blueprint(self, blueprint):
         if isinstance(blueprint, str):

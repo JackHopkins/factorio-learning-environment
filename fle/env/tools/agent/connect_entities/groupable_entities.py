@@ -435,6 +435,27 @@ def construct_belt_groups(
         if group:
             initial_groups.append(group)
 
+    # IMPORTANT: Catch any remaining unvisited belts
+    # This handles belts that connect to splitters or other non-belt entities
+    # These belts may not be reachable via the normal walk algorithm
+    for belt in belts:
+        pos = (belt.position.x, belt.position.y)
+        if pos not in visited:
+            # Try to extend from this belt in both directions
+            group = []
+            # First walk backward to find the start
+            walk_backward(belt, group)
+            # Reset visited for this belt to allow forward walk
+            if group:
+                # Clear visited for all belts in this partial group to re-walk
+                for b in group:
+                    visited.discard((b.position.x, b.position.y))
+                group.clear()
+            # Now walk forward from this belt
+            walk_forward(belt, group)
+            if group:
+                initial_groups.append(group)
+
     # Merge overlapping groups
     final_groups = []
 

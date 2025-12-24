@@ -23,8 +23,15 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
     # Create a copy to modify
     result = base_image.copy()
 
+    # Get recipe name - handle both string and dict formats
+    recipe = entity["recipe"]
+    if isinstance(recipe, dict):
+        recipe_name = recipe.get("name", "")
+    else:
+        recipe_name = str(recipe) if recipe else ""
+
     # Try to get recipe icon
-    icon = image_resolver(f"icon_{entity['recipe']}")
+    icon = image_resolver(f"icon_{recipe_name}")
     if icon:
         # Draw dark circle background
         draw = ImageDraw.Draw(result)
@@ -60,6 +67,9 @@ def render_shadow(
 def get_key(entity: Dict, grid) -> str:
     """Get cache key including recipe"""
     recipe = entity.get("recipe", "")
+    # Handle both string and dict formats for recipe
+    if isinstance(recipe, dict):
+        recipe = recipe.get("name", "")
     direction = entity.get("direction", 0)
     return f"{recipe}_{direction}"
 

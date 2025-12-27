@@ -3,11 +3,14 @@
 Tree renderer for various tree types including dead trees
 """
 
+import logging
 import re
 from typing import Dict, Tuple, Optional, Callable, Set
 from PIL import Image
 
 from ..constants import TREE_VARIATIONS, TREE_FILES_PER_VARIATION
+
+logger = logging.getLogger(__name__)
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
@@ -229,7 +232,7 @@ def build_available_trees_index(sprites_dir) -> Dict[str, Set[str]]:
             for state, _ in all_files[(tree_type, variation)]:
                 available_trees[tree_type].add(f"{variation}-{state}")
         else:
-            print(
+            logger.debug(
                 f"Skipping tree-{tree_type}-{variation}: has {count} files instead of {TREE_FILES_PER_VARIATION}"
             )
 

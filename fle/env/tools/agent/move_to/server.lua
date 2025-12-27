@@ -23,14 +23,18 @@ end
 
 
 global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
-    --local player = global.agent_characters[player_index]
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local path = global.paths[path_handle]
     local surface = player.surface
 
     -- Check if path is valid
-    if not path or type(path) ~= "table" or #path == 0 then
-        error("Invalid path: " .. serpent.line(path))
+    if not path then
+        error("Invalid path: nil for path_handle=" .. tostring(path_handle) .. " (path not yet computed or request_path failed - race condition likely)")
+    elseif type(path) == "string" then
+        error("Invalid path: " .. path .. " for path_handle=" .. tostring(path_handle))
+    elseif type(path) ~= "table" or #path == 0 then
+        error("Invalid path: " .. serpent.line(path) .. " for path_handle=" .. tostring(path_handle))
     end
 
     -- If fast mode is disabled, set up walking queue
@@ -216,7 +220,8 @@ global.actions.update_walking_queues = function()
     if not global.walking_queues then return end
 
     for player_index, queue in pairs(global.walking_queues) do
-        local player = global.agent_characters[player_index]
+        -- Ensure we have a valid character, recreating if necessary
+        local player = global.utils.ensure_valid_character(player_index)
         if not player or not queue.current_target then goto continue end
 
         local distance = ((player.position.x - queue.current_target.x)^2 +

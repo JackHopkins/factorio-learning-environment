@@ -1,10 +1,13 @@
 """Image resolution and caching functionality."""
 
+import logging
 from typing import Optional, Dict
 from PIL import Image
 
 from .utils import find_fle_sprites_dir
 from .profiler import profiler, profile_method
+
+logger = logging.getLogger(__name__)
 
 
 class ImageResolver:
@@ -18,6 +21,28 @@ class ImageResolver:
         """
         self.images_dir = find_fle_sprites_dir()
         self.cache: Dict[str, Optional[Image.Image]] = {}
+        self._warned_missing_sprites = False
+
+        # Check if sprites directory exists and has content
+        if not self.images_dir.exists():
+            logger.warning(
+                f"Sprites directory does not exist: {self.images_dir}. "
+                f"Vision rendering will produce empty images. "
+                f"Run 'fle sprites' to download sprites."
+            )
+        else:
+            # Check if directory has any PNG files
+            png_files = list(self.images_dir.glob("*.png"))
+            if not png_files:
+                logger.warning(
+                    f"Sprites directory exists but contains no PNG files: {self.images_dir}. "
+                    f"Vision rendering will produce empty images. "
+                    f"Run 'fle sprites' to download sprites."
+                )
+            else:
+                logger.debug(
+                    f"ImageResolver initialized with {len(png_files)} sprites from {self.images_dir}"
+                )
 
     @profile_method(include_args=True)
     def __call__(self, name: str, shadow: bool = False) -> Optional[Image.Image]:

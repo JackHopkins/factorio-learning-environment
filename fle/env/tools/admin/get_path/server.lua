@@ -2,22 +2,20 @@
 global.actions.get_path = function(request_id)
     local request_data = global.path_requests[request_id]
     if not request_data then
-        return game.table_to_json({status = "\"invalid_request\""})
+        return game.table_to_json({status = "invalid_request"})
     end
 
-    if request_data == "pending" then
-        return game.table_to_json({status = "\"pending\""})
-    end
-
+    -- Check if path has been computed yet
     local path = global.paths[request_id]
     if not path then
-        return game.table_to_json({status = "\"not_found\""})
+        -- Request exists but path not yet computed - still pending
+        return game.table_to_json({status = "pending"})
     end
 
     if path == "busy" then
-        return game.table_to_json({status = "\"busy\""})
+        return game.table_to_json({status = "busy"})
     elseif path == "not_found" then
-        return game.table_to_json({status = "\"not_found\""})
+        return game.table_to_json({status = "not_found"})
     else
         local waypoints = {}
         for _, waypoint in ipairs(path) do
@@ -30,7 +28,7 @@ global.actions.get_path = function(request_id)
         local start = path[1].position
         local finish = path[#path].position
         return game.table_to_json({
-            status = "\"success\"",
+            status = "success",
             waypoints = waypoints
         })
     end

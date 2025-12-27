@@ -207,9 +207,35 @@ class PythonParser:
         return None
 
     @staticmethod
+    def extract_reasoning_content(content: str) -> Tuple[Optional[str], str]:
+        """
+        Extract reasoning blocks and final answer content for reasoning models.
+
+        Args:
+            content: Full response content potentially with reasoning blocks
+
+        Returns:
+            Tuple of (reasoning_content, final_answer_content)
+        """
+        # Look for reasoning blocks like <thinking>...</thinking>
+        thinking_pattern = r"<thinking>(.*?)</thinking>"
+        thinking_match = re.search(thinking_pattern, content, re.DOTALL)
+
+        if thinking_match:
+            reasoning_content = thinking_match.group(1).strip()
+            # Remove the thinking block to get the final answer
+            final_answer = re.sub(
+                thinking_pattern, "", content, flags=re.DOTALL
+            ).strip()
+            return reasoning_content, final_answer
+
+        # No reasoning blocks found, treat entire content as final answer
+        return None, content
+
+    @staticmethod
     def extract_code(choice) -> Optional[Tuple[str, str]]:
         """
-        Extract code from LLM response, first trying markdown blocks then falling back to chunk processing.
+        Extract code from LLM response, handling both reasoning and non-reasoning models.
 
         Args:
             choice: LLM response object with message.content or text attribute
@@ -217,7 +243,7 @@ class PythonParser:
         Returns:
             Tuple of (processed_code, original_content) or None if no content
         """
-        # Get content from response object
+        # Get content from response object - handle both string and structured content
         if hasattr(choice, "message") and hasattr(choice.message, "content"):
             content = choice.message.content
         elif hasattr(choice, "text"):
@@ -225,16 +251,51 @@ class PythonParser:
         else:
             raise RuntimeError("Incorrect message format")
 
-        if PythonParser.is_valid_python(content):
-            return content, content
+        # Handle structured content objects (ContentReasoning, ContentText, etc.)
+        if isinstance(content, list):
+            # Extract text from structured content objects
+            text_parts = []
+            for item in content:
+                if hasattr(item, "text"):  # ContentText object
+                    text_parts.append(item.text)
+                elif hasattr(item, "content"):  # Other content objects
+                    text_parts.append(item.content)
+                elif isinstance(item, str):  # Plain string
+                    text_parts.append(item)
+                # Skip ContentReasoning objects for now - we want the final answer
+            content = "\n".join(text_parts)
+        elif not isinstance(content, str):
+            content = str(content)
 
-        # First try to extract all backtick blocks
-        backtick_code = PythonParser.extract_all_backtick_blocks(content)
+        # Handle reasoning models - extract final answer after thinking
+        try:
+            reasoning_content, final_answer = PythonParser.extract_reasoning_content(
+                content
+            )
+        except TypeError:
+            # Handle case where content might be a list or other type
+            if isinstance(content, list):
+                content = str(content)
+            elif not isinstance(content, str):
+                content = str(content)
+            reasoning_content, final_answer = PythonParser.extract_reasoning_content(
+                content
+            )
+
+        # Use final answer for code extraction (reasoning is separate)
+        working_content = final_answer
+
+        if PythonParser.is_valid_python(working_content):
+            return working_content, content
+
+        # First try to extract all backtick blocks from final answer
+        backtick_code = PythonParser.extract_all_backtick_blocks(working_content)
         if backtick_code:
             return backtick_code, content
 
-        content = content.replace("```python", "").replace("```", "")
-        code = PythonParser.extract_all_valid_python_chunks(content)
+        # Clean up and try chunk processing on final answer
+        cleaned_content = working_content.replace("```python", "").replace("```", "")
+        code = PythonParser.extract_all_valid_python_chunks(cleaned_content)
         if code:
             return code, content
         return None

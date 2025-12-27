@@ -190,7 +190,7 @@ class Evaluator:
             start_entities = instance.namespace.get_entities()
             start_inventory = instance.namespace.inspect_inventory()
             start_production_flows = instance.namespace._get_production_stats()
-            initial_value, start_time = instance.namespace.score()
+            initial_value, _ = instance.namespace.score()
 
             # Executing code
             self.logger.update_instance(tcp_port, status="executing")

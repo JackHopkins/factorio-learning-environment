@@ -4,13 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.3.0"
+version = "0.3.1"
 description = "Factorio Learning Environment"
 authors = [
-    {name = "Jack Hopkins", email = "jack.hopkins@me.com"},
-    {name = "Mart Bakler", email = "martbakler50@gmail.com"},
+    {name = "Jack Hopkins", email = "noreply@github.com"},
+    {name = "Mart Bakler", email = "noreply@github.com"},
     {name = "Neel Kant", email = "contact@neelkant.io"},
-    {name = "Harshit Sharma", email = "harshsha64@gmail.com"},
     {name = "Kian Kyars", email = "kiankyars@gmail.com"},
 ]
 readme = "README.md"
@@ -28,49 +27,94 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-
-# Core dependencies - everything needed for FactorioInstance and tools
 dependencies = [
     "python-dotenv>=1.0.1",
     "pydantic>=2.10.6",
     "lupa>=2.4",
     "slpp>=1.2.3",
     "factorio-rcon-py==1.2.1",
-    "numpy>=2.2.3",
-    "tenacity>=9.0.0",
+    "construct>=2.10.70",
     "pillow>=11.1.0",
-    "pyyaml>=6.0.2",
-    "platformdirs>=4.3.8",
-    "a2a-sdk", # send_message tool + multiagent,
-    "huggingface-hub>=0.35.3",
+    "tomli",
+    "numpy>=2.2.3",
+    "gym",
+    "a2a-sdk",
+    "tenacity>=9.0.0",
+    "aiohttp>=3.8.0",
+    "uvicorn>=0.15.0",
+    "gym",
+    "a2a-sdk",
+    "tenacity>=9.0.0",
+    "aiohttp>=3.8.0",
+    "uvicorn>=0.15.0",
+    "pytest>=8.4.1",
+    "mcp[cli]>=1.11.0",
+    "black>=25.1.0",
     "memoization>=0.4.0",
+    "inspect-ai>=0.3.139",
+    "docker>=7.1.0",
+    "openai>=2.0.0",
+    "matplotlib>=3.10.7",
+    "huggingface-hub>=0.35.3",
+    "anthropic>=0.69.0",
+    "jinja2>=3.1.6",
+    "hf>=0.0.14",
+    "psycopg2-binary>=2.9.10",
 ]
 
 [project.optional-dependencies]
-# For running experiments/evaluations (fle eval command)
-eval = [
-    "gym",
-    "openai>=1.66.3",
-    "anthropic>=0.49.0",
-    "fastapi>=0.68.0", # multiagent
-    "aiohttp>=3.8.0", # multiagent
-    "uvicorn>=0.15.0", # multiagent
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "rich>=14.0.0",
+    "questionary>=2.1.0",
+    "pytest-xdist>=3.8.0",
 ]
-
-# For MCP protocol support
+agents = [
+    "anthropic>=0.49.0",
+    "openai>=1.66.3",
+]
+cluster = [
+    "docker>=6.0.0",
+    "boto3>=1.26.0",
+    "opencv-python",
+    "pyautogui>=0.9.54",
+    "pillow>=10.0.0",
+    "psutil>=5.9.0",
+    "opencv-python",
+    "pyautogui>=0.9.54",
+    "pillow>=10.0.0",
+    "psutil>=5.9.0",
+]
+eval = [
+    "scikit-image>=0.25.2",
+    "psycopg2>=2.9.10",
+]
+all = [
+    "docker>=6.0.0",
+    "boto3>=1.26.0",
+    "scikit-image>=0.25.2",
+]
 mcp = [
     "mcp[cli]",
     "dulwich",
 ]
-
-# For PostgreSQL database support
-psql = [
-    "psycopg2>=2.9.10",
+env = [
+    "anyio",
+    "pygame",
+    "neptune",
+    "rich",
+    "openai",
+    "scipy",
+    "scikit-image",
+    "pyautogui",
+    "tenacity",
+    "fastapi>=0.68.0",
 ]
 
 [project.scripts]
 fle = "fle.run:main"
-fle-mcp = "fle.server:main"
 
 [tool.hatch.version]
 path = "fle/__init__.py"
@@ -91,10 +135,6 @@ pythonpath = "fle/env"
 testpaths = "tests"
 python_files = "test_*.py"
 
-[tool.ruff]
-# Ignore module-import-at-top to allow early warning suppression before imports
-ignore = ["E402"]
-
 [project.urls]
 homepage = "https://jackhopkins.github.io/factorio-learning-environment/"
 leaderboard = "https://jackhopkins.github.io/factorio-learning-environment/leaderboard/"
@@ -110,34 +150,6 @@ url = "https://test.pypi.org/legacy/"
 publish-url = "https://test.pypi.org/legacy/"
 
 [dependency-groups]
-# Development tools
 dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "pytest-xdist>=3.8.0",
-    "pre-commit",
-    "ipykernel>=6.30.1",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-autodoc-typehints",
-]
-
-# Research/internal evaluation development
-eval-dev = [
-    "matplotlib>=3.10.6",
-    "neptune", # For experiment tracking
-    "questionary>=2.1.0", # Interactive prompts
-    "rich>=14.0.0", # Pretty printing
-    "scipy>=1.15.3",
-    "seaborn>=0.13.2",
-    "wandb>=0.22.0",
-]
-
-# Remote AWS cluster management
-remote = [
-    "docker>=6.0.0",
-    "boto3>=1.26.0",
-    "pyautogui>=0.9.54",
-    "psutil>=5.9.0",
+    "pytest-asyncio>=1.2.0",
 ]

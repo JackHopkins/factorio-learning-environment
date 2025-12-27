@@ -342,6 +342,50 @@ function dump(o)
   end
 end
 
+-- Calculate the total value of harvested items (raw resources gathered manually or by drills)
+local function get_harvested_value(price_list)
+    local harvested_items = global.harvested_items or {}
+    local total_value = 0
+    for name, amount in pairs(harvested_items) do
+        local price = price_list[name]
+        if price then
+            total_value = total_value + (price * amount)
+        end
+    end
+    return total_value
+end
+
+-- Calculate the net value of manually crafted items (output value - input value)
+local function get_crafted_net_value(price_list)
+    local crafted_items = global.crafted_items or {}
+    local total_net_value = 0
+    for _, craft_stats in ipairs(crafted_items) do
+        local output_value = 0
+        local input_value = 0
+        -- Sum output values
+        if craft_stats.outputs then
+            for name, amount in pairs(craft_stats.outputs) do
+                local price = price_list[name]
+                if price then
+                    output_value = output_value + (price * amount)
+                end
+            end
+        end
+        -- Sum input values
+        if craft_stats.inputs then
+            for name, amount in pairs(craft_stats.inputs) do
+                local price = price_list[name]
+                if price then
+                    input_value = input_value + (price * amount)
+                end
+            end
+        end
+        -- Net value is output minus input (value added by crafting)
+        total_net_value = total_net_value + (output_value - input_value)
+    end
+    return total_net_value
+end
+
 global.goal = nil
 
 local scores = production_score.get_production_scores()
@@ -349,10 +393,30 @@ if scores then
     global.initial_score = scores
 end
 
+-- Store initial harvested and crafted values for delta calculation
+local price_list = production_score.generate_price_list()
+global.initial_harvested_value = get_harvested_value(price_list)
+global.initial_crafted_net_value = get_crafted_net_value(price_list)
+
 global.actions.score = function()
+    local price_list = production_score.generate_price_list()
     local prod_score = production_score.get_production_scores()
-    prod_score["player"] = prod_score["player"] - global.initial_score["player"]
-    
+    local total_score = prod_score["player"] - global.initial_score["player"]
+    prod_score["player"] = total_score
+
+    -- Calculate automated production score = total - harvested - crafted_net_value
+    -- This represents only the value created by automated machines
+    local current_harvested_value = get_harvested_value(price_list)
+    local current_crafted_net_value = get_crafted_net_value(price_list)
+
+    -- Delta from initial values
+    local harvested_delta = current_harvested_value - (global.initial_harvested_value or 0)
+    local crafted_delta = current_crafted_net_value - (global.initial_crafted_net_value or 0)
+
+    -- Automated score = total production score minus manual contributions
+    local automated_score = total_score - harvested_delta - crafted_delta
+    prod_score["automated"] = math.floor(automated_score)
+
     -- Try to get goal description from first player if available, otherwise skip
     local goal_description = nil
     if #game.players > 0 and game.players[1] and game.players[1].valid then

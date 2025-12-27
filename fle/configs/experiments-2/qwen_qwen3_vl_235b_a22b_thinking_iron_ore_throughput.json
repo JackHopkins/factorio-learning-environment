@@ -1,0 +1,34 @@
+[
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    },
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "qwen/qwen3-vl-235b-a22b-thinking"
+    }
+]

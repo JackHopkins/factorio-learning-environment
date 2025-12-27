@@ -42,11 +42,12 @@ class Observation:
     """Complete observation of the game state"""
 
     raw_text: str
-    entities: List[str]
+    entities: List[Dict[str, Any]]  # Entity dicts from Pydantic __dict__
     inventory: Inventory
     research: ResearchState
     game_info: GameInfo
     score: float
+    automated_score: float  # Score excluding harvested and manually crafted items
     flows: ProductionFlows
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
@@ -177,6 +178,7 @@ class Observation:
             research=research,
             game_info=game_info,
             score=obs_dict.get("score", 0.0),
+            automated_score=obs_dict.get("automated_score", 0.0),
             flows=flows,
             task_verification=task_verification,
             messages=messages,
@@ -238,7 +240,9 @@ class Observation:
                 "progress": [
                     {"name": name, "value": value}
                     for name, value in self.research.progress.items()
-                ],
+                ]
+                if self.research.progress
+                else "None",
             },
             "game_info": {
                 "tick": self.game_info.tick,
@@ -246,6 +250,7 @@ class Observation:
                 "speed": self.game_info.speed,
             },
             "score": self.score,
+            "automated_score": self.automated_score,
             "flows": transformed_flows,
             "task_verification": {
                 "success": int(self.task_verification.success),

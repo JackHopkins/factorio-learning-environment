@@ -1,0 +1,373 @@
+type Query {
+  # Entity queries
+  entities(filter: EntityFilter, area: BoundingBoxInput, limit: Int): [Entity!]!
+  entity(id: ID!): Entity
+  entitiesNear(position: PositionInput!, radius: Float!, filter: EntityFilter): [Entity!]!
+  
+  # Graph traversal queries
+  beltSegments(filter: BeltSegmentFilter): [BeltSegment!]!
+  pathBetween(from: ID!, to: ID!, maxHops: Int = 10): ProductionPath
+  upstreamOf(entityId: ID!, hops: Int = 5): [Entity!]!
+  downstreamOf(entityId: ID!, hops: Int = 5): [Entity!]!
+  
+  # Group queries
+  beltGroups(filter: BeltGroupFilter): [BeltGroup!]!
+  pipeGroups(filter: PipeGroupFilter): [PipeGroup!]!
+  electricGroups(filter: ElectricGroupFilter): [ElectricGroup!]!
+  
+  # Factory analysis
+  productionChains(product: String!): [ProductionChain!]!
+  bottlenecks: [Bottleneck!]!
+  powerNetworks: [PowerNetwork!]!
+  logisticNetworks: [LogisticNetwork!]!
+  
+  # Resource queries
+  resources(type: String, area: BoundingBoxInput): [ResourcePatch!]!
+  inventory(entityId: ID!, slot: String): Inventory!
+}
+
+type Mutation {
+  # Connection generation
+  connect(from: ID!, to: ID!, options: ConnectionOptions): ConnectionResult!
+  
+  # Factory modifications
+  placeEntity(entityName: String!, position: PositionInput!, direction: Direction): Entity!
+  removeEntity(id: ID!): Boolean!
+  setRecipe(assemblingMachineId: ID!, recipeName: String!): Boolean!
+  
+  # Belt operations
+  createBeltPath(waypoints: [PositionInput!]!, beltType: String = "transport-belt"): [BeltSegment!]!
+  optimizePath(pathId: ID!): ProductionPath!
+}
+
+# Core types
+type Entity {
+  id: ID!
+  name: String!
+  type: EntityType!
+  position: Position!
+  direction: Direction!
+  status: EntityStatus!
+  energy: Float
+  health: Float
+  
+  # Graph relationships
+  neighbours: [Entity!]!
+  connectedEntities: [Entity!]!
+  
+  # Belt graph navigation
+  inputSegments: [BeltSegment!]!   # Segments ending at this entity
+  outputSegments: [BeltSegment!]!  # Segments starting from this entity
+  upstream(hops: Int = 3): [Entity!]!
+  downstream(hops: Int = 3): [Entity!]!
+  
+  # Type-specific fields
+  ... on TransportBelt {
+    inventory: BeltInventory!
+    throughput: Float!
+    inputPosition: Position!
+    outputPosition: Position!
+  }
+  
+  ... on AssemblingMachine {
+    recipe: Recipe
+    ingredients: Inventory!
+    products: Inventory!
+    craftingProgress: Float
+    productionRate: Float!
+  }
+  
+  ... on Inserter {
+    pickupPosition: Position!
+    dropPosition: Position!
+    filter: String
+    stackSize: Int!
+  }
+  
+  ... on ElectricityPole {
+    electricNetwork: PowerNetwork!
+    flowRate: Float!
+    coverage: [Entity!]!
+  }
+  
+  ... on Chest {
+    inventory: Inventory!
+    capacity: Int!
+  }
+  
+  ... on Pipe {
+    fluid: String
+    temperature: Float
+    flowRate: Float!
+    connections: [Entity!]!
+  }
+  
+  ... on MiningDrill {
+    resources: [Resource!]!
+    miningProgress: Float
+    dropPosition: Position!
+    productionRate: Float!
+  }
+}
+
+type BeltSegment {
+  id: ID!
+  from: Entity!
+  to: Entity!
+  belts: [TransportBelt!]!
+  length: Float!
+  throughput: Float!
+  inventory: Inventory!
+  direction: Direction!
+  
+  # Path properties
+  isUnderground: Boolean!
+  turnsCount: Int!
+  
+  # For chaining queries
+  fromConnections: [BeltSegment!]!  # Segments feeding into 'from' entity
+  toConnections: [BeltSegment!]!    # Segments leading out of 'to' entity
+}
+
+type ProductionPath {
+  segments: [BeltSegment!]!
+  totalLength: Float!
+  avgThroughput: Float!
+  bottlenecks: [Entity!]!
+  startEntity: Entity!
+  endEntity: Entity!
+}
+
+type PipeGroup {
+  id: ID!
+  pipes: [Pipe!]!
+  fluid: String
+  temperature: Float
+  totalCapacity: Float!
+  connections: [Entity!]!
+}
+
+type ElectricGroup {
+  id: ID!
+  poles: [ElectricityPole!]!
+  producers: [Entity!]!
+  consumers: [Entity!]!
+  production: Float!
+  consumption: Float!
+  satisfaction: Float!
+}
+
+type ProductionChain {
+  product: String!
+  producers: [Entity!]!
+  consumers: [Entity!]!
+  rate: Float!
+  efficiency: Float!
+  bottleneck: Entity
+}
+
+type Bottleneck {
+  entity: Entity!
+  type: BottleneckType!
+  severity: Float!
+  suggestion: String!
+}
+
+type PowerNetwork {
+  id: ID!
+  poles: [ElectricityPole!]!
+  generators: [Entity!]!
+  consumers: [Entity!]!
+  production: Float!
+  consumption: Float!
+  satisfaction: Float!
+}
+
+type LogisticNetwork {
+  id: ID!
+  providers: [Entity!]!
+  requesters: [Entity!]!
+  robots: Int!
+  items: [LogisticItem!]!
+}
+
+# Helper types
+type Position {
+  x: Float!
+  y: Float!
+}
+
+type BoundingBox {
+  leftTop: Position!
+  rightBottom: Position!
+  center: Position!
+  width: Float!
+  height: Float!
+}
+
+type Inventory {
+  items: [InventoryItem!]!
+  totalCount: Int!
+  capacity: Int
+}
+
+type InventoryItem {
+  name: String!
+  count: Int!
+  type: ItemType!
+}
+
+type BeltInventory {
+  left: [InventoryItem!]!
+  right: [InventoryItem!]!
+  throughput: Float!
+}
+
+type Recipe {
+  name: String!
+  ingredients: [Ingredient!]!
+  products: [Product!]!
+  craftingTime: Float!
+  category: String!
+}
+
+type Ingredient {
+  name: String!
+  count: Int!
+  type: ItemType!
+}
+
+type Product {
+  name: String!
+  count: Int!
+  probability: Float
+  type: ItemType!
+}
+
+type Resource {
+  name: String!
+  amount: Int!
+  position: Position!
+}
+
+type ResourcePatch {
+  name: String!
+  amount: Int!
+  size: Int!
+  boundingBox: BoundingBox!
+  richness: Float!
+}
+
+type LogisticItem {
+  name: String!
+  available: Int!
+  requested: Int!
+  inTransit: Int!
+}
+
+# Enums
+enum EntityType {
+  TRANSPORT_BELT
+  ASSEMBLING_MACHINE
+  INSERTER
+  CHEST
+  ELECTRICITY_POLE
+  PIPE
+  MINING_DRILL
+  FURNACE
+  BOILER
+  SOLAR_PANEL
+  ACCUMULATOR
+  LAB
+  ROCKET_SILO
+}
+
+enum EntityStatus {
+  WORKING
+  NO_POWER
+  NO_FUEL
+  NO_INGREDIENTS
+  FULL_OUTPUT
+  NO_RECIPE
+  NORMAL
+}
+
+enum Direction {
+  NORTH
+  EAST
+  SOUTH
+  WEST
+}
+
+enum ItemType {
+  ITEM
+  FLUID
+}
+
+enum BottleneckType {
+  INPUT_SHORTAGE
+  OUTPUT_FULL
+  POWER_SHORTAGE
+  THROUGHPUT_LIMITED
+}
+
+# Input types
+input EntityFilter {
+  names: [String!]
+  types: [EntityType!]
+  status: [EntityStatus!]
+  hasRecipe: Boolean
+  hasItems: Boolean
+  electricNetwork: ID
+}
+
+input BeltGroupFilter {
+  minLength: Int
+  hasItems: Boolean
+  throughputAbove: Float
+}
+
+input PipeGroupFilter {
+  fluid: String
+  temperatureAbove: Float
+}
+
+input ElectricGroupFilter {
+  productionAbove: Float
+  satisfactionBelow: Float
+}
+
+input PositionInput {
+  x: Float!
+  y: Float!
+}
+
+input BoundingBoxInput {
+  leftTop: PositionInput!
+  rightBottom: PositionInput!
+}
+
+input BeltSegmentFilter {
+  fromEntity: ID
+  toEntity: ID
+  throughputAbove: Float
+  lengthAbove: Float
+  hasItems: Boolean
+  isUnderground: Boolean
+}
+
+input ConnectionOptions {
+  beltType: String = "transport-belt"
+  avoidEntities: [ID!] = []
+  maxLength: Float
+  preferUnderground: Boolean = false
+  allowMixedBelts: Boolean = false
+}
+
+type ConnectionResult {
+  success: Boolean!
+  segments: [BeltSegment!]!
+  totalLength: Float!
+  estimatedCost: Int!
+  warnings: [String!]!
+}

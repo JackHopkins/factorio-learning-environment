@@ -3,6 +3,12 @@ Unified task registry for all task definitions.
 
 This module provides a central registry for all task configurations,
 eliminating the need for try-except blocks and providing clear task discovery.
+
+Task types:
+- throughput: Quota-based throughput tasks (produce X items/minute)
+- unbounded_throughput: Throughput without strict quota
+- default: Open-ended tasks (legacy)
+- unbounded_production: Open-play tasks tracking cumulative production score
 """
 
 from typing import Dict, Any
@@ -49,10 +55,14 @@ class TaskRegistry:
         self._all_tasks.update(MULTIAGENT_TASKS)
 
         # Map task types to their implementation classes
+        # Note: unbounded_production tasks are handled by Inspect solver/scorer directly,
+        # not through the TaskABC class hierarchy. They use factorio_unbounded_solver
+        # and unbounded_production_scorer from the inspect_integration module.
         self._task_type_to_class = {
             "throughput": ThroughputTask,
             "unbounded_throughput": UnboundedThroughputTask,
             "default": DefaultTask,
+            # "unbounded_production" is handled by Inspect framework, not TaskABC
         }
 
     def get_task_config(self, task_key: str) -> BaseModel:

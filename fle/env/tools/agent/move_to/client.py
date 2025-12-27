@@ -42,7 +42,15 @@ class MoveTo(Tool):
             allow_paths_through_own_entities=True,
             resolution=-1,
         )
-        sleep(0.05)  # Let the pathing complete in the game.
+
+        # Wait for path to be computed using get_path with backoff polling
+        # This fixes the race condition where move_to was called before path was ready
+        try:
+            self.get_path(path_handle)
+        except Exception as e:
+            raise Exception(
+                f"Path computation failed for path_handle={path_handle}: {e}"
+            )
 
         # Track elapsed ticks for fast forward
         ticks_before = self.game_state.instance.get_elapsed_ticks()

@@ -14,6 +14,7 @@ class TaskResponse(BaseModel):
 
 class Response(BaseModel):
     score: float
+    automated_score: float = 0.0  # Score excluding harvested and manually crafted items
     achievements: Dict[Any, Any]
     flows: ProductionFlows
     task: TaskResponse

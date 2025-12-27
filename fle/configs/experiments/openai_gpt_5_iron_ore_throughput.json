@@ -1,0 +1,6 @@
+[
+    {
+        "env_id": "iron_ore_throughput",
+        "model": "openai/gpt-5-nano"
+    }
+]

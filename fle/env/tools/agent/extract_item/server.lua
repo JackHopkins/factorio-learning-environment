@@ -97,7 +97,8 @@ local function remove_items_from_entity(entity, stack)
 end
 
 global.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
     local position = {x=x, y=y}
     local surface = player.surface
 

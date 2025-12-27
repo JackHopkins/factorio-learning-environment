@@ -1,0 +1,34 @@
+[
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    },
+    {
+        "env_id": "battery_throughput",
+        "model": "deepseek/deepseek-r1"
+    }
+]

@@ -1,5 +1,6 @@
 global.actions.craft_item = function(player_index, entity, count)
-    local player = global.agent_characters[player_index]
+    -- Ensure we have a valid character, recreating if necessary
+    local player = global.utils.ensure_valid_character(player_index)
 
     local function calculate_crafting_ticks(recipe, crafts_count)
         -- energy_required is in seconds, multiply by 60 to get standard ticks

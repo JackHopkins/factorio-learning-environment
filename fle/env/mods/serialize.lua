@@ -273,11 +273,10 @@ local function serialize_fluidbox(fluidbox)
             }
         end
 
-        -- Serialize connections
+        -- Serialize connections (check validity of connection owner)
         for _, connection in pairs(connections) do
-            if connection.owner and connection.owner.name then
+            if connection.owner and connection.owner.valid and connection.owner.name then
                 table.insert(serialized_box.connections, "\""..connection.owner.name .. "\"")
-
             end
         end
 
@@ -343,8 +342,8 @@ local function serialize_neighbours(entity)
 
     -- Process each nearby entity
     for _, neighbor in pairs(nearby) do
-        -- Skip if it's the same entity or if it has no unit number
-        if neighbor.unit_number and neighbor.unit_number ~= entity.unit_number then
+        -- Skip if invalid, same entity, or no unit number
+        if neighbor.valid and neighbor.unit_number and neighbor.unit_number ~= entity.unit_number then
             table.insert(neighbours, {
                 unit_number = neighbor.unit_number,
                 direction = get_neighbor_direction(entity, neighbor),
@@ -632,6 +631,11 @@ global.utils.serialize_entity = function(entity)
     if entity == nil then
         return {}
     end
+
+    -- Check if entity is still valid (hasn't been destroyed/removed)
+    if not entity.valid then
+        error("Cannot serialize entity: LuaEntity is no longer valid (entity may have been destroyed or removed)")
+    end
     --game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
     local direction = entity.direction
 
@@ -722,9 +726,16 @@ global.utils.serialize_entity = function(entity)
         -- Set input position based on upstream connections
         local input_pos = {x = x, y = y}
         if #entity.belt_neighbours["inputs"] > 0 then
-            -- Use the position of the first connected input belt
+            -- Use the position of the first connected input belt (check validity first)
             local input_belt = entity.belt_neighbours["inputs"][1]
-            input_pos = {x = input_belt.position.x, y = input_belt.position.y}
+            if input_belt and input_belt.valid then
+                input_pos = {x = input_belt.position.x, y = input_belt.position.y}
+            else
+                -- Fallback to default offset if neighbor is invalid
+                local offset = input_offset[entity.direction]
+                input_pos.x = x + offset.x
+                input_pos.y = y + offset.y
+            end
         else
             -- No input connection, use default offset
             local offset = input_offset[entity.direction]
@@ -736,9 +747,16 @@ global.utils.serialize_entity = function(entity)
         -- Set output position based on downstream connections
         local output_pos = {x = x, y = y}
         if #entity.belt_neighbours["outputs"] > 0 then
-            -- Use the position of the first connected output belt
+            -- Use the position of the first connected output belt (check validity first)
             local output_belt = entity.belt_neighbours["outputs"][1]
-            output_pos = {x = output_belt.position.x, y = output_belt.position.y}
+            if output_belt and output_belt.valid then
+                output_pos = {x = output_belt.position.x, y = output_belt.position.y}
+            else
+                -- Fallback to default offset if neighbor is invalid
+                local offset = output_offset[entity.direction]
+                output_pos.x = x + offset.x
+                output_pos.y = y + offset.y
+            end
         else
             -- No output connection, use default offset
             local offset = output_offset[entity.direction]
@@ -794,12 +812,14 @@ global.utils.serialize_entity = function(entity)
         -- Special handling for underground belts
         if entity.type == "underground-belt" then
             serialized.is_input = entity.belt_to_ground_type == "input"
+            -- Check validity of underground belt neighbor before accessing properties
+            local neighbour_valid = entity.neighbours ~= nil and entity.neighbours.valid
             if serialized.is_input then
-                serialized.is_terminus = entity.neighbours == nil
+                serialized.is_terminus = not neighbour_valid
             else
-                serialized.is_source = entity.neighbours == nil
+                serialized.is_source = not neighbour_valid
             end
-            if entity.neighbours ~= nil then
+            if neighbour_valid then
                 serialized.connected_to = entity.neighbours.unit_number
             end
         end
@@ -1127,15 +1147,18 @@ global.utils.serialize_entity = function(entity)
         }
 
         for _, resource in pairs(resources) do
-            if not serialized.resources[resource.name] then
-                serialized.resources[resource.name] = {
-                    name = "\""..resource.name.."\"",
-                    count = 0,
-                }
-            end
+            -- Check resource validity before accessing properties
+            if resource.valid then
+                if not serialized.resources[resource.name] then
+                    serialized.resources[resource.name] = {
+                        name = "\""..resource.name.."\"",
+                        count = 0,
+                    }
+                end
 
-            -- Add the resource amount and position
-            serialized.resources[resource.name].count = serialized.resources[resource.name].count + resource.amount
+                -- Add the resource amount and position
+                serialized.resources[resource.name].count = serialized.resources[resource.name].count + resource.amount
+            end
         end
 
 

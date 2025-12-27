@@ -1,3 +1,4 @@
+-- utils.lua
 global.utils.remove_enemies = function ()
     game.forces["enemy"].kill_all_units()  -- Removes all biters
     game.map_settings.enemy_expansion.enabled = false  -- Stops biters from expanding
@@ -146,6 +147,48 @@ script.on_event(defines.events.on_tick, function(event)
     end
   end
 end)
+
+-- Utility function to ensure a valid character exists for a given player index
+-- Call this before any operation that needs the character
+-- Returns the valid character entity, or creates a new one if invalid/missing
+global.utils.ensure_valid_character = function(player_index)
+    if not global.agent_characters then
+        global.agent_characters = {}
+    end
+
+    local char = global.agent_characters[player_index]
+
+    -- If character is missing or invalid, create a new one
+    if not char or not char.valid then
+
+        --if not char then
+        --    error("Character not available")
+        --end
+        --if char.position and not char.valid then
+        --    error("Character at: x="..char.position.x..", y="..char.position.y)
+        --end
+        --if not char.valid then
+        --    error("Character not valid")
+        --end
+
+        local spawn_position = {x = 0, y = (player_index - 1) * 2}
+
+        local new_char = game.surfaces[1].create_entity{
+            name = "character",
+            position = spawn_position,
+            force = game.forces.player
+        }
+
+        if new_char then
+            global.agent_characters[player_index] = new_char
+            return new_char
+        else
+            error("Failed to create agent character " .. player_index)
+        end
+    end
+
+    return char
+end
 
 function dump(o)
    if type(o) == 'table' then

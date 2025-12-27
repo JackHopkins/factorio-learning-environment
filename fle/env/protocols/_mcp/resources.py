@@ -36,6 +36,12 @@ async def entities(center_x: str, center_y: str, radius: str) -> List[Dict]:
         r = float(radius) if radius != "default" else 500
 
         entities = instance.namespace.get_entities(position=Position(cx, cy), radius=r)
+
+        if len(entities) > 20:
+            raise Exception(
+                "Too many entities to read. Please use the `get_entities` method in the Python API for "
+                "finer control, or reduce your search radius."
+            )
         return [e.model_dump() for e in entities]
     except Exception as e:
         raise Exception(f"Error getting entities: {str(e)}")

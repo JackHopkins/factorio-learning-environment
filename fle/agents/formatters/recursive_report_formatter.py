@@ -202,7 +202,9 @@ class RecursiveReportFormatter(ConversationFormatter):
 
             if new_content != message.content:
                 pass
-            new_content = f"Step {message_index} execution log\n{new_content}"
+            # avoid prefix accumulation when conversation is reused
+            if not new_content.startswith("Step "):
+                new_content = f"Step {message_index} execution log\n{new_content}"
             return Message(
                 role=message.role, content=new_content, metadata=message.metadata
             )
@@ -264,7 +266,7 @@ class RecursiveReportFormatter(ConversationFormatter):
         total_length = len(messages)
 
         # Handle base cases
-        if len(messages) <= self.chunk_size:  # account for system message
+        if len(messages) < self.chunk_size:  # account for system message
             messages = [
                 self._truncate_entity_data(
                     msg,
@@ -302,7 +304,7 @@ class RecursiveReportFormatter(ConversationFormatter):
 
         # We turn this off
         if self.summarize_history:
-            nr_of_messages = total_length - 1
+            nr_of_messages = total_length
             if nr_of_messages % self.chunk_size == 0:
                 nr_of_messages_in_report = nr_of_messages - self.chunk_size
                 messages_in_report = messages[:nr_of_messages_in_report]
@@ -328,7 +330,8 @@ class RecursiveReportFormatter(ConversationFormatter):
                 historical_report = self._load_cached_summary(messages_hash)
 
             # Historical report of actions and observations
-            if system_message:
+            # only update if we have a valid summary (avoid replacing with None on cache miss)
+            if system_message and historical_report is not None:
                 sys = system_message.content.split(
                     "Historical report of actions, observations, variables and functions until step"
                 )[0].strip()
@@ -336,6 +339,7 @@ class RecursiveReportFormatter(ConversationFormatter):
                     sys
                     + f"\n\nHistorical report of actions, observations, variables and functions until step {int(nr_of_messages_in_report / 2) - 1}\n\n{historical_report}\n\n"
                 )
+            if system_message:
                 new_formatted_messages = [system_message] + new_formatted_messages
         else:
             if system_message:

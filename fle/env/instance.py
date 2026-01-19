@@ -128,30 +128,39 @@ class GameControl:
 
 
 class DirectionInternal(enum.Enum):
+    # Factorio 2.0 uses 16-direction system
+    # Cardinal directions
     UP = NORTH = 0
-    RIGHT = EAST = 2
-    DOWN = SOUTH = 4
-    LEFT = WEST = 6
+    RIGHT = EAST = 4
+    DOWN = SOUTH = 8
+    LEFT = WEST = 12
+    # Diagonal directions
+    UPRIGHT = NORTHEAST = 2
+    DOWNRIGHT = SOUTHEAST = 6
+    DOWNLEFT = SOUTHWEST = 10
+    UPLEFT = NORTHWEST = 14
 
     @classmethod
     def opposite(cls, direction):
-        return cls((direction.value + 4) % 8)
+        return cls((direction.value + 8) % 16)
 
     @classmethod
     def next_clockwise(cls, direction):
-        return cls((direction.value + 2) % 8)
+        return cls((direction.value + 4) % 16)
 
     @classmethod
     def next_counterclockwise(cls, direction):
-        return cls((direction.value - 2) % 8)
+        return cls((direction.value - 4) % 16)
 
     @classmethod
     def to_factorio_direction(cls, direction):
-        return direction.value // 2
+        # Factorio 2.0 uses the same values as our Direction enum
+        return direction.value
 
     @classmethod
     def from_factorio_direction(cls, direction):
-        return direction.value * 2
+        # Factorio 2.0 uses the same values as our Direction enum
+        return direction.value
 
 
 class FactorioInstance:

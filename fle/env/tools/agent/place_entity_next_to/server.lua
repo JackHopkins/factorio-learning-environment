@@ -152,11 +152,15 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
         return false
     end
 
-    local valid_directions = {0, 1, 2, 3}  -- 0: North, 1: East, 2: South, 3: West
+    -- Factorio 2.0 uses 16-direction system: 0 (north), 4 (east), 8 (south), 12 (west)
+    local valid_directions = {0, 4, 8, 12}
 
     if not table_contains(valid_directions, direction) then
-        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 1 (east), 2 (south), or 3 (west).")
+        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 4 (east), 8 (south), or 12 (west).")
     end
+
+    -- Convert from Factorio 2.0 direction (0,4,8,12) to internal direction (0,1,2,3) for calculations
+    local internal_direction = direction / 4
 
     local ref_entities = player.surface.find_entities_filtered({
         area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}},
@@ -183,7 +187,8 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
                 ref_width, ref_height = 1, 1
             else
                 local ref_orientation = ref_entity.direction
-                if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
+                -- Factorio 2.0: East=4, West=12
+                if ref_orientation == defines.direction.east or ref_orientation == defines.direction.west then  -- East or West
                     ref_width = ref_entity.prototype.tile_height
                     ref_height = ref_entity.prototype.tile_width
                 else  -- North or South
@@ -276,7 +281,7 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
 
     local is_belt = is_transport_belt(entity)
 
-    local new_position = calculate_position(direction, ref_position, ref_entity, gap, is_belt, entity)
+    local new_position = calculate_position(internal_direction, ref_position, ref_entity, gap, is_belt, entity)
     
     -- Helper function to clear item-on-ground entities at a position
     local function clear_items_on_ground(position, radius)
@@ -336,30 +341,36 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
             )
             
             if should_try_alternatives then
-                local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, direction, gap)
-                
+                -- Pass internal_direction (0-3) to find_alternative_position_smart
+                local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, internal_direction, gap)
+
                 for i, alternative in pairs(alternatives) do
                     local alt_pos = alternative.position
                     -- Round to grid
                     alt_pos.x = math.ceil(alt_pos.x * 2) / 2
                     alt_pos.y = math.ceil(alt_pos.y * 2) / 2
-                    
+
                     -- Clear items at alternative position before checking if it's clear
                     clear_items_on_ground(alt_pos)
-                    
+
+                    -- Convert internal direction (0-3) to Factorio 2.0 direction (0,4,8,12)
+                    local alt_factorio_direction = alternative.direction * 4
+
                     -- Use proper collision detection instead of radius search
                     local alt_clear = player.surface.can_place_entity({
                         name = entity,
                         position = alt_pos,
-                        direction = storage.utils.get_entity_direction(entity, alternative.direction),
+                        direction = storage.utils.get_entity_direction(entity, alt_factorio_direction),
                         force = player.force
                     })
-                    
+
                     if alt_clear then
                         -- Found a good alternative position!
                         new_position = alt_pos
-                        direction = alternative.direction
-                        
+                        -- Update both internal and Factorio directions
+                        internal_direction = alternative.direction
+                        direction = alt_factorio_direction
+
                         -- Update orientation for the new direction
                         orientation = storage.utils.get_entity_direction(entity, direction)
                         
@@ -432,7 +443,7 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
         local move_distance = math.max(entity_width, entity_height) + 1
         local move_direction = {x = 0, y = 0}
 
-        if direction == 0 or direction == 2 then -- North or South
+        if internal_direction == 0 or internal_direction == 2 then -- North or South
             move_direction.x = 1 -- Move East
         else -- East or West
             move_direction.y = 1 -- Move South

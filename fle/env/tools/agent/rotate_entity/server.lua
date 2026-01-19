@@ -32,10 +32,11 @@ storage.actions.rotate_entity = function(player_index, x, y, direction, entity)
         error("No entity to rotate at the given coordinates.")
     end
 
-    local valid_directions = {0, 1, 2, 3}
+    -- Factorio 2.0 uses 16-direction system: 0 (north), 4 (east), 8 (south), 12 (west)
+    local valid_directions = {0, 4, 8, 12}
 
     if not table_contains(valid_directions, direction) then
-        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 1 (east), 2 (south), or 3 (west).")
+        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 4 (east), 8 (south), or 12 (west).")
     end
 
     --  game.print("Direction "..direction.. ", "..closest_entity.name..", "..closest_entity.direction)

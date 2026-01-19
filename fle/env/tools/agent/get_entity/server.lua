@@ -1,14 +1,14 @@
-global.actions.get_entity = function(player_index, entity, x, y)
+storage.actions.get_entity = function(player_index, entity, x, y)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     local position = {x=x, y=y}
 
-    if game.entity_prototypes[entity] == nil then
+    if prototypes.entity[entity] == nil then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
         error(name .. " isnt something that exists. Did you make a typo? ")
     end
 
-    local prototype = game.entity_prototypes[entity]
+    local prototype = prototypes.entity[entity]
     --local collision_box = prototype.collision_box
     local width = 1--math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
     local height = 1--math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
@@ -40,7 +40,7 @@ global.actions.get_entity = function(player_index, entity, x, y)
 
     if closest_entity ~= nil then
         local entity = closest_entity  -- get the first entity of the specified type in the area
-        local serialized = global.utils.serialize_entity(entity)
+        local serialized = storage.utils.serialize_entity(entity)
         --local entity_json = game.table_to_json(serialized)-- game.table_to_json(entity
         return serialized
     else

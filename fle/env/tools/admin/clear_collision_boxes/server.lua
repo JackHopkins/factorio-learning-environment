@@ -1,9 +1,9 @@
-global.actions.clear_collision_boxes = function(player_index)
-    local player = global.agent_characters[player_index]
+storage.actions.clear_collision_boxes = function(player_index)
+    local player = storage.agent_characters[player_index]
     if not player then return end
 
     -- Clean up temporary entities
-    local clearance_entities = global.clearance_entities[player_index]
+    local clearance_entities = storage.clearance_entities[player_index]
     if not clearance_entities then return end
 
     -- Define search area around player (500 tile radius)

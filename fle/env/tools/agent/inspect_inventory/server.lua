@@ -1,9 +1,9 @@
-global.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
+storage.actions.inspect_inventory = function(player_index, is_character_inventory, x, y, entity, all_players)
     local position = {x=x, y=y}
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     local surface = player.surface
-    local is_fast = global.fast
+    local is_fast = storage.fast
     local automatic_close = True
 
     local function get_player_inventory_items(player)
@@ -13,7 +13,7 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            return nil
        end
 
-       local item_counts = inventory.get_contents()
+       local item_counts = storage.utils.get_contents_compat(inventory)
        return item_counts
     end
 
@@ -57,8 +57,8 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
            end
-           local source = closest_entity.get_inventory(defines.inventory.furnace_source).get_contents()
-           local output = closest_entity.get_inventory(defines.inventory.furnace_result).get_contents()
+           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.furnace_source))
+           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.furnace_result))
            for k, v in pairs(output) do
                source[k] = (source[k] or 0) + v
            end
@@ -68,8 +68,8 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
            end
-           local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
-           local output = closest_entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
+           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_input))
+           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_output))
            for k, v in pairs(output) do
                source[k] = (source[k] or 0) + v
            end
@@ -79,15 +79,15 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
            end
-           return closest_entity.get_inventory(defines.inventory.lab_input).get_contents()
+           return storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.lab_input))
        end
        -- Handle centrifuge inventories
        if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
            end
-           local source = closest_entity.get_inventory(defines.inventory.assembling_machine_input).get_contents()
-           local output = closest_entity.get_inventory(defines.inventory.assembling_machine_output).get_contents()
+           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_input))
+           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_output))
            -- Merge input and output contents
            for k, v in pairs(output) do
                source[k] = (source[k] or 0) + v
@@ -97,17 +97,17 @@ global.actions.inspect_inventory = function(player_index, is_character_inventory
        if not closest_entity or not closest_entity.valid then
            error("No valid entity at given coordinates.")
        end
-       return closest_entity.get_inventory(defines.inventory.chest).get_contents()
+       return storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.chest))
     end
 
-    local player = global.agent_characters[player_index]
+    local player = storage.agent_characters[player_index]
     if not player then
        error("Player not found")
     end
 
     if all_players then
         local all_inventories = {}
-        for _, p in pairs(global.agent_characters) do
+        for _, p in pairs(storage.agent_characters) do
             local inventory_items = get_player_inventory_items(p)
             if inventory_items then
                 table.insert(all_inventories, inventory_items)

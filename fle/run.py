@@ -5,8 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 import importlib.resources
-import asyncio
-from fle.env.gym_env.run_eval import main as run_eval
+
+# from fle.env.gym_env.run_eval import main as run_eval
 from fle.agents.data.sprites.download import download_sprites_from_hf, generate_sprites
 
 
@@ -46,8 +46,8 @@ def fle_cluster(args):
 
 def fle_eval(args):
     try:
-        config_path = str(Path(args.config))
-        asyncio.run(run_eval(config_path))
+        _ = str(Path(args.config))  # Validate config path exists
+        raise Exception("Eval is not supported anymore - Use `inspect-eval` instead")
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)

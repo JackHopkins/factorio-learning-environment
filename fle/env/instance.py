@@ -111,7 +111,7 @@ class GameControl:
 
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(
-            "/sc rcon.print(global.elapsed_ticks or 0)"
+            "/sc rcon.print(storage.elapsed_ticks or 0)"
         )
         if not response:
             print("WARNING: No response from get_elapsed_ticks")
@@ -426,7 +426,9 @@ class FactorioInstance:
             partial_output = self._extract_partial_output(agent_idx)
             timeout_msg = f"Error: Evaluation timed out after {timeout}s"
             if partial_output:
-                timeout_msg += f"\n\nPartial output before timeout:\n{partial_output}"
+                timeout_msg = (
+                    f"{partial_output}\n\nError: Evaluation timed out after {timeout}s"
+                )
             response = (-1, "", timeout_msg)
         except Exception as e:
             message = e.args[0].replace("\\n", "")
@@ -474,7 +476,7 @@ class FactorioInstance:
     def initialise(
         self, fast=True, all_technologies_researched=True, clear_entities=True
     ):
-        self.rcon_client.send_command(f"/sc global.fast = {str(fast).lower()}")
+        self.rcon_client.send_command(f"/sc storage.fast = {str(fast).lower()}")
         self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
@@ -489,7 +491,7 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game(script_name)
 
         if self.peaceful:
-            self.rcon_client.send_command("/sc global.remove_enemies()")
+            self.rcon_client.send_command("/sc storage.utils.remove_enemies()")
 
         # Generate chunks around origin to enable long-distance pathfinding
         # 4000 tiles in each direction = 125 chunks (each chunk is 32x32 tiles)
@@ -513,7 +515,7 @@ class FactorioInstance:
         """
         start = timer()
         lua_response = self.rcon_client.send_command(
-            f"/sc rcon.print(dump(global.get_alerts({seconds})))"
+            f"/sc rcon.print(dump(storage.get_alerts({seconds})))"
         )
         # print(lua_response)
         alert_dict, duration = _lua2python("alerts", lua_response, start=start)

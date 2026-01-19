@@ -34,6 +34,7 @@ from fle.eval.inspect_integration.scorers import (
     technologies,
     achievements,
     automated_production_score,
+    code,
 )
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.eval.tasks.task_definitions.unbounded.unbounded_tasks import (
@@ -350,7 +351,7 @@ def _create_unbounded_production_task(env_id: str) -> Task:
         dataset=[
             Sample(
                 input=f"Begin task: {task_config.goal_description}",
-                target="maximize",  # No specific target for unbounded tasks
+                target=task_config.goal_description,  # No specific target for unbounded tasks
                 metadata={
                     "env_id": env_id,
                     "trajectory_length": int(
@@ -424,7 +425,13 @@ def _create_solver_variant_task(solver_name: str) -> Task:
             for i in range(32)
         ],
         solver=solver_fn(),
-        scorer=[production_score(), technologies(), achievements()],
+        scorer=[
+            production_score(),
+            automated_production_score(),
+            technologies(),
+            achievements(),
+            code(),
+        ],
         name=f"open_play_{solver_name}",
     )
 

@@ -1,5 +1,5 @@
-global.actions.get_research_progress = function(player_index, technology_name)
-    local player = global.agent_characters[player_index]
+storage.actions.get_research_progress = function(player_index, technology_name)
+    local player = storage.agent_characters[player_index]
     local force = player.force
 
     -- If no technology specified, use current research

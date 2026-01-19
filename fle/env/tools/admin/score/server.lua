@@ -13,7 +13,7 @@ end
 
 local function get_raw_resources()
   local raw_resources = {}
-  local entities = game.entity_prototypes
+  local entities = prototypes.entity
   for name, entity_prototype in pairs (entities) do
     if entity_prototype.resource_category then
       if entity_prototype.mineable_properties and entity_prototype.mineable_properties.products then
@@ -22,16 +22,15 @@ local function get_raw_resources()
         end
       end
     end
-    if entity_prototype.fluid then
-      raw_resources[entity_prototype.fluid.name] = true
-    end
+    -- In Factorio 2.0, fluid resources are included in mineable_properties.products
+    -- The entity_prototype.fluid property no longer exists
   end
   return raw_resources
 end
 
 local function get_product_list()
   local product_list = {}
-  local recipes = game.recipe_prototypes
+  local recipes = prototypes.recipe
 
   for recipe_name, recipe_prototype in pairs (recipes) do
     if recipe_prototype.allow_decomposition then
@@ -54,8 +53,8 @@ local function get_product_list()
     end
   end
 
-  local items = game.item_prototypes
-  local entities = game.entity_prototypes
+  local items = prototypes.item
+  local entities = prototypes.entity
   --[[Now we do some tricky stuff for space science type items]]
   local rocket_silos = {}
   for k, entity in pairs (entities) do
@@ -133,17 +132,17 @@ end
 
 local deduce_nil_prices = function(price_list, param)
   local nil_prices = {}
-  for name, item in pairs (game.item_prototypes) do
+  for name, item in pairs (prototypes.item) do
     if not price_list[name] then
       nil_prices[name] = {}
     end
   end
-  for name, item in pairs (game.fluid_prototypes) do
+  for name, item in pairs (prototypes.fluid) do
     if not price_list[name] then
       nil_prices[name] = {}
     end
   end
-  local recipes = game.recipe_prototypes
+  local recipes = prototypes.recipe
   for name, recipe in pairs (recipes) do
     for k, ingredient in pairs (recipe.ingredients) do
       if nil_prices[ingredient.name] then
@@ -279,12 +278,12 @@ production_score.generate_price_list = function(param)
       return price
     end
   end
-  local items = game.item_prototypes
+  local items = prototypes.item
   for name, item in pairs (items) do
     local current_loop = {}
     get_price_recursive(name, current_loop)
   end
-  local fluids = game.fluid_prototypes
+  local fluids = prototypes.fluid
   for name, fluid in pairs (fluids) do
     local current_loop = {}
     get_price_recursive(name, current_loop)
@@ -310,15 +309,17 @@ end
 production_score.get_production_scores = function(_price_list)
   local price_list = _price_list or production_score.generate_price_list()
   local scores = {}
+  local surface = game.surfaces[1]
   for k, force in pairs (game.forces) do
     local score = 0
-    for name, value in pairs (get_total_production_counts(force.item_production_statistics)) do
+    -- Factorio 2.0: production_statistics is now a method requiring surface parameter
+    for name, value in pairs (get_total_production_counts(force.get_item_production_statistics(surface))) do
       local price = price_list[name]
       if price then
         score = score + (price * value)
       end
     end
-    for name, value in pairs (get_total_production_counts(force.fluid_production_statistics)) do
+    for name, value in pairs (get_total_production_counts(force.get_fluid_production_statistics(surface))) do
       local price = price_list[name]
       if price then
         score = score + (price * value)
@@ -342,16 +343,16 @@ function dump(o)
   end
 end
 
-global.goal = nil
+storage.goal = nil
 
 local scores = production_score.get_production_scores()
 if scores then
-    global.initial_score = scores
+    storage.initial_score = scores
 end
 
-global.actions.score = function()
+storage.actions.score = function()
     local prod_score = production_score.get_production_scores()
-    prod_score["player"] = prod_score["player"] - global.initial_score["player"]
+    prod_score["player"] = prod_score["player"] - storage.initial_score["player"]
     
     -- Try to get goal description from first player if available, otherwise skip
     local goal_description = nil
@@ -359,8 +360,8 @@ global.actions.score = function()
         goal_description = game.players[1].get_goal_description()
     end
 
-    if global.goal ~= goal_description then
-      global.goal = goal_description
+    if storage.goal ~= goal_description then
+      storage.goal = goal_description
       --game.print(goal_description)
       --if goal_description ~= nil and #goal_description > 1 then
         --production_score["goal"] = goal_description[1]:gsub("-", "_")

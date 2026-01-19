@@ -1,5 +1,5 @@
 from typing import Union, Tuple, List, Set
-from fle.env.entities import Position, Entity, ElectricityGroup
+from fle.env.entities import Position, Entity, ElectricityGroup, FluidHandler
 from fle.env.tools.agent.connect_entities.resolver import Resolver
 
 
@@ -26,13 +26,21 @@ class PowerConnectionResolver(Resolver):
             and source_entity.electrical_id is not None
         )
 
-    def _get_entity_connection_points(self, entity: Entity) -> Set[Position]:
+    def _get_entity_connection_points(self, entity: FluidHandler) -> Set[Position]:
         """Get all predefined connection points for an entity."""
         connection_points = set()
 
         # Check for explicitly defined connection points
         if hasattr(entity, "connection_points"):
-            connection_points.update(entity.connection_points)
+            if (
+                entity.connection_points
+                and isinstance(entity.connection_points, list)
+                and isinstance(entity.connection_points[0], dict)
+            ):
+                for point in entity.connection_points:
+                    connection_points.add(Position(x=point["x"], y=point["y"]))
+            else:
+                connection_points.update(entity.connection_points)
         if hasattr(entity, "input_connection_points"):
             connection_points.update(entity.input_connection_points)
         if hasattr(entity, "output_connection_points"):

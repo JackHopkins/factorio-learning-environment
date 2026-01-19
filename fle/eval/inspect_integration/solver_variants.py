@@ -245,7 +245,7 @@ Now begin building your factory step by step."""
 
             try:
                 try:
-                    gym_env.clear_enemies()
+                    gym_env.background_step()
                 except Exception as ee:
                     logger.warning(f"Environment error: Clearing enemies: {ee}")
                     raise Exception(f"Clearing enemies: {ee}") from ee
@@ -337,7 +337,11 @@ Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
                     "cache": CachePolicy(per_epoch=False),
                 }
                 _model = get_model()
-                if "openrouter" in _model.name:
+                # Safely access model name - handle cases where get_model() returns unexpected types
+                model_name_str = (
+                    getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                )
+                if model_name_str and "openrouter" in model_name_str:
                     generation_config["transforms"] = ["middle-out"]
 
                 inference_start = time.time()
@@ -986,7 +990,7 @@ Now begin building your factory step by step."""
 
                 try:
                     try:
-                        gym_env.clear_enemies()
+                        gym_env.background_step()
                     except Exception as ee:
                         logger.warning(f"Environment error: Clearing enemies: {ee}")
                         raise Exception(f"Clearing enemies: {ee}") from ee
@@ -1066,7 +1070,11 @@ Now begin building your factory step by step."""
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()
@@ -1506,7 +1514,7 @@ Now begin building your factory step by step."""
                 Sleep.reset_step_sleep_duration()
 
                 try:
-                    gym_env.clear_enemies()
+                    gym_env.background_step()
 
                     # Get current observation
                     observation: Observation = gym_env.get_observation()
@@ -1549,7 +1557,11 @@ Analyze the current state and write a Python program using the FLE API to expand
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()
@@ -2064,7 +2076,7 @@ Now begin building your factory step by step."""
                 Sleep.reset_step_sleep_duration()
 
                 try:
-                    gym_env.clear_enemies()
+                    gym_env.background_step()
 
                     # Get current observation
                     observation: Observation = gym_env.get_observation()
@@ -2099,7 +2111,11 @@ Analyze the current state and write a Python program using the FLE API to expand
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()
@@ -2565,7 +2581,7 @@ def factorio_condensed_prompt_latest_image_solver():
                 Sleep.reset_step_sleep_duration()
 
                 try:
-                    gym_env.clear_enemies()
+                    gym_env.background_step()
 
                     # Get current observation
                     observation: Observation = gym_env.get_observation()
@@ -2596,7 +2612,11 @@ Analyze the current state and write a Python program using the FLE API to expand
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()
@@ -3008,7 +3028,7 @@ def factorio_condensed_prompt_solver():
                 Sleep.reset_step_sleep_duration()
 
                 try:
-                    gym_env.clear_enemies()
+                    gym_env.background_step()
 
                     # Get current observation
                     observation: Observation = gym_env.get_observation()
@@ -3039,7 +3059,11 @@ Analyze the current state and write a Python program using the FLE API to expand
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()

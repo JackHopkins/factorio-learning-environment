@@ -1,6 +1,6 @@
 
-global.actions.inspect_entities = function(player_index, radius, position_x, position_y)
-    local player = global.agent_characters[player_index]
+storage.actions.inspect_entities = function(player_index, radius, position_x, position_y)
+    local player = storage.agent_characters[player_index]
     local position
 
     if position_x and position_y then
@@ -69,7 +69,7 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
         return path_ends
     end
 
-    local entity_data = global.utils.inspect(player, radius, position)
+    local entity_data = storage.utils.inspect(player, radius, position)
 
     local result = {}
 
@@ -91,11 +91,11 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
 
         local position = {x=data.position.x, y=data.position.y}
 
-        --game.print(data.name .. ": " .. data.direction .. " - ".. global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction))
+        --game.print(data.name .. ": " .. data.direction .. " - ".. storage.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction))
         local entity_info = {
             name = data.name:gsub("-", "_"),
             position = position,
-            direction = global.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction),
+            direction = storage.utils.get_entity_direction(data.name:gsub("_", "-"), data.direction),
             health = data.health,
             force = data.force,
             energy = data.energy,
@@ -113,7 +113,7 @@ global.actions.inspect_entities = function(player_index, radius, position_x, pos
             entity_info.crafted_items = data.crafted_items
         end
 
-        --local serialized = global.utils.serialize_entity(data)
+        --local serialized = storage.utils.serialize_entity(data)
         --table.insert(result, serialized)
 
         table.insert(result, entity_info)

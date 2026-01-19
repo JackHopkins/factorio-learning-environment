@@ -17,7 +17,7 @@ local function get_inventory_info(entity)
             end
 
             -- Calculate total capacity (slots * stack size)
-            local capacity = #inv * game.item_prototypes[inv[1].name or "iron-plate"].stack_size
+            local capacity = #inv * prototypes.item[inv[1].name or "iron-plate"].stack_size
 
             return string.format("(%d/%d items)", item_count, capacity)
         end
@@ -25,9 +25,9 @@ local function get_inventory_info(entity)
     return ""
 end
 
-global.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
+storage.actions.insert_item = function(player_index, insert_item, count, x, y, target_name)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     local position = {x=x, y=y}
     local surface = player.surface
 
@@ -63,12 +63,12 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
     local function can_insert_item(entity, item_name)
         if entity.type == "transport-belt" then
             -- All items that can be on ground can be on belts
-            local item_prototype = game.item_prototypes[item_name]
+            local item_prototype = prototypes.item[item_name]
             return item_prototype and not item_prototype.has_flag("only-in-cursor")
 
         elseif entity.type == "lab" then
             -- Check if the item is a science pack
-            local item_prototype = game.item_prototypes[item_name]
+            local item_prototype = prototypes.item[item_name]
             return item_prototype and item_prototype.type == "tool"
 
         elseif entity.type == "assembling-machine" then
@@ -90,7 +90,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
             end
         elseif entity.type == "furnace" then
             -- Check if it's a fuel
-            if game.item_prototypes[item_name].fuel_value > 0 then
+            if prototypes.item[item_name].fuel_value > 0 then
                 return true
             end
             -- Check furnace inventory for incompatible items
@@ -109,7 +109,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
                 end
             end
             -- Check if it's a valid ingredient for any furnace recipe
-            for _, recipe in pairs(game.recipe_prototypes) do
+            for _, recipe in pairs(prototypes.recipe) do
                 if recipe.category == "smelting" then
                     for _, ingredient in pairs(recipe.ingredients) do
                         if ingredient.name == item_name then
@@ -120,11 +120,11 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
             end
             return false
             ---- Check if it's a fuel
-            --if game.item_prototypes[item_name].fuel_value > 0 then
+            --if prototypes.item[item_name].fuel_value > 0 then
             --    return true
             --end
             ---- Check if it's a valid ingredient for any furnace recipe
-            --for _, recipe in pairs(game.recipe_prototypes) do
+            --for _, recipe in pairs(prototypes.recipe) do
             --    if recipe.category == "smelting" then
             --        for _, ingredient in pairs(recipe.ingredients) do
             --            if ingredient.name == item_name then
@@ -136,7 +136,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
             --return false
         elseif entity.burner then
             -- Check if it's a fuel
-            return game.item_prototypes[item_name].fuel_value > 0
+            return prototypes.item[item_name].fuel_value > 0
         elseif entity.type == "container" or entity.type == "logistic-container" then
             return true  -- Containers can accept any item
         end
@@ -226,7 +226,7 @@ global.actions.insert_item = function(player_index, insert_item, count, x, y, ta
         -- Only remove successfully inserted items from player
         player.remove_item{name=insert_item, count=inserted}
         -- game.print("Successfully inserted " .. inserted .. " items.")
-        return global.utils.serialize_entity(closest_entity)
+        return storage.utils.serialize_entity(closest_entity)
     else
         local inventory_info = get_inventory_info(closest_entity)
         local error_msg = string.format(

@@ -1,10 +1,10 @@
 -- move_to
 
 -- Register the tick handler when the module is loaded
-if not global.fast then
+if not storage.fast then
     script.on_nth_tick(5, function(event)
-        if global.walking_queues then
-            global.actions.update_walking_queues()
+        if storage.walking_queues then
+            storage.actions.update_walking_queues()
         end
     end)
 end
@@ -22,10 +22,10 @@ end
 --end
 
 
-global.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
+storage.actions.move_to = function(player_index, path_handle, trailing_entity, is_trailing)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
-    local path = global.paths[path_handle]
+    local player = storage.utils.ensure_valid_character(player_index)
+    local path = storage.paths[path_handle]
     local surface = player.surface
 
     -- Check if path is valid
@@ -38,39 +38,39 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     -- If fast mode is disabled, set up walking queue
-    if not global.fast then
+    if not storage.fast then
         -- Initialize walking queue if it doesn't exist
-        if not global.walking_queues then
-            global.walking_queues = {}
+        if not storage.walking_queues then
+            storage.walking_queues = {}
         end
 
         -- Create or clear existing queue for this player
-        if not global.walking_queues[player_index] then
-            global.walking_queues[player_index] = {
+        if not storage.walking_queues[player_index] then
+            storage.walking_queues[player_index] = {
                 positions = {},
                 current_target = nil,
                 trailing_entity = trailing_entity,
                 is_trailing = is_trailing
             }
         else
-            global.walking_queues[player_index].positions = {}
-            global.walking_queues[player_index].current_target = nil
-            global.walking_queues[player_index].trailing_entity = trailing_entity
-            global.walking_queues[player_index].is_trailing = is_trailing
+            storage.walking_queues[player_index].positions = {}
+            storage.walking_queues[player_index].current_target = nil
+            storage.walking_queues[player_index].trailing_entity = trailing_entity
+            storage.walking_queues[player_index].is_trailing = is_trailing
         end
 
         -- Add all path positions to the queue
         for _, point in ipairs(path) do
-            table.insert(global.walking_queues[player_index].positions, point.position)
+            table.insert(storage.walking_queues[player_index].positions, point.position)
         end
 
         -- Start walking to first position
-        if #global.walking_queues[player_index].positions > 0 then
-            local target = global.walking_queues[player_index].positions[1]
-            global.walking_queues[player_index].current_target = target
+        if #storage.walking_queues[player_index].positions > 0 then
+            local target = storage.walking_queues[player_index].positions[1]
+            storage.walking_queues[player_index].current_target = target
             player.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction(player.position, target)
+                direction = storage.utils.get_direction(player.position, target)
             }
         end
 
@@ -93,7 +93,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     local function place(place_position, direction)
-        if global.utils.can_place_entity(player, trailing_entity, place_position, direction) then
+        if storage.utils.can_place_entity(player, trailing_entity, place_position, direction) then
             if player.get_item_count(trailing_entity) > 0 then
                 local created = surface.create_entity{name=trailing_entity, position=place_position, direction=direction, force='player', player=player, build_check_type=defines.build_check_type.manual, fast_replace=true}
                 if created then
@@ -155,7 +155,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
     end
 
     if is_trailing == 1 or is_trailing == 0 then
-        if game.entity_prototypes[trailing_entity] == nil then
+        if prototypes.entity[trailing_entity] == nil then
             error('No entity exists that can be laid')
         end
     end
@@ -167,10 +167,10 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
         local target_position = path[i].position
 
         -- Calculate and accumulate movement ticks before teleporting
-        global.elapsed_ticks = global.elapsed_ticks + global.utils.calculate_movement_ticks(player, prev_pos, target_position)
+        storage.elapsed_ticks = storage.elapsed_ticks + storage.utils.calculate_movement_ticks(player, prev_pos, target_position)
 
 
-        local direction = global.utils.get_direction(prev_pos, target_position)
+        local direction = storage.utils.get_direction(prev_pos, target_position)
 
         if not direction then
             goto continue
@@ -185,7 +185,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 --game.print("Placing at direction: " .. direction .. " Current position: " .. serpent.line(prev_pos) .. " Target position: " .. serpent.line(target_position))
                 new_belt = place(prev_pos, direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, prev_pos))
+                    rotate_entity(prev_belt, storage.utils.get_direction(prev_belt.position, prev_pos))
                 end
             end
             player.teleport(target_position)
@@ -199,7 +199,7 @@ global.actions.move_to = function(player_index, path_handle, trailing_entity, is
                 new_direction = opposite_direction[direction/2+1]
                 new_belt = place(target_position, new_direction)
                 if prev_belt then
-                    rotate_entity(prev_belt, global.utils.get_direction(prev_belt.position, current_position))
+                    rotate_entity(prev_belt, storage.utils.get_direction(prev_belt.position, current_position))
                 end
             end
             player.teleport(target_position)
@@ -216,12 +216,12 @@ end
 
 -- Add this new function to handle the walking queue updates
 -- This should be called on every tick
-global.actions.update_walking_queues = function()
-    if not global.walking_queues then return end
+storage.actions.update_walking_queues = function()
+    if not storage.walking_queues then return end
 
-    for player_index, queue in pairs(global.walking_queues) do
+    for player_index, queue in pairs(storage.walking_queues) do
         -- Ensure we have a valid character, recreating if necessary
-        local player = global.utils.ensure_valid_character(player_index)
+        local player = storage.utils.ensure_valid_character(player_index)
         if not player or not queue.current_target then goto continue end
 
         local distance = ((player.position.x - queue.current_target.x)^2 +
@@ -237,7 +237,7 @@ global.actions.update_walking_queues = function()
                 queue.current_target = queue.positions[1]
                 player.walking_state = {
                     walking = true,
-                    direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                    direction = storage.utils.get_direction_with_diagonals(player.position, queue.current_target)
                 }
             else
                 -- Queue is empty, stop walking
@@ -248,7 +248,7 @@ global.actions.update_walking_queues = function()
             -- Update walking direction to current target
             player.walking_state = {
                 walking = true,
-                direction = global.utils.get_direction_with_diagonals(player.position, queue.current_target)
+                direction = storage.utils.get_direction_with_diagonals(player.position, queue.current_target)
             }
         end
 
@@ -256,15 +256,15 @@ global.actions.update_walking_queues = function()
     end
 end
 
-global.actions.clear_walking_queue = function(player_index)
-    if global.walking_queues and global.walking_queues[player_index] then
-        global.walking_queues[player_index] = nil
+storage.actions.clear_walking_queue = function(player_index)
+    if storage.walking_queues and storage.walking_queues[player_index] then
+        storage.walking_queues[player_index] = nil
     end
 end
 
-global.actions.get_walking_queue_length = function(player_index)
-    if global.walking_queues and global.walking_queues[player_index] then
-        return #global.walking_queues[player_index].positions
+storage.actions.get_walking_queue_length = function(player_index)
+    if storage.walking_queues and storage.walking_queues[player_index] then
+        return #storage.walking_queues[player_index].positions
     end
     return 0
 end

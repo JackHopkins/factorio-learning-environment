@@ -30,7 +30,7 @@ local function generate_agent_color(index, total_agents)
 end
 
 -- Create agent characters script
-global.actions.create_agent_characters = function(num_agents)
+storage.actions.create_agent_characters = function(num_agents)
     -- delete all character entities on the surface
     for _, entity in pairs(game.surfaces[1].find_entities_filtered{type = "character"}) do
         entity.destroy()
@@ -41,13 +41,13 @@ global.actions.create_agent_characters = function(num_agents)
         entity.destroy()
     end
     -- Destroy existing agent characters if they exist
-    if global.agent_characters then
-        for _, char in pairs(global.agent_characters) do
+    if storage.agent_characters then
+        for _, char in pairs(storage.agent_characters) do
             if char and char.valid then
                 char.destroy()
             end
         end
-        global.agent_characters = {}
+        storage.agent_characters = {}
     end
     
     -- Create new characters for each agent
@@ -63,10 +63,10 @@ global.actions.create_agent_characters = function(num_agents)
             char.color = generate_agent_color(i, num_agents)
         end
         
-        global.agent_characters[i] = char
+        storage.agent_characters[i] = char
     end
 
     -- Set the first character as the main player
-    player = global.agent_characters[1]
+    player = storage.agent_characters[1]
     player.surface.always_day=true
 end

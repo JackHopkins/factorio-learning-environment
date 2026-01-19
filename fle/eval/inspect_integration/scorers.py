@@ -6,6 +6,7 @@ Contains scorers for:
 - Achievement scorers: achievements (tracks unique item types produced), technologies (tracks researched technologies)
 - Utility scorers: production_score_tracker, step_change_tracker
 - Latency scorers: latency_scorer, inference_latency_scorer, sleep_duration_scorer
+- Static analysis scorers: static_analysis_scorer (cyclomatic complexity, variable counts, conditionals, etc.)
 """
 
 import logging
@@ -1249,3 +1250,372 @@ async def apply_unbounded_intermediate_scoring(
         logger.error(
             f"Error applying unbounded intermediate scoring for step {step_num}: {e}"
         )
+
+
+# =============================================================================
+# Static Analysis Scorers
+# =============================================================================
+
+
+import ast
+from typing import Dict, Any
+from dataclasses import dataclass
+
+
+@dataclass
+class CodeMetrics:
+    """Metrics extracted from static code analysis."""
+
+    variable_assignments: int = 0
+    conditionals: int = 0  # if, elif
+    loops: int = 0  # for, while
+    function_definitions: int = 0
+    class_definitions: int = 0
+    try_except_blocks: int = 0
+    with_statements: int = 0
+    boolean_operators: int = 0  # and, or
+    comprehensions: int = 0  # list/dict/set comprehensions, generator expressions
+    assert_statements: int = 0
+    cyclomatic_complexity: int = 1  # Base complexity is 1
+    total_lines: int = 0
+    code_lines: int = 0  # Non-empty, non-comment lines
+    parse_errors: int = 0
+
+
+class CodeMetricsVisitor(ast.NodeVisitor):
+    """AST visitor that collects code metrics for cyclomatic complexity calculation."""
+
+    def __init__(self):
+        self.metrics = CodeMetrics()
+
+    def visit_Assign(self, node):
+        self.metrics.variable_assignments += len(node.targets)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node):
+        self.metrics.variable_assignments += 1
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node):
+        if node.value is not None:  # Only count if there's an actual assignment
+            self.metrics.variable_assignments += 1
+        self.generic_visit(node)
+
+    def visit_If(self, node):
+        # Each if/elif adds one decision point
+        # elif is represented as nested If in orelse, generic_visit handles it
+        self.metrics.conditionals += 1
+        self.metrics.cyclomatic_complexity += 1
+        self.generic_visit(node)
+
+    def visit_For(self, node):
+        self.metrics.loops += 1
+        self.metrics.cyclomatic_complexity += 1
+        self.generic_visit(node)
+
+    def visit_While(self, node):
+        self.metrics.loops += 1
+        self.metrics.cyclomatic_complexity += 1
+        self.generic_visit(node)
+
+    def visit_FunctionDef(self, node):
+        self.metrics.function_definitions += 1
+        self.generic_visit(node)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.metrics.function_definitions += 1
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node):
+        self.metrics.class_definitions += 1
+        self.generic_visit(node)
+
+    def visit_Try(self, node):
+        self.metrics.try_except_blocks += 1
+        # Each except handler adds a branch
+        self.metrics.cyclomatic_complexity += len(node.handlers)
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node):
+        # Already counted in visit_Try
+        self.generic_visit(node)
+
+    def visit_With(self, node):
+        self.metrics.with_statements += 1
+        self.generic_visit(node)
+
+    def visit_AsyncWith(self, node):
+        self.metrics.with_statements += 1
+        self.generic_visit(node)
+
+    def visit_BoolOp(self, node):
+        # Each 'and' or 'or' adds a decision point
+        # For n operands, there are n-1 operators
+        num_operators = len(node.values) - 1
+        self.metrics.boolean_operators += num_operators
+        self.metrics.cyclomatic_complexity += num_operators
+        self.generic_visit(node)
+
+    def visit_ListComp(self, node):
+        self.metrics.comprehensions += 1
+        # Each 'if' clause in comprehension adds complexity
+        for generator in node.generators:
+            self.metrics.cyclomatic_complexity += len(generator.ifs)
+        self.generic_visit(node)
+
+    def visit_SetComp(self, node):
+        self.metrics.comprehensions += 1
+        for generator in node.generators:
+            self.metrics.cyclomatic_complexity += len(generator.ifs)
+        self.generic_visit(node)
+
+    def visit_DictComp(self, node):
+        self.metrics.comprehensions += 1
+        for generator in node.generators:
+            self.metrics.cyclomatic_complexity += len(generator.ifs)
+        self.generic_visit(node)
+
+    def visit_GeneratorExp(self, node):
+        self.metrics.comprehensions += 1
+        for generator in node.generators:
+            self.metrics.cyclomatic_complexity += len(generator.ifs)
+        self.generic_visit(node)
+
+    def visit_Assert(self, node):
+        self.metrics.assert_statements += 1
+        self.metrics.cyclomatic_complexity += 1
+        self.generic_visit(node)
+
+    def visit_IfExp(self, node):
+        # Ternary operator: x if condition else y
+        self.metrics.conditionals += 1
+        self.metrics.cyclomatic_complexity += 1
+        self.generic_visit(node)
+
+
+def analyze_code(code: str) -> CodeMetrics:
+    """Analyze a single code snippet and return metrics."""
+    metrics = CodeMetrics()
+
+    if not code or not code.strip():
+        return metrics
+
+    # Count lines
+    lines = code.split("\n")
+    metrics.total_lines = len(lines)
+    metrics.code_lines = sum(
+        1 for line in lines if line.strip() and not line.strip().startswith("#")
+    )
+
+    try:
+        tree = ast.parse(code)
+        visitor = CodeMetricsVisitor()
+        visitor.visit(tree)
+        # Copy metrics from visitor
+        metrics.variable_assignments = visitor.metrics.variable_assignments
+        metrics.conditionals = visitor.metrics.conditionals
+        metrics.loops = visitor.metrics.loops
+        metrics.function_definitions = visitor.metrics.function_definitions
+        metrics.class_definitions = visitor.metrics.class_definitions
+        metrics.try_except_blocks = visitor.metrics.try_except_blocks
+        metrics.with_statements = visitor.metrics.with_statements
+        metrics.boolean_operators = visitor.metrics.boolean_operators
+        metrics.comprehensions = visitor.metrics.comprehensions
+        metrics.assert_statements = visitor.metrics.assert_statements
+        metrics.cyclomatic_complexity = visitor.metrics.cyclomatic_complexity
+    except SyntaxError:
+        metrics.parse_errors = 1
+        # Return basic metrics even if we can't parse
+
+    return metrics
+
+
+def aggregate_metrics(metrics_list: List[CodeMetrics]) -> Dict[str, Any]:
+    """Aggregate metrics across multiple code samples."""
+    if not metrics_list:
+        return {
+            "total_variable_assignments": 0,
+            "total_conditionals": 0,
+            "total_loops": 0,
+            "total_function_definitions": 0,
+            "total_class_definitions": 0,
+            "total_try_except_blocks": 0,
+            "total_with_statements": 0,
+            "total_boolean_operators": 0,
+            "total_comprehensions": 0,
+            "total_assert_statements": 0,
+            "total_cyclomatic_complexity": 0,
+            "avg_cyclomatic_complexity": 0.0,
+            "max_cyclomatic_complexity": 0,
+            "min_cyclomatic_complexity": 0,
+            "total_lines": 0,
+            "total_code_lines": 0,
+            "num_programs": 0,
+            "parse_errors": 0,
+        }
+
+    return {
+        "total_variable_assignments": sum(m.variable_assignments for m in metrics_list),
+        "total_conditionals": sum(m.conditionals for m in metrics_list),
+        "total_loops": sum(m.loops for m in metrics_list),
+        "total_function_definitions": sum(m.function_definitions for m in metrics_list),
+        "total_class_definitions": sum(m.class_definitions for m in metrics_list),
+        "total_try_except_blocks": sum(m.try_except_blocks for m in metrics_list),
+        "total_with_statements": sum(m.with_statements for m in metrics_list),
+        "total_boolean_operators": sum(m.boolean_operators for m in metrics_list),
+        "total_comprehensions": sum(m.comprehensions for m in metrics_list),
+        "total_assert_statements": sum(m.assert_statements for m in metrics_list),
+        "total_cyclomatic_complexity": sum(
+            m.cyclomatic_complexity for m in metrics_list
+        ),
+        "avg_cyclomatic_complexity": sum(m.cyclomatic_complexity for m in metrics_list)
+        / len(metrics_list),
+        "max_cyclomatic_complexity": max(m.cyclomatic_complexity for m in metrics_list),
+        "min_cyclomatic_complexity": min(m.cyclomatic_complexity for m in metrics_list),
+        "total_lines": sum(m.total_lines for m in metrics_list),
+        "total_code_lines": sum(m.code_lines for m in metrics_list),
+        "num_programs": len(metrics_list),
+        "parse_errors": sum(m.parse_errors for m in metrics_list),
+    }
+
+
+@scorer(metrics=[mean(), stderr()])
+def code() -> Scorer:
+    """Scorer that performs static analysis on submitted code.
+
+    This scorer analyzes all programs submitted during the trajectory and
+    computes code quality metrics including:
+    - Variable assignment count
+    - Number of conditionals (if/elif)
+    - Number of loops (for/while)
+    - Number of function definitions
+    - Number of class definitions
+    - Cyclomatic complexity (main score value)
+
+    The main score value is the average cyclomatic complexity across all
+    programs in the trajectory. Higher complexity indicates more decision
+    points and branches in the code.
+
+    Cyclomatic complexity formula:
+    CC = 1 + (if/elif count) + (for/while count) + (and/or operators)
+         + (except handlers) + (comprehension if clauses) + (ternary operators)
+
+    Note: This implementation also counts assert statements as decision points,
+    which is a common but not universal convention.
+    """
+
+    async def score(state: AgentState, target: Target) -> Score:
+        try:
+            trajectory_data = store_as(TrajectoryData)
+            program_codes = trajectory_data.program_codes or []
+
+            if not program_codes:
+                return Score(
+                    value=0.0,
+                    answer="0.00",
+                    explanation="No program codes available for analysis",
+                    metadata={"has_program_codes": False},
+                )
+
+            # Analyze each program
+            metrics_list = [analyze_code(code) for code in program_codes]
+
+            # Aggregate metrics
+            aggregated = aggregate_metrics(metrics_list)
+
+            # Use average cyclomatic complexity as the main score
+            avg_complexity = aggregated["avg_cyclomatic_complexity"]
+
+            explanation = (
+                f"Avg CC: {avg_complexity:.2f}, "
+                f"Vars: {aggregated['total_variable_assignments']}, "
+                f"Conditionals: {aggregated['total_conditionals']}, "
+                f"Loops: {aggregated['total_loops']}, "
+                f"Functions: {aggregated['total_function_definitions']}, "
+                f"Classes: {aggregated['total_class_definitions']}"
+            )
+
+            return Score(
+                value=avg_complexity,
+                answer=f"{avg_complexity:.2f}",
+                explanation=explanation,
+                metadata={
+                    # Per-step averages
+                    "avg_cyclomatic_complexity": avg_complexity,
+                    "avg_variable_assignments": aggregated["total_variable_assignments"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    "avg_conditionals": aggregated["total_conditionals"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    "avg_loops": aggregated["total_loops"] / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    "avg_function_definitions": aggregated["total_function_definitions"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    "avg_class_definitions": aggregated["total_class_definitions"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    # Totals
+                    "total_variable_assignments": aggregated[
+                        "total_variable_assignments"
+                    ],
+                    "total_conditionals": aggregated["total_conditionals"],
+                    "total_loops": aggregated["total_loops"],
+                    "total_function_definitions": aggregated[
+                        "total_function_definitions"
+                    ],
+                    "total_class_definitions": aggregated["total_class_definitions"],
+                    "total_try_except_blocks": aggregated["total_try_except_blocks"],
+                    "total_with_statements": aggregated["total_with_statements"],
+                    "total_boolean_operators": aggregated["total_boolean_operators"],
+                    "total_comprehensions": aggregated["total_comprehensions"],
+                    "total_assert_statements": aggregated["total_assert_statements"],
+                    "total_cyclomatic_complexity": aggregated[
+                        "total_cyclomatic_complexity"
+                    ],
+                    # Complexity stats
+                    "max_cyclomatic_complexity": aggregated[
+                        "max_cyclomatic_complexity"
+                    ],
+                    "min_cyclomatic_complexity": aggregated[
+                        "min_cyclomatic_complexity"
+                    ],
+                    # Code stats
+                    "total_lines": aggregated["total_lines"],
+                    "total_code_lines": aggregated["total_code_lines"],
+                    "num_programs": aggregated["num_programs"],
+                    "parse_errors": aggregated["parse_errors"],
+                    # Derived metrics
+                    "complexity_per_code_line": aggregated[
+                        "total_cyclomatic_complexity"
+                    ]
+                    / aggregated["total_code_lines"]
+                    if aggregated["total_code_lines"] > 0
+                    else 0,
+                    "conditionals_per_program": aggregated["total_conditionals"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                    "loops_per_program": aggregated["total_loops"]
+                    / aggregated["num_programs"]
+                    if aggregated["num_programs"] > 0
+                    else 0,
+                },
+            )
+
+        except Exception as e:
+            logger.error(f"Error in static analysis scorer: {e}")
+            return Score(
+                value=0.0,
+                answer="0.00",
+                explanation=f"Scorer error: {str(e)}",
+                metadata={"scorer_error": str(e)},
+            )
+
+    return score

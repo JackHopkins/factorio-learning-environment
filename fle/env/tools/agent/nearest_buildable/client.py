@@ -30,8 +30,16 @@ class NearestBuildable(Tool):
             )
 
         MARGIN = 0
-        dx = building_box.width
-        dy = building_box.height
+        dx = (
+            building_box.width
+            if isinstance(building_box.width, int)
+            else building_box.width()
+        )
+        dy = (
+            building_box.height
+            if isinstance(building_box.height, int)
+            else building_box.height()
+        )
         dx = dx + MARGIN
         dy = dy + MARGIN
         bb_data = {"left_top": {"x": 0, "y": 0}, "right_bottom": {"x": dx, "y": dy}}

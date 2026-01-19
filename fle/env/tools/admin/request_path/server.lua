@@ -1,11 +1,11 @@
 -- Store created entities globally
-if not global.clearance_entities then
-    global.clearance_entities = {}
+if not storage.clearance_entities then
+    storage.clearance_entities = {}
 end
 
-global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
+storage.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     if not player then return nil end
     local size = entity_size/2 - 0.01
 
@@ -28,7 +28,7 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
 
     -- Add temporary collision entities
     local clearance_entities = {}
-    global.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
+    storage.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
     
     local goal_position = player.surface.find_non_colliding_position(
         "iron-chest",
@@ -67,16 +67,16 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
     }
     local request_id = surface.request_path(path_request)
 
-    global.clearance_entities[request_id] = clearance_entities
+    storage.clearance_entities[request_id] = clearance_entities
 
-    if not global.path_requests then
-        global.path_requests = {}
+    if not storage.path_requests then
+        storage.path_requests = {}
     end
-    if not global.paths then
-        global.paths = {}
+    if not storage.paths then
+        storage.paths = {}
     end
 
-    global.path_requests[request_id] = player_index
+    storage.path_requests[request_id] = player_index
 
     return request_id
 end
@@ -84,36 +84,36 @@ end
 -- Modify the pathfinding finished handler to clean up entities
 --script.on_event(defines.events.on_script_path_request_finished, function(event)
 --    -- Clean up clearance entities
---    if global.clearance_entities[event.id] then
---        for _, entity in pairs(global.clearance_entities[event.id]) do
+--    if storage.clearance_entities[event.id] then
+--        for _, entity in pairs(storage.clearance_entities[event.id]) do
 --            if entity.valid then
 --                entity.destroy()
 --            end
 --        end
---        global.clearance_entities[event.id] = nil
+--        storage.clearance_entities[event.id] = nil
 --    end
 --end)
 
 script.on_event(defines.events.on_script_path_request_finished, function(event)
-    local request_data = global.path_requests[event.id]
+    local request_data = storage.path_requests[event.id]
     if not request_data then
         game.print("No request data found for ID: " .. event.id)
         return
     end
 
-    -- local player = global.agent_characters[request_data]
+    -- local player = storage.agent_characters[request_data]
     -- if not player then
         -- game.print("No player found for request ID: " .. event.id)
         -- return
     -- end
 
     if event.path then
-        global.paths[event.id] = event.path
+        storage.paths[event.id] = event.path
     elseif event.try_again_later then
-        global.paths[event.id] = "busy"
+        storage.paths[event.id] = "busy"
         -- game.print("Pathfinder busy for request ID: " .. event.id)
     else
-        global.paths[event.id] = "not_found"
+        storage.paths[event.id] = "not_found"
         -- game.print("Path not found for request ID: " .. event.id)
     end
 end)

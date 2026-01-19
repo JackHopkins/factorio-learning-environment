@@ -1,4 +1,4 @@
-global.actions.clear_entities = function(player_index)
+storage.actions.clear_entities = function(player_index)
     local function clear_area_of_entities(player, area, force_filter)
         local surface = player.surface
         local entities = surface.find_entities_filtered{
@@ -48,7 +48,7 @@ global.actions.clear_entities = function(player_index)
     end
 
     -- Main execution
-    local player = global.agent_characters[player_index]
+    local player = storage.agent_characters[player_index]
     local area = {
         {player.position.x - 1000, player.position.y - 1000},
         {player.position.x + 1000, player.position.y + 1000}

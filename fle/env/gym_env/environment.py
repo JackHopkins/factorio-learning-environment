@@ -20,6 +20,7 @@ from fle.env.gym_env.observation import (
     GameInfo,
     AgentMessage,
     TaskInfo,
+    CharacterPosition,
 )
 
 from fle.eval.tasks import TaskABC
@@ -142,6 +143,15 @@ class ObsSpaces:
         {
             "name": SHORT_TEXT,
             "pickled_function": LONG_TEXT,
+        }
+    )
+
+    # Character position structure
+    CHARACTER_POSITION = spaces.Dict(
+        {
+            "agent_idx": POSITIVE_INT,
+            "x": SCORE_FLOAT,  # Can be negative coordinates
+            "y": SCORE_FLOAT,  # Can be negative coordinates
         }
     )
 
@@ -272,6 +282,8 @@ class FactorioGymEnv(gym.Env):
                 "serialized_functions": spaces.Sequence(ObsSpaces.SERIALIZED_FUNCTION),
                 # Task information and objectives
                 "task_info": ObsSpaces.TASK_INFO,
+                # Character positions for all agents
+                "character_positions": spaces.Sequence(ObsSpaces.CHARACTER_POSITION),
             }
         )
 
@@ -374,6 +386,12 @@ class FactorioGymEnv(gym.Env):
                 trajectory_length=self.task.trajectory_length,
             )
 
+        # Get character positions from all namespaces
+        character_positions = []
+        for i, ns in enumerate(self.instance.namespaces):
+            pos = ns.player_location
+            character_positions.append(CharacterPosition(agent_idx=i, x=pos.x, y=pos.y))
+
         observation = Observation(
             raw_text=response.response if response else "",
             map_image=map_image,  # Base64 encoded PNG or empty string
@@ -388,6 +406,7 @@ class FactorioGymEnv(gym.Env):
             messages=messages_obs,
             serialized_functions=serialized_functions,
             task_info=task_info,
+            character_positions=character_positions,
         )
 
         # Store observation for next step
@@ -537,17 +556,22 @@ class FactorioGymEnv(gym.Env):
         """Clean up resources"""
         self.instance.cleanup()
 
-    def clear_enemies(self):
-        """Clear all enemy units from the game.
+    def background_step(self, step: int = 10):
+        """
+        Clear all enemy units from the game. Request to generate more chunks of the map.
 
         Uses RCON to send Lua commands that:
         1. Kill all enemy units (biters, spitters)
         2. Disable enemy expansion and evolution (optional, via global.remove_enemies)
+        3. Request to generate more chunks of the map.
         """
         try:
             # Kill all enemy units - this is the fast approach
             kill_cmd = '/c local surface = game.player.surface; for key, entity in pairs(surface.find_entities_filtered({force="enemy"})) do; entity.destroy(); end'
-            self.instance.rcon_client.send_command(kill_cmd)
+            chunk_cmd = f"/c game.players[0].surface.request_to_generate_chunks({{x=0,y=0}}, {step})"
+            self.instance.rcon_client.send_commands(
+                {"kill_cmd": kill_cmd, "chunk_cmd": chunk_cmd}
+            )
         except Exception as e:
             # Don't fail the step if enemy clearing fails
             import logging

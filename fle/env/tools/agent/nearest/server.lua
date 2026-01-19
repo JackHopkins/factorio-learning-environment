@@ -1,6 +1,6 @@
-global.actions.nearest = function(player_index, resource)
+storage.actions.nearest = function(player_index, resource)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
 
     local function normalize_resource_name(resource)
         if resource == "copper" then

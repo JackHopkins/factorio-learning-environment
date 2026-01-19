@@ -1,5 +1,5 @@
-global.actions.set_inventory = function(player_index, item_names_and_counts_json)
-    local player = global.agent_characters[player_index]
+storage.actions.set_inventory = function(player_index, item_names_and_counts_json)
+    local player = storage.agent_characters[player_index]
     player.clear_items_inside()
     local item_names_and_counts = game.json_to_table(item_names_and_counts_json) or {}
     -- Avoid logging raw tables; convert toN for readability and safety

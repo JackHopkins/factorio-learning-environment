@@ -98,12 +98,12 @@ class MoveTo(Tool):
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
             if not self.game_state.instance.fast:
                 remaining_steps = self.connection.rcon_client.send_command(
-                    f"/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))"
+                    f"/silent-command rcon.print(storage.actions.get_walking_queue_length({self.player_index}))"
                 )
                 while remaining_steps != "0":
                     sleep(0.5)
                     remaining_steps = self.connection.rcon_client.send_command(
-                        f"/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))"
+                        f"/silent-command rcon.print(storage.actions.get_walking_queue_length({self.player_index}))"
                     )
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 

@@ -103,16 +103,16 @@ local function find_offshore_pump_position(player, center_pos)
     return nil
 end
 
-global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
+storage.actions.place_entity = function(player_index, entity, direction, x, y, exact)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     local position = {x = x, y = y}
 
     if not direction then
         direction = 0
     end
 
-    local entity_direction = global.utils.get_entity_direction(entity, direction)
+    local entity_direction = storage.utils.get_entity_direction(entity, direction)
 
     -- Common validation functions
     local function validate_distance()
@@ -131,7 +131,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     end
 
     local function validate_entity()
-        if game.entity_prototypes[entity] == nil then
+        if prototypes.entity[entity] == nil then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
             error("\""..name .. " isn't something that exists. Did you make a typo?\"")
         end
@@ -162,7 +162,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             validate_inventory()
 
             -- Avoid entity at target position
-            global.utils.avoid_entity(player_index, entity, position)
+            storage.utils.avoid_entity(player_index, entity, position)
 
             -- Perform the actual placement
             local placed_entity = player.surface.create_entity{
@@ -175,7 +175,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             if placed_entity then
                 player.remove_item{name = entity, count = 1}
                 player.cursor_ghost = nil  -- Clear the ghost
-                return global.utils.serialize_entity(placed_entity)
+                return storage.utils.serialize_entity(placed_entity)
             else
                 error("\"Failed to place entity after delay\"")
             end
@@ -186,7 +186,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- Fast placement implementation (existing logic)
     local function fast_place()
-        local entity_prototype = game.entity_prototypes[entity]
+        local entity_prototype = prototypes.entity[entity]
 
         if entity == 'offshore-pump' then
             exact = false
@@ -219,9 +219,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
         end
-        global.utils.avoid_entity(player_index, entity, position, direction)
+        storage.utils.avoid_entity(player_index, entity, position, direction)
         -- Use surface based validation equivalent to LuaPlayer.can_place_entity
-        local can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+        local can_build = storage.utils.can_place_entity(player, entity, position, entity_direction)
 
         if not can_build then
             if not exact then
@@ -231,7 +231,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
+                    entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction']/2)
                     new_position = pos_dir['position']
                     found_position = true
                 else
@@ -244,8 +244,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                             for dy = -radius, radius do
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
-                                    global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = global.utils.can_place_entity(player, entity, new_position, entity_direction)
+                                    storage.utils.avoid_entity(player_index, entity, position, direction)
+                                    can_build = storage.utils.can_place_entity(player, entity, new_position, entity_direction)
                                     if can_build then
                                         found_position = true
                                         break
@@ -268,7 +268,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     if have_built then
                         player.remove_item{name = entity, count = 1}
                         -- game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
-                        return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
+                        return storage.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
                     error("\"Could not find a suitable position to place " .. entity .. " near the target location.\"")
@@ -292,12 +292,12 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
 
-            global.utils.avoid_entity(player_index, entity, position, direction)
+            storage.utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+            can_build = storage.utils.can_place_entity(player, entity, position, entity_direction)
 
             if not can_build then
-                local entity_prototype = game.entity_prototypes[entity]
+                local entity_prototype = prototypes.entity[entity]
                 local entity_box = entity_prototype.collision_box
                 local entity_width = 1
                 local entity_height = 1
@@ -381,7 +381,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
 
             if #entities > 0 then
-                return global.utils.serialize_entity(entities[1])
+                return storage.utils.serialize_entity(entities[1])
             end
             error("\"Could not find placed entity\"")
         end
@@ -391,10 +391,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     validate_distance()
     validate_entity()
     validate_inventory()
-    global.utils.avoid_entity(player_index, entity, position)
+    storage.utils.avoid_entity(player_index, entity, position)
 
-    -- Choose placement method based on global.fast setting
-    if global.fast then
+    -- Choose placement method based on storage.fast setting
+    if storage.fast then
         return fast_place()
     else
         local result = slow_place()

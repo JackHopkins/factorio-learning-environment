@@ -2,7 +2,7 @@ local function is_large_entity(entity)
     if not entity then return false end
     
     -- Check by size (3x3 or larger)
-    local prototype = game.entity_prototypes[entity.name]
+    local prototype = prototypes.entity[entity.name]
     if prototype then
         local collision_box = prototype.collision_box
         local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
@@ -115,7 +115,7 @@ end
 
 local function validate_mining_drill_placement(surface, position, entity_name)
     -- Check if the entity is a mining drill
-    local prototype = game.entity_prototypes[entity_name]
+    local prototype = prototypes.entity[entity_name]
     if prototype.type ~= "mining-drill" then
         return true
     end
@@ -138,9 +138,9 @@ local function validate_mining_drill_placement(surface, position, entity_name)
 end
 
 
-global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
+storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
     local ref_position = {x = ref_x, y = ref_y}
 
     local function table_contains(tbl, element)
@@ -197,7 +197,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
 
         -- Check if the entity to place is an inserter
-        local entity_prototype = game.entity_prototypes[entity_to_place]
+        local entity_prototype = prototypes.entity[entity_to_place]
         -- Original spacing calculation for non-inserters
         local entity_width, entity_height
         if direction == 1 or direction == 3 then  -- East or West
@@ -232,8 +232,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         -- Get reference entity's width/height based on its rotation
         local ref_width, ref_height
         if ref_entity then
-            local ref_orientation = ref_entity.direction  -- 0,2,4,6 = N,E,S,W
-            if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
+            local ref_orientation = ref_entity.direction  -- Factorio 2.0: 0,4,8,12 = N,E,S,W
+            if ref_orientation == defines.direction.east or ref_orientation == defines.direction.west then  -- East or West
                 ref_width = ref_entity.prototype.tile_height
                 ref_height = ref_entity.prototype.tile_width
             else  -- North or South
@@ -246,7 +246,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
 
         -- Get entity to place width/height based on desired direction
-        local entity_prototype = game.entity_prototypes[entity_to_place]
+        local entity_prototype = prototypes.entity[entity_to_place]
         local entity_width, entity_height
         if direction == 1 or direction == 3 then  -- East or West
             entity_width = entity_prototype.tile_height
@@ -351,7 +351,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                     local alt_clear = player.surface.can_place_entity({
                         name = entity,
                         position = alt_pos,
-                        direction = global.utils.get_entity_direction(entity, alternative.direction),
+                        direction = storage.utils.get_entity_direction(entity, alternative.direction),
                         force = player.force
                     })
                     
@@ -361,7 +361,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                         direction = alternative.direction
                         
                         -- Update orientation for the new direction
-                        orientation = global.utils.get_entity_direction(entity, direction)
+                        orientation = storage.utils.get_entity_direction(entity, direction)
                         
                         
                         goto alternative_found
@@ -392,10 +392,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     
     ::alternative_found::
 
-    orientation = global.utils.get_entity_direction(entity, direction)
+    orientation = storage.utils.get_entity_direction(entity, direction)
 
     if ref_entity then
-        local prototype = game.entity_prototypes[ref_entity.name]
+        local prototype = prototypes.entity[ref_entity.name]
         local collision_box = prototype.collision_box
         local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
         local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
@@ -410,7 +410,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     -- Check for player collision and move player if necessary
-    local entity_prototype = game.entity_prototypes[entity]
+    local entity_prototype = prototypes.entity[entity]
     local entity_box = entity_prototype.collision_box
     local entity_width = 1
     local entity_height = 1
@@ -476,7 +476,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         time_to_live = 60000
     })
 
-    global.utils.avoid_entity(player_index, entity, new_position, direction)
+    storage.utils.avoid_entity(player_index, entity, new_position, direction)
 
     local can_build = player.surface.can_place_entity({
         name = entity,
@@ -531,7 +531,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Failed to create entity " .. entity .. " at position " .. serpent.line(new_position))
     end
 
-    local placement_info = global.utils.serialize_entity(new_entity)
+    local placement_info = storage.utils.serialize_entity(new_entity)
     
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then

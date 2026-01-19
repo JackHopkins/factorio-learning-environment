@@ -18,15 +18,15 @@ local function serialize_position(pos)
 end
 
 -- Main serialization function
-global.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
-    local surface = global.agent_characters[player_index].surface
+storage.actions.save_entity_state = function(player_index, distance, player_entities, resource_entities, items_on_ground)
+    local surface = storage.agent_characters[player_index].surface
     if player_entities then
-        entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=global.agent_characters[player_index].force})
+        entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=storage.agent_characters[player_index].force})
     else
         if resource_entities then
             entities = surface.find_entities({{-distance, -distance}, {distance, distance}})
         else
-            entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=global.agent_characters[player_index].force})
+            entities = surface.find_entities_filtered({area={{-distance, -distance}, {distance, distance}}, force=storage.agent_characters[player_index].force})
         end
     end
 
@@ -83,18 +83,18 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 health = serialize_number(entity.health),
                 energy = serialize_number(entity.energy or 0),
                 active = entity.active,
-                status = global.utils.entity_status_names(entity.status),
+                status = storage.utils.entity_status_names(entity.status),
                 warnings = {},
                 inventories = {}
             }
 
             -- Add any warnings
-            for _, warning in pairs(global.utils.get_issues(entity) or {}) do
+            for _, warning in pairs(storage.utils.get_issues(entity) or {}) do
                 table.insert(state.warnings, '"' .. warning .. '"')
             end
 
             -- Handle dimensions
-            local prototype = game.entity_prototypes[entity.name]
+            local prototype = prototypes.entity[entity.name]
             if prototype then
                 local collision_box = prototype.collision_box
                 state.dimensions = {
@@ -112,7 +112,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 if inventory then
                     state.inventories[name] = {}
                     -- Get contents with proper item names
-                    local contents = inventory.get_contents()
+                    local contents = storage.utils.get_contents_compat(inventory)
                     for item_name, count in pairs(contents) do
                         if item_name and item_name ~= "" then  -- Ensure valid item name
                             state.inventories[name][tostring(item_name)] = serialize_number(count)
@@ -149,7 +149,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                 local burner_inventory = entity.burner.inventory
                 if burner_inventory then
                     state.burner.inventory = {}
-                    local contents = burner_inventory.get_contents()
+                    local contents = storage.utils.get_contents_compat(burner_inventory)
                     --game.print("get_contents() results:")
                     for item_name, count in pairs(contents) do
                         if item_name and item_name ~= "" then  -- Ensure valid item name
@@ -168,7 +168,7 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
                     entity.get_recipe then
                 local recipe = entity.get_recipe()
                 if recipe then
-                    state.recipe = global.utils.serialize_recipe(recipe)
+                    state.recipe = storage.utils.serialize_recipe(recipe)
                 end
             end
 
@@ -191,14 +191,14 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
 
                 -- Front line (line 1)
                 state.transport_lines[1] = {}
-                local contents1 = entity.get_transport_line(1).get_contents()
+                local contents1 = storage.utils.get_contents_compat(entity.get_transport_line(1))
                 for name, count in pairs(contents1) do
                     state.transport_lines[1][tostring(name)] = serialize_number(count)
                 end
 
                 -- Back line (line 2)
                 state.transport_lines[2] = {}
-                local contents2 = entity.get_transport_line(2).get_contents()
+                local contents2 = storage.utils.get_contents_compat(entity.get_transport_line(2))
                 for name, count in pairs(contents2) do
                     state.transport_lines[2][tostring(name)] = serialize_number(count)
                 end
@@ -310,9 +310,9 @@ global.actions.save_entity_state = function(player_index, distance, player_entit
 
             table.insert(entity_array, state)
         else
-            -- Find the index of this character in global.agent_characters
+            -- Find the index of this character in storage.agent_characters
             agent_index = -1
-            for idx, agent in pairs(global.agent_characters) do
+            for idx, agent in pairs(storage.agent_characters) do
                 if agent == entity then
                     agent_index = idx
                     break

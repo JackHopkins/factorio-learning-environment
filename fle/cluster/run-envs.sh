@@ -113,7 +113,7 @@ EOF
         
         cat >> docker-compose.yml << EOF
   factorio_${i}:
-    image: factoriotools/factorio:1.1.110
+    image: factoriotools/factorio:2.0.73
     platform: \${DOCKER_PLATFORM:-linux/amd64}
     command: ${EMULATOR} /opt/factorio/bin/x64/factorio ${COMMAND}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings

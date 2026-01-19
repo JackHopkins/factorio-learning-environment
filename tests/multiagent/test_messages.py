@@ -4,7 +4,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fle.agents.basic_agent import BasicAgent
+# Skip all tests in this module - the required classes have been removed
+pytest.skip(
+    "SimpleFactorioEvaluator and TrajectoryRunner classes have been removed",
+    allow_module_level=True,
+)
+
+from examples.agents.basic_agent import BasicAgent
 from fle.commons.db_client import PostgresDBClient
 from fle.commons.models.conversation import Conversation
 from fle.commons.models.message import Message

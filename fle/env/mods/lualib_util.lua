@@ -254,7 +254,7 @@ end
 
 util.insert_safe = function(entity, item_dict)
   if not (entity and entity.valid and item_dict) then return end
-  local items = game.item_prototypes
+  local items = prototypes.item
   local insert = entity.insert
   for name, count in pairs (item_dict) do
     if items[name] then
@@ -267,7 +267,7 @@ end
 
 util.remove_safe = function(entity, item_dict)
   if not (entity and entity.valid and item_dict) then return end
-  local items = game.item_prototypes
+  local items = prototypes.item
   local remove = entity.remove_item
   for name, count in pairs (item_dict) do
     if items[name] then
@@ -321,7 +321,7 @@ local is_walkable = function(mask)
 end
 
 util.get_walkable_tile = function()
-  for name, tile in pairs (game.tile_prototypes) do
+  for name, tile in pairs (prototypes.tile) do
     if is_walkable(tile.collision_mask) and not tile.items_to_place_this then
       return name
     end

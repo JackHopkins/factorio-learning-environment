@@ -46,7 +46,15 @@ from fle.env.tools.agent.sleep.client import Sleep
 
 
 import importlib.resources
+from pathlib import Path
+from jinja2 import Template
 import gym
+
+
+def _load_prompt_template(filename: str) -> Template:
+    """Load a Jinja2 prompt template from the prompts directory."""
+    prompt_path = Path(__file__).parent / "prompts" / filename
+    return Template(prompt_path.read_text())
 
 
 def render_vision_image(gym_env: FactorioGymEnv) -> Tuple[Optional[str], Optional[str]]:
@@ -102,12 +110,20 @@ def render_vision_image(gym_env: FactorioGymEnv) -> Tuple[Optional[str], Optiona
         #             f"Run 'fle sprites' to download sprites."
         #         )
 
-        viewport_info = f"""**Viewport Information:**
-- Center: ({viewport.center_x:.1f}, {viewport.center_y:.1f})
-- World bounds: ({viewport.world_min_x:.1f}, {viewport.world_min_y:.1f}) to ({viewport.world_max_x:.1f}, {viewport.world_max_y:.1f})
-- Size: {viewport.width_tiles:.0f} x {viewport.height_tiles:.0f} tiles
-- Image: {viewport.image_width} x {viewport.image_height} pixels
-- Scale: {viewport.scaling:.1f} pixels/tile"""
+        viewport_template = _load_prompt_template("vision_viewport.jinja2.md")
+        viewport_info = viewport_template.render(
+            center_x=f"{viewport.center_x:.1f}",
+            center_y=f"{viewport.center_y:.1f}",
+            world_min_x=f"{viewport.world_min_x:.1f}",
+            world_min_y=f"{viewport.world_min_y:.1f}",
+            world_max_x=f"{viewport.world_max_x:.1f}",
+            world_max_y=f"{viewport.world_max_y:.1f}",
+            width_tiles=f"{viewport.width_tiles:.0f}",
+            height_tiles=f"{viewport.height_tiles:.0f}",
+            image_width=viewport.image_width,
+            image_height=viewport.image_height,
+            scaling=f"{viewport.scaling:.1f}",
+        )
 
         return image_data_url, viewport_info
     except Exception as e:
@@ -176,6 +192,11 @@ class TrajectoryData(StoreModel):
     total_step_latencies: List[float] = Field(
         default_factory=list
     )  # Total wall-clock time per step (seconds)
+
+    # Full program codes for static analysis
+    program_codes: List[str] = Field(
+        default_factory=list
+    )  # Full program code for each step
 
 
 @solver
@@ -268,7 +289,9 @@ def factorio_controlled_solver():
 
 Now begin working toward this objective step by step."""
 
-            # Initialize conversation with proper system prompt
+            # Initialize conversation with system prompt only
+            # The first user message will be added in the step loop to avoid
+            # contiguous user messages (initial + step 1)
             original_user_message = (
                 state.messages[0].content
                 if state.messages
@@ -277,9 +300,6 @@ Now begin working toward this objective step by step."""
 
             state.messages = [
                 ChatMessageSystem(content=full_system_prompt),
-                ChatMessageUser(
-                    content=f"{original_user_message}\n\nAnalyze the current game state and begin your first action."
-                ),
             ]
 
             logger.info(
@@ -299,6 +319,12 @@ Now begin working toward this objective step by step."""
             production_scores = []
             step_results = []
             game_ticks = []  # Track game ticks at each step
+
+            # Store previous step's feedback to combine with next step's prompt
+            # This avoids contiguous user messages in the conversation
+            # Initialize with the original user message so it gets combined with step 1
+            previous_feedback_content = f"{original_user_message}\n\nAnalyze the current game state and begin your first action."
+            previous_feedback_image = None
 
             for step in range(trajectory_length):
                 step_start = time.time()
@@ -326,7 +352,28 @@ Progress: {(step / trajectory_length) * 100:.1f}% complete
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to progress toward the production goal."""
 
-                    step_message = ChatMessageUser(content=step_content)
+                    # Combine previous feedback with current step content to avoid contiguous user messages
+                    # This maintains proper user/assistant alternation in the conversation
+                    if previous_feedback_content is not None:
+                        combined_content = (
+                            f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                        )
+                        if previous_feedback_image is not None:
+                            # Include image from previous feedback with combined text
+                            step_message = ChatMessageUser(
+                                content=[
+                                    ContentImage(image=previous_feedback_image),
+                                    ContentText(text=combined_content),
+                                ]
+                            )
+                        else:
+                            step_message = ChatMessageUser(content=combined_content)
+                        # Reset for next iteration
+                        previous_feedback_content = None
+                        previous_feedback_image = None
+                    else:
+                        step_message = ChatMessageUser(content=step_content)
+
                     state.messages.append(step_message)
 
                     # Generate response using Inspect's model with reasoning support
@@ -371,12 +418,14 @@ Analyze the current state and write a Python program using the FLE API to progre
                     try:
                         obs, reward, terminated, truncated, info = gym_env.step(action)
                         # Clear enemies after each step to prevent interference
-                        gym_env.clear_enemies()
+                        gym_env.background_step()
+
                     except Exception as ee:
                         logger.warning(f"Environment error: {ee}")
-                        state.messages.append(
-                            ChatMessageUser(content=f"Environment error: {ee}")
-                        )
+                        # Store error as feedback for next step instead of appending directly
+                        # This avoids contiguous user messages
+                        previous_feedback_content = f"Environment error: {ee}"
+                        previous_feedback_image = None
                         continue
 
                     # Log execution details
@@ -463,22 +512,26 @@ Continue to step {step + 2}."""
                         # Fall back to simple render from observation
                         updated_image_data_url = obs.get("map_image")
 
-                    # Create feedback message with both image and text
-                    if updated_image_data_url:
-                        feedback_message = ChatMessageUser(
-                            content=[
-                                ContentImage(image=updated_image_data_url),
-                                ContentText(text=feedback_content),
-                            ]
+                    # Validate image is a proper data URL to avoid Inspect trying to load it as a file
+                    if updated_image_data_url and not str(
+                        updated_image_data_url
+                    ).startswith("data:"):
+                        logger.warning(
+                            f"Invalid map_image format (expected data URL), skipping: {str(updated_image_data_url)[:100]}"
                         )
+                        updated_image_data_url = None
+
+                    # Store feedback for combining with next step's prompt
+                    # This avoids contiguous user messages in the conversation
+                    previous_feedback_content = feedback_content
+                    previous_feedback_image = updated_image_data_url
+
+                    if updated_image_data_url:
                         logger.info(
                             f"🖼️  Step {step + 1}: {'(vision mode)' if vision_enabled else ''}"
                         )
                     else:
-                        feedback_message = ChatMessageUser(content=feedback_content)
                         logger.info(f"📝 Step {step + 1}:")
-
-                    state.messages.append(feedback_message)
 
                     # Trim messages if we have too many user/assistant pairs (keep system prompt)
                     if (
@@ -563,13 +616,13 @@ Continue to step {step + 2}."""
 
                 except Exception as step_error:
                     logger.error(f"❌ Step {step + 1} error: {step_error}")
-                    feedback_message = ChatMessageUser(
-                        content=f"❌ Step {step + 1} error: {step_error}"
+                    # Store error as feedback for next step instead of appending directly
+                    # This avoids contiguous user messages
+                    previous_feedback_content = (
+                        f"❌ Step {step + 1} error: {step_error}"
                     )
-                    state.messages.append(feedback_message)
-
+                    previous_feedback_image = None
                     # Continue with next step rather than failing completely
-                    step += 1
 
             # Final results
             final_score = production_scores[-1] if production_scores else 0.0
@@ -680,6 +733,8 @@ def factorio_unbounded_solver():
                 logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             AGENT_ID = 0
+            # Initial radius
+            INITIAL_RADIUS = 5
 
             # Create gym environment - always use open_play for unbounded tasks
             # open_play uses DefaultTask which has no throughput requirements
@@ -697,11 +752,14 @@ def factorio_unbounded_solver():
             )
 
             # Combine base instructions with task-specific instructions
-            full_system_prompt = f"""{base_system_prompt}
+            system_template = _load_prompt_template("unbounded_system.jinja2.md")
+            full_system_prompt = system_template.render(
+                base_system_prompt=base_system_prompt
+            )
 
-Now begin building your factory step by step."""
-
-            # Initialize conversation with proper system prompt
+            # Initialize conversation with system prompt only
+            # The first user message will be added in the step loop to avoid
+            # contiguous user messages (initial + step 1)
             original_user_message = (
                 state.messages[0].content
                 if state.messages
@@ -710,9 +768,6 @@ Now begin building your factory step by step."""
 
             state.messages = [
                 ChatMessageSystem(content=full_system_prompt),
-                ChatMessageUser(
-                    content=f"{original_user_message}\n\nAnalyze the current game state and begin your first action."
-                ),
             ]
 
             logger.info(
@@ -728,6 +783,12 @@ Now begin building your factory step by step."""
             game_ticks = []  # Track game ticks at each step
             game_states = []
 
+            # Store previous step's feedback to combine with next step's prompt
+            # This avoids contiguous user messages in the conversation
+            # Initialize with the original user message so it gets combined with step 1
+            previous_feedback_content = f"{original_user_message}\n\nAnalyze the current game state and begin your first action."
+            previous_feedback_image = None
+
             # Achievement tracking - unique item types produced
             produced_item_types_set: set = set()
 
@@ -741,12 +802,10 @@ Now begin building your factory step by step."""
             sleep_durations = []
             total_step_latencies = []
 
-            for step in range(trajectory_length):
-                # Incrementally increase the charted area
-                gym_env.instance.rcon_client.send_command(
-                    f"/c game.players[{AGENT_ID}].surface.request_to_generate_chunks({{x=0,y=0}}, {step})"
-                )
+            # Full program codes for static analysis
+            program_codes = []
 
+            for step in range(trajectory_length):
                 step_start = time.time()
 
                 # Reset sleep duration tracking for this step
@@ -755,7 +814,7 @@ Now begin building your factory step by step."""
                 try:
                     try:
                         # Clear enemies before each step to prevent interference
-                        gym_env.clear_enemies()
+                        gym_env.background_step(step=step + INITIAL_RADIUS)
                     except Exception as ee:
                         logger.warning(f"Environment error: Clearing enemies: {ee}")
                         raise Exception(f"Clearing enemies: {ee}") from ee
@@ -771,18 +830,62 @@ Now begin building your factory step by step."""
 
                     # Create step message with current game state
                     current_score = production_scores[-1] if production_scores else 0
-                    step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
+                    step_template = _load_prompt_template("unbounded_step.jinja2.md")
+                    step_content = step_template.render(
+                        step=step + 1,
+                        trajectory_length=trajectory_length,
+                        progress=f"{(step / trajectory_length) * 100:.1f}",
+                        game_state=obs_formatted.raw_str.replace("\\n", "\n"),
+                    )
 
-Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
+                    # Combine previous feedback with current step content to avoid contiguous user messages
+                    # This maintains proper user/assistant alternation in the conversation
+                    try:
+                        if previous_feedback_content is not None:
+                            combined_content = (
+                                f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                            )
+                            if previous_feedback_image is not None:
+                                # Validate image before creating ContentImage
+                                if not isinstance(
+                                    previous_feedback_image, str
+                                ) or not previous_feedback_image.startswith("data:"):
+                                    logger.warning(
+                                        f"Invalid previous_feedback_image, skipping: {type(previous_feedback_image)} - {str(previous_feedback_image)[:100] if previous_feedback_image else 'None'}"
+                                    )
+                                    step_message = ChatMessageUser(
+                                        content=combined_content
+                                    )
+                                else:
+                                    # Include image from previous feedback with combined text
+                                    step_message = ChatMessageUser(
+                                        content=[
+                                            ContentImage(image=previous_feedback_image),
+                                            ContentText(text=combined_content),
+                                        ]
+                                    )
+                            else:
+                                step_message = ChatMessageUser(content=combined_content)
+                            # Reset for next iteration
+                            previous_feedback_content = None
+                            previous_feedback_image = None
+                        else:
+                            step_message = ChatMessageUser(content=step_content)
+                    except Exception as msg_error:
+                        logger.error(f"Error creating step message: {msg_error}")
+                        logger.error(
+                            f"previous_feedback_image type: {type(previous_feedback_image)}, value: {str(previous_feedback_image)[:200] if previous_feedback_image else 'None'}"
+                        )
+                        # Fall back to text-only message
+                        step_message = ChatMessageUser(content=step_content)
+                        previous_feedback_content = None
+                        previous_feedback_image = None
 
-**Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
-
-**Next Action Required:**
-Analyze the current state and write a Python program using the FLE API to expand and improve your factory. Focus on actions that will increase your production score."""
-
-                    step_message = ChatMessageUser(content=step_content)
-                    state.messages.append(step_message)
+                    try:
+                        state.messages.append(step_message)
+                    except Exception as append_error:
+                        logger.error(f"Error appending step message: {append_error}")
+                        raise
 
                     # Generate response using Inspect's model
                     generation_config = {
@@ -792,15 +895,35 @@ Analyze the current state and write a Python program using the FLE API to expand
                         # "reasoning_effort": "minimal",
                     }
                     _model = get_model()
-                    if "openrouter" in _model.name:
+                    # Safely access model name - handle cases where get_model() returns unexpected types
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
+                    if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
                     # Track inference latency
                     inference_start = time.time()
-                    state.output = await _model.generate(
-                        input=state.messages,
-                        config=generation_config,
-                    )
+                    try:
+                        state.output = await _model.generate(
+                            input=state.messages,
+                            config=generation_config,
+                        )
+                    except Exception as gen_error:
+                        logger.error(f"Error during model generation: {gen_error}")
+                        logger.error(f"Number of messages: {len(state.messages)}")
+                        for i, msg in enumerate(state.messages):
+                            content_type = type(msg.content).__name__
+                            if isinstance(msg.content, list):
+                                content_types = [type(c).__name__ for c in msg.content]
+                                logger.error(
+                                    f"  Message {i}: role={msg.role}, content types={content_types}"
+                                )
+                            else:
+                                logger.error(
+                                    f"  Message {i}: role={msg.role}, content type={content_type}"
+                                )
+                        raise
                     inference_time = int(time.time() - inference_start)
                     inference_latencies.append(inference_time)
 
@@ -826,6 +949,9 @@ Analyze the current state and write a Python program using the FLE API to expand
                     logger.info(
                         f"📝 Step {step + 1}: Generated {len(program.code)} char program"
                     )
+
+                    # Store full program code for static analysis
+                    program_codes.append(program.code)
 
                     # Execute action in Factorio and capture results
                     action = Action(
@@ -854,9 +980,10 @@ Analyze the current state and write a Python program using the FLE API to expand
                         sleep_durations.append(step_sleep_duration)
                     except Exception as ee:
                         logger.warning(f"Environment error: {ee} - {type(gym_env)}")
-                        state.messages.append(
-                            ChatMessageUser(content=f"Environment error: {ee}")
-                        )
+                        # Store error as feedback for next step instead of appending directly
+                        # This avoids contiguous user messages
+                        previous_feedback_content = f"Environment error: {ee}"
+                        previous_feedback_image = None
                         if not game_states:
                             raise Exception(f"Environment error: {ee}") from ee
 
@@ -949,24 +1076,20 @@ Analyze the current state and write a Python program using the FLE API to expand
                             program_output = "None"
 
                     # Create comprehensive feedback message
-                    feedback_content = f"""
-
-**Program Output (STDOUT/STDERR):**
-```
-{program_output}
-```
-
-**Performance Results:**
-- Total production score: {production_score:.1f} (was {current_score:.1f})
-- Score increase: {production_score - current_score:+.1f}
-- Elapsed time: {elapsed_time_str}
-- Ticks: {current_ticks}
-- Ticks cost: +{ticks_cost}
-
-**Flows:**
-{TreeObservationFormatter.format_flows_compact(flow)}
-
-Continue to step {step + 2}."""
+                    feedback_template = _load_prompt_template(
+                        "unbounded_feedback.jinja2.md"
+                    )
+                    feedback_content = feedback_template.render(
+                        program_output=program_output,
+                        production_score=f"{production_score:.1f}",
+                        previous_score=f"{current_score:.1f}",
+                        score_change=f"{production_score - current_score:+.1f}",
+                        elapsed_time=elapsed_time_str,
+                        current_ticks=current_ticks,
+                        ticks_cost=ticks_cost,
+                        flows=TreeObservationFormatter.format_flows_compact(flow),
+                        next_step=step + 2,
+                    )
 
                     logger.debug(str(obs))
 
@@ -984,18 +1107,10 @@ Continue to step {step + 2}."""
                     except Exception as e:
                         raise Exception(f"Vision rendering error: {e}") from e
 
-                    # Create feedback message with both image and text
-                    if updated_image_data_url:
-                        feedback_message = ChatMessageUser(
-                            content=[
-                                ContentImage(image=updated_image_data_url),
-                                ContentText(text=feedback_content),
-                            ]
-                        )
-                    else:
-                        feedback_message = ChatMessageUser(content=feedback_content)
-
-                    state.messages.append(feedback_message)
+                    # Store feedback for combining with next step's prompt
+                    # This avoids contiguous user messages in the conversation
+                    previous_feedback_content = feedback_content
+                    previous_feedback_image = updated_image_data_url
 
                     # Trim messages if we have too many (keep system prompt)
                     if len(state.messages) > 25:
@@ -1065,6 +1180,9 @@ Continue to step {step + 2}."""
                     trajectory_data.sleep_durations = sleep_durations
                     trajectory_data.total_step_latencies = total_step_latencies
 
+                    # Store program codes for static analysis
+                    trajectory_data.program_codes = program_codes
+
                     # Apply scoring
                     await score(state)
 
@@ -1082,10 +1200,12 @@ Continue to step {step + 2}."""
 
                 except Exception as step_error:
                     logger.error(f"❌ Step {step + 1} error: {step_error}")
-                    feedback_message = ChatMessageUser(
-                        content=f"❌ Step {step + 1} error: {step_error}"
+                    # Store error as feedback for next step instead of appending directly
+                    # This avoids contiguous user messages
+                    previous_feedback_content = (
+                        f"❌ Step {step + 1} error: {step_error}"
                     )
-                    state.messages.append(feedback_message)
+                    previous_feedback_image = None
                     # Continue with next step rather than failing completely
 
             # Final results
@@ -1114,6 +1234,9 @@ Continue to step {step + 2}."""
             trajectory_data.policy_execution_latencies = policy_execution_latencies
             trajectory_data.sleep_durations = sleep_durations
             trajectory_data.total_step_latencies = total_step_latencies
+
+            # Store program codes for static analysis
+            trajectory_data.program_codes = program_codes
 
             # Log latency summary
             if total_step_latencies:

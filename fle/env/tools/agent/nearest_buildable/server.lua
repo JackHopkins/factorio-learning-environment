@@ -4,10 +4,10 @@ local ceil = math.ceil
 local max = math.max
 local abs = math.abs
 
-global.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
-    local player = global.agent_characters[player_index]
+storage.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
+    local player = storage.agent_characters[player_index]
     local surface = player.surface
-    local entity_prototype = game.entity_prototypes[entity_name]
+    local entity_prototype = prototypes.entity[entity_name]
     local needs_resources = entity_prototype.resource_categories ~= nil
     local start_pos = center_position or player.position
     local needs_oil = entity_name == "pumpjack"

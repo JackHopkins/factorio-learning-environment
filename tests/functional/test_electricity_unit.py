@@ -28,7 +28,7 @@ def game(instance):
         "coal": 50,
     }
 
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     instance.set_speed(10)
     yield instance.namespace
 

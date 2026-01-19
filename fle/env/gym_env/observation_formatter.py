@@ -96,6 +96,14 @@ class FormattedObservation:
     ```
     Shows the direct output from the executed code."""
 
+    character_positions_str: str
+    """Formatted string showing character positions for all agents.
+    Example:
+    ### Character Positions
+    - Agent 0: (10.5, 5.0)
+    - Agent 1: (15.0, 8.5)
+    Shows x, y coordinates for each agent's character."""
+
     raw_str: str
     """Complete formatted observation combining all components.
     Example:
@@ -122,6 +130,9 @@ class FormattedObservation:
     ### Game Info
     - Elapsed Time: 1:00:00
     - Ticks: 3600
+
+    ### Character Positions
+    - Agent 0: (10.5, 5.0)
 
     ### Task Status
     ⏳ IN PROGRESS
@@ -158,6 +169,7 @@ class BasicObservationFormatter:
         include_raw_output: bool = True,
         include_research: bool = True,
         include_game_info: bool = True,
+        include_character_positions: bool = True,
     ):
         """Initialize the formatter with flags for which fields to include"""
         self.include_inventory = include_inventory
@@ -170,6 +182,7 @@ class BasicObservationFormatter:
         self.include_raw_output = include_raw_output
         self.include_research = include_research
         self.include_game_info = include_game_info
+        self.include_character_positions = include_character_positions
 
     @staticmethod
     def format_inventory(inventory: List[Dict[str, Any]]) -> str:
@@ -468,21 +481,28 @@ class BasicObservationFormatter:
         else:
             lines.append("  - Produced: none")
 
-        # Crafted
+        # Crafted - aggregate by item type
         crafted = flows.get("crafted", [])
         if crafted:
-            crafted_items = []
+            crafted_totals: Dict[str, float] = {}
             for item in crafted:
                 count = item.get("crafted_count", 1)
                 outputs = item.get("outputs", {})
                 for name, amount in outputs.items():
-                    crafted_items.append(f"{name}: {amount} (x{count})")
-            if crafted_items:
-                lines.append(f"  - Crafted: {', '.join(crafted_items)}")
+                    # amount is the output per craft, count is number of crafts
+                    total_produced = amount * count
+                    crafted_totals[name] = crafted_totals.get(name, 0) + total_produced
+            if crafted_totals:
+                # Sort by total amount descending for readability
+                sorted_items = sorted(crafted_totals.items(), key=lambda x: -x[1])
+                items = ", ".join(
+                    f"{name}: {int(total)}" for name, total in sorted_items
+                )
+                lines.append(f"Crafted: {items}")
             else:
-                lines.append("  - Crafted: none")
+                lines.append("Crafted: none")
         else:
-            lines.append("  - Crafted: none")
+            lines.append("Crafted: none")
 
         # Harvested
         harvested = flows.get("harvested", [])
@@ -681,6 +701,28 @@ class BasicObservationFormatter:
 
         return f"### Raw Output\n```\n{raw_text.strip()}\n```"
 
+    @staticmethod
+    def format_character_positions(character_positions: List[Dict[str, Any]]) -> str:
+        """Format character positions for all agents.
+
+        Args:
+            character_positions: List of dicts with 'agent_idx', 'x', 'y' keys
+
+        Returns:
+            Formatted string showing each agent's position
+        """
+        if not character_positions:
+            return "### Character Positions\nNo characters"
+
+        lines = ["### Character Positions"]
+        for pos in character_positions:
+            agent_idx = pos.get("agent_idx", 0)
+            x = pos.get("x", 0.0)
+            y = pos.get("y", 0.0)
+            lines.append(f"- Agent {agent_idx}: ({x:.1f}, {y:.1f})")
+
+        return "\n".join(lines)
+
     def format(
         self, observation: Observation, last_message_timestamp: float = 0.0
     ) -> FormattedObservation:
@@ -722,6 +764,13 @@ class BasicObservationFormatter:
                 automated_score=obs_dict.get("automated_score", 0.0),
             )
             formatted_parts.append(game_info_str)
+
+        # Add character positions
+        if self.include_character_positions:
+            character_positions_str = self.format_character_positions(
+                obs_dict.get("character_positions", [])
+            )
+            formatted_parts.append(character_positions_str)
 
         # Add optional components if they exist and are enabled
         if self.include_task:
@@ -785,6 +834,11 @@ class BasicObservationFormatter:
             else "",
             raw_text_str=self.format_raw_text(obs_dict.get("raw_text", ""))
             if self.include_raw_output
+            else "",
+            character_positions_str=self.format_character_positions(
+                obs_dict.get("character_positions", [])
+            )
+            if self.include_character_positions
             else "",
             raw_str=raw_str,
         )

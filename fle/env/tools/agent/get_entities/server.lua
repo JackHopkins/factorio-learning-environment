@@ -1,6 +1,6 @@
-global.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
+storage.actions.get_entities = function(player_index, radius, entity_names_json, position_x, position_y)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
 
     local position
     if position_x and position_y then
@@ -50,7 +50,7 @@ global.actions.get_entities = function(player_index, radius, entity_names_json, 
                 if not entity.valid then
                     return nil
                 end
-                return global.utils.serialize_entity(entity)
+                return storage.utils.serialize_entity(entity)
             end)
 
             if success and serialized then

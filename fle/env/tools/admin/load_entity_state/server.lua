@@ -5,8 +5,8 @@ local function unquote_string(str)
 end
 
 -- Main deserialization function
-global.actions.load_entity_state = function(player, stored_json_data)
-    local player_entity = global.agent_characters[player]
+storage.actions.load_entity_state = function(player, stored_json_data)
+    local player_entity = storage.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
     local stored_data = game.json_to_table(stored_json_data)
@@ -21,7 +21,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
             local item_name = unquote_string(state.type)
             local item_count = tonumber(state.count)
 
-            if game.item_prototypes[item_name] then
+            if prototypes.item[item_name] then
                 local entity = surface.create_entity({
                     name = name,
                     position = {
@@ -67,9 +67,9 @@ global.actions.load_entity_state = function(player, stored_json_data)
         local agent_index = character_state.agent_index
         local old_character = nil
 
-        -- If we have a valid agent_index, get the old character from global.agent_characters
-        if agent_index and agent_index > 0 and global.agent_characters[agent_index] then
-            old_character = global.agent_characters[agent_index]
+        -- If we have a valid agent_index, get the old character from storage.agent_characters
+        if agent_index and agent_index > 0 and storage.agent_characters[agent_index] then
+            old_character = storage.agent_characters[agent_index]
             if old_character then
                 old_position = old_character.position
                 old_character.destroy()
@@ -93,9 +93,9 @@ global.actions.load_entity_state = function(player, stored_json_data)
         })
 
         if new_character then
-            -- Update global.agent_characters if we have a valid agent_index
+            -- Update storage.agent_characters if we have a valid agent_index
             if agent_index and agent_index > 0 then
-                global.agent_characters[agent_index] = new_character
+                storage.agent_characters[agent_index] = new_character
             end
 
             -- Restore character color if it exists
@@ -116,7 +116,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                         -- Remove quotes if they exist
                         item_name = unquote_string(item_name)
                         if item_name and item_name ~= "" then
-                            if game.item_prototypes[item_name] then
+                            if prototypes.item[item_name] then
                                 main_inventory.insert({
                                     name = item_name,
                                     count = tonumber(count)
@@ -177,7 +177,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 for quoted_item_name, count in pairs(contents) do
                     local item_name = unquote_string(quoted_item_name)
                     if item_name and item_name ~= "" then
-                        if game.item_prototypes[item_name] then
+                        if prototypes.item[item_name] then
                             -- game.print("Inserting " .. count .. " " .. item_name)
                             inventory.insert({
                                 name = item_name,
@@ -199,8 +199,8 @@ global.actions.load_entity_state = function(player, stored_json_data)
         if state.burner and entity.burner then
             if state.burner.currently_burning then
                 local burning_name = unquote_string(state.burner.currently_burning)
-                if game.item_prototypes[burning_name] then  -- Verify burning item exists
-                    entity.burner.currently_burning = game.item_prototypes[burning_name]
+                if prototypes.item[burning_name] then  -- Verify burning item exists
+                    entity.burner.currently_burning = prototypes.item[burning_name]
                     entity.burner.remaining_burning_fuel = tonumber(state.burner.remaining_burning_fuel)
                     entity.burner.heat = tonumber(state.burner.heat)
                 else
@@ -218,7 +218,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                entity.get_recipe then  -- Double check entity supports recipes
 
                 local recipe_name = unquote_string(state.recipe.name)
-                if game.recipe_prototypes[recipe_name] then
+                if prototypes.recipe[recipe_name] then
                     -- game.print("Setting recipe " .. recipe_name .. " on " .. entity.name)
                     pcall(function()
                         entity.set_recipe(recipe_name)
@@ -242,7 +242,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 for item_name, count in pairs(state.transport_lines["1"]) do
                     local name = unquote_string(item_name)
                     local item_count = tonumber(count)
-                    if game.item_prototypes[name] then
+                    if prototypes.item[name] then
                        for i = 1, item_count do
                             -- Space items evenly along the belt
                             local position = (i - 1) / item_count
@@ -262,7 +262,7 @@ global.actions.load_entity_state = function(player, stored_json_data)
                 for item_name, count in pairs(state.transport_lines["2"]) do
                     local name = unquote_string(item_name)
                     local item_count = tonumber(count)
-                    if game.item_prototypes[name] then
+                    if prototypes.item[name] then
                         for i = 1, item_count do
                             -- Space items evenly along the belt
                             local position = (i - 1) / item_count

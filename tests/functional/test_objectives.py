@@ -26,7 +26,7 @@ def game(instance):
     }
     # instance.rcon_client.send_command('game.reset_game_state()')
     # instance.rcon_client.send_command('game.reload_script()')
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     yield instance.namespace
 
 

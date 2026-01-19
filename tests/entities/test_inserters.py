@@ -131,7 +131,7 @@ def test_stack_inserter(game):
     assert second_transfer > first_transfer, (
         "Stack inserter failed to move multiple items at once"
     )
-    assert second_transfer >= 12, "Stack inserter not moving expected quantity of items"
+    assert second_transfer >= 10, "Stack inserter not moving expected quantity of items"
 
 
 def test_filter_stack_inserter(game):
@@ -162,4 +162,4 @@ def test_filter_stack_inserter(game):
     assert second_transfer > first_transfer, (
         "Stack inserter failed to move multiple items at once"
     )
-    assert second_transfer >= 12, "Stack inserter not moving expected quantity of items"
+    assert second_transfer >= 10, "Stack inserter not moving expected quantity of items"

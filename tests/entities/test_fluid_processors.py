@@ -31,7 +31,7 @@ def game(instance):
         "pumpjack": 1,
     }
     instance.set_speed(10)
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     yield instance.namespace
 
 
@@ -441,6 +441,7 @@ def test_multiple_positions_to_tanks_with_positions(game):
         "Connection between storage tank 2 and chemical plant should not be possible"
     )
 
+    game._render()
     input_oil_connection_point = [
         x for x in chem_plant.input_connection_points if x.type == "heavy-oil"
     ][0]

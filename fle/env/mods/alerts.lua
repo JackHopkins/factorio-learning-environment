@@ -1,4 +1,4 @@
-global.alerts = {}
+storage.alerts = {}
 
 -- Define a function to check if the transport belt is blocked
 local function is_transport_belt_blocked(entity)
@@ -7,10 +7,10 @@ local function is_transport_belt_blocked(entity)
         local line_2 = entity.get_transport_line(2)
 
         local direction_vector = {
-            [0] = {x = 0, y = -1},  -- North
-            [2] = {x = 1, y = 0},   -- East
-            [4] = {x = 0, y = 1},   -- South
-            [6] = {x = -1, y = 0},  -- West
+            [0] = {x = 0, y = -1},   -- North
+            [4] = {x = 1, y = 0},    -- East (Factorio 2.0)
+            [8] = {x = 0, y = 1},    -- South (Factorio 2.0)
+            [12] = {x = -1, y = 0},  -- West (Factorio 2.0)
         }
 
         local dx = direction_vector[entity.direction].x
@@ -130,8 +130,9 @@ local function has_fuel(entity)
     if entity.burner then
         if not entity.burner.currently_burning then
             local fuel_inventory = entity.get_inventory(defines.inventory.fuel)
-            for item_name, item_count in pairs(fuel_inventory.get_contents()) do
-                local fuel_value = game.item_prototypes[item_name].fuel_value
+            local contents = storage.utils.get_contents_compat(fuel_inventory)
+            for item_name, item_count in pairs(contents) do
+                local fuel_value = prototypes.item[item_name].fuel_value
                 if fuel_value and fuel_value > 0 then
                     return true
                 end
@@ -241,7 +242,7 @@ local function is_inserter_waiting_for_source(entity)
 end
 
 
-function global.utils.get_issues(entity)
+function storage.utils.get_issues(entity)
     local issues = {}
 
     if not can_mine(entity) then
@@ -341,7 +342,7 @@ function lacks_assembler_resources(entity)
             for _, ingredient in pairs(ingredients) do
                 -- don't perform a check in the case of liquids like crude-oil, water etc.
                 if is_not_fluid(ingredient.name) then
-                    if game.item_prototypes[ingredient.name].type ~= "fluid" then
+                    if prototypes.item[ingredient.name].type ~= "fluid" then
                         local available_amount = input_inventory.get_item_count(ingredient.name)
                         local missing_amount = ingredient.amount - available_amount
                         if missing_amount > 0 then
@@ -373,14 +374,14 @@ local function on_tick(event)
         for _, surface in pairs(game.surfaces) do
             local entities = surface.find_entities_filtered({force = "player"})
             for _, entity in pairs(entities) do
-                local issues = global.utils.get_issues(entity)
+                local issues = storage.utils.get_issues(entity)
 
                 if #issues > 0 then
                     local position = entity.position
                     local entity_key = entity.name .. "_" .. position.x .. "_" .. position.y
                     local name = '"'..entity.name:gsub(" ", "_")..'"'
-                    if not global.alerts[entity_key] then
-                        global.alerts[entity_key] = {
+                    if not storage.alerts[entity_key] then
+                        storage.alerts[entity_key] = {
                             position = position,
                             issues = issues,
                             entity_name = name,
@@ -394,14 +395,14 @@ local function on_tick(event)
 end
 
 -- Define a function to get alerts older than the number of seconds
-global.get_alerts = function(seconds)
+storage.get_alerts = function(seconds)
     local current_tick = game.tick
     local old_alerts = {}
 
-    for key, alert in pairs(global.alerts) do
+    for key, alert in pairs(storage.alerts) do
         if current_tick - alert.tick > 60*seconds then
             table.insert(old_alerts, alert)
-            global.alerts[key] = nil
+            storage.alerts[key] = nil
         end
     end
 

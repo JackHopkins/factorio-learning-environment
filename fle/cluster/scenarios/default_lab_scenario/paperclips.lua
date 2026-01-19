@@ -3,20 +3,20 @@ require("story")
 local paperclips = {}
 --Init the story script
 paperclips.on_init = function()
-  global.story = story_init(player(1))
+  storage.story = story_init(player(1))
 end
 
 --Register the update to all events
 local on_event = function(event)
-  story_update(global.story, event)
+  story_update(storage.story, event)
 end
 
 --Can also register to specific events, if you want to do multiple things with that event
 local on_tick = function(event)
-  if global.story == nil then
-    global.story = story_init(player(1))
+  if storage.story == nil then
+    storage.story = story_init(player(1))
   end
-  story_update(global.story, event)
+  story_update(storage.story, event)
   game.print("tick")
   --Other things on tick can go here.
 end
@@ -56,14 +56,14 @@ story_table =
       end,
       update = function(event, story)
         if event.name == defines.events.on_player_crafted_item then
-          game.players[event.player_index].print({"", "You crafted a ", game.item_prototypes[event.item_stack.name].localised_name})
+          game.players[event.player_index].print({"", "You crafted a ", prototypes.item[event.item_stack.name].localised_name})
         end
       end,
       condition = function(event)
         return event.name == defines.events.on_built_entity
       end,
       action = function(event)
-        game.print({"", game.players[event.player_index].name, " built a ", event.created_entity.localised_name})
+        game.print({"", game.players[event.player_index].name, " built a ", event.entity.localised_name})
       end
     },
     {

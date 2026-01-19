@@ -1,17 +1,17 @@
-global.actions.craft_item = function(player_index, entity, count)
+storage.actions.craft_item = function(player_index, entity, count)
     -- Ensure we have a valid character, recreating if necessary
-    local player = global.utils.ensure_valid_character(player_index)
+    local player = storage.utils.ensure_valid_character(player_index)
 
     local function calculate_crafting_ticks(recipe, crafts_count)
         -- energy_required is in seconds, multiply by 60 to get standard ticks
-        -- global.elapsed_ticks should always represent standard 60 ticks/second
+        -- storage.elapsed_ticks should always represent standard 60 ticks/second
         local ticks_per_craft = (recipe.energy or 0.5) * 60
         return math.ceil(ticks_per_craft * crafts_count)
     end
 
     local function check_inventory_space(player, item_name, count)
         -- Get the prototype of the item
-        local item_prototype = game.item_prototypes[item_name]
+        local item_prototype = prototypes.item[item_name]
         if not item_prototype then
             return false, "Invalid item prototype"
         end
@@ -91,7 +91,9 @@ global.actions.craft_item = function(player_index, entity, count)
     end
 
     local function update_production_stats(force, recipe, crafts_count)
-        local stats = force.item_production_statistics
+        -- Factorio 2.0: production_statistics is now a method requiring surface parameter
+        local surface = game.surfaces[1]
+        local stats = force.get_item_production_statistics(surface)
         local craft_stats = {crafted_count = crafts_count, inputs = {}, outputs = {}}
         for _, ingredient in pairs(recipe.ingredients) do
             craft_stats.inputs[ingredient.name] = ingredient.amount * crafts_count
@@ -103,7 +105,7 @@ global.actions.craft_item = function(player_index, entity, count)
                 craft_stats.outputs[product.name] = product.amount * crafts_count
             end
         end
-        table.insert(global.crafted_items, craft_stats)
+        table.insert(storage.crafted_items, craft_stats)
     end
 
     -- Single recursive crafting function that handles both fast and slow modes
@@ -142,9 +144,9 @@ global.actions.craft_item = function(player_index, entity, count)
 
 
         -- After potentially crafting intermediates, check if we can now craft the original item
-        if global.fast then
+        if storage.fast then
             -- Only add ticks in fast mode since in slow mode they are added naturally
-            global.elapsed_ticks = global.elapsed_ticks + crafting_ticks
+            storage.elapsed_ticks = storage.elapsed_ticks + crafting_ticks
 
             -- Add inventory space check here
             local can_insert, error_msg = check_inventory_space(player, entity_name, actual_craft_count)
@@ -194,7 +196,7 @@ global.actions.craft_item = function(player_index, entity, count)
 
         if crafted_amount > 0 then
             total_crafted = total_crafted + crafted_amount
-            if not global.fast then
+            if not storage.fast then
                 break
             end
         else
@@ -203,7 +205,7 @@ global.actions.craft_item = function(player_index, entity, count)
         end
     end
 
-    if total_crafted >= count or (not global.fast and total_crafted > 0) then
+    if total_crafted >= count or (not storage.fast and total_crafted > 0) then
         return count
     elseif total_crafted > 0 then
         error(string.format("\"Successfully crafted %dx but failed to craft %dx %s because %s\"",

@@ -2,69 +2,80 @@
 --- This file is used to initialise the global variables and functions.
 --- Ensure this is loaded first. Any variables or functions defined here will be available to all other scripts.
 
-if not global.actions then
+if not storage.actions then
     --- @type table Actions table
-    global.actions = {}
+    storage.actions = {}
 end
 
-if not global.utils then
+if not storage.utils then
     --- @type table Utils table
-    global.utils = {}
+    storage.utils = {}
 end
 
-if not global.initial_score then
+if not storage.initial_score then
     --- @type table Initial score table
-    global.initial_score = {["player"] = 0}
+    storage.initial_score = {["player"] = 0}
 end
 
-if not global.alerts then
+if not storage.alerts then
     --- @type table Alerts table
-    global.alerts = {}
+    storage.alerts = {}
 end
 
-if not global.elapsed_ticks then
+if not storage.elapsed_ticks then
     --- @type number The number of ticks elapsed since the game started
-    global.elapsed_ticks = 0
+    storage.elapsed_ticks = 0
 end
 
-if not global.fast then
+if not storage.fast then
     --- @type boolean Flag to use custom FLE fast mode
-    global.fast = false
+    storage.fast = false
 end
 
-if not global.agent_characters then
+if not storage.agent_characters then
     --- @type table<number, LuaEntity> Agent characters table mapping agent index to LuaEntity
-    global.agent_characters = {}
+    storage.agent_characters = {}
 end
 
-if not global.paths then
+if not storage.paths then
     --- @type table<number, table<string, any>> Paths table mapping agent index to path data
-    global.paths = {}
+    storage.paths = {}
 end
 
-if not global.path_requests then
-    global.path_requests = {}
+if not storage.path_requests then
+    storage.path_requests = {}
 end
 
-if not global.harvested_items then
-    global.harvested_items = {}
+if not storage.harvested_items then
+    storage.harvested_items = {}
 end
 
-if not global.crafted_items then
-    global.crafted_items = {}
+if not storage.crafted_items then
+    storage.crafted_items = {}
 end
 
-if not global.walking_queues then
-    global.walking_queues = {}
+if not storage.walking_queues then
+    storage.walking_queues = {}
 end
 
-if not global.goal then
-    global.goal = nil
+if not storage.goal then
+    storage.goal = nil
 end
 
 -- Initialize debug flags
-if global.debug == nil then
-    global.debug = {
+if storage.debug == nil then
+    storage.debug = {
         rendering = false -- Flag to toggle debug rendering of polygons and shapes
     }
+end
+
+-- Factorio 2.0 compatibility: get_contents() now returns array of {name, count, quality}
+-- This wrapper converts to the old format {item_name = count, ...}
+storage.utils.get_contents_compat = function(inventory)
+    if not inventory then return {} end
+    local contents = {}
+    for _, item in pairs(inventory.get_contents()) do
+        contents[item.name] = (contents[item.name] or 0) + item.count
+    end
+    return contents
 end

@@ -42,14 +42,18 @@ storage.actions.request_path = function(player_index, start_x, start_y, goal_x, 
 
     local path_request = {
         bounding_box = {{-size, -size}, {size, size}},
-        collision_mask = { 
-            "player-layer",
-            "train-layer",
-            "consider-tile-transitions",
-            "water-tile",
-            "object-layer",
-            "transport-belt-layer",
-            "water-tile"
+        -- Factorio 2.0: collision_mask requires {layers = {layer_name = true, ...}} format
+        -- Valid layers: is_lower_object, is_object, out_of_map, ground_tile, water_tile, resource,
+        -- doodad, floor, rail, transport_belt, item, ghost, object, player, car, train, elevated_rail,
+        -- elevated_train, empty_space, lava_tile, meltable, rail_support, trigger_target, cliff
+        collision_mask = {
+            layers = {
+                player = true,
+                train = true,
+                water_tile = true,
+                object = true,
+                transport_belt = true
+            }
         },
         start = start_position,
         goal = goal_position,

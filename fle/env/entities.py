@@ -188,15 +188,17 @@ class Inventory(BaseModel):
 
 
 class Direction(Enum):
+    # Factorio 2.0 uses 16-direction system
+    # Cardinal directions
     UP = NORTH = 0
-    RIGHT = EAST = 2
-    DOWN = SOUTH = 4
-    LEFT = WEST = 6
-    #
-    # UPRIGHT = NORTHEAST = 8
-    # DOWNRIGHT = SOUTHEAST = 10
-    # DOWNLEFT = SOUTHWEST = 12
-    # UPLEFT = NORTHWEST = 14
+    RIGHT = EAST = 4
+    DOWN = SOUTH = 8
+    LEFT = WEST = 12
+    # Diagonal directions
+    UPRIGHT = NORTHEAST = 2
+    DOWNRIGHT = SOUTHEAST = 6
+    DOWNLEFT = SOUTHWEST = 10
+    UPLEFT = NORTHWEST = 14
 
     def __repr__(self):
         return f"Direction.{self.name}"

@@ -9,7 +9,7 @@ storage.actions.load_entity_state = function(player, stored_json_data)
     local player_entity = storage.agent_characters[player]
     local surface = player_entity.surface
     local created_entities = {}
-    local stored_data = game.json_to_table(stored_json_data)
+    local stored_data = helpers.json_to_table(stored_json_data)
     local character_states = {}
     -- First pass: Create all non-character entities and store character states
     for _, state in pairs(stored_data) do

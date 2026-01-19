@@ -1,7 +1,7 @@
 local function safe_json_to_table(json)
 	if not json or json == '' then return {} end
 	local ok, result = pcall(function()
-		return game.json_to_table(json)
+		return helpers.json_to_table(json)
 	end)
 	if ok and type(result) == 'table' then return result end
 	return {}

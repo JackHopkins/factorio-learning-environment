@@ -101,7 +101,8 @@ storage.actions.move_to = function(player_index, path_handle, trailing_entity, i
                 end
                 return created
             else
-                error("\"No ".. trailing_entity .." in the inventory\"")
+                local inv_contents = storage.utils.format_inventory_for_error(player)
+                error("\"No ".. trailing_entity .." in the inventory. Current inventory: " .. inv_contents .. "\"")
             end
         elseif surface.can_fast_replace{name=trailing_entity, position=place_position, direction=direction, force='player'} then
             local existing_entity = surface.find_entity(trailing_entity, place_position)

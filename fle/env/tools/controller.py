@@ -17,6 +17,16 @@ from fle.env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
 
+# Maximum retries for RCON [processing] errors
+MAX_PROCESSING_RETRIES = 3
+PROCESSING_RETRY_DELAY = 0.1  # seconds
+
+
+class RconProcessingError(Exception):
+    """Raised when RCON returns [processing] indicating game engine is busy"""
+
+    pass
+
 
 class Controller:
     def __init__(
@@ -144,50 +154,86 @@ class Controller:
             script = command
         return script
 
-    def execute(self, *args) -> Tuple[Dict, Any]:
+    def _check_for_processing_error(self, lua_response: str) -> bool:
+        """Check if the RCON response indicates a [processing] error"""
+        if lua_response and "[processing]" in lua_response.lower():
+            return True
+        return False
+
+    def _execute_once(self, *args) -> Tuple[Dict, Any, str]:
+        """Execute a single command attempt, returns (result, elapsed, lua_response)"""
+        start = time.time()
+        parameters = [lua.encode(arg) for arg in args]
+        invocation = f"pcall(storage.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
+        wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
+        lua_response = self.connection.rcon_client.send_command(wrapped)
+
+        # Check for [processing] error from RCON layer
+        if self._check_for_processing_error(lua_response):
+            raise RconProcessingError("Game engine busy (processing), try again")
+
         try:
-            start = time.time()
-            parameters = [lua.encode(arg) for arg in args]
-            invocation = f"pcall(storage.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
-            wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
-
-            try:
-                possible_json = lua_response.split('["b"] = ')[
-                    1
-                ]  # get a possible json blob
-                possible_json = possible_json.replace(
-                    ",}", ""
-                )  # hacky lua table to json
-                parsed1 = json.loads(possible_json)
-                if isinstance(parsed1, dict):
-                    parsed = {"a": True, "b": parsed1}
-                else:
-                    parsed, _ = _lua2python(invocation, lua_response, start=start)
-            except Exception:
+            possible_json = lua_response.split('["b"] = ')[
+                1
+            ]  # get a possible json blob
+            possible_json = possible_json.replace(",}", "")  # hacky lua table to json
+            parsed1 = json.loads(possible_json)
+            if isinstance(parsed1, dict):
+                parsed = {"a": True, "b": parsed1}
+            else:
                 parsed, _ = _lua2python(invocation, lua_response, start=start)
-
-            if parsed is None:
-                return {}, lua_response  # elapsed
-
-            if not parsed.get("a") and "b" in parsed and isinstance(parsed["b"], str):
-                # Extract the full error string from the RCON dump instead of truncating by colon
-                parts = lua_response.split('["b"] = ')
-                if len(parts) > 1:
-                    msg = parts[1]
-                    # Trim trailing table end and whitespace
-                    msg = msg.rstrip()
-                    if msg.endswith("}"):
-                        msg = msg[:-2] if len(msg) >= 2 else msg
-                    msg = msg.replace("!!", '"').strip()
-                    return msg, lua_response
-                # Fallback to the parsed string as-is
-                return parsed["b"], lua_response
-
-            return parsed.get("b", {}), lua_response  # elapsed
-
         except Exception:
-            return {}, -1
+            parsed, _ = _lua2python(invocation, lua_response, start=start)
+
+        return parsed, lua_response
+
+    def execute(self, *args) -> Tuple[Dict, Any]:
+        for attempt in range(MAX_PROCESSING_RETRIES):
+            try:
+                parsed, lua_response = self._execute_once(*args)
+
+                if parsed is None:
+                    return {}, lua_response  # elapsed
+
+                if (
+                    not parsed.get("a")
+                    and "b" in parsed
+                    and isinstance(parsed["b"], str)
+                ):
+                    # Check if the error message contains [processing]
+                    if "[processing]" in parsed["b"].lower():
+                        raise RconProcessingError(
+                            "Game engine busy (processing), try again"
+                        )
+
+                    # Extract the full error string from the RCON dump instead of truncating by colon
+                    parts = lua_response.split('["b"] = ')
+                    if len(parts) > 1:
+                        msg = parts[1]
+                        # Trim trailing table end and whitespace
+                        msg = msg.rstrip()
+                        if msg.endswith("}"):
+                            msg = msg[:-2] if len(msg) >= 2 else msg
+                        msg = msg.replace("!!", '"').strip()
+                        return msg, lua_response
+                    # Fallback to the parsed string as-is
+                    return parsed["b"], lua_response
+
+                return parsed.get("b", {}), lua_response  # elapsed
+
+            except RconProcessingError:
+                if attempt < MAX_PROCESSING_RETRIES - 1:
+                    time.sleep(PROCESSING_RETRY_DELAY)
+                continue
+
+            except Exception:
+                return {}, -1
+
+        # All retries exhausted
+        return (
+            "Game engine busy - command could not be executed after multiple retries",
+            -1,
+        )
 
     def execute2(self, *args) -> Tuple[Dict, Any]:
         lua_response = ""

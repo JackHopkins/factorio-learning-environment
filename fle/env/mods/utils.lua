@@ -301,3 +301,32 @@ function storage.utils.inspect(player, radius, position)
 
     return entity_data
 end
+
+-- Format player inventory contents for error messages
+storage.utils.format_inventory_for_error = function(player)
+    local main_inv = player.get_inventory(defines.inventory.character_main)
+    if not main_inv then
+        return "empty"
+    end
+
+    local contents = storage.utils.get_contents_compat(main_inv)
+    if not contents or next(contents) == nil then
+        return "empty"
+    end
+
+    local items = {}
+    for name, count in pairs(contents) do
+        table.insert(items, name .. "=" .. count)
+    end
+
+    -- Limit to first 10 items to avoid overly long error messages
+    if #items > 10 then
+        local truncated = {}
+        for i = 1, 10 do
+            truncated[i] = items[i]
+        end
+        return table.concat(truncated, ", ") .. " (and " .. (#items - 10) .. " more)"
+    end
+
+    return table.concat(items, ", ")
+end

@@ -40,9 +40,10 @@ local function find_offshore_pump_position(player, center_pos)
                     }
 
                     -- Check if position is already occupied
+                    -- Factorio 2.0: collision_mask expects a collision layer name string
                     local entities = player.surface.find_entities_filtered{
                         position = check_pos,
-                        collision_mask = "player-layer", 
+                        collision_mask = "player",
                         invert = false
                     }
 
@@ -57,9 +58,10 @@ local function find_offshore_pump_position(player, center_pos)
                                 }
 
                                 -- Check for entities at water position
+                                -- Factorio 2.0: collision_mask expects a collision layer name string
                                 local water_entities = player.surface.find_entities_filtered{
                                     position = water_pos,
-                                    collision_mask = "water-tile",
+                                    collision_mask = "water_tile",
                                     invert = true
                                 }
 
@@ -77,10 +79,11 @@ local function find_offshore_pump_position(player, center_pos)
 
                                         if player.surface.can_place_entity(placement) then
                                             -- Final collision check for the exact pump dimensions
+                                            -- Factorio 2.0: collision_mask expects a collision layer name string
                                             local final_check = player.surface.find_entities_filtered{
                                                 area = {{check_pos.x - 0.5, check_pos.y - 0.5},
                                                        {check_pos.x + 0.5, check_pos.y + 0.5}},
-                                                collision_mask = "player-layer"
+                                                collision_mask = "player"
                                             }
 
                                             if #final_check == 0 then
@@ -141,7 +144,8 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
         local count = player.get_item_count(entity)
         if count == 0 then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            error("\"No " .. name .. " in inventory.\"")
+            local inv_contents = storage.utils.format_inventory_for_error(player)
+            error("\"No " .. name .. " in inventory. Current inventory: " .. inv_contents .. "\"")
         end
     end
 
@@ -231,7 +235,8 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction']/2)
+                    -- Factorio 2.0: direction is already in 16-direction format, no division needed
+                    entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction'])
                     new_position = pos_dir['position']
                     found_position = true
                 else
@@ -384,6 +389,46 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
                 return storage.utils.serialize_entity(entities[1])
             end
             error("\"Could not find placed entity\"")
+        else
+            -- create_entity returned nil - collect diagnostic information
+            local diag = {}
+            diag.entity_name = entity
+            diag.position = {x = position.x, y = position.y}
+            diag.direction = entity_direction
+            diag.can_place = player.surface.can_place_entity{name = entity, position = position, force = player.force, direction = entity_direction}
+
+            -- Check for blocking entities
+            local prototype = prototypes.entity[entity]
+            local width = 1
+            local height = 1
+            if prototype and prototype.tile_width then
+                width = prototype.tile_width / 2 + 0.5
+                height = prototype.tile_height / 2 + 0.5
+            end
+            local area = {{position.x - width, position.y - height}, {position.x + width, position.y + height}}
+            local blocking = player.surface.find_entities_filtered{area = area}
+            local blocking_names = {}
+            for _, b in ipairs(blocking) do
+                if b.name ~= "character" then
+                    table.insert(blocking_names, b.name .. " at (" .. b.position.x .. "," .. b.position.y .. ")")
+                end
+            end
+            diag.blocking_entities = blocking_names
+
+            -- Check terrain
+            local tile = player.surface.get_tile(position.x, position.y)
+            diag.tile_name = tile.name
+
+            local error_msg = string.format(
+                "\"create_entity returned nil for %s at (%s, %s). Diagnostics: can_place=%s, tile=%s, blocking=%s\"",
+                entity,
+                position.x,
+                position.y,
+                tostring(diag.can_place),
+                diag.tile_name,
+                #blocking_names > 0 and table.concat(blocking_names, ", ") or "none"
+            )
+            error(error_msg)
         end
     end
 

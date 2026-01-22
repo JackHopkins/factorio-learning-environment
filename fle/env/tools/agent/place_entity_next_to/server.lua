@@ -549,6 +549,7 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
         player.get_main_inventory().remove(item_stack)
         return placement_info
     else
-        error("Not enough items in inventory.")
+        local inv_contents = storage.utils.format_inventory_for_error(player)
+        error("Not enough " .. entity .. " in inventory. Current inventory: " .. inv_contents)
     end
 end

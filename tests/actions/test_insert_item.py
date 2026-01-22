@@ -102,7 +102,8 @@ def test_insert_into_assembler(game):
     assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=1000)
     assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=1000)
     assert assembler.status == EntityStatus.NO_POWER
-    assert assembler.assembling_machine_input[Prototype.IronPlate] == 100
+    # Factorio 2.0 changed assembler input capacity to ~1.5 stacks + buffer for crafts
+    assert assembler.assembling_machine_input[Prototype.IronPlate] == 164
     assert assembler.assembling_machine_output[Prototype.IronGearWheel] == 100
 
 

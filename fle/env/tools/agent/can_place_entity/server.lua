@@ -20,7 +20,8 @@ storage.actions.can_place_entity = function(player_index, entity, direction, x, 
     -- Check inventory for the entity
     if player.get_item_count(entity) == 0 then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
-        error("No " .. name .. " in inventory.")
+        local inv_contents = storage.utils.format_inventory_for_error(player)
+        error("No " .. name .. " in inventory. Current inventory: " .. inv_contents)
     end
 
     -- Get entity direction and collision box

@@ -235,18 +235,18 @@ local function serialize_fluidbox(fluidbox)
         local prototype = fluidbox.get_prototype(i)
         local connections = fluidbox.get_connections(i)
         local filter = fluidbox.get_filter(i)
-        local flow = fluidbox.get_flow(i)
+        -- Factorio 2.0: get_flow removed, get_fluid_system_id -> get_fluid_segment_id
         local locked_fluid = fluidbox.get_locked_fluid(i)
-        local fluid_system_id = fluidbox.get_fluid_system_id(i)
+        local fluid_segment_id = fluidbox.get_fluid_segment_id(i)
 
         local serialized_box = {
             prototype = prototype and prototype.object_name or nil,
             capacity = fluidbox.get_capacity(i),
             connections = {},
             filter = filter,
-            flow = flow,
+            flow = 0,  -- Factorio 2.0: get_flow no longer exists
             locked_fluid = locked_fluid,
-            fluid_system_id = fluid_system_id,
+            fluid_system_id = fluid_segment_id,
         }
 
         -- Serialize fluid
@@ -923,14 +923,19 @@ storage.utils.serialize_entity = function(entity)
             table.insert(serialized.connections, connection.position)
         end
         local contents_count = 0
-        for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
-            contents_count = contents_count + count
-            fluid_name = "\""..name.."\""
+        -- Factorio 2.0: get_fluid_system_contents -> get_fluid_segment_contents
+        local segment_contents = entity.fluidbox.get_fluid_segment_contents(1)
+        if segment_contents then
+            for name, count in pairs(segment_contents) do
+                contents_count = contents_count + count
+                fluid_name = "\""..name.."\""
+            end
         end
         serialized.contents = contents_count
         serialized.fluid = fluid_name
-        serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
-        serialized.flow_rate = entity.fluidbox.get_flow(1)
+        -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id, get_flow removed
+        serialized.fluidbox_id = entity.fluidbox.get_fluid_segment_id(1)
+        serialized.flow_rate = 0
     end
 
     -- Add input and output locations if the entity is a pipe-to-ground
@@ -941,12 +946,17 @@ storage.utils.serialize_entity = function(entity)
             table.insert(serialized.connections, connection.position)
         end
         local contents_count = 0
-        for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
-            contents_count = contents_count + count
-            fluid_name = "\""..name.."\""
+        -- Factorio 2.0: get_fluid_system_contents -> get_fluid_segment_contents
+        local segment_contents = entity.fluidbox.get_fluid_segment_contents(1)
+        if segment_contents then
+            for name, count in pairs(segment_contents) do
+                contents_count = contents_count + count
+                fluid_name = "\""..name.."\""
+            end
         end
-        serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
-        serialized.flow_rate = entity.fluidbox.get_flow(1)
+        -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id, get_flow removed
+        serialized.fluidbox_id = entity.fluidbox.get_fluid_segment_id(1)
+        serialized.flow_rate = 0
         serialized.contents = contents_count
         serialized.fluid = fluid_name
         --serialized.input_position = entity.fluidbox.get_connections(1)[1].position
@@ -1046,7 +1056,8 @@ storage.utils.serialize_entity = function(entity)
                 serialized.fluid = string.format("\"%s\"", fluid.name)
                 serialized.fluid_amount = fluid.amount
                 serialized.fluid_temperature = fluid.temperature
-                serialized.fluid_system_id = entity.fluidbox.get_fluid_system_id(1)
+                -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+                serialized.fluid_system_id = entity.fluidbox.get_fluid_segment_id(1)
             end
         end
 
@@ -1255,9 +1266,8 @@ storage.utils.serialize_entity = function(entity)
         end
     end
 
-    if entity.type == "solar-panel" then
-        serialized.electric_output_flow_limit = entity.electric_output_flow_limit
-    end
+    -- Factorio 2.0: solar panels no longer have electric_output_flow_limit property
+    -- Solar panel power output is now determined by prototype settings (performance_at_day/night)
 
     if entity.type == 'accumulator' then
         --serialized.energy_source = entity.energy_source
@@ -1330,7 +1340,8 @@ storage.utils.serialize_entity = function(entity)
             local fluid_contents = nil
             for i = 1, #entity.fluidbox do
                 if entity.fluidbox[i] then
-                    local system_id = entity.fluidbox.get_fluid_system_id(i)
+                    -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+                    local system_id = entity.fluidbox.get_fluid_segment_id(i)
                     if system_id then
                         table.insert(fluid_systems, system_id)
                     end

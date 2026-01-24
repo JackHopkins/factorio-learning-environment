@@ -10,8 +10,9 @@ def game(instance):
         "solar-panel": 3,
         "small-electric-pole": 4,
         "long-handed-inserter": 2,
-        "filter-inserter": 2,
+        "fast-inserter": 2,  # Factorio 2.0: filter-inserter removed, all inserters can filter
         "stack-inserter": 2,
+        "bulk-inserter": 2,  # Factorio 2.0: stack-filter-inserter renamed to bulk-inserter
         "iron-chest": 4,
         "steel-chest": 4,
         "iron-plate": 100,

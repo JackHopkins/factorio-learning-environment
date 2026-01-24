@@ -6,7 +6,8 @@ Oil refinery renderer with recipe icons
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image, ImageDraw
 
-DIRECTIONS = {0: "north", 2: "east", 4: "south", 6: "west"}
+# Factorio 2.0: Direction values doubled (16 directions instead of 8)
+DIRECTIONS = {0: "north", 4: "east", 8: "south", 12: "west"}
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:

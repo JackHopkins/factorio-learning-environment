@@ -24,11 +24,10 @@ storage.actions.set_entity_recipe = function(player_index, recipe_name, x, y)
 
         -- Handle different entity types
         if closest_building.type == "inserter" then
-            -- For filter inserters, set the filter
-            if closest_building.name == "filter-inserter" or closest_building.name == "stack-filter-inserter" then
-                closest_building.set_filter(1, recipe_name)  -- Set first filter slot
-                serialized = storage.utils.serialize_entity(closest_building)
-            end
+            -- Factorio 2.0: all inserters can filter, enable filtering and set the filter
+            closest_building.use_filters = true
+            closest_building.set_filter(1, recipe_name)  -- Set first filter slot
+            serialized = storage.utils.serialize_entity(closest_building)
         else
             -- Original assembling machine logic
             local recipe = player.force.recipes[recipe_name]

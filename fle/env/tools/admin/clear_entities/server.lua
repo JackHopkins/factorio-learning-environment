@@ -7,7 +7,7 @@ storage.actions.clear_entities = function(player_index)
             type = {
                 "accumulator", "ammo-turret", "arithmetic-combinator", "artillery-turret",
                 "assembling-machine", "beacon", "boiler", "constant-combinator",
-                "container", "curved-rail", "decider-combinator", "electric-pole",
+                "container", "logistic-container", "curved-rail", "decider-combinator", "electric-pole",
                 "electric-turret", "fluid-turret", "furnace", "gate", "generator",
                 "heat-interface", "heat-pipe", "inserter", "lab", "lamp",
                 "land-mine", "linked-belt", "linked-container", "loader",

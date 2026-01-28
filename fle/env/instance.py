@@ -118,6 +118,10 @@ class GameControl:
             return 0
         return int(response)
 
+    def _reset_elapsed_ticks(self):
+        """Reset the elapsed ticks counter to 0."""
+        self.rcon_client.send_command("/sc storage.elapsed_ticks = 0")
+
     def reset_to_defaults(self):
         """Reset to the configured default speed and pause state"""
         self.set_speed(self.reset_speed)
@@ -268,6 +272,10 @@ class FactorioInstance:
         all_technologies_researched: bool = False,
         clear_entities: bool = True,
     ):
+        # Ensure RCON connection is healthy before resetting
+        # This prevents cascading failures when the connection was broken by a previous test
+        self.ensure_connected()
+
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, (
             "Game state must have the same number of inventories as num_agents"
@@ -337,6 +345,10 @@ class FactorioInstance:
     def get_elapsed_ticks(self):
         """Get the number of ticks elapsed since the game started"""
         return self.game_control.get_elapsed_ticks()
+
+    def _reset_elapsed_ticks(self):
+        """Reset the elapsed ticks counter to 0."""
+        self.game_control._reset_elapsed_ticks()
 
     def pause(self):
         """Pause the game (preserves speed setting)"""
@@ -567,6 +579,39 @@ class FactorioInstance:
             "/silent-command game.surfaces[1].force_generate_chunk_requests()"
         )
         pass
+
+    def is_rcon_connected(self) -> bool:
+        """Check if the RCON client is still connected and healthy."""
+        if not hasattr(self, "rcon_client") or self.rcon_client is None:
+            return False
+        # Check the internal state of the factorio_rcon library
+        if self.rcon_client.rcon_socket is None:
+            return False
+        if self.rcon_client.rcon_failure:
+            return False
+        return True
+
+    def reconnect(self):
+        """Reconnect to the RCON server if the connection has been lost."""
+        if self.is_rcon_connected():
+            return  # Already connected
+
+        print(
+            f"RCON connection lost, attempting to reconnect to {self.address}:{self.tcp_port}..."
+        )
+        try:
+            self.rcon_client.connect()
+            print(
+                f"Successfully reconnected to RCON server at {self.address}:{self.tcp_port}"
+            )
+        except Exception as e:
+            print(f"Failed to reconnect to RCON server: {e}")
+            raise
+
+    def ensure_connected(self):
+        """Ensure RCON connection is healthy, reconnecting if necessary."""
+        if not self.is_rcon_connected():
+            self.reconnect()
 
     def cleanup(self):
         # Close the RCON connection

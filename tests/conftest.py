@@ -125,6 +125,7 @@ def _reset_between_tests(instance, request):
         yield
         return
     # Restore the default inventory in case a previous test changed it
+    # Note: ensure_connected() is called inside reset() so we don't need to call it here
     if hasattr(instance, "default_initial_inventory"):
         try:
             instance.initial_inventory = dict(instance.default_initial_inventory)
@@ -161,6 +162,7 @@ def configure_game(instance):
         all_technologies_researched: bool = True,
     ):
         # Always start from the canonical default inventory to avoid leakage
+        # Note: ensure_connected() is called inside reset() so we don't need to call it here
         # from previous tests when this fixture is used.
         if hasattr(instance, "default_initial_inventory"):
             try:

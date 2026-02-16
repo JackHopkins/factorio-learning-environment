@@ -61,6 +61,14 @@ class APIFactory:
             "api_key_env": "OPENAI_API_KEY",
             "key_manager_provider": "openai",
         },
+        "ollama": {
+            "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+            "api_key_env": "OLLAMA_API_KEY",  # Ollama doesn't need a key, but API requires one
+            "key_manager_provider": "ollama",
+            "model_transform": lambda m: m.replace("ollama-", "", 1)
+            if m.startswith("ollama-")
+            else m,
+        },
     }
 
     def __init__(self, model: str, beam: int = 1, api_key_config_file: str = None):
@@ -88,9 +96,9 @@ class APIFactory:
         if "/" in model:
             return self.PROVIDERS["open-router"]
 
-        # Otherwise, check for provider prefixes
+        # Otherwise, check for provider prefixes (must be at start of model name)
         for provider, config in self.PROVIDERS.items():
-            if provider in model:
+            if model.startswith(provider):
                 return config
         raise ValueError(f"No provider found for model: {model}")
 
@@ -140,6 +148,10 @@ class APIFactory:
         if env_key:
             logging.debug(f"Using environment key from {env_var}")
             return env_key
+
+        # Ollama doesn't require an API key, but the OpenAI client needs something
+        if env_var == "OLLAMA_API_KEY":
+            return "ollama"
 
         raise ValueError(
             f"No API key available for provider. "

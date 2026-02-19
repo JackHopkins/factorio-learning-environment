@@ -371,7 +371,10 @@ def test_place_at_drop_position(game):
 
 
 def test_cannot_place_at_water(game):
-    steam_engine_pos = Position(x=-20.5, y=8.5)
+    water_pos = game.nearest(Resource.Water)
+    water_patch = game.get_resource_patch(Resource.Water, water_pos)
+    # Use the center of the water patch to ensure we're on water, not the edge
+    steam_engine_pos = water_patch.bounding_box.center
     game.move_to(steam_engine_pos)
     try:
         engine = game.place_entity(Prototype.SteamEngine, position=steam_engine_pos)  # noqa

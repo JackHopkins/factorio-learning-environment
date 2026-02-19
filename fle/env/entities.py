@@ -41,54 +41,113 @@ class Layer(IntFlag):
 
 
 # This should really live in `types`, but it's here to prevent a circular import
+# EntityStatus enum - comprehensive list from Factorio 2.0 API documentation
+# See: https://lua-api.factorio.com/latest/types/EntityStatus.html
 class EntityStatus(Enum):
+    # Basic operational states
     WORKING = "working"
     NORMAL = "normal"
+    NONE = "none"
+
+    # Power-related states
     NO_POWER = "no_power"
     LOW_POWER = "low_power"
-    NO_FUEL = "no_fuel"
-    EMPTY = "empty"
-    # DISABLED_BY_CONTROL_BEHAVIOR = "disabled_by_control_behavior"
-    # OPENED_BY_CIRCUIT_NETWORK = "opened_by_circuit_network"
-    # CLOSED_BY_CIRCUIT_NETWORK = "closed_by_circuit_network"
-    # DISABLED_BY_SCRIPT = "disabled_by_script"
-    # MARKED_FOR_DECONSTRUCTION = "marked_for_deconstruction"
     NOT_PLUGGED_IN_ELECTRIC_NETWORK = "not_plugged_in_electric_network"
-    # NETWORKS_CONNECTED = "networks_connected"
-    # NETWORKS_DISCONNECTED = "networks_disconnected"
     CHARGING = "charging"
     DISCHARGING = "discharging"
     FULLY_CHARGED = "fully_charged"
-    # OUT_OF_LOGISTIC_NETWORK = "out_of_logistic_network"
+    RECHARGING_AFTER_POWER_OUTAGE = "recharging_after_power_outage"
+
+    # Fuel-related states
+    NO_FUEL = "no_fuel"
+    NO_FOOD = "no_food"
+    LOW_TEMPERATURE = "low_temperature"
+
+    # Connection states
+    NOT_CONNECTED = "not_connected"
+    NETWORKS_CONNECTED = "networks_connected"
+    NETWORKS_DISCONNECTED = "networks_disconnected"
+    NOT_CONNECTED_TO_RAIL = "not_connected_to_rail"
+    NOT_CONNECTED_TO_HUB_OR_PAD = "not_connected_to_hub_or_pad"
+
+    # Recipe/crafting states
     NO_RECIPE = "no_recipe"
     NO_INGREDIENTS = "no_ingredients"
-    NOT_CONNECTED = "not_connected"
+    ITEM_INGREDIENT_SHORTAGE = "item_ingredient_shortage"
+    RECIPE_NOT_RESEARCHED = "recipe_not_researched"
+
+    # Fluid-related states
     NO_INPUT_FLUID = "no_input_fluid"
-    NO_RESEARCH_IN_PROGRESS = "no_research_in_progress"
-    NO_MINABLE_RESOURCES = "no_minable_resources"
     LOW_INPUT_FLUID = "low_input_fluid"
     FLUID_INGREDIENT_SHORTAGE = "fluid_ingredient_shortage"
+    MISSING_REQUIRED_FLUID = "missing_required_fluid"
+    PIPELINE_OVEREXTENDED = "pipeline_overextended"
+
+    # Output states
+    EMPTY = "empty"
     FULL_OUTPUT = "full_output"
     FULL_BURNT_RESULT_OUTPUT = "full_burnt_result_output"
-    ITEM_INGREDIENT_SHORTAGE = "item_ingredient_shortage"
-    MISSING_REQUIRED_FLUID = "missing_required_fluid"
+    NOT_ENOUGH_SPACE_IN_OUTPUT = "not_enough_space_in_output"
+
+    # Research/lab states
+    NO_RESEARCH_IN_PROGRESS = "no_research_in_progress"
     MISSING_SCIENCE_PACKS = "missing_science_packs"
+
+    # Mining states
+    NO_MINABLE_RESOURCES = "no_minable_resources"
+
+    # Inserter/logistics states
     WAITING_FOR_SOURCE_ITEMS = "waiting_for_source_items"
     WAITING_FOR_SPACE_IN_DESTINATION = "waiting_for_space_in_destination"
+    OUT_OF_LOGISTIC_NETWORK = "out_of_logistic_network"
+    NO_FILTER = "no_filter"
 
+    # Rocket/space states
     PREPARING_ROCKET_FOR_LAUNCH = "preparing_rocket_for_launch"
     WAITING_TO_LAUNCH_ROCKET = "waiting_to_launch_rocket"
     LAUNCHING_ROCKET = "launching_rocket"
-    # NO_MODULES_TO_TRANSMIT = "no_modules_to_transmit"
-    # RECHARGING_AFTER_POWER_OUTAGE = "recharging_after_power_outage"
-    # WAITING_FOR_TARGET_TO_BE_BUILT = "waiting_for_target_to_be_built"
-    # WAITING_FOR_TRAIN = "waiting_for_train"
+    WAITING_FOR_SPACE_IN_PLATFORM_HUB = "waiting_for_space_in_platform_hub"
+    THRUST_NOT_REQUIRED = "thrust_not_required"
+    NOT_ENOUGH_THRUST = "not_enough_thrust"
+    ON_THE_WAY = "on_the_way"
+    WAITING_IN_ORBIT = "waiting_in_orbit"
+    WAITING_FOR_ROCKET_TO_ARRIVE = "waiting_for_rocket_to_arrive"
+
+    # Combat/turret states
     NO_AMMO = "no_ammo"
-    LOW_TEMPERATURE = "low_temperature"
-    # DISABLED = "disabled"
-    # TURNED_OFF_DURING_DAYTIME = "turned_off_during_daytime"
-    NOT_CONNECTED_TO_RAIL = "not_connected_to_rail"
-    # CANT_DIVIDE_SEGMENTS = "cant_divide_segments"
+    WAITING_FOR_TARGET_TO_BE_BUILT = "waiting_for_target_to_be_built"
+
+    # Train states
+    WAITING_FOR_TRAIN = "waiting_for_train"
+    WAITING_AT_STOP = "waiting_at_stop"
+    DESTINATION_STOP_FULL = "destination_stop_full"
+    NO_PATH = "no_path"
+    COMPUTING_NAVIGATION = "computing_navigation"
+    CANT_DIVIDE_SEGMENTS = "cant_divide_segments"
+
+    # Circuit/control states
+    DISABLED = "disabled"
+    DISABLED_BY_CONTROL_BEHAVIOR = "disabled_by_control_behavior"
+    DISABLED_BY_SCRIPT = "disabled_by_script"
+    OPENED_BY_CIRCUIT_NETWORK = "opened_by_circuit_network"
+    CLOSED_BY_CIRCUIT_NETWORK = "closed_by_circuit_network"
+
+    # Deconstruction/ghost states
+    MARKED_FOR_DECONSTRUCTION = "marked_for_deconstruction"
+    GHOST = "ghost"
+
+    # Module/beacon states
+    NO_MODULES_TO_TRANSMIT = "no_modules_to_transmit"
+
+    # Environmental states
+    TURNED_OFF_DURING_DAYTIME = "turned_off_during_daytime"
+    FROZEN = "frozen"
+    PAUSED = "paused"
+    BROKEN = "broken"
+
+    # Agriculture states (Factorio 2.0 Space Age)
+    NO_SPOT_SEEDABLE_BY_INPUTS = "no_spot_seedable_by_inputs"
+    WAITING_FOR_PLANTS_TO_GROW = "waiting_for_plants_to_grow"
 
     def __repr__(self):
         return f"EntityStatus.{self.name}"
@@ -188,15 +247,17 @@ class Inventory(BaseModel):
 
 
 class Direction(Enum):
+    # Factorio 2.0 uses 16-direction system
+    # Cardinal directions
     UP = NORTH = 0
-    RIGHT = EAST = 2
-    DOWN = SOUTH = 4
-    LEFT = WEST = 6
-    #
-    # UPRIGHT = NORTHEAST = 8
-    # DOWNRIGHT = SOUTHEAST = 10
-    # DOWNLEFT = SOUTHWEST = 12
-    # UPLEFT = NORTHWEST = 14
+    RIGHT = EAST = 4
+    DOWN = SOUTH = 8
+    LEFT = WEST = 12
+    # Diagonal directions
+    UPRIGHT = NORTHEAST = 2
+    DOWNRIGHT = SOUTHEAST = 6
+    DOWNLEFT = SOUTHWEST = 10
+    UPLEFT = NORTHWEST = 14
 
     def __repr__(self):
         return f"Direction.{self.name}"
@@ -850,15 +911,14 @@ class RocketSilo(StaticEntity, Electric):
     rocket_parts: int = 0  # Number of rocket parts currently assembled
     rocket_inventory: Inventory = Inventory()  # Holds satellite or other payload
     rocket_progress: float = 0.0  # Progress of current rocket construction (0-100)
-    launch_count: int = 0  # Number of successful launches
+    # Factorio 2.0: launch_count removed (no longer available on LuaEntity)
     _width: float = 9
     _height: float = 9
 
     def __repr__(self) -> str:
         return (
             f"\n\tRocketSilo(position={self.position}, status={self.status}, "
-            f"rocket_parts={self.rocket_parts}, rocket_progress={self.rocket_progress:.1f}%, "
-            f"launch_count={self.launch_count})"
+            f"rocket_parts={self.rocket_parts}, rocket_progress={self.rocket_progress:.1f}%)"
         )
 
 
@@ -894,9 +954,9 @@ class Lab(Entity, Electric):
 class Pipe(Entity):
     """A pipe for fluid transport"""
 
-    fluidbox_id: int
-    flow_rate: float
-    contents: float
+    fluidbox_id: Optional[int] = None
+    flow_rate: Optional[float] = None
+    contents: Optional[float] = None
     fluid: Optional[str] = None
     _height: float = 1
     _width: float = 1
@@ -981,3 +1041,79 @@ class ElectricityGroup(EntityGroup):
 
     def __str__(self):
         return self.__repr__()
+
+
+# =============================================================================
+# Additional Entity Classes (Factorio 2.0 Base Game)
+# Uses aggressive inheritance to minimize code duplication
+# =============================================================================
+
+
+class LogisticChest(Chest):
+    """Logistic chest for robot networks (all 5 types use this class)"""
+
+    request_filters: List[Any] = []
+
+
+class Beacon(StaticEntity, Electric):
+    """Beacon for distributing module effects"""
+
+    _height: float = 3
+    _width: float = 3
+
+
+class Roboport(StaticEntity, Electric):
+    """Roboport for logistics and construction robots"""
+
+    _height: float = 4
+    _width: float = 4
+
+
+class Combinator(StaticEntity):
+    """Circuit network combinator (arithmetic, decider, constant)"""
+
+    _height: float = 1
+    _width: float = 2
+
+
+class TrainStop(StaticEntity, Electric):
+    """Train stop for rail networks"""
+
+    _height: float = 2
+    _width: float = 2
+
+
+class RailSignal(StaticEntity):
+    """Rail signal (regular and chain)"""
+
+    _height: float = 1
+    _width: float = 1
+
+
+class RollingStock(Entity, BurnerType):
+    """Rolling stock (locomotive, cargo wagon, fluid wagon)"""
+
+    inventory: Inventory = Inventory()
+    _height: float = 2
+    _width: float = 6
+
+
+class Turret(GunTurret, Electric):
+    """Electric turret (laser, artillery)"""
+
+    pass
+
+
+class FluidTurret(GunTurret, FluidHandler):
+    """Fluid-based turret (flamethrower)"""
+
+    _height: float = 2
+    _width: float = 3
+
+
+class Vehicle(Entity, BurnerType):
+    """Vehicle (car, tank, spidertron)"""
+
+    trunk_inventory: Inventory = Inventory()
+    _height: float = 2
+    _width: float = 2

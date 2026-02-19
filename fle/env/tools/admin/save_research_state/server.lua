@@ -1,6 +1,6 @@
-global.actions.save_research_state = function(player_index)
+storage.actions.save_research_state = function(player_index)
     -- Validate the character exists and is valid
-    local player = global.agent_characters and global.agent_characters[player_index]
+    local player = storage.agent_characters and storage.agent_characters[player_index]
     if not player or not player.valid then
         -- Try to use default force if no valid player
         local force = game.forces["player"] or game.forces[1]

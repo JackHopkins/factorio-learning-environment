@@ -42,7 +42,13 @@ class MoveTo(Tool):
             allow_paths_through_own_entities=True,
             resolution=-1,
         )
-        sleep(0.05)  # Let the pathing complete in the game.
+
+        # Wait for path to be computed using get_path with backoff polling
+        # This fixes the race condition where move_to was called before path was ready
+        try:
+            self.get_path(path_handle)
+        except Exception as e:
+            raise Exception(f"Could not get path to ({x}, {y}): {e}")
 
         # Track elapsed ticks for fast forward
         ticks_before = self.game_state.instance.get_elapsed_ticks()
@@ -90,12 +96,12 @@ class MoveTo(Tool):
             # If `fast` is turned off - we need to long poll the game state to ensure the player has moved
             if not self.game_state.instance.fast:
                 remaining_steps = self.connection.rcon_client.send_command(
-                    f"/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))"
+                    f"/silent-command rcon.print(storage.actions.get_walking_queue_length({self.player_index}))"
                 )
                 while remaining_steps != "0":
                     sleep(0.5)
                     remaining_steps = self.connection.rcon_client.send_command(
-                        f"/silent-command rcon.print(global.actions.get_walking_queue_length({self.player_index}))"
+                        f"/silent-command rcon.print(storage.actions.get_walking_queue_length({self.player_index}))"
                     )
                 self.game_state.player_location = Position(x=position.x, y=position.y)
 

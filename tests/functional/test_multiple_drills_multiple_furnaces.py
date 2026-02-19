@@ -27,7 +27,7 @@ def game(instance):
         "pipe": 100,
         "assembling-machine-1": 5,
     }
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     instance.set_speed(10)
     yield instance.namespace
 
@@ -169,7 +169,7 @@ def test_multi_drill_multi_furnace(game):
     game.get_entities()
     game.sleep(30)
 
-    production_stats = game._production_stats()
+    production_stats = game._get_production_stats()
     assert production_stats["output"]["copper-plate"] > 10
 
 

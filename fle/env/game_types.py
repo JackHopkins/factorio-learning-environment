@@ -63,13 +63,13 @@ class RecipeName(enum.Enum):
     SolidFuelFromLightOil = "solid-fuel-from-light-oil"  # Recipe for producing solid fuel in a chemical plant
     SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas"  # Recipe for producing solid fuel in a chemical plant
 
-    FillCrudeOilBarrel = "fill-crude-oil-barrel"
-    FillHeavyOilBarrel = "fill-heavy-oil-barrel"
-    FillLightOilBarrel = "fill-light-oil-barrel"
-    FillLubricantBarrel = "fill-lubricant-barrel"
-    FillPetroleumGasBarrel = "fill-petroleum-gas-barrel"
-    FillSulfuricAcidBarrel = "fill-sulfuric-acid-barrel"
-    FillWaterBarrel = "fill-water-barrel"
+    FillCrudeOilBarrel = "crude-oil-barrel"
+    FillHeavyOilBarrel = "heavy-oil-barrel"
+    FillLightOilBarrel = "light-oil-barrel"
+    FillLubricantBarrel = "lubricant-barrel"
+    FillPetroleumGasBarrel = "petroleum-gas-barrel"
+    FillSulfuricAcidBarrel = "sulfuric-acid-barrel"
+    FillWaterBarrel = "water-barrel"
 
     EmptyCrudeOilBarrel = "empty-crude-oil-barrel"
     EmptyHeavyOilBarrel = "empty-heavy-oil-barrel"
@@ -88,12 +88,27 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
 
     BurnerInserter = "burner-inserter", ent.BurnerInserter
     FastInserter = "fast-inserter", ent.Inserter
-    ExpressInserter = "express-inserter", ent.Inserter
+    # Factorio 2.0: express-inserter removed, filter-inserter removed (all inserters can filter)
+    # stack-filter-inserter renamed to bulk-inserter
 
     LongHandedInserter = "long-handed-inserter", ent.Inserter
-    StackInserter = "stack-inserter", ent.Inserter
-    StackFilterInserter = "stack-filter-inserter", ent.FilterInserter
-    FilterInserter = "filter-inserter", ent.FilterInserter
+    BulkInserter = (
+        "bulk-inserter",
+        ent.Inserter,
+    )  # Factorio 2.0: old stack-inserter renamed to bulk-inserter
+    # Backwards compatibility aliases - map to closest equivalent
+    StackInserter = (
+        "bulk-inserter",
+        ent.Inserter,
+    )  # Factorio 2.0: old stack-inserter renamed to bulk-inserter
+    FilterInserter = (
+        "fast-inserter",
+        ent.Inserter,
+    )  # Factorio 2.0: filter-inserter removed, use fast-inserter
+    StackFilterInserter = (
+        "bulk-inserter",
+        ent.Inserter,
+    )  # Factorio 2.0: renamed to bulk-inserter
 
     Inserter = "inserter", ent.Inserter
 
@@ -222,6 +237,57 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     PipeGroup = "pipe-group", ent.PipeGroup
     ElectricityGroup = "electricity-group", ent.ElectricityGroup
 
+    # Logistic Chests
+    PassiveProviderChest = "passive-provider-chest", ent.LogisticChest
+    ActiveProviderChest = "active-provider-chest", ent.LogisticChest
+    StorageChest = "storage-chest", ent.LogisticChest
+    RequesterChest = "requester-chest", ent.LogisticChest
+    BufferChest = "buffer-chest", ent.LogisticChest
+
+    # Beacon
+    Beacon = "beacon", ent.Beacon
+
+    # Modules (items only)
+    SpeedModule = "speed-module", None
+    SpeedModule2 = "speed-module-2", None
+    SpeedModule3 = "speed-module-3", None
+    EfficiencyModule = "efficiency-module", None
+    EfficiencyModule2 = "efficiency-module-2", None
+    EfficiencyModule3 = "efficiency-module-3", None
+
+    # Power
+    Substation = "substation", ent.ElectricityPole
+    SteamTurbine = "steam-turbine", ent.Generator
+
+    # Circuit Network
+    ArithmeticCombinator = "arithmetic-combinator", ent.Combinator
+    DeciderCombinator = "decider-combinator", ent.Combinator
+    ConstantCombinator = "constant-combinator", ent.Combinator
+    PowerSwitch = "power-switch", ent.Combinator
+    ProgrammableSpeaker = "programmable-speaker", ent.Entity
+
+    # Trains
+    TrainStop = "train-stop", ent.TrainStop
+    RailSignal = "rail-signal", ent.RailSignal
+    RailChainSignal = "rail-chain-signal", ent.RailSignal
+    Locomotive = "locomotive", ent.RollingStock
+    CargoWagon = "cargo-wagon", ent.RollingStock
+    FluidWagon = "fluid-wagon", ent.RollingStock
+
+    # Logistics
+    Roboport = "roboport", ent.Roboport
+
+    # Defense
+    LaserTurret = "laser-turret", ent.Turret
+    FlamethrowerTurret = "flamethrower-turret", ent.FluidTurret
+    ArtilleryTurret = "artillery-turret", ent.Turret
+    LandMine = "land-mine", ent.Entity
+
+    # Vehicles
+    Car = "car", ent.Vehicle
+    Tank = "tank", ent.Vehicle
+    Spidertron = "spidertron", ent.Vehicle
+
     def __init__(self, prototype_name, entity_class_name):
         self.prototype_name = prototype_name
         self.entity_class = entity_class_name
@@ -240,6 +306,10 @@ prototype_by_title = {str(prototype): prototype for prototype in Prototype}
 
 
 class Technology(enum.Enum):
+    # Science pack technologies (Factorio 2.0 prerequisites)
+    SteamPower = "steam-power"  # Starting tech, no prerequisites
+    AutomationSciencePack = "automation-science-pack"  # Requires steam-power
+
     # Basic automation technologies
     Automation = "automation"  # Unlocks assembling machine 1
     Automation2 = "automation-2"  # Unlocks assembling machine 2

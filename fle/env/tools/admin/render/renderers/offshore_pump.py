@@ -6,7 +6,8 @@ Offshore pump renderer
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
-DIRECTIONS = {0: "north", 2: "east", 4: "south", 6: "west"}
+# Factorio 2.0: 16-direction system (0, 4, 8, 12 for cardinals)
+DIRECTIONS = {0: "north", 4: "east", 8: "south", 12: "west"}
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:

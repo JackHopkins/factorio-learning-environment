@@ -1,5 +1,5 @@
-global.actions.can_place_entity = function(player_index, entity, direction, x, y)
-    local player = global.agent_characters[player_index]
+storage.actions.can_place_entity = function(player_index, entity, direction, x, y)
+    local player = storage.agent_characters[player_index]
     local position = {x = x, y = y}
     
     ---- Check player's reach distance
@@ -8,7 +8,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     local distance = math.sqrt(dx * dx + dy * dy)
 
     -- Check entity prototype exists
-    if game.entity_prototypes[entity] == nil then
+    if prototypes.entity[entity] == nil then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
         error(name .. " isn't a valid entity prototype. Did you make a typo?")
     end
@@ -20,12 +20,13 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
     -- Check inventory for the entity
     if player.get_item_count(entity) == 0 then
         local name = entity:gsub(" ", "_"):gsub("-", "_")
-        error("No " .. name .. " in inventory.")
+        local inv_contents = storage.utils.format_inventory_for_error(player)
+        error("No " .. name .. " in inventory. Current inventory: " .. inv_contents)
     end
 
     -- Get entity direction and collision box
     local direction_enum = get_entity_direction(entity, direction)
-    local prototype = game.entity_prototypes[entity]
+    local prototype = prototypes.entity[entity]
     local collision_box = prototype.collision_box
     local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
     local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
@@ -59,7 +60,7 @@ global.actions.can_place_entity = function(player_index, entity, direction, x, y
 
     ---- Check if the entity can be placed
     ---  if placement fails, it tries 11 different positions (i=0 to 10) by moving the player diagonally
-    local can_build = global.utils.avoid_entity(player_index, entity, position, direction)
+    local can_build = storage.utils.avoid_entity(player_index, entity, position, direction)
     if not can_build then
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end
@@ -70,7 +71,7 @@ function get_entity_direction(entity, direction)
     if direction == nil then
         return defines.direction.north
     end
-    local prototype = game.entity_prototypes[entity]
+    local prototype = prototypes.entity[entity]
     local cardinals = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
     if prototype and prototype.type == "inserter" then
         return cardinals[(direction % 4) + 1]

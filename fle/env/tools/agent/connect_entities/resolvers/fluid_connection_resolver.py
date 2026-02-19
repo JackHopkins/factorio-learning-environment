@@ -40,6 +40,10 @@ class FluidConnectionResolver(Resolver):
         # if isinstance(entity, Pipe) or isinstance(entity, PipeGroup):
         #    return False
         entities = self.get_entities(position=pos, radius=0.5)
+        # Filter out the source/target entity itself - its connection points
+        # are at its edges and may overlap with its own collision box
+        if entity is not None and isinstance(entity, Entity):
+            entities = [e for e in entities if e.position != entity.position]
         return bool(entities)
 
     def _refresh_entity(self, entity: Entity):
@@ -183,7 +187,7 @@ class FluidConnectionResolver(Resolver):
         valid_points = []
         for point in sorted_points:
             adjusted = self._adjust_connection_point(point, fluid_handler)
-            if not self._is_blocked(adjusted):
+            if not self._is_blocked(adjusted, fluid_handler):
                 valid_points.append(adjusted)
 
         return valid_points

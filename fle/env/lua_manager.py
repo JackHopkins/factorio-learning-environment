@@ -165,15 +165,15 @@ class LuaScriptManager:
 
     def update_game_checksum(self, rcon_client, script_name: str, checksum: str):
         rcon_client.send_command(
-            f"/sc global.set_lua_script_checksum('{script_name}', '{checksum}')"
+            f"/sc storage.set_lua_script_checksum('{script_name}', '{checksum}')"
         )
 
     def _clear_game_checksums(self, rcon_client):
-        rcon_client.send_command("/sc global.clear_lua_script_checksums()")
+        rcon_client.send_command("/sc storage.clear_lua_script_checksums()")
 
     def _get_game_checksums(self, rcon_client):
         response = rcon_client.send_command(
-            "/sc rcon.print(global.get_lua_script_checksums())"
+            "/sc rcon.print(storage.get_lua_script_checksums())"
         )
         return json.loads(response)
 

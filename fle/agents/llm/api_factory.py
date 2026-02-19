@@ -2,7 +2,7 @@ import os
 import logging
 
 from openai import AsyncOpenAI
-from tenacity import retry, wait_exponential
+from tenacity import retry, wait_exponential, stop_after_attempt, stop_after_delay
 
 from fle.agents.llm.metrics import timing_tracker, track_timing_async
 from fle.agents.llm.utils import (
@@ -184,7 +184,12 @@ class APIFactory:
                 )
 
     @track_timing_async("llm_api_call")
-    @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
+    @retry(
+        wait=wait_exponential(multiplier=2, min=2, max=15),
+        stop=(
+            stop_after_attempt(5) | stop_after_delay(60)
+        ),  # Stop after 5 attempts OR 60 seconds
+    )
     async def acall(self, **kwargs):
         model_to_use = kwargs.get("model", self.model)
         messages = kwargs.get("messages", [])

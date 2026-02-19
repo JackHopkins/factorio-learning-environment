@@ -2,7 +2,7 @@
 -- This is to prevent bad cases where connections are blocked by belts / pipes etc.
 
 -- Function to get connection points for storage tanks based on their direction
-global.utils.get_storage_tank_connection_points = function(entity)
+storage.utils.get_storage_tank_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local connection_points = {}
 
@@ -10,9 +10,10 @@ global.utils.get_storage_tank_connection_points = function(entity)
     -- 1. TopRight/BottomLeft connections (direction = 0 or direction = 2)
     -- 2. TopLeft/BottomRight connections (direction = 1 or direction = 3)
 
-    -- Note: entity.direction is in Factorio's 8-way direction system (0-7)
-    -- We need to handle both orientations (0/2 and 1/3)
-    if entity.direction == 1 or entity.direction == 2 then
+    -- Note: entity.direction is in Factorio's 16-way direction system (0-14)
+    -- We need to handle both orientations (east/south and north/west)
+    -- Factorio 2.0: north=0, east=4, south=8, west=12
+    if entity.direction == defines.direction.east or entity.direction == defines.direction.south then
         -- TopRight/BottomLeft connections
         table.insert(connection_points, {x = x + 1, y = y - 2})  -- Top right - Top
         table.insert(connection_points, {x = x + 2, y = y - 1})  -- Top right - Right
@@ -32,7 +33,7 @@ global.utils.get_storage_tank_connection_points = function(entity)
     return connection_points
 end
 
-global.utils.get_chemical_plant_connection_points = function(plant)
+storage.utils.get_chemical_plant_connection_points = function(plant)
     local positions = {}
     local x, y = plant.position.x, plant.position.y
 
@@ -70,10 +71,10 @@ global.utils.get_chemical_plant_connection_points = function(plant)
 end
 
 
-global.utils.get_generator_connection_positions = function(entity)
+storage.utils.get_generator_connection_positions = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
-    local entity_prototype = game.entity_prototypes[entity.name]
+    local entity_prototype = prototypes.entity[entity.name]
     local dx, dy = 0, 0
     local offsetx, offsety = 0, 0
     if orientation == 0 or orientation == defines.direction.north then
@@ -115,7 +116,7 @@ global.utils.get_generator_connection_positions = function(entity)
     return pipe_positions
 end
 
-global.utils.get_pumpjack_connection_points = function(entity)
+storage.utils.get_pumpjack_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
     local orientation = entity.orientation
 
@@ -135,9 +136,11 @@ global.utils.get_pumpjack_connection_points = function(entity)
     return pipe_position
 end
 
-global.utils.get_boiler_connection_points = function(entity)
+storage.utils.get_boiler_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation * 8
+    -- Factorio 2.0: orientation is 0, 0.25, 0.5, 0.75 for cardinals
+    -- defines.direction values are 0, 4, 8, 12 (16-direction system)
+    local orientation = entity.orientation * 16
 
     local dx, dy = 0, 0
     if orientation == defines.direction.north then
@@ -197,9 +200,11 @@ global.utils.get_boiler_connection_points = function(entity)
     --return pipe_positions
 end
 
-global.utils.get_offshore_pump_connection_points = function(entity)
+storage.utils.get_offshore_pump_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation * 8
+    -- Factorio 2.0: orientation is 0, 0.25, 0.5, 0.75 for cardinals
+    -- defines.direction values are 0, 4, 8, 12 (16-direction system)
+    local orientation = entity.orientation * 16
 
     local dx, dy
     if orientation == defines.direction.north then
@@ -219,7 +224,7 @@ global.utils.get_offshore_pump_connection_points = function(entity)
     return { {x = x + dx, y = y + dy} }
 end
 
-global.utils.get_refinery_connection_points = function(refinery)
+storage.utils.get_refinery_connection_points = function(refinery)
     -- Block the middle input point also
     local positions = {}
     local x, y = refinery.position.x, refinery.position.y

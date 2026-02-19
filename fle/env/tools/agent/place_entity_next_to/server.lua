@@ -2,7 +2,7 @@ local function is_large_entity(entity)
     if not entity then return false end
     
     -- Check by size (3x3 or larger)
-    local prototype = game.entity_prototypes[entity.name]
+    local prototype = prototypes.entity[entity.name]
     if prototype then
         local collision_box = prototype.collision_box
         local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
@@ -115,7 +115,7 @@ end
 
 local function validate_mining_drill_placement(surface, position, entity_name)
     -- Check if the entity is a mining drill
-    local prototype = game.entity_prototypes[entity_name]
+    local prototype = prototypes.entity[entity_name]
     if prototype.type ~= "mining-drill" then
         return true
     end
@@ -138,8 +138,9 @@ local function validate_mining_drill_placement(surface, position, entity_name)
 end
 
 
-global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
-    local player = global.agent_characters[player_index]
+storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_y, direction, gap)
+    -- Ensure we have a valid character, recreating if necessary
+    local player = storage.utils.ensure_valid_character(player_index)
     local ref_position = {x = ref_x, y = ref_y}
 
     local function table_contains(tbl, element)
@@ -151,11 +152,15 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         return false
     end
 
-    local valid_directions = {0, 1, 2, 3}  -- 0: North, 1: East, 2: South, 3: West
+    -- Factorio 2.0 uses 16-direction system: 0 (north), 4 (east), 8 (south), 12 (west)
+    local valid_directions = {0, 4, 8, 12}
 
     if not table_contains(valid_directions, direction) then
-        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 1 (east), 2 (south), or 3 (west).")
+        error("Invalid direction " .. direction .. " provided. Please use 0 (north), 4 (east), 8 (south), or 12 (west).")
     end
+
+    -- Convert from Factorio 2.0 direction (0,4,8,12) to internal direction (0,1,2,3) for calculations
+    local internal_direction = direction / 4
 
     local ref_entities = player.surface.find_entities_filtered({
         area = {{ref_x - 0.5, ref_y - 0.5}, {ref_x + 0.5, ref_y + 0.5}},
@@ -182,7 +187,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
                 ref_width, ref_height = 1, 1
             else
                 local ref_orientation = ref_entity.direction
-                if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
+                -- Factorio 2.0: East=4, West=12
+                if ref_orientation == defines.direction.east or ref_orientation == defines.direction.west then  -- East or West
                     ref_width = ref_entity.prototype.tile_height
                     ref_height = ref_entity.prototype.tile_width
                 else  -- North or South
@@ -196,7 +202,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
 
         -- Check if the entity to place is an inserter
-        local entity_prototype = game.entity_prototypes[entity_to_place]
+        local entity_prototype = prototypes.entity[entity_to_place]
         -- Original spacing calculation for non-inserters
         local entity_width, entity_height
         if direction == 1 or direction == 3 then  -- East or West
@@ -231,8 +237,8 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         -- Get reference entity's width/height based on its rotation
         local ref_width, ref_height
         if ref_entity then
-            local ref_orientation = ref_entity.direction  -- 0,2,4,6 = N,E,S,W
-            if ref_orientation == 2 or ref_orientation == 6 then  -- East or West
+            local ref_orientation = ref_entity.direction  -- Factorio 2.0: 0,4,8,12 = N,E,S,W
+            if ref_orientation == defines.direction.east or ref_orientation == defines.direction.west then  -- East or West
                 ref_width = ref_entity.prototype.tile_height
                 ref_height = ref_entity.prototype.tile_width
             else  -- North or South
@@ -245,7 +251,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         end
 
         -- Get entity to place width/height based on desired direction
-        local entity_prototype = game.entity_prototypes[entity_to_place]
+        local entity_prototype = prototypes.entity[entity_to_place]
         local entity_width, entity_height
         if direction == 1 or direction == 3 then  -- East or West
             entity_width = entity_prototype.tile_height
@@ -275,7 +281,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
 
     local is_belt = is_transport_belt(entity)
 
-    local new_position = calculate_position(direction, ref_position, ref_entity, gap, is_belt, entity)
+    local new_position = calculate_position(internal_direction, ref_position, ref_entity, gap, is_belt, entity)
     
     -- Helper function to clear item-on-ground entities at a position
     local function clear_items_on_ground(position, radius)
@@ -335,32 +341,38 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
             )
             
             if should_try_alternatives then
-                local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, direction, gap)
-                
+                -- Pass internal_direction (0-3) to find_alternative_position_smart
+                local alternatives = find_alternative_position_smart(ref_position, ref_entity, entity, internal_direction, gap)
+
                 for i, alternative in pairs(alternatives) do
                     local alt_pos = alternative.position
                     -- Round to grid
                     alt_pos.x = math.ceil(alt_pos.x * 2) / 2
                     alt_pos.y = math.ceil(alt_pos.y * 2) / 2
-                    
+
                     -- Clear items at alternative position before checking if it's clear
                     clear_items_on_ground(alt_pos)
-                    
+
+                    -- Convert internal direction (0-3) to Factorio 2.0 direction (0,4,8,12)
+                    local alt_factorio_direction = alternative.direction * 4
+
                     -- Use proper collision detection instead of radius search
                     local alt_clear = player.surface.can_place_entity({
                         name = entity,
                         position = alt_pos,
-                        direction = global.utils.get_entity_direction(entity, alternative.direction),
+                        direction = storage.utils.get_entity_direction(entity, alt_factorio_direction),
                         force = player.force
                     })
-                    
+
                     if alt_clear then
                         -- Found a good alternative position!
                         new_position = alt_pos
-                        direction = alternative.direction
-                        
+                        -- Update both internal and Factorio directions
+                        internal_direction = alternative.direction
+                        direction = alt_factorio_direction
+
                         -- Update orientation for the new direction
-                        orientation = global.utils.get_entity_direction(entity, direction)
+                        orientation = storage.utils.get_entity_direction(entity, direction)
                         
                         
                         goto alternative_found
@@ -391,10 +403,10 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     
     ::alternative_found::
 
-    orientation = global.utils.get_entity_direction(entity, direction)
+    orientation = storage.utils.get_entity_direction(entity, direction)
 
     if ref_entity then
-        local prototype = game.entity_prototypes[ref_entity.name]
+        local prototype = prototypes.entity[ref_entity.name]
         local collision_box = prototype.collision_box
         local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
         local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
@@ -409,7 +421,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
     end
 
     -- Check for player collision and move player if necessary
-    local entity_prototype = game.entity_prototypes[entity]
+    local entity_prototype = prototypes.entity[entity]
     local entity_box = entity_prototype.collision_box
     local entity_width = 1
     local entity_height = 1
@@ -431,7 +443,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         local move_distance = math.max(entity_width, entity_height) + 1
         local move_direction = {x = 0, y = 0}
 
-        if direction == 0 or direction == 2 then -- North or South
+        if internal_direction == 0 or internal_direction == 2 then -- North or South
             move_direction.x = 1 -- Move East
         else -- East or West
             move_direction.y = 1 -- Move South
@@ -475,7 +487,7 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         time_to_live = 60000
     })
 
-    global.utils.avoid_entity(player_index, entity, new_position, direction)
+    storage.utils.avoid_entity(player_index, entity, new_position, direction)
 
     local can_build = player.surface.can_place_entity({
         name = entity,
@@ -530,13 +542,14 @@ global.actions.place_entity_next_to = function(player_index, entity, ref_x, ref_
         error("Failed to create entity " .. entity .. " at position " .. serpent.line(new_position))
     end
 
-    local placement_info = global.utils.serialize_entity(new_entity)
+    local placement_info = storage.utils.serialize_entity(new_entity)
     
     local item_stack = {name = entity, count = 1}
     if player.get_main_inventory().can_insert(item_stack) then
         player.get_main_inventory().remove(item_stack)
         return placement_info
     else
-        error("Not enough items in inventory.")
+        local inv_contents = storage.utils.format_inventory_for_error(player)
+        error("Not enough " .. entity .. " in inventory. Current inventory: " .. inv_contents)
     end
 end

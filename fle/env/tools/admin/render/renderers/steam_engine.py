@@ -31,7 +31,7 @@ def get_key(entity: Dict, grid) -> str:
 def get_size(entity: Dict) -> Tuple[float, float]:
     """Get steam engine size based on direction"""
     direction = entity.get("direction", 0)
-    if direction in [2, 6]:  # East/West (horizontal)
+    if direction in [4, 12]:  # East/West (horizontal)
         return (5, 3)
     else:  # North/South (vertical)
         return (3, 5)

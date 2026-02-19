@@ -19,7 +19,7 @@ local function is_rocket_ready(silo)
 end
 
 -- Function to launch rocket from specified position
-global.actions.launch_rocket = function(x, y)
+storage.actions.launch_rocket = function(x, y)
     -- Get the current game surface
     local surface = game.surfaces[1]
     local position = {x=x, y=y}

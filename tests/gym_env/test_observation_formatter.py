@@ -37,6 +37,7 @@ def make_minimal_observation(**kwargs):
         ),
         game_info=kwargs.get("game_info", GameInfo(tick=123, time=2.0, speed=1.0)),
         score=kwargs.get("score", 42.0),
+        automated_score=kwargs.get("automated_score", 0.0),
         flows=kwargs.get(
             "flows",
             ProductionFlows(
@@ -59,6 +60,9 @@ def make_minimal_observation(**kwargs):
         serialized_functions=kwargs.get(
             "serialized_functions", [{"name": "dummy_func", "pickled_function": ""}]
         ),
+        task_info=kwargs.get("task_info", None),
+        map_image=kwargs.get("map_image", ""),
+        character_positions=kwargs.get("character_positions", []),
     )
 
 

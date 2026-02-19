@@ -6,7 +6,8 @@ Oil refinery renderer with recipe icons
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image, ImageDraw
 
-DIRECTIONS = {0: "north", 2: "east", 4: "south", 6: "west"}
+# Factorio 2.0: Direction values doubled (16 directions instead of 8)
+DIRECTIONS = {0: "north", 4: "east", 8: "south", 12: "west"}
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:
@@ -22,7 +23,10 @@ def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image
 
     # Create a copy to modify
     result = base.copy()
-    icon = image_resolver(f"icon_{entity['recipe']}")
+    # Handle recipe being either a string or a dict with 'name' key
+    recipe = entity["recipe"]
+    recipe_name = recipe["name"] if isinstance(recipe, dict) else recipe
+    icon = image_resolver(f"icon_{recipe_name}")
 
     if icon:
         # Draw dark circle background
@@ -60,8 +64,10 @@ def render_shadow(
 def get_key(entity: Dict, grid) -> str:
     """Get cache key including recipe"""
     recipe = entity.get("recipe", "")
+    # Handle recipe being either a string or a dict with 'name' key
+    recipe_name = recipe["name"] if isinstance(recipe, dict) else recipe
     direction = entity.get("direction", 0)
-    return f"{recipe}_{direction}"
+    return f"{recipe_name}_{direction}"
 
 
 def get_size(entity: Dict) -> Tuple[float, float]:

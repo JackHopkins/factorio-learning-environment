@@ -16,6 +16,8 @@ def test_drop_box_chest():
         # cache_scripts=False,
         inventory={"burner-mining-drill": 1, "iron-chest": 1, "coal": 10},
     )
+    # Ensure clean state before running the test
+    instance.reset()
     instance.get_system_prompt()
     instance.namespace.move_to(instance.namespace.nearest(Resource.IronOre))
     drill = instance.namespace.place_entity(
@@ -51,6 +53,8 @@ def test_full_chest():
         # cache_scripts=False,
         inventory={"burner-mining-drill": 1, "wooden-chest": 1, "coal": 2000},
     )
+    # Ensure clean state before running the test
+    instance.reset()
 
     chest = instance.namespace.place_entity(Prototype.WoodenChest, Direction.UP)
     for i in range(16):

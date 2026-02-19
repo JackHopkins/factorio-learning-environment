@@ -28,6 +28,9 @@ from fle.commons.models.generation_parameters import GenerationParameters
 # Timing and metrics models
 from fle.commons.models.timing_metrics import TimingMetrics
 
+# Rendering models
+from fle.commons.models.rendered_image import RenderedImage, Viewport
+
 __all__ = [
     # Game state and research
     "GameState",
@@ -47,4 +50,7 @@ __all__ = [
     "GenerationParameters",
     # Timing and metrics
     "TimingMetrics",
+    # Rendering
+    "RenderedImage",
+    "Viewport",
 ]

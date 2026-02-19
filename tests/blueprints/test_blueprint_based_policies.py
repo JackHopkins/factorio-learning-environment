@@ -39,11 +39,12 @@ def test_mining_blueprint_1(game):
         right_top=right_top,
     )
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(
+    box = game.nearest_buildable(
         Prototype.BurnerMiningDrill, miner_box, center_position=Position(x=0, y=0)
     )
+    origin = box.center
     assert origin, "Could not find valid position"
-    origin = origin + left_top + Position(x=0.5, y=0.5)
+    # origin = origin + left_top + Position(x=0.5, y=0.5)
     game.move_to(origin)
     # Place transport-belt vertically at x=0.0
     for i in range(10):
@@ -233,7 +234,7 @@ def test_mining_blueprint_3(game):
     # Find suitable origin position for miners on ore
 
     # Calculate bounding box for miners
-    left_top = Position(x=-6.0, y=0.0)
+    left_top = Position(x=-6.0, y=-50.0)
     right_bottom = Position(x=23.0, y=4.0)
     left_bottom = Position(x=left_top.x, y=right_bottom.y)
     right_top = Position(x=right_bottom.x, y=left_top.y)

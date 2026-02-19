@@ -5,7 +5,7 @@ import os
 import signal
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import threading
-
+import time
 from pathlib import Path
 from timeit import default_timer as timer
 from typing import Dict
@@ -111,12 +111,16 @@ class GameControl:
 
     def get_elapsed_ticks(self):
         response = self.rcon_client.send_command(
-            "/sc rcon.print(global.elapsed_ticks or 0)"
+            "/sc rcon.print(storage.elapsed_ticks or 0)"
         )
         if not response:
             print("WARNING: No response from get_elapsed_ticks")
             return 0
         return int(response)
+
+    def _reset_elapsed_ticks(self):
+        """Reset the elapsed ticks counter to 0."""
+        self.rcon_client.send_command("/sc storage.elapsed_ticks = 0")
 
     def reset_to_defaults(self):
         """Reset to the configured default speed and pause state"""
@@ -128,30 +132,39 @@ class GameControl:
 
 
 class DirectionInternal(enum.Enum):
+    # Factorio 2.0 uses 16-direction system
+    # Cardinal directions
     UP = NORTH = 0
-    RIGHT = EAST = 2
-    DOWN = SOUTH = 4
-    LEFT = WEST = 6
+    RIGHT = EAST = 4
+    DOWN = SOUTH = 8
+    LEFT = WEST = 12
+    # Diagonal directions
+    UPRIGHT = NORTHEAST = 2
+    DOWNRIGHT = SOUTHEAST = 6
+    DOWNLEFT = SOUTHWEST = 10
+    UPLEFT = NORTHWEST = 14
 
     @classmethod
     def opposite(cls, direction):
-        return cls((direction.value + 4) % 8)
+        return cls((direction.value + 8) % 16)
 
     @classmethod
     def next_clockwise(cls, direction):
-        return cls((direction.value + 2) % 8)
+        return cls((direction.value + 4) % 16)
 
     @classmethod
     def next_counterclockwise(cls, direction):
-        return cls((direction.value - 2) % 8)
+        return cls((direction.value - 4) % 16)
 
     @classmethod
     def to_factorio_direction(cls, direction):
-        return direction.value // 2
+        # Factorio 2.0 uses the same values as our Direction enum
+        return direction.value
 
     @classmethod
     def from_factorio_direction(cls, direction):
-        return direction.value * 2
+        # Factorio 2.0 uses the same values as our Direction enum
+        return direction.value
 
 
 class FactorioInstance:
@@ -211,6 +224,7 @@ class FactorioInstance:
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
+        self.all_technologies_researched = all_technologies_researched
         self.initialise(fast, all_technologies_researched, clear_entities)
         self.initial_score = 0
         try:
@@ -227,7 +241,7 @@ class FactorioInstance:
             self.lua_script_manager.setup_tools(self)
             self.initialise(fast, all_technologies_researched, clear_entities)
 
-        self.initial_score, goal = self.first_namespace.score()
+        self.initial_score, _ = self.first_namespace.score()
         # Register the cleanup method to be called on exit (only once per process)
         if not FactorioInstance._cleanup_registered:
             atexit.register(self.cleanup)
@@ -256,9 +270,19 @@ class FactorioInstance:
         self,
         game_state: Optional[GameState] = None,
         reset_position: bool = False,
-        all_technologies_researched: bool = True,
+        all_technologies_researched: bool = None,
         clear_entities: bool = True,
     ):
+        # Use the stored value from __init__ if not explicitly provided
+        if all_technologies_researched is None:
+            all_technologies_researched = getattr(
+                self, "all_technologies_researched", False
+            )
+
+        # Ensure RCON connection is healthy before resetting
+        # This prevents cascading failures when the connection was broken by a previous test
+        self.ensure_connected()
+
         # Reset the namespace (clear variables, functions etc)
         assert not game_state or len(game_state.inventories) == self.num_agents, (
             "Game state must have the same number of inventories as num_agents"
@@ -329,6 +353,10 @@ class FactorioInstance:
         """Get the number of ticks elapsed since the game started"""
         return self.game_control.get_elapsed_ticks()
 
+    def _reset_elapsed_ticks(self):
+        """Reset the elapsed ticks counter to 0."""
+        self.game_control._reset_elapsed_ticks()
+
     def pause(self):
         """Pause the game (preserves speed setting)"""
         self.game_control.pause()
@@ -369,11 +397,11 @@ class FactorioInstance:
 
         try:
             rcon_client.connect()
-            player_count = rcon_client.send_command("/sc rcon.print(#game.players)")
-            if int(player_count) == 0:
-                print(
-                    "WARNING: LuaPlayer hasn't been initialised into the game. Entity placement behavior _may_ be incorrect for boilers and pumps."
-                )
+            rcon_client.send_command("/sc rcon.print(#game.players)")
+            # if int(player_count) == 0:
+            #     print(
+            #         "WARNING: LuaPlayer hasn't been initialised into the game. Entity placement behavior _may_ be incorrect for boilers and pumps."
+            #     )
 
         except Exception as e:
             raise ConnectionError(
@@ -418,18 +446,65 @@ class FactorioInstance:
 
     def eval(self, expr, agent_idx=0, timeout=60):
         "Evaluate several lines of input, returning the result of the last line with a timeout"
+        ctime = time.time()
         try:
-            return self.eval_with_error(expr, agent_idx, timeout)
+            response = self.eval_with_error(expr, agent_idx, timeout)
         except TimeoutError:
-            return -1, "", "Error: Evaluation timed out"
+            # Capture partial output from namespace.logging_results
+            partial_output = self._extract_partial_output(agent_idx)
+            timeout_msg = f"Error: Evaluation timed out after {timeout}s"
+            if partial_output:
+                timeout_msg = (
+                    f"{partial_output}\n\nError: Evaluation timed out after {timeout}s"
+                )
+            response = (-1, "", timeout_msg)
         except Exception as e:
             message = e.args[0].replace("\\n", "")
-            return -1, "", f"{message}".strip()
+            response = (-1, "", f"{message}".strip())
+        ntime = time.time()
+        duration = ntime - ctime
+        reward, _, result = response
+
+        return reward, duration, result
+
+    def _extract_partial_output(self, agent_idx=0, max_lines=64):
+        """Extract partial output from namespace logging_results after a timeout.
+
+        Mirrors the parse_result_into_str logic from namespace.eval_with_timeout.
+        """
+        try:
+            namespace = self.namespaces[agent_idx]
+            if (
+                not hasattr(namespace, "logging_results")
+                or not namespace.logging_results
+            ):
+                return ""
+
+            result = []
+            execution_trace = getattr(namespace, "execution_trace", False)
+
+            for key, values in namespace.logging_results.items():
+                if execution_trace:
+                    for line_no, value in values:
+                        result.append(f"{line_no}: {value}")
+                else:
+                    for value in values:
+                        result.append(f"{key}: {value}")
+
+            if len(result) > max_lines:
+                truncated_count = len(result) - max_lines
+                result = [f"... {truncated_count} lines truncated ..."] + result[
+                    -max_lines:
+                ]
+
+            return "\n".join(result)
+        except Exception:
+            return ""
 
     def initialise(
         self, fast=True, all_technologies_researched=True, clear_entities=True
     ):
-        self.rcon_client.send_command(f"/sc global.fast = {str(fast).lower()}")
+        self.rcon_client.send_command(f"/sc storage.fast = {str(fast).lower()}")
         self.first_namespace._create_agent_characters(self.num_agents)
 
         init_scripts = [
@@ -444,7 +519,11 @@ class FactorioInstance:
             self.lua_script_manager.load_init_into_game(script_name)
 
         if self.peaceful:
-            self.rcon_client.send_command("/sc global.remove_enemies()")
+            self.rcon_client.send_command("/sc storage.utils.remove_enemies()")
+
+        # Generate chunks around origin to enable long-distance pathfinding
+        # 4000 tiles in each direction = 125 chunks (each chunk is 32x32 tiles)
+        self._generate_chunks(center_x=0, center_y=0, chunk_radius=25)
 
         inventories = [self.initial_inventory] * self.num_agents
 
@@ -464,7 +543,7 @@ class FactorioInstance:
         """
         start = timer()
         lua_response = self.rcon_client.send_command(
-            f"/sc rcon.print(dump(global.get_alerts({seconds})))"
+            f"/sc rcon.print(dump(storage.get_alerts({seconds})))"
         )
         # print(lua_response)
         alert_dict, duration = _lua2python("alerts", lua_response, start=start)
@@ -482,6 +561,64 @@ class FactorioInstance:
             return alert_strings
         else:
             return []
+
+    def _generate_chunks(
+        self, center_x: int = 0, center_y: int = 0, chunk_radius: int = 25
+    ):
+        """
+        Generate chunks around a position to enable pathfinding in that area.
+
+        Factorio chunks are 32x32 tiles. The pathfinder can only find paths
+        through generated chunks. This method requests chunk generation and
+        forces immediate generation.
+
+        Args:
+            center_x: Center X position (in tiles)
+            center_y: Center Y position (in tiles)
+            chunk_radius: Radius in chunks (each chunk is 32 tiles)
+        """
+        # Request chunk generation around the position
+        _ = self.rcon_client.send_command(
+            f"/silent-command game.surfaces[1].request_to_generate_chunks({{x={center_x}, y={center_y}}}, {chunk_radius})"
+        )
+        # Force immediate generation of all requested chunks
+        _ = self.rcon_client.send_command(
+            "/silent-command game.surfaces[1].force_generate_chunk_requests()"
+        )
+        pass
+
+    def is_rcon_connected(self) -> bool:
+        """Check if the RCON client is still connected and healthy."""
+        if not hasattr(self, "rcon_client") or self.rcon_client is None:
+            return False
+        # Check the internal state of the factorio_rcon library
+        if self.rcon_client.rcon_socket is None:
+            return False
+        if self.rcon_client.rcon_failure:
+            return False
+        return True
+
+    def reconnect(self):
+        """Reconnect to the RCON server if the connection has been lost."""
+        if self.is_rcon_connected():
+            return  # Already connected
+
+        print(
+            f"RCON connection lost, attempting to reconnect to {self.address}:{self.tcp_port}..."
+        )
+        try:
+            self.rcon_client.connect()
+            print(
+                f"Successfully reconnected to RCON server at {self.address}:{self.tcp_port}"
+            )
+        except Exception as e:
+            print(f"Failed to reconnect to RCON server: {e}")
+            raise
+
+    def ensure_connected(self):
+        """Ensure RCON connection is healthy, reconnecting if necessary."""
+        if not self.is_rcon_connected():
+            self.reconnect()
 
     def cleanup(self):
         # Close the RCON connection

@@ -38,21 +38,32 @@ class TaskInfo:
 
 
 @dataclass
+class CharacterPosition:
+    """Represents a character/player position"""
+
+    agent_idx: int
+    x: float
+    y: float
+
+
+@dataclass
 class Observation:
     """Complete observation of the game state"""
 
     raw_text: str
-    entities: List[str]
+    entities: List[Dict[str, Any]]  # Entity dicts from Pydantic __dict__
     inventory: Inventory
     research: ResearchState
     game_info: GameInfo
     score: float
+    automated_score: float  # Score excluding harvested and manually crafted items
     flows: ProductionFlows
     task_verification: Optional[TaskResponse]
     messages: List[AgentMessage]
     serialized_functions: List[Dict[str, Any]]
     task_info: Optional[TaskInfo]
     map_image: str  # Base64 encoded PNG image
+    character_positions: List[CharacterPosition]  # Position of each character/agent
 
     @classmethod
     def from_dict(cls, obs_dict: Dict[str, Any]) -> "Observation":
@@ -170,6 +181,16 @@ class Observation:
         # Get map image (base64 encoded string)
         map_image = obs_dict.get("map_image", "")
 
+        # Convert character positions
+        character_positions = [
+            CharacterPosition(
+                agent_idx=pos["agent_idx"],
+                x=pos["x"],
+                y=pos["y"],
+            )
+            for pos in obs_dict.get("character_positions", [])
+        ]
+
         return cls(
             raw_text=obs_dict.get("raw_text", ""),
             entities=entities,  # Now just passing the list of strings
@@ -177,12 +198,14 @@ class Observation:
             research=research,
             game_info=game_info,
             score=obs_dict.get("score", 0.0),
+            automated_score=obs_dict.get("automated_score", 0.0),
             flows=flows,
             task_verification=task_verification,
             messages=messages,
             serialized_functions=serialized_functions,
             task_info=task_info,
             map_image=map_image,
+            character_positions=character_positions,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -238,7 +261,9 @@ class Observation:
                 "progress": [
                     {"name": name, "value": value}
                     for name, value in self.research.progress.items()
-                ],
+                ]
+                if self.research.progress
+                else "None",
             },
             "game_info": {
                 "tick": self.game_info.tick,
@@ -246,6 +271,7 @@ class Observation:
                 "speed": self.game_info.speed,
             },
             "score": self.score,
+            "automated_score": self.automated_score,
             "flows": transformed_flows,
             "task_verification": {
                 "success": int(self.task_verification.success),
@@ -277,4 +303,12 @@ class Observation:
                 if self.task_info
                 else 0,
             },  # Always provide a task_info dict, even if empty
+            "character_positions": [
+                {
+                    "agent_idx": pos.agent_idx,
+                    "x": pos.x,
+                    "y": pos.y,
+                }
+                for pos in self.character_positions
+            ],
         }

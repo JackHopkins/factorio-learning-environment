@@ -1,4 +1,4 @@
---- global.actions.harvest_resource(player_index, x, y, count, radius)
+--- storage.actions.harvest_resource(player_index, x, y, count, radius)
 local function calculate_mining_ticks(entity)
     local mining_time = entity.prototype.mineable_properties.mining_time or 1
     -- Convert mining time (in seconds) to ticks (60 ticks per second)
@@ -6,12 +6,14 @@ local function calculate_mining_ticks(entity)
 end
 
 local function update_production_stats(force, entity_name, amount)
-        local stats = force.item_production_statistics
+        -- Factorio 2.0: production_statistics is now a method requiring surface parameter
+        local surface = game.surfaces[1]
+        local stats = force.get_item_production_statistics(surface)
         stats.on_flow(entity_name, amount)
-        if global.harvested_items[entity_name] then
-            global.harvested_items[entity_name] = global.harvested_items[entity_name] + amount
+        if storage.harvested_items[entity_name] then
+            storage.harvested_items[entity_name] = storage.harvested_items[entity_name] + amount
         else
-            global.harvested_items[entity_name] = amount
+            storage.harvested_items[entity_name] = amount
         end
     end
 
@@ -104,17 +106,17 @@ end
 
 script.on_nth_tick(15, function(event)
     -- If no queues at all, just return
-    if not global.harvest_queues then return end
+    if not storage.harvest_queues then return end
 
-    for player_index, queue in pairs(global.harvest_queues) do
-        local player = global.agent_characters[player_index]
+    for player_index, queue in pairs(storage.harvest_queues) do
+        local player = storage.agent_characters[player_index]
         -- Skip if player not valid
         if not player or not player.valid then goto continue end
 
         -- Already reached or exceeded our target?
         if queue.total_yield >= queue.target_yield then
             -- Remove this player's queue
-            global.harvest_queues[player_index] = nil
+            storage.harvest_queues[player_index] = nil
             goto continue
         end
 
@@ -133,7 +135,7 @@ script.on_nth_tick(15, function(event)
             local next_entity = table.remove(queue.entities, 1)
             if not next_entity then
                 -- No more entities left
-                global.harvest_queues[player_index] = nil
+                storage.harvest_queues[player_index] = nil
                 goto continue
             end
 
@@ -154,10 +156,11 @@ script.on_nth_tick(15, function(event)
             local ticks_mining = game.tick - queue.current_mining.start_tick
             if ticks_mining >= 30 then
                 -- Time to finish mining
-                local inv_before = player.get_main_inventory().get_contents()
+                -- Factorio 2.0: Use compat wrapper for get_contents()
+                local inv_before = storage.utils.get_contents_compat(player.get_main_inventory())
                 local mined_ok = player.mine_entity(entity)  -- Instantly mines & adds items
                 if mined_ok then
-                    local inv_after = player.get_main_inventory().get_contents()
+                    local inv_after = storage.utils.get_contents_compat(player.get_main_inventory())
 
                     -- Figure out how many items we actually gained
                     local items_added = 0
@@ -243,7 +246,7 @@ local function find_entity_type_at_position(surface, position)
     local exact_entities = surface.find_entities_filtered{
         position = position,
         type = {"tree", "resource", "simple-entity"},--, "optimized-decorative"},
-        radius = 1  -- Tiny radius for exact position check
+        radius = 1.5  -- Slightly larger radius to include entities at boundary
     }
 
     if #exact_entities > 0 then
@@ -298,11 +301,11 @@ local function begin_mining(queue, player)
 end
 
 local function initialize_harvest_queue(player_index, position, target_yield)
-   if not global.harvest_queues then
-       global.harvest_queues = {}
+   if not storage.harvest_queues then
+       storage.harvest_queues = {}
    end
 
-   global.harvest_queues[player_index] = {
+   storage.harvest_queues[player_index] = {
        entities = {},
        mining_position = position,
        total_mined = 0,
@@ -311,7 +314,7 @@ local function initialize_harvest_queue(player_index, position, target_yield)
        target_yield = target_yield
    }
 
-   return global.harvest_queues[player_index]
+   return storage.harvest_queues[player_index]
 end
 
 
@@ -363,8 +366,8 @@ function harvest(entities, count, from_position, player)
         if entity.valid and entity.minable then
 
             -- Calculate mining ticks before mining the entity
-            if global.fast then
-                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            if storage.fast then
+                storage.elapsed_ticks = storage.elapsed_ticks + calculate_mining_ticks(entity)
             end
 
             local products = entity.prototype.mineable_properties.products
@@ -397,8 +400,8 @@ function harvest_trees(entities, count, from_position, player)
         if entity.valid and entity.type == "tree" then
 
             -- Calculate mining ticks before mining the tree
-            if global.fast then
-                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            if storage.fast then
+                storage.elapsed_ticks = storage.elapsed_ticks + calculate_mining_ticks(entity)
             end
 
             local products = entity.prototype.mineable_properties.products
@@ -433,8 +436,8 @@ local function harvest_simple_entities(entities, count, from_position, player)
     for _, entity in ipairs(entities) do
         if entity.valid and entity.minable then
             -- Calculate mining ticks before mining the entity
-            if global.fast then
-                global.elapsed_ticks = global.elapsed_ticks + calculate_mining_ticks(entity)
+            if storage.fast then
+                storage.elapsed_ticks = storage.elapsed_ticks + calculate_mining_ticks(entity)
             end
 
             local products = entity.prototype.mineable_properties.products
@@ -454,8 +457,8 @@ local function harvest_simple_entities(entities, count, from_position, player)
 end
 
 
-global.actions.harvest_resource = function(player_index, x, y, count, radius)
-    local player = global.agent_characters[player_index]
+storage.actions.harvest_resource = function(player_index, x, y, count, radius)
+    local player = storage.agent_characters[player_index]
     if not player then
         error("Player not found")
     end
@@ -475,7 +478,7 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
         error("Nothing within reach to harvest")
     end
 
-    --if not global.fast then
+    --if not storage.fast then
     --    return harvest_resource_slow(player, player_index, surface, position, count, radius)
     --end
 
@@ -527,8 +530,8 @@ global.actions.harvest_resource = function(player_index, x, y, count, radius)
     end
 end
 --
---global.actions.harvest_resource2 = function(player_index, x, y, count, radius)
---    local player = global.agent_characters[player_index]
+--storage.actions.harvest_resource2 = function(player_index, x, y, count, radius)
+--    local player = storage.agent_characters[player_index]
 --    if not player then
 --        error("Player not found")
 --    end
@@ -547,7 +550,7 @@ end
 --    if not target_type then
 --        error("Nothing within reach to harvest")
 --    end
---    if not global.fast then
+--    if not storage.fast then
 --        return harvest_resource_slow(player, player_index, surface, position, count, radius)
 --    end
 --
@@ -586,21 +589,21 @@ end
 --end
 
 
-global.actions.clear_harvest_queue = function(player_index)
-    if global.harvest_queues and global.harvest_queues[player_index] then
-        global.harvest_queues[player_index] = nil
+storage.actions.clear_harvest_queue = function(player_index)
+    if storage.harvest_queues and storage.harvest_queues[player_index] then
+        storage.harvest_queues[player_index] = nil
     end
 end
 
-global.actions.get_harvest_queue_length = function(player_index)
-    if global.harvest_queues and global.harvest_queues[player_index] then
-        return #global.harvest_queues[player_index].entities
+storage.actions.get_harvest_queue_length = function(player_index)
+    if storage.harvest_queues and storage.harvest_queues[player_index] then
+        return #storage.harvest_queues[player_index].entities
     end
     return 0
 end
 
-global.actions.get_resource_name_at_position = function(player_index, x, y)
-    local player = global.agent_characters[player_index]
+storage.actions.get_resource_name_at_position = function(player_index, x, y)
+    local player = storage.agent_characters[player_index]
     if not player then
         error("Player not found")
     end

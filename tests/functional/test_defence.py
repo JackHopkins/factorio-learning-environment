@@ -16,10 +16,10 @@ def game(instance):
         "transport-belt": 50,
         "burner-mining-drill": 5,
     }
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     instance.set_speed(10)
     yield instance.namespace
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     instance.set_speed(1)
 
 

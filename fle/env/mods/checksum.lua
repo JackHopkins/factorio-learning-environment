@@ -1,15 +1,15 @@
-if not global.__lua_script_checksums then
-    global.__lua_script_checksums = {}
+if not storage.__lua_script_checksums then
+    storage.__lua_script_checksums = {}
 end
 
-global.get_lua_script_checksums = function()
-    return game.table_to_json(global.__lua_script_checksums)
+storage.get_lua_script_checksums = function()
+    return helpers.table_to_json(storage.__lua_script_checksums)
 end
 
-global.set_lua_script_checksum = function(name, checksum)
-    global.__lua_script_checksums[name] = checksum
+storage.set_lua_script_checksum = function(name, checksum)
+    storage.__lua_script_checksums[name] = checksum
 end
 
-global.clear_lua_script_checksums = function()
-    global.__lua_script_checksums = {}
+storage.clear_lua_script_checksums = function()
+    storage.__lua_script_checksums = {}
 end

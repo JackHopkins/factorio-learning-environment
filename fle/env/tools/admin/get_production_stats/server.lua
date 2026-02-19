@@ -1,15 +1,20 @@
-global.actions.production_stats = function(player)
+storage.actions.production_stats = function(player)
     local production_diff = {}
     local consumption_diff = {}
-    local harvested_items = global.harvested_items
-    local crafted_items = global.crafted_items
+    local harvested_items = storage.harvested_items
+    local crafted_items = storage.crafted_items
     -- Get total production counts for force
     local force = game.forces.player
+    local surface = game.surfaces[1]
 
-    local item_input_counts = force.item_production_statistics.input_counts
-    local item_production_counts = force.item_production_statistics.output_counts
-    local fluid_input_counts = force.fluid_production_statistics.input_counts
-    local fluid_production_counts = force.fluid_production_statistics.output_counts
+    -- Factorio 2.0: production_statistics is now a method requiring surface parameter
+    local item_stats = force.get_item_production_statistics(surface)
+    local fluid_stats = force.get_fluid_production_statistics(surface)
+
+    local item_input_counts = item_stats.input_counts
+    local item_production_counts = item_stats.output_counts
+    local fluid_input_counts = fluid_stats.input_counts
+    local fluid_production_counts = fluid_stats.output_counts
 
     for name, count in pairs(item_input_counts) do
         consumption_diff[name] = count
@@ -34,15 +39,18 @@ global.actions.production_stats = function(player)
     }
 end
 
-global.actions.reset_production_stats = function(player)
+storage.actions.reset_production_stats = function(player)
     local force = game.forces.player
+    local surface = game.surfaces[1]
+
+    -- Factorio 2.0: production_statistics is now a method requiring surface parameter
     -- Reset item statistics
-    force.item_production_statistics.clear()
+    force.get_item_production_statistics(surface).clear()
 
     -- Reset fluid statistics
-    force.fluid_production_statistics.clear()
+    force.get_fluid_production_statistics(surface).clear()
 
-    global.harvested_items = {}
-    global.crafted_items = {}
+    storage.harvested_items = {}
+    storage.crafted_items = {}
 end
 

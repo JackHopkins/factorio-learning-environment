@@ -1,4 +1,4 @@
-import json
+from time import sleep
 from typing import List
 
 from fle.env.entities import Position
@@ -18,33 +18,47 @@ class GetPath(Tool):
 
         try:
             # Backoff polling
-            wait_time = 0.032  # 32ms
+            wait_time = 0.05  # 50ms initial wait
             for attempt in range(max_attempts):
                 response, elapsed = self.execute(path_handle)
 
                 if response is None or response == {} or isinstance(response, str):
                     raise Exception("Could not request path (get_path)", response)
 
-                path = json.loads(response)
+                path = response
 
-                if path["status"] == "success":
+                # Strip quotes from status if present (backwards compatibility)
+                status = path.get("status", "")
+                if status.startswith('"') and status.endswith('"'):
+                    status = status[1:-1]
+
+                if status == "success":
                     list_of_positions = []
                     for pos in path["waypoints"]:
                         list_of_positions.append(Position(x=pos["x"], y=pos["y"]))
                     return list_of_positions
 
-                elif path["status"] in ["not_found", "invalid_request"]:
-                    raise Exception(
-                        f"Path not found or invalid request: {path['status']}"
-                    )
-                elif path["status"] == "busy":
+                elif status in ["not_found", "invalid_request"]:
+                    raise Exception(f"Path not found or invalid request: {status}")
+                elif status == "busy":
                     raise Exception("Pathfinder is busy, try again later")
 
-                wait_time *= 2  # Exponential backoff
+                # Path is still pending - wait before retrying
+                if status == "pending":
+                    sleep(wait_time)
+                    wait_time = min(
+                        wait_time * 2, 1.0
+                    )  # Exponential backoff, max 1 second
+                    continue
+
+                # Unknown status - wait and retry
+                sleep(wait_time)
+                wait_time = min(wait_time * 2, 1.0)
 
             raise Exception(f"Path request timed out after {max_attempts} attempts")
 
         except Exception as e:
-            raise ConnectionError(
-                f"Could not get path with handle {path_handle}"
-            ) from e
+            # raise ConnectionError(
+            #     f"Could not get path with handle {path_handle}"
+            # ) from e
+            raise e

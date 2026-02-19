@@ -64,7 +64,7 @@ def test_cliff_straight_lines(clear_terrain):
     )
 
     image = game._render(position=Position(x=0, y=0), radius=15, layers=Layer.ALL)
-    image.show()  # Uncomment to view
+    # image.show()  # Uncomment to view
     assert image is not None
 
 
@@ -94,7 +94,7 @@ def test_cliff_outer_corners(clear_terrain):
     )
 
     image = game._render(position=Position(x=0, y=5), radius=15, layers=Layer.ALL)
-    image.show()
+    # image.show()
     assert image is not None
 
 
@@ -138,7 +138,7 @@ def test_cliff_inner_corners(clear_terrain):
     )
 
     image = game._render(position=Position(x=0, y=0), radius=10, layers=Layer.ALL)
-    image.show()
+    # image.show()
     assert image is not None
 
 
@@ -162,7 +162,7 @@ def test_cliff_terminals(clear_terrain):
     )
 
     image = game._render(position=Position(x=0, y=0), radius=15, layers=Layer.ALL)
-    image.show()
+    # image.show()
     assert image is not None
 
 
@@ -204,7 +204,7 @@ def test_cliff_t_junctions(clear_terrain):
     )
 
     image = game._render(position=Position(x=0, y=5), radius=20, layers=Layer.ALL)
-    image.show()
+    # image.show()
     assert image is not None
 
 
@@ -268,7 +268,7 @@ def test_entities_with_cliffs(clear_terrain):
     )
 
     image = game._render(position=Position(x=5, y=0), radius=20, layers=Layer.ALL)
-    image.show()
+    # image.show()
     assert image is not None
 
 

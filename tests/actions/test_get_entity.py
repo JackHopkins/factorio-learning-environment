@@ -130,7 +130,8 @@ def test_get_iron_chest(game):
     iron_chest_count = inventory.get(Prototype.IronChest, 0)
     assert iron_chest_count != 0, "Failed to get iron chest count"
 
-    iron_chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+    # Place entity away from player origin (0,0) to avoid collision
+    iron_chest = game.place_entity(Prototype.IronChest, position=Position(x=3, y=0))
     game.insert_item(Prototype.Coal, iron_chest, quantity=5)
     game.insert_item(Prototype.IronPlate, iron_chest, quantity=5)
 
@@ -156,8 +157,9 @@ def test_get_assembling_machine(game):
     assembling_machine_count = inventory.get(Prototype.AssemblingMachine1, 0)
     assert assembling_machine_count != 0, "Failed to get assembling machine count"
 
+    # Place entity away from player origin (0,0) to avoid collision
     assembling_machine = game.place_entity(
-        Prototype.AssemblingMachine1, position=Position(x=0, y=0)
+        Prototype.AssemblingMachine1, position=Position(x=5, y=0)
     )
     game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
@@ -188,7 +190,8 @@ def test_get_lab(game):
     lab_count = inventory.get(Prototype.Lab, 0)
     assert lab_count != 0, "Failed to get lab count"
 
-    lab = game.place_entity(Prototype.Lab, position=Position(x=0, y=0))
+    # Place entity away from player origin (0,0) to avoid collision
+    lab = game.place_entity(Prototype.Lab, position=Position(x=5, y=0))
     game.insert_item(Prototype.AutomationSciencePack, lab, quantity=1)
     retrieved_lab = game.get_entity(Prototype.Lab, lab.position)
 
@@ -209,7 +212,8 @@ def test_get_turret(game):
     turret_count = inventory.get(Prototype.GunTurret, 0)
     assert turret_count != 0, "Failed to get turret count"
 
-    turret = game.place_entity(Prototype.GunTurret, position=Position(x=0, y=0))
+    # Place entity away from player origin (0,0) to avoid collision
+    turret = game.place_entity(Prototype.GunTurret, position=Position(x=3, y=0))
     game.insert_item(Prototype.FirearmMagazine, turret, quantity=5)
     retrieved_turret = game.get_entity(Prototype.GunTurret, turret.position)
 
@@ -230,7 +234,8 @@ def test_get_boiler(game):
     boiler_count = inventory.get(Prototype.Boiler, 0)
     assert boiler_count != 0, "Failed to get boiler count"
 
-    boiler = game.place_entity(Prototype.Boiler, position=Position(x=0, y=0))
+    # Place entity away from player origin (0,0) to avoid collision
+    boiler = game.place_entity(Prototype.Boiler, position=Position(x=5, y=0))
     game.insert_item(Prototype.Coal, boiler, quantity=5)
     retrieved_boiler = game.get_entity(Prototype.Boiler, boiler.position)
 
@@ -249,8 +254,9 @@ def test_get_assembling_machine_1(game):
     assembling_machine_count = inventory.get(Prototype.AssemblingMachine1, 0)
     assert assembling_machine_count != 0, "Failed to get assembling machine count"
 
+    # Place entity away from player origin (0,0) to avoid collision
     assembling_machine = game.place_entity(
-        Prototype.AssemblingMachine1, position=Position(x=0, y=0)
+        Prototype.AssemblingMachine1, position=Position(x=5, y=0)
     )
     game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)

@@ -9,12 +9,12 @@ from fle.env.game_types import Prototype, Resource, RecipeName
 def base_game(instance):
     instance.initial_inventory = {
         "pumpjack": 1,
-        "pipe": 150,
+        "pipe": 300,
         "burner-inserter": 6,
         "coal": 50,
         "boiler": 1,
         "steam-engine": 1,
-        "small-electric-pole": 20,
+        "small-electric-pole": 50,
         "offshore-pump": 1,
         "chemical-plant": 1,
         "oil-refinery": 1,

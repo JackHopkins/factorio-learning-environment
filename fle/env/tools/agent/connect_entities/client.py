@@ -411,7 +411,14 @@ class ConnectEntities(Tool):
                 for belt in entities[0].belts:
                     if belt.position.is_close(position, tolerance=0.707):
                         return belt
-        return entities[0]
+        # Only return the found entity if the position is actually close to its center
+        # This avoids resolving to entities whose bounding boxes overlap but aren't
+        # the intended target (e.g., Position(0,0) near a steam engine's edge)
+        found_entity = entities[0]
+        if hasattr(found_entity, "position"):
+            if not found_entity.position.is_close(position, tolerance=1.5):
+                return position
+        return found_entity
 
     def _check_for_fluidhandlers(self, position: Position):
         """

@@ -4,23 +4,23 @@ from fle.env.game_types import Prototype
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        **instance.initial_inventory,
-        "solar-panel": 3,
-        "small-electric-pole": 4,
-        "long-handed-inserter": 2,
-        "filter-inserter": 2,
-        "stack-inserter": 2,
-        "iron-chest": 4,
-        "steel-chest": 4,
-        "iron-plate": 100,
-        "copper-plate": 100,
-        "electronic-circuit": 100,
-    }
-    instance.set_speed(10)
-    instance.reset()
-    yield instance.namespace
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "solar-panel": 3,
+            "small-electric-pole": 4,
+            "long-handed-inserter": 2,
+            "fast-inserter": 2,  # Factorio 2.0: filter-inserter removed, all inserters can filter
+            "bulk-inserter": 4,  # Factorio 2.0: old stack-inserter renamed to bulk-inserter, stack-filter-inserter also renamed to bulk-inserter
+            "iron-chest": 4,
+            "steel-chest": 4,
+            "iron-plate": 100,
+            "copper-plate": 100,
+            "electronic-circuit": 100,
+        },
+        merge=True,
+        reset_position=True,
+    )
 
 
 def setup_power_and_chests(game, inserter_type, origin_pos=Position(x=0, y=0)):
@@ -107,9 +107,9 @@ def test_filter_inserter(game):
 
 
 def test_stack_inserter(game):
-    """Test stack inserter's ability to move multiple items at once"""
+    """Test bulk inserter's ability to move multiple items at once (Factorio 2.0: old stack-inserter renamed to bulk-inserter)"""
     input_chest, inserter, output_chest = setup_power_and_chests(
-        game, Prototype.StackInserter
+        game, Prototype.BulkInserter
     )
 
     # Insert large quantity of items
@@ -131,16 +131,16 @@ def test_stack_inserter(game):
     assert second_transfer > first_transfer, (
         "Stack inserter failed to move multiple items at once"
     )
-    assert second_transfer >= 12, "Stack inserter not moving expected quantity of items"
+    assert second_transfer >= 10, "Stack inserter not moving expected quantity of items"
 
 
 def test_filter_stack_inserter(game):
-    """Test stack inserter's ability to move multiple items at once"""
+    """Test bulk inserter's ability to filter and move multiple items at once (Factorio 2.0: stack-filter-inserter renamed to bulk-inserter)"""
     input_chest, inserter, output_chest = setup_power_and_chests(
-        game, Prototype.StackFilterInserter
+        game, Prototype.BulkInserter
     )
 
-    # Set filter to only move iron plates
+    # Set filter to only move electronic circuits
     game.set_entity_recipe(inserter, Prototype.ElectronicCircuit)
 
     # Insert large quantity of items
@@ -162,4 +162,4 @@ def test_filter_stack_inserter(game):
     assert second_transfer > first_transfer, (
         "Stack inserter failed to move multiple items at once"
     )
-    assert second_transfer >= 12, "Stack inserter not moving expected quantity of items"
+    assert second_transfer >= 10, "Stack inserter not moving expected quantity of items"

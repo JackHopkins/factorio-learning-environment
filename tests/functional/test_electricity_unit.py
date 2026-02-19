@@ -28,7 +28,7 @@ def game(instance):
         "coal": 50,
     }
 
-    instance.reset()
+    instance.reset(all_technologies_researched=True)
     instance.set_speed(10)
     yield instance.namespace
 
@@ -83,8 +83,8 @@ def test_create_offshore_pump_to_steam_engine(game):
 
     assert steam_engine.direction.value == Direction.opposite(boiler.direction).value
 
-    image = game._render()  # , zoom=5)
-    image.show()
+    _image = game._render()  # , zoom=5)
+    # image.show()
     pass
 
 

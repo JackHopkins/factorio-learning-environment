@@ -77,7 +77,7 @@ def test_harvest_stump(game):
 
 create_rock = """
 game.surfaces[1].create_entity({
-    name = "rock-big",
+    name = "big-rock",
     position = {x = 1, y = 0}
 })
 """

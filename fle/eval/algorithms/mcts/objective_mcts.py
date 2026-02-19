@@ -17,7 +17,7 @@ from fle.commons.models.game_state import GameState
 from fle.commons.models.generation_parameters import GenerationParameters
 from fle.commons.models.message import Message
 from fle.commons.models.program import Program
-from fle.eval.evaluator import Evaluator
+from fle.eval.algorithms.mcts.evaluator import Evaluator
 
 from .mcts import MCTS
 from .samplers.db_sampler import DBSampler

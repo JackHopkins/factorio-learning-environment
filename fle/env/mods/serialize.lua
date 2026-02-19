@@ -1,6 +1,13 @@
 -- Library for serializing items in Factorio
 -- Based on code from playerManager and trainTeleports
+-- Updated for Factorio 2.0
 
+-- Factorio 2.0 API method names (no backwards compatibility needed)
+local supports_bar = "supports_bar"
+local get_bar = "get_bar"
+local set_bar = "set_bar"
+
+-- Version helper function (kept for potential future use)
 local function version_to_table(version)
     local t = {}
     for p in string.gmatch(version, "%d+") do
@@ -9,31 +16,9 @@ local function version_to_table(version)
     return t
 end
 
--- 0.17 compatibility
-local supports_bar, get_bar, set_bar, version
-if (pcall(function() local mods = script.active_mods end)) then
-    supports_bar = "supports_bar"
-    get_bar = "get_bar"
-    set_bar = "set_bar"
-    version = version_to_table(script.active_mods.base)
-else
-    supports_bar = "hasbar"
-    get_bar = "getbar"
-    set_bar = "setbar"
-    version = version_to_table("0.17.69")
-end
-
--- returns true if the game version is greater than or equal to the given version
+-- Always returns true for Factorio 2.0 as all modern features are supported
 local function version_ge(comp)
-    comp = version_to_table(comp)
-    for i=1, 3 do
-        if comp[i] > version[i] then
-            return false
-        elseif comp[i] < version[i] then
-            return true
-        end
-    end
-    return true
+    return true  -- Factorio 2.0 supports all features
 end
 
 local has_create_grid = version_ge("1.1.7")
@@ -250,18 +235,18 @@ local function serialize_fluidbox(fluidbox)
         local prototype = fluidbox.get_prototype(i)
         local connections = fluidbox.get_connections(i)
         local filter = fluidbox.get_filter(i)
-        local flow = fluidbox.get_flow(i)
+        -- Factorio 2.0: get_flow removed, get_fluid_system_id -> get_fluid_segment_id
         local locked_fluid = fluidbox.get_locked_fluid(i)
-        local fluid_system_id = fluidbox.get_fluid_system_id(i)
+        local fluid_segment_id = fluidbox.get_fluid_segment_id(i)
 
         local serialized_box = {
             prototype = prototype and prototype.object_name or nil,
             capacity = fluidbox.get_capacity(i),
             connections = {},
             filter = filter,
-            flow = flow,
+            flow = 0,  -- Factorio 2.0: get_flow no longer exists
             locked_fluid = locked_fluid,
-            fluid_system_id = fluid_system_id,
+            fluid_system_id = fluid_segment_id,
         }
 
         -- Serialize fluid
@@ -273,11 +258,10 @@ local function serialize_fluidbox(fluidbox)
             }
         end
 
-        -- Serialize connections
+        -- Serialize connections (check validity of connection owner)
         for _, connection in pairs(connections) do
-            if connection.owner and connection.owner.name then
+            if connection.owner and connection.owner.valid and connection.owner.name then
                 table.insert(serialized_box.connections, "\""..connection.owner.name .. "\"")
-
             end
         end
 
@@ -318,7 +302,7 @@ local function serialize_neighbours(entity)
     local neighbours = {}
 
     -- Get entity's prototype collision box
-    local prototype = game.entity_prototypes[entity.name]
+    local prototype = prototypes.entity[entity.name]
     local collision_box = prototype.collision_box
 
     -- Create a slightly larger search box
@@ -343,8 +327,8 @@ local function serialize_neighbours(entity)
 
     -- Process each nearby entity
     for _, neighbor in pairs(nearby) do
-        -- Skip if it's the same entity or if it has no unit number
-        if neighbor.unit_number and neighbor.unit_number ~= entity.unit_number then
+        -- Skip if invalid, same entity, or no unit number
+        if neighbor.valid and neighbor.unit_number and neighbor.unit_number ~= entity.unit_number then
             table.insert(neighbours, {
                 unit_number = neighbor.unit_number,
                 direction = get_neighbor_direction(entity, neighbor),
@@ -381,7 +365,7 @@ local function get_entity_direction(entity, direction)
         return defines.direction.north
     end
 
-    local prototype = game.entity_prototypes[entity]
+    local prototype = prototypes.entity[entity]
     -- if prototype is nil (e.g because the entity is a ghost or player character) then return the direction as is
     if prototype == nil then
         return direction
@@ -393,117 +377,117 @@ local function get_entity_direction(entity, direction)
         defines.direction.south,
         defines.direction.west
     }
+    -- Factorio 2.0 uses 16 directions: north=0, east=4, south=8, west=12
+    -- The direction parameter comes from entity.direction
     if prototype and (prototype.name == "boiler" or prototype.type == "generator" or prototype.name == "heat-exchanger") then
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.north
-        elseif direction == 1 then
+        elseif direction == defines.direction.east then
             return defines.direction.east
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.south
         else
             return defines.direction.west
         end
     elseif prototype and prototype.name == "offshore-pump" then
-        if direction == 2 then
+        if direction == defines.direction.south then
             return defines.direction.north
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return defines.direction.east
-        elseif direction == 0 then
+        elseif direction == defines.direction.north then
             return defines.direction.south
         else
             return defines.direction.west
         end
     elseif prototype and prototype.name == "oil-refinery" then
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.north
-        elseif direction == 1 then
+        elseif direction == defines.direction.east then
             return defines.direction.east
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.south
         else
             return defines.direction.west
         end
     elseif prototype and prototype.name == "chemical-plant" then
-        if direction == 2 then
+        if direction == defines.direction.south then
             return defines.direction.north
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return defines.direction.east
-        elseif direction == 0 then
+        elseif direction == defines.direction.north then
             return defines.direction.south
         else
             return defines.direction.west
         end
     elseif prototype and prototype.type == "transport-belt" or prototype.type == "splitter"  then
-        --game.print("Transport belt direction: " .. direction)
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.north
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return defines.direction.west
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.south
         else
             return defines.direction.east
         end
     elseif prototype and prototype.type == "inserter" then
-        --return cardinals[(direction % 4)]
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.south
-        elseif direction == 1 then
+        elseif direction == defines.direction.east then
             return defines.direction.west
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.north
         else
             return defines.direction.east
         end
     elseif prototype.type == "mining-drill" then
-        if direction == 1 then
+        if direction == defines.direction.east then
             return cardinals[2]
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return cardinals[3]
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return cardinals[4]
         else
             return cardinals[1]
         end
     elseif prototype.type == "underground-belt" then
-        if direction == 1 then
+        if direction == defines.direction.east then
             return defines.direction.east
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.south
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return defines.direction.west
         else
             return defines.direction.north
         end
     elseif prototype.type == "pipe-to-ground" then
-        if direction == 1 then
+        if direction == defines.direction.east then
             return defines.direction.west
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.north
-        elseif direction == 3 then
+        elseif direction == defines.direction.west then
             return defines.direction.east
         else
             return defines.direction.south
         end
     elseif prototype.type == "assembling-machine" then
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.north
-        elseif direction == 1 then
+        elseif direction == defines.direction.east then
             return defines.direction.east
-        elseif direction == 2 then
+        elseif direction == defines.direction.south then
             return defines.direction.south
         else
             return defines.direction.west
         end
     elseif prototype.type == "storage-tank" then
-        if direction == 0 then
+        if direction == defines.direction.north then
             return defines.direction.north
-        elseif direction == 1 then
-            return defines.direction.east -- Only 2 directions
-        elseif direction == 2 then
-            return defines.direction.south -- Only 2 directions
+        elseif direction == defines.direction.east then
+            return defines.direction.east
+        elseif direction == defines.direction.south then
+            return defines.direction.south
         else
-            return defines.direction.west -- Only 2 directions
+            return defines.direction.west
         end
     else
         return direction
@@ -512,7 +496,7 @@ local function get_entity_direction(entity, direction)
 end
 
 local function get_inverse_entity_direction(entity, factorio_direction)
-    local prototype = game.entity_prototypes[entity]
+    local prototype = prototypes.entity[entity]
 
     if not factorio_direction then
         return 0  -- Assuming 0 is the default direction in your system
@@ -568,7 +552,7 @@ local function is_valid_connection_point(surface, position)
     return not invalid_tiles[tile.name]
 end
 
-global.utils.entity_status_names = function(entity_status)
+storage.utils.entity_status_names = function(entity_status)
     local s = entity_status
     if not s then return '"normal"' end
 
@@ -584,9 +568,9 @@ global.utils.entity_status_names = function(entity_status)
     return '"normal"'
 end
 
-global.utils.get_entity_direction = get_entity_direction
+storage.utils.get_entity_direction = get_entity_direction
 
-global.utils.serialize_recipe = function(recipe)
+storage.utils.serialize_recipe = function(recipe)
     local function serialize_number(num)
         if num == math.huge then
             return "inf"
@@ -627,10 +611,15 @@ global.utils.serialize_recipe = function(recipe)
     }
 end
 
-global.utils.serialize_entity = function(entity)
+storage.utils.serialize_entity = function(entity)
 
     if entity == nil then
         return {}
+    end
+
+    -- Check if entity is still valid (hasn't been destroyed/removed)
+    if not entity.valid then
+        error("Cannot serialize entity: LuaEntity is no longer valid (entity may have been destroyed or removed)")
     end
     --game.print("Serializing entity: " .. entity.name .. " with direction: " .. entity.direction)
     local direction = entity.direction
@@ -660,14 +649,14 @@ global.utils.serialize_entity = function(entity)
         health = entity.health,
         energy = entity.energy,
         type = "\""..entity.type.."\"",
-        status = global.utils.entity_status_names(entity.status)
+        status = storage.utils.entity_status_names(entity.status)
     }
 
     if entity.grid then
         serialized.grid = serialize_equipment_grid(entity.grid)
     end
     --game.print(serpent.line(entity.get_inventory(defines.inventory.turret_ammo)))
-    serialized.warnings = global.utils.get_issues(entity)
+    serialized.warnings = storage.utils.get_issues(entity)
 
     local inventory_types = {
         {name = "fuel", define = defines.inventory.fuel},
@@ -687,12 +676,12 @@ global.utils.serialize_entity = function(entity)
     for _, inv_type in ipairs(inventory_types) do
         local inventory = entity.get_inventory(inv_type.define)
         if inventory then
-            serialized[inv_type.name] = inventory.get_contents()
+            serialized[inv_type.name] = storage.utils.get_contents_compat(inventory)
         end
     end
 
     -- Add dimensions of the entity
-    local prototype = game.entity_prototypes[entity.name]
+    local prototype = prototypes.entity[entity.name]
     local collision_box = prototype.collision_box
     serialized.dimensions = {
         width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x),
@@ -722,9 +711,16 @@ global.utils.serialize_entity = function(entity)
         -- Set input position based on upstream connections
         local input_pos = {x = x, y = y}
         if #entity.belt_neighbours["inputs"] > 0 then
-            -- Use the position of the first connected input belt
+            -- Use the position of the first connected input belt (check validity first)
             local input_belt = entity.belt_neighbours["inputs"][1]
-            input_pos = {x = input_belt.position.x, y = input_belt.position.y}
+            if input_belt and input_belt.valid then
+                input_pos = {x = input_belt.position.x, y = input_belt.position.y}
+            else
+                -- Fallback to default offset if neighbor is invalid
+                local offset = input_offset[entity.direction]
+                input_pos.x = x + offset.x
+                input_pos.y = y + offset.y
+            end
         else
             -- No input connection, use default offset
             local offset = input_offset[entity.direction]
@@ -736,9 +732,16 @@ global.utils.serialize_entity = function(entity)
         -- Set output position based on downstream connections
         local output_pos = {x = x, y = y}
         if #entity.belt_neighbours["outputs"] > 0 then
-            -- Use the position of the first connected output belt
+            -- Use the position of the first connected output belt (check validity first)
             local output_belt = entity.belt_neighbours["outputs"][1]
-            output_pos = {x = output_belt.position.x, y = output_belt.position.y}
+            if output_belt and output_belt.valid then
+                output_pos = {x = output_belt.position.x, y = output_belt.position.y}
+            else
+                -- Fallback to default offset if neighbor is invalid
+                local offset = output_offset[entity.direction]
+                output_pos.x = x + offset.x
+                output_pos.y = y + offset.y
+            end
         else
             -- No output connection, use default offset
             local offset = output_offset[entity.direction]
@@ -763,8 +766,8 @@ global.utils.serialize_entity = function(entity)
 
         -- Get and merge contents from both lines
         serialized.inventory = {}
-        local line1_contents = line1.get_contents()
-        local line2_contents = line2.get_contents()
+        local line1_contents = storage.utils.get_contents_compat(line1)
+        local line2_contents = storage.utils.get_contents_compat(line2)
 
         -- Set terminus and source flags based on connections
         serialized.is_terminus = #entity.belt_neighbours["outputs"] == 0
@@ -794,12 +797,14 @@ global.utils.serialize_entity = function(entity)
         -- Special handling for underground belts
         if entity.type == "underground-belt" then
             serialized.is_input = entity.belt_to_ground_type == "input"
+            -- Check validity of underground belt neighbor before accessing properties
+            local neighbour_valid = entity.neighbours ~= nil and entity.neighbours.valid
             if serialized.is_input then
-                serialized.is_terminus = entity.neighbours == nil
+                serialized.is_terminus = not neighbour_valid
             else
-                serialized.is_source = entity.neighbours == nil
+                serialized.is_source = not neighbour_valid
             end
-            if entity.neighbours ~= nil then
+            if neighbour_valid then
                 serialized.connected_to = entity.neighbours.unit_number
             end
         end
@@ -873,8 +878,8 @@ global.utils.serialize_entity = function(entity)
 
         -- Get the contents of both output lines
         serialized.inventory = {
-            entity.get_transport_line(1).get_contents(),
-            entity.get_transport_line(2).get_contents()
+            storage.utils.get_contents_compat(entity.get_transport_line(1)),
+            storage.utils.get_contents_compat(entity.get_transport_line(2))
         }
     end
 
@@ -918,14 +923,19 @@ global.utils.serialize_entity = function(entity)
             table.insert(serialized.connections, connection.position)
         end
         local contents_count = 0
-        for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
-            contents_count = contents_count + count
-            fluid_name = "\""..name.."\""
+        -- Factorio 2.0: get_fluid_system_contents -> get_fluid_segment_contents
+        local segment_contents = entity.fluidbox.get_fluid_segment_contents(1)
+        if segment_contents then
+            for name, count in pairs(segment_contents) do
+                contents_count = contents_count + count
+                fluid_name = "\""..name.."\""
+            end
         end
         serialized.contents = contents_count
         serialized.fluid = fluid_name
-        serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
-        serialized.flow_rate = entity.fluidbox.get_flow(1)
+        -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id, get_flow removed
+        serialized.fluidbox_id = entity.fluidbox.get_fluid_segment_id(1)
+        serialized.flow_rate = 0
     end
 
     -- Add input and output locations if the entity is a pipe-to-ground
@@ -936,12 +946,17 @@ global.utils.serialize_entity = function(entity)
             table.insert(serialized.connections, connection.position)
         end
         local contents_count = 0
-        for name, count in pairs(entity.fluidbox.get_fluid_system_contents(1)) do
-            contents_count = contents_count + count
-            fluid_name = "\""..name.."\""
+        -- Factorio 2.0: get_fluid_system_contents -> get_fluid_segment_contents
+        local segment_contents = entity.fluidbox.get_fluid_segment_contents(1)
+        if segment_contents then
+            for name, count in pairs(segment_contents) do
+                contents_count = contents_count + count
+                fluid_name = "\""..name.."\""
+            end
         end
-        serialized.fluidbox_id = entity.fluidbox.get_fluid_system_id(1)
-        serialized.flow_rate = entity.fluidbox.get_flow(1)
+        -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id, get_flow removed
+        serialized.fluidbox_id = entity.fluidbox.get_fluid_segment_id(1)
+        serialized.flow_rate = 0
         serialized.contents = contents_count
         serialized.fluid = fluid_name
         --serialized.input_position = entity.fluidbox.get_connections(1)[1].position
@@ -956,8 +971,8 @@ global.utils.serialize_entity = function(entity)
 
     -- Add the current research to the lab
     if entity.name == "lab" then
-        if global.agent_characters[1].force.current_research ~= nil then
-            serialized.research = global.agent_characters[1].force.current_research.name
+        if storage.agent_characters[1].force.current_research ~= nil then
+            serialized.research = storage.agent_characters[1].force.current_research.name
         else
             serialized.research = nil
         end
@@ -978,7 +993,7 @@ global.utils.serialize_entity = function(entity)
         serialized.output_connection_points = {}
 
         local recipe = entity.get_recipe()
-        local mappings = global.utils.get_refinery_fluid_mappings(entity, recipe)
+        local mappings = storage.utils.get_refinery_fluid_mappings(entity, recipe)
         if mappings then
             serialized.input_connection_points = mappings.inputs
             serialized.output_connection_points = mappings.outputs
@@ -991,7 +1006,7 @@ global.utils.serialize_entity = function(entity)
         serialized.output_connection_points = {}
 
         local recipe = entity.get_recipe()
-        local mappings = global.utils.get_chemical_plant_fluid_mappings(entity, recipe)
+        local mappings = storage.utils.get_chemical_plant_fluid_mappings(entity, recipe)
         if mappings then
             serialized.input_connection_points = mappings.inputs
             serialized.output_connection_points = mappings.outputs
@@ -1020,7 +1035,7 @@ global.utils.serialize_entity = function(entity)
 
     if entity.type == "storage-tank" then
         -- Get and filter connection points
-        local connection_points = global.utils.get_storage_tank_connection_points(entity)
+        local connection_points = storage.utils.get_storage_tank_connection_points(entity)
         local filtered_points = {}
 
         -- Filter out invalid connection points (e.g., those in water)
@@ -1041,7 +1056,8 @@ global.utils.serialize_entity = function(entity)
                 serialized.fluid = string.format("\"%s\"", fluid.name)
                 serialized.fluid_amount = fluid.amount
                 serialized.fluid_temperature = fluid.temperature
-                serialized.fluid_system_id = entity.fluidbox.get_fluid_system_id(1)
+                -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+                serialized.fluid_system_id = entity.fluidbox.get_fluid_segment_id(1)
             end
         end
 
@@ -1104,7 +1120,7 @@ global.utils.serialize_entity = function(entity)
         -- game.print("Mining drill drop position: " .. serpent.line(serialized.drop_position))
 
         -- Get the mining area
-        local prototype = game.entity_prototypes[entity.name]
+        local prototype = prototypes.entity[entity.name]
         local mining_area = 1
         if prototype.mining_drill_radius then
             mining_area = prototype.mining_drill_radius * 2
@@ -1127,15 +1143,18 @@ global.utils.serialize_entity = function(entity)
         }
 
         for _, resource in pairs(resources) do
-            if not serialized.resources[resource.name] then
-                serialized.resources[resource.name] = {
-                    name = "\""..resource.name.."\"",
-                    count = 0,
-                }
-            end
+            -- Check resource validity before accessing properties
+            if resource.valid then
+                if not serialized.resources[resource.name] then
+                    serialized.resources[resource.name] = {
+                        name = "\""..resource.name.."\"",
+                        count = 0,
+                    }
+                end
 
-            -- Add the resource amount and position
-            serialized.resources[resource.name].count = serialized.resources[resource.name].count + resource.amount
+                -- Add the resource amount and position
+                serialized.resources[resource.name].count = serialized.resources[resource.name].count + resource.amount
+            end
         end
 
 
@@ -1163,7 +1182,7 @@ global.utils.serialize_entity = function(entity)
     -- Add recipes if the entity is a crafting machine
     if entity.type == "assembling-machine" or entity.type == "furnace" then
         if entity.get_recipe() then
-            serialized.recipe = global.utils.serialize_recipe(entity.get_recipe())
+            serialized.recipe = storage.utils.serialize_recipe(entity.get_recipe())
         end
     end
 
@@ -1200,15 +1219,12 @@ global.utils.serialize_entity = function(entity)
         -- Basic rocket silo properties
         serialized.rocket_parts = 0  -- Will be updated with actual count
         serialized.rocket_progress = 0.0  -- Will be updated with actual progress
-        serialized.launch_count = entity.launch_count or 0
+        -- Factorio 2.0: launch_count removed (no longer available on LuaEntity)
 
-        -- Get part construction progress
-        local parts_inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
-        if parts_inventory then
-            serialized.rocket_parts = parts_inventory.get_item_count("rocket-part")
-            -- Each rocket needs 100 parts, calculate progress
-            serialized.rocket_progress = (serialized.rocket_parts / 100.0) * 100.0
-        end
+        -- Get part construction progress using the direct entity property (Factorio 2.0 compatible)
+        serialized.rocket_parts = entity.rocket_parts or 0
+        local parts_required = entity.prototype.rocket_parts_required or 100
+        serialized.rocket_progress = (serialized.rocket_parts / parts_required) * 100.0
 
         -- Get input inventories for rocket components
         local rocket_inventory = {
@@ -1219,7 +1235,7 @@ global.utils.serialize_entity = function(entity)
         -- Serialize the component inventories
         for name, inventory in pairs(rocket_inventory) do
             if inventory and not inventory.is_empty() then
-                serialized[name .. "_inventory"] = inventory.get_contents()
+                serialized[name .. "_inventory"] = storage.utils.get_contents_compat(inventory)
             end
         end
 
@@ -1230,7 +1246,7 @@ global.utils.serialize_entity = function(entity)
             elseif serialized.rocket.payload then
                 serialized.status = "\"waiting_to_launch_rocket\""
             end
-        elseif serialized.rocket_parts < 100 then
+        elseif serialized.rocket_parts < parts_required then
             if serialized.rocket_parts > 0 then
                 serialized.status = "\"preparing_rocket_for_launch\""
             end
@@ -1240,16 +1256,15 @@ global.utils.serialize_entity = function(entity)
         if not serialized.warnings then
             serialized.warnings = {}
         end
-        if serialized.rocket_parts < 100 and serialized.rocket_parts > 0 then
+        if serialized.rocket_parts < parts_required and serialized.rocket_parts > 0 then
             table.insert(serialized.warnings, "\"waiting for rocket parts\"")
         elseif serialized.status == "\"waiting_to_launch_rocket\"" then
             table.insert(serialized.warnings, "\"ready to launch\"")
         end
     end
 
-    if entity.type == "solar-panel" then
-        serialized.electric_output_flow_limit = entity.electric_output_flow_limit
-    end
+    -- Factorio 2.0: solar panels no longer have electric_output_flow_limit property
+    -- Solar panel power output is now determined by prototype settings (performance_at_day/night)
 
     if entity.type == 'accumulator' then
         --serialized.energy_source = entity.energy_source
@@ -1259,13 +1274,13 @@ global.utils.serialize_entity = function(entity)
     end
 
     if entity.type == "generator" then
-        serialized.connection_points = global.utils.get_generator_connection_positions(entity)
+        serialized.connection_points = storage.utils.get_generator_connection_positions(entity)
         serialized.energy_generated_last_tick = entity.energy_generated_last_tick
         --serialized.power_production = entity.power_production
     end
 
     if entity.name == "pumpjack" then
-        serialized.connection_points = global.utils.get_pumpjack_connection_points(entity)
+        serialized.connection_points = storage.utils.get_pumpjack_connection_points(entity)
     end
 
     -- Add fuel and input ingredients if the entity is a furnace or burner
@@ -1288,7 +1303,7 @@ global.utils.serialize_entity = function(entity)
 
     -- Add fluid box if the entity is an offshore pump
     if entity.type == "offshore-pump" then
-        serialized.connection_points = global.utils.get_offshore_pump_connection_points(entity)
+        serialized.connection_points = storage.utils.get_offshore_pump_connection_points(entity)
     end
 
     -- If entity has a fluidbox
@@ -1322,7 +1337,8 @@ global.utils.serialize_entity = function(entity)
             local fluid_contents = nil
             for i = 1, #entity.fluidbox do
                 if entity.fluidbox[i] then
-                    local system_id = entity.fluidbox.get_fluid_system_id(i)
+                    -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+                    local system_id = entity.fluidbox.get_fluid_segment_id(i)
                     if system_id then
                         table.insert(fluid_systems, system_id)
                     end

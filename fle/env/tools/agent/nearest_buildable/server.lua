@@ -4,10 +4,10 @@ local ceil = math.ceil
 local max = math.max
 local abs = math.abs
 
-global.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
-    local player = global.agent_characters[player_index]
+storage.actions.nearest_buildable = function(player_index, entity_name, bounding_box, center_position)
+    local player = storage.agent_characters[player_index]
     local surface = player.surface
-    local entity_prototype = game.entity_prototypes[entity_name]
+    local entity_prototype = prototypes.entity[entity_name]
     local needs_resources = entity_prototype.resource_categories ~= nil
     local start_pos = center_position or player.position
     local needs_oil = entity_name == "pumpjack"
@@ -23,7 +23,7 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
                     {chunk_x * 32, chunk_y * 32},
                     {(chunk_x + 1) * 32, (chunk_y + 1) * 32}
                 },
-                collision_mask = "resource-layer"
+                type = "resource"
             }
         end
         return chunk_cache[cache_key]
@@ -42,7 +42,7 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
         -- Quick initial resource count check
         local total_resources = surface.count_entities_filtered{
             area = {left_top, right_bottom},
-            collision_mask = "resource-layer"
+            type = "resource"
         }
 
         -- Calculate required coverage
@@ -105,16 +105,19 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
         }
 
         -- Quick collision checks first
+        -- Factorio 2.0: Use tile name filter for water check instead of collision_mask
         if surface.count_tiles_filtered{
             area = {left_top, right_bottom},
-            collision_mask = "water-tile"
+            name = {"water", "deepwater", "water-green", "deepwater-green", "water-shallow", "water-mud"}
         } > 0 then
             return false
         end
 
+        -- Check for blocking entities
         if surface.count_entities_filtered{
             area = {left_top, right_bottom},
-            collision_mask = "object-layer"
+            type = {"character", "resource"},
+            invert = true
         } > 0 then
             return false
         end
@@ -157,12 +160,26 @@ global.actions.nearest_buildable = function(player_index, entity_name, bounding_
                 end
             else
                 -- Simple position check for entities without bounding box
-                if surface.count_entities_filtered{
-                    area = {{current_pos.x, current_pos.y},
-                           {current_pos.x + 1, current_pos.y + 1}},
-                    collision_mask = needs_resources and "resource-layer" or "object-layer"
-                } == (needs_resources and 1 or 0) then
-                    return current_pos
+                local entity_count
+                if needs_resources then
+                    entity_count = surface.count_entities_filtered{
+                        area = {{current_pos.x, current_pos.y},
+                               {current_pos.x + 1, current_pos.y + 1}},
+                        type = "resource"
+                    }
+                    if entity_count >= 1 then
+                        return current_pos
+                    end
+                else
+                    entity_count = surface.count_entities_filtered{
+                        area = {{current_pos.x, current_pos.y},
+                               {current_pos.x + 1, current_pos.y + 1}},
+                        type = {"character", "resource"},
+                        invert = true
+                    }
+                    if entity_count == 0 then
+                        return current_pos
+                    end
                 end
             end
 

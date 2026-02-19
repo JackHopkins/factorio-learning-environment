@@ -238,14 +238,57 @@ def load_game_data(data_path: str) -> Tuple[Dict, Dict]:
 
 
 def find_fle_sprites_dir() -> Path:
-    """Walk up the directory tree until we find .fle directory."""
+    """Walk up the directory tree until we find .fle directory.
+
+    Also checks common locations if cwd-based search fails.
+    """
+    import logging
+    import os
+
+    logger = logging.getLogger(__name__)
+
+    # First, try walking up from cwd
     current = Path.cwd()
+    start_cwd = current
 
     while current != current.parent:
         fle_dir = current / ".fle"
         if fle_dir.exists() and fle_dir.is_dir():
-            return fle_dir / "sprites"
+            sprites_dir = fle_dir / "sprites"
+            if sprites_dir.exists():
+                logger.debug(f"Found sprites directory at {sprites_dir}")
+                return sprites_dir
+            else:
+                logger.warning(
+                    f"Found .fle directory at {fle_dir} but no sprites subdirectory"
+                )
         current = current.parent
+
+    # Try common fallback locations
+    fallback_paths = [
+        # Home directory
+        Path.home() / ".fle" / "sprites",
+        # Environment variable if set
+        Path(os.environ.get("FLE_SPRITES_DIR", ""))
+        if os.environ.get("FLE_SPRITES_DIR")
+        else None,
+        # Relative to the fle package (this file is in fle/env/tools/admin/render/utils.py)
+        # Go up 5 levels to get from render/ -> admin/ -> tools/ -> env/ -> fle/ -> project_root/
+        Path(__file__).parent.parent.parent.parent.parent.parent / ".fle" / "sprites",
+    ]
+
+    for fallback in fallback_paths:
+        if fallback and fallback.exists():
+            logger.info(f"Using fallback sprites directory: {fallback}")
+            return fallback
+
+    # Log warning about missing sprites
+    logger.warning(
+        f"Could not find .fle/sprites directory. "
+        f"Searched from cwd={start_cwd} up to root. "
+        f"Vision rendering will produce empty images. "
+        f"Run 'fle sprites' to download sprites, or set FLE_SPRITES_DIR environment variable."
+    )
 
     # Fallback - return the path even if it doesn't exist
     return Path.cwd() / ".fle" / "sprites"

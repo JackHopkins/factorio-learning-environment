@@ -1,10 +1,11 @@
 -- Store created entities globally
-if not global.clearance_entities then
-    global.clearance_entities = {}
+if not storage.clearance_entities then
+    storage.clearance_entities = {}
 end
 
-global.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
-    local player = global.agent_characters[player_index]
+storage.actions.request_path = function(player_index, start_x, start_y, goal_x, goal_y, radius, allow_paths_through_own_entities, entity_size)
+    -- Ensure we have a valid character, recreating if necessary
+    local player = storage.utils.ensure_valid_character(player_index)
     if not player then return nil end
     local size = entity_size/2 - 0.01
 
@@ -22,33 +23,63 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
             y = math.max(start_y, goal_y) + 10
         }
     }
+
+    -- Ensure chunks are generated along the path corridor from start to goal.
+    -- The pathfinder cannot traverse ungenerated chunks, and needs a wide corridor
+    -- to route around water, cliffs, and other obstacles.
+    local corridor_radius = 5  -- ~160 tile wide corridor for pathfinding flexibility
+    local goal_radius = 8  -- Extra radius at goal for find_non_colliding_position search
+    surface.request_to_generate_chunks({x = start_x, y = start_y}, corridor_radius)
+    surface.request_to_generate_chunks({x = goal_x, y = goal_y}, goal_radius)
+
+    local dx = goal_x - start_x
+    local dy = goal_y - start_y
+    local distance = math.sqrt(dx * dx + dy * dy)
+    if distance > 32 then
+        local num_points = math.ceil(distance / 32)
+        for i = 1, num_points - 1 do
+            local t = i / num_points
+            surface.request_to_generate_chunks({x = start_x + dx * t, y = start_y + dy * t}, corridor_radius)
+        end
+    end
+    surface.force_generate_chunk_requests()
+
     rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0.5, g = 0, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=start_x, y=start_y}, time_to_live = 12000}
     rendering.draw_circle{only_in_alt_mode=true, width = 1, color = {r = 0, g = 0.5, b = 0.5}, surface = player.surface, radius = 0.303, filled = false, target = {x=goal_x, y=goal_y }, time_to_live = 12000}
 
     -- Add temporary collision entities
     local clearance_entities = {}
-    global.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
+    storage.utils.avoid_entity(player_index, "iron-chest", {y = goal_y, x = goal_x})
     
     local goal_position = player.surface.find_non_colliding_position(
         "iron-chest",
         {y = goal_y, x = goal_x},
-        10,
+        200,
         0.5,
         true
     )
+    if not goal_position then
+        -- Goal may be deep in water/obstacles; use raw coordinates and let the
+        -- pathfinder try with its radius parameter to get as close as possible
+        goal_position = {x = goal_x, y = goal_y}
+    end
     
     local start_position = {y = start_y, x = start_x}
 
     local path_request = {
         bounding_box = {{-size, -size}, {size, size}},
-        collision_mask = { 
-            "player-layer",
-            "train-layer",
-            "consider-tile-transitions",
-            "water-tile",
-            "object-layer",
-            "transport-belt-layer",
-            "water-tile"
+        -- Factorio 2.0: collision_mask requires {layers = {layer_name = true, ...}} format
+        -- Valid layers: is_lower_object, is_object, out_of_map, ground_tile, water_tile, resource,
+        -- doodad, floor, rail, transport_belt, item, ghost, object, player, car, train, elevated_rail,
+        -- elevated_train, empty_space, lava_tile, meltable, rail_support, trigger_target, cliff
+        collision_mask = {
+            layers = {
+                player = true,
+                train = true,
+                water_tile = true,
+                object = true,
+                transport_belt = true
+            }
         },
         start = start_position,
         goal = goal_position,
@@ -66,16 +97,16 @@ global.actions.request_path = function(player_index, start_x, start_y, goal_x, g
     }
     local request_id = surface.request_path(path_request)
 
-    global.clearance_entities[request_id] = clearance_entities
+    storage.clearance_entities[request_id] = clearance_entities
 
-    if not global.path_requests then
-        global.path_requests = {}
+    if not storage.path_requests then
+        storage.path_requests = {}
     end
-    if not global.paths then
-        global.paths = {}
+    if not storage.paths then
+        storage.paths = {}
     end
 
-    global.path_requests[request_id] = player_index
+    storage.path_requests[request_id] = player_index
 
     return request_id
 end
@@ -83,36 +114,36 @@ end
 -- Modify the pathfinding finished handler to clean up entities
 --script.on_event(defines.events.on_script_path_request_finished, function(event)
 --    -- Clean up clearance entities
---    if global.clearance_entities[event.id] then
---        for _, entity in pairs(global.clearance_entities[event.id]) do
+--    if storage.clearance_entities[event.id] then
+--        for _, entity in pairs(storage.clearance_entities[event.id]) do
 --            if entity.valid then
 --                entity.destroy()
 --            end
 --        end
---        global.clearance_entities[event.id] = nil
+--        storage.clearance_entities[event.id] = nil
 --    end
 --end)
 
 script.on_event(defines.events.on_script_path_request_finished, function(event)
-    local request_data = global.path_requests[event.id]
+    local request_data = storage.path_requests[event.id]
     if not request_data then
         game.print("No request data found for ID: " .. event.id)
         return
     end
 
-    -- local player = global.agent_characters[request_data]
+    -- local player = storage.agent_characters[request_data]
     -- if not player then
         -- game.print("No player found for request ID: " .. event.id)
         -- return
     -- end
 
     if event.path then
-        global.paths[event.id] = event.path
+        storage.paths[event.id] = event.path
     elseif event.try_again_later then
-        global.paths[event.id] = "busy"
+        storage.paths[event.id] = "busy"
         -- game.print("Pathfinder busy for request ID: " .. event.id)
     else
-        global.paths[event.id] = "not_found"
+        storage.paths[event.id] = "not_found"
         -- game.print("Path not found for request ID: " .. event.id)
     end
 end)

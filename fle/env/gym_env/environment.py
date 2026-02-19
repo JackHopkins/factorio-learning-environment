@@ -1,3 +1,5 @@
+import logging
+
 import gym
 import numpy as np
 from gym import spaces
@@ -18,8 +20,12 @@ from fle.env.gym_env.observation import (
     GameInfo,
     AgentMessage,
     TaskInfo,
+    CharacterPosition,
 )
+
 from fle.eval.tasks import TaskABC
+
+logger = logging.getLogger(__name__)
 
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
@@ -140,6 +146,15 @@ class ObsSpaces:
         }
     )
 
+    # Character position structure
+    CHARACTER_POSITION = spaces.Dict(
+        {
+            "agent_idx": POSITIVE_INT,
+            "x": SCORE_FLOAT,  # Can be negative coordinates
+            "y": SCORE_FLOAT,  # Can be negative coordinates
+        }
+    )
+
     # Technology structure
     TECHNOLOGY = spaces.Dict(
         {
@@ -214,7 +229,7 @@ class FactorioGymEnv(gym.Env):
         task: Optional[TaskABC] = None,
         error_penalty: float = 0.0,
         pause_after_action: bool = True,
-        enable_vision: bool = False,
+        enable_vision: bool = True,
     ):
         super().__init__()
 
@@ -255,6 +270,8 @@ class FactorioGymEnv(gym.Env):
                 "game_info": ObsSpaces.GAME_INFO,
                 # Current score
                 "score": ObsSpaces.SCORE_FLOAT,
+                # Automated score
+                "automated_score": ObsSpaces.SCORE_FLOAT,
                 # Production flows
                 "flows": ObsSpaces.FLOWS,
                 # Task verification status
@@ -265,6 +282,8 @@ class FactorioGymEnv(gym.Env):
                 "serialized_functions": spaces.Sequence(ObsSpaces.SERIALIZED_FUNCTION),
                 # Task information and objectives
                 "task_info": ObsSpaces.TASK_INFO,
+                # Character positions for all agents
+                "character_positions": spaces.Sequence(ObsSpaces.CHARACTER_POSITION),
             }
         )
 
@@ -283,10 +302,15 @@ class FactorioGymEnv(gym.Env):
         # Render map image if vision is enabled
         map_image = ""
         if self.enable_vision:
-            map_image = namespace._render_simple().to_base64()
+            map_image = namespace._render().to_base64()
 
         # Get entity observations
-        entities = namespace.get_entities()
+        try:
+            entities = namespace.get_entities()
+        except Exception as e:
+            logger.warning(f"Error getting entities: {e}")
+            raise Exception("Error getting entities while getting observation") from e
+
         entity_obs = [str(e) for e in entities]
 
         # Get inventory observations
@@ -362,6 +386,12 @@ class FactorioGymEnv(gym.Env):
                 trajectory_length=self.task.trajectory_length,
             )
 
+        # Get character positions from all namespaces
+        character_positions = []
+        for i, ns in enumerate(self.instance.namespaces):
+            pos = ns.player_location
+            character_positions.append(CharacterPosition(agent_idx=i, x=pos.x, y=pos.y))
+
         observation = Observation(
             raw_text=response.response if response else "",
             map_image=map_image,  # Base64 encoded PNG or empty string
@@ -370,11 +400,13 @@ class FactorioGymEnv(gym.Env):
             research=research_obs,
             game_info=game_info,
             score=response.score if response else 0.0,
+            automated_score=response.automated_score if response else 0.0,
             flows=flows_obs,
             task_verification=task_verification,
             messages=messages_obs,
             serialized_functions=serialized_functions,
             task_info=task_info,
+            character_positions=character_positions,
         )
 
         # Store observation for next step
@@ -413,7 +445,7 @@ class FactorioGymEnv(gym.Env):
 
         # Execute the action
         initial_score, eval_time, result = self.instance.eval(
-            action.code, agent_idx=agent_idx, timeout=60
+            action.code, agent_idx=agent_idx, timeout=120
         )
         # Check for errors
         error_occurred = "error" in result.lower() or "exception: " in result.lower()
@@ -431,7 +463,9 @@ class FactorioGymEnv(gym.Env):
             )
             terminated = task_success.success
 
-        production_score, _ = namespace.score()
+        production_score, automated_production_score = namespace.score()
+        if not automated_production_score:
+            automated_production_score = 0
         # Calculate reward
         if task_success and REWARD_OVERRIDE_KEY in task_success.meta:
             reward = task_success.meta[REWARD_OVERRIDE_KEY]
@@ -449,6 +483,7 @@ class FactorioGymEnv(gym.Env):
             code=f"```python\n{action.code}\n```",
             created_at=datetime.datetime.now(),
             score=reward,
+            automated_score=automated_production_score,
             achievements=achievements,
             step=0,
             ticks=self.instance.get_elapsed_ticks(),
@@ -460,7 +495,10 @@ class FactorioGymEnv(gym.Env):
         )
 
         # Get observation for the acting agent
-        observation = self.get_observation(action.agent_idx, response)
+        try:
+            observation = self.get_observation(action.agent_idx, response)
+        except Exception as e:
+            raise Exception(f"Error getting observation: {e}") from e
 
         # Get additional info
         info = {
@@ -474,6 +512,8 @@ class FactorioGymEnv(gym.Env):
             "output_game_state": output_game_state,
             "achievements": achievements,
             "production_score": production_score,
+            "automated_production_score": automated_production_score,
+            "policy_execution_time": eval_time,  # Time for Python code execution (seconds)
         }
 
         # pause the game until the next step if this is part of a trajectory
@@ -510,8 +550,31 @@ class FactorioGymEnv(gym.Env):
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
         observation = self.get_observation(0).to_dict()
-        return observation  # Return observation for first agent
+        info = {}  # Additional info dict per Gym API
+        return observation, info  # Return (observation, info) tuple per Gym API
 
     def close(self):
         """Clean up resources"""
         self.instance.cleanup()
+
+    def background_step(self, step: int = 10):
+        """
+        Clear all enemy units from the game. Request to generate more chunks of the map.
+
+        Uses RCON to send Lua commands that:
+        1. Kill all enemy units (biters, spitters)
+        2. Disable enemy expansion and evolution (optional, via global.remove_enemies)
+        3. Request to generate more chunks of the map.
+        """
+        try:
+            # Kill all enemy units - this is the fast approach
+            kill_cmd = '/c local surface = game.player.surface; for key, entity in pairs(surface.find_entities_filtered({force="enemy"})) do; entity.destroy(); end'
+            chunk_cmd = f"/c game.players[0].surface.request_to_generate_chunks({{x=0,y=0}}, {step})"
+            self.instance.rcon_client.send_commands(
+                {"kill_cmd": kill_cmd, "chunk_cmd": chunk_cmd}
+            )
+        except Exception as e:
+            # Don't fail the step if enemy clearing fails
+            import logging
+
+            logging.getLogger(__name__).warning(f"Failed to clear enemies: {e}")

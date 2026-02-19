@@ -130,7 +130,7 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
             "fast": True,
             "cache_scripts": True,
             "inventory": {},
-            "all_technologies_researched": True,
+            "all_technologies_researched": False,
         }
 
         print(f"Using local Factorio container at {address}:{tcp_port}")

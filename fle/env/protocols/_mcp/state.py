@@ -110,7 +110,7 @@ class FactorioMCPState:
             # Ensure agent characters exist (removed one-time associate command)
             # Check if agent characters exist, if not create them
             char_check = instance.rcon_client.send_command(
-                "/c rcon.print(global.agent_characters and #global.agent_characters or 0)"
+                "/c rcon.print(storage.agent_characters and #storage.agent_characters or 0)"
             )
 
             if int(char_check) == 0:

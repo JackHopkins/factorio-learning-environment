@@ -1,12 +1,12 @@
 -- Load research state
-global.actions.load_research_state = function(player_index, research_state)
-    local player = global.agent_characters[player_index]
+storage.actions.load_research_state = function(player_index, research_state)
+    local player = storage.agent_characters[player_index]
     local force = player.force
 
     -- Reset all research first
     for _, tech in pairs(force.technologies) do
         tech.researched = false
-        force.set_saved_technology_progress(tech.name, nil)
+        tech.saved_progress = 0
         --tech.enabled = false
     end
 
@@ -24,7 +24,10 @@ global.actions.load_research_state = function(player_index, research_state)
     end
 
     for name, progress in pairs(research_state.progress) do
-        force.set_saved_technology_progress(name, progress)
+        local tech = force.technologies[name]
+        if tech then
+            tech.saved_progress = progress
+        end
     end
 
     -- Restore current research and progress

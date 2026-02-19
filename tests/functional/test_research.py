@@ -37,6 +37,14 @@ def game(instance):
         inventory=initial_inventory,
     )
     instance.reset()
+    # In Factorio 2.0, steam-power and automation-science-pack are trigger techs
+    # (zero ingredients) that can't be researched via labs. Pre-research them.
+    instance.rcon_client.send_command(
+        '/sc game.forces.player.technologies["steam-power"].researched=true'
+    )
+    instance.rcon_client.send_command(
+        '/sc game.forces.player.technologies["automation-science-pack"].researched=true'
+    )
     yield instance.namespace
 
 
@@ -95,11 +103,8 @@ def test_craft_automation_packs_and_research(game):
         f"Failed to insert science packs into Lab. Current count: {lab_inventory.get(Prototype.AutomationSciencePack)}"
     )
 
-    # Start researching (assuming a function to start research exists)
-    # initial_research = game.get_research_progress(Technology.Automation)  # Get initial research progress
-    ingredients1 = game.set_research(
-        Technology.Automation
-    )  # Start researching automation technology
+    # Start researching automation technology
+    ingredients1 = game.set_research(Technology.Automation)
 
     game.get_entities()
 

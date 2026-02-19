@@ -40,9 +40,10 @@ local function find_offshore_pump_position(player, center_pos)
                     }
 
                     -- Check if position is already occupied
+                    -- Factorio 2.0: collision_mask expects a collision layer name string
                     local entities = player.surface.find_entities_filtered{
                         position = check_pos,
-                        collision_mask = "player-layer", 
+                        collision_mask = "player",
                         invert = false
                     }
 
@@ -57,9 +58,10 @@ local function find_offshore_pump_position(player, center_pos)
                                 }
 
                                 -- Check for entities at water position
+                                -- Factorio 2.0: collision_mask expects a collision layer name string
                                 local water_entities = player.surface.find_entities_filtered{
                                     position = water_pos,
-                                    collision_mask = "water-tile",
+                                    collision_mask = "water_tile",
                                     invert = true
                                 }
 
@@ -77,10 +79,11 @@ local function find_offshore_pump_position(player, center_pos)
 
                                         if player.surface.can_place_entity(placement) then
                                             -- Final collision check for the exact pump dimensions
+                                            -- Factorio 2.0: collision_mask expects a collision layer name string
                                             local final_check = player.surface.find_entities_filtered{
                                                 area = {{check_pos.x - 0.5, check_pos.y - 0.5},
                                                        {check_pos.x + 0.5, check_pos.y + 0.5}},
-                                                collision_mask = "player-layer"
+                                                collision_mask = "player"
                                             }
 
                                             if #final_check == 0 then
@@ -103,15 +106,16 @@ local function find_offshore_pump_position(player, center_pos)
     return nil
 end
 
-global.actions.place_entity = function(player_index, entity, direction, x, y, exact)
-    local player = global.agent_characters[player_index]
+storage.actions.place_entity = function(player_index, entity, direction, x, y, exact)
+    -- Ensure we have a valid character, recreating if necessary
+    local player = storage.utils.ensure_valid_character(player_index)
     local position = {x = x, y = y}
 
     if not direction then
         direction = 0
     end
 
-    local entity_direction = global.utils.get_entity_direction(entity, direction)
+    local entity_direction = storage.utils.get_entity_direction(entity, direction)
 
     -- Common validation functions
     local function validate_distance()
@@ -130,7 +134,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     end
 
     local function validate_entity()
-        if game.entity_prototypes[entity] == nil then
+        if prototypes.entity[entity] == nil then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
             error("\""..name .. " isn't something that exists. Did you make a typo?\"")
         end
@@ -140,7 +144,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
         local count = player.get_item_count(entity)
         if count == 0 then
             local name = entity:gsub(" ", "_"):gsub("-", "_")
-            error("\"No " .. name .. " in inventory.\"")
+            local inv_contents = storage.utils.format_inventory_for_error(player)
+            error("\"No " .. name .. " in inventory. Current inventory: " .. inv_contents .. "\"")
         end
     end
 
@@ -161,7 +166,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             validate_inventory()
 
             -- Avoid entity at target position
-            global.utils.avoid_entity(player_index, entity, position)
+            storage.utils.avoid_entity(player_index, entity, position)
 
             -- Perform the actual placement
             local placed_entity = player.surface.create_entity{
@@ -174,7 +179,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             if placed_entity then
                 player.remove_item{name = entity, count = 1}
                 player.cursor_ghost = nil  -- Clear the ghost
-                return global.utils.serialize_entity(placed_entity)
+                return storage.utils.serialize_entity(placed_entity)
             else
                 error("\"Failed to place entity after delay\"")
             end
@@ -185,7 +190,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
 
     -- Fast placement implementation (existing logic)
     local function fast_place()
-        local entity_prototype = game.entity_prototypes[entity]
+        local entity_prototype = prototypes.entity[entity]
 
         if entity == 'offshore-pump' then
             exact = false
@@ -218,9 +223,9 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 end
             end
         end
-        global.utils.avoid_entity(player_index, entity, position, direction)
+        storage.utils.avoid_entity(player_index, entity, position, direction)
         -- Use surface based validation equivalent to LuaPlayer.can_place_entity
-        local can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+        local can_build = storage.utils.can_place_entity(player, entity, position, entity_direction)
 
         if not can_build then
             if not exact then
@@ -230,9 +235,12 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    entity_direction = global.utils.get_entity_direction(entity, pos_dir['direction']/2)
-                    new_position = pos_dir['position']
-                    found_position = true
+                    if pos_dir then
+                        -- Factorio 2.0: direction is already in 16-direction format, no division needed
+                        entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction'])
+                        new_position = pos_dir['position']
+                        found_position = true
+                    end
                 else
                     -- Existing search logic for nearby valid position
                     local radius = 1
@@ -243,8 +251,8 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                             for dy = -radius, radius do
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
-                                    global.utils.avoid_entity(player_index, entity, position, direction)
-                                    can_build = global.utils.can_place_entity(player, entity, new_position, entity_direction)
+                                    storage.utils.avoid_entity(player_index, entity, position, direction)
+                                    can_build = storage.utils.can_place_entity(player, entity, new_position, entity_direction)
                                     if can_build then
                                         found_position = true
                                         break
@@ -267,7 +275,7 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     if have_built then
                         player.remove_item{name = entity, count = 1}
                         -- game.print("Placed " .. entity .. " at " .. new_position.x .. ", " .. new_position.y)
-                        return global.actions.get_entity(player_index, entity, new_position.x, new_position.y)
+                        return storage.actions.get_entity(player_index, entity, new_position.x, new_position.y)
                     end
                 else
                     error("\"Could not find a suitable position to place " .. entity .. " near the target location.\"")
@@ -277,20 +285,26 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                 local area = {{position.x - 0.25, position.y - 0.25}, {position.x + 0.25, position.y + 0.25}}
                 local entities = player.surface.find_entities_filtered{area = area, force = "player"}
                 if #entities ~= 0 then
+                    -- Build a list of blocking entity names and positions
+                    local blocking_info = {}
+                    for _, blocking_entity in ipairs(entities) do
+                        table.insert(blocking_info, blocking_entity.name .. " at x=" .. blocking_entity.position.x .. " y=" .. blocking_entity.position.y)
+                    end
+                    local blocking_str = table.concat(blocking_info, ", ")
                     if #entities == 1 then
-                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there is an existing object in the way\"")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location x=" .. position.x .. " y=" .. position.y .. ", as there is an existing object in the way: " .. blocking_str .. "\"")
                     else
-                        error("\"Could not find a suitable position to place " .. entity .. " at the target location, as there are existing objects in the way\"")
+                        error("\"Could not find a suitable position to place " .. entity .. " at the target location x=" .. position.x .. " y=" .. position.y .. ", as there are existing objects in the way: " .. blocking_str .. "\"")
                     end
                 end
             end
 
-            global.utils.avoid_entity(player_index, entity, position, direction)
+            storage.utils.avoid_entity(player_index, entity, position, direction)
 
-            can_build = global.utils.can_place_entity(player, entity, position, entity_direction)
+            can_build = storage.utils.can_place_entity(player, entity, position, entity_direction)
 
             if not can_build then
-                local entity_prototype = game.entity_prototypes[entity]
+                local entity_prototype = prototypes.entity[entity]
                 local entity_box = entity_prototype.collision_box
                 local entity_width = 1
                 local entity_height = 1
@@ -312,7 +326,44 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
                     time_to_live = 60000
                 }
 
-                error("\"Cannot place " .. entity .. " at the target location - something is in the way or part of the terrain is unplaceable (water)\"")
+                -- Find what's blocking placement for a better error message
+                local blocking_area = {
+                    {position.x - entity_width / 2, position.y - entity_height / 2},
+                    {position.x + entity_width / 2, position.y + entity_height / 2}
+                }
+                local blocking_entities = player.surface.find_entities_filtered{area = blocking_area}
+                local blocking_info = {}
+                for _, blocking_entity in ipairs(blocking_entities) do
+                    if blocking_entity.name ~= "character" then
+                        table.insert(blocking_info, blocking_entity.name .. " at x=" .. blocking_entity.position.x .. " y=" .. blocking_entity.position.y)
+                    end
+                end
+
+                -- Check for water tiles
+                local has_water = false
+                for check_x = math.floor(blocking_area[1][1]), math.ceil(blocking_area[2][1]) do
+                    for check_y = math.floor(blocking_area[1][2]), math.ceil(blocking_area[2][2]) do
+                        local tile = player.surface.get_tile(check_x, check_y)
+                        if tile.name == "water" or tile.name == "deepwater" or tile.name == "water-green" or tile.name == "deepwater-green" or tile.name == "water-shallow" or tile.name == "water-mud" then
+                            has_water = true
+                            break
+                        end
+                    end
+                    if has_water then break end
+                end
+
+                local error_msg = "\"Cannot place " .. entity .. " at x=" .. position.x .. " y=" .. position.y
+                if #blocking_info > 0 then
+                    error_msg = error_msg .. " - blocked by: " .. table.concat(blocking_info, ", ")
+                end
+                if has_water then
+                    error_msg = error_msg .. " - terrain includes water"
+                end
+                if #blocking_info == 0 and not has_water then
+                    error_msg = error_msg .. " - something is in the way or terrain is unplaceable"
+                end
+                error_msg = error_msg .. "\""
+                error(error_msg)
             end
         end
 
@@ -328,8 +379,14 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             -- game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
             -- Find and return the placed entity
-            local width = 0.5
-            local height = 0.5
+            -- Use the entity prototype's tile dimensions for search area
+            local prototype = prototypes.entity[entity]
+            local width = 1
+            local height = 1
+            if prototype and prototype.tile_width then
+                width = prototype.tile_width / 2 + 0.5
+                height = prototype.tile_height / 2 + 0.5
+            end
             local target_area = {
                 {position.x - width, position.y - height},
                 {position.x + width, position.y + height}
@@ -337,9 +394,49 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
             local entities = player.surface.find_entities_filtered{area = target_area, name = entity}
 
             if #entities > 0 then
-                return global.utils.serialize_entity(entities[1])
+                return storage.utils.serialize_entity(entities[1])
             end
             error("\"Could not find placed entity\"")
+        else
+            -- create_entity returned nil - collect diagnostic information
+            local diag = {}
+            diag.entity_name = entity
+            diag.position = {x = position.x, y = position.y}
+            diag.direction = entity_direction
+            diag.can_place = player.surface.can_place_entity{name = entity, position = position, force = player.force, direction = entity_direction}
+
+            -- Check for blocking entities
+            local prototype = prototypes.entity[entity]
+            local width = 1
+            local height = 1
+            if prototype and prototype.tile_width then
+                width = prototype.tile_width / 2 + 0.5
+                height = prototype.tile_height / 2 + 0.5
+            end
+            local area = {{position.x - width, position.y - height}, {position.x + width, position.y + height}}
+            local blocking = player.surface.find_entities_filtered{area = area}
+            local blocking_names = {}
+            for _, b in ipairs(blocking) do
+                if b.name ~= "character" then
+                    table.insert(blocking_names, b.name .. " at (" .. b.position.x .. "," .. b.position.y .. ")")
+                end
+            end
+            diag.blocking_entities = blocking_names
+
+            -- Check terrain
+            local tile = player.surface.get_tile(position.x, position.y)
+            diag.tile_name = tile.name
+
+            local error_msg = string.format(
+                "\"create_entity returned nil for %s at (%s, %s). Diagnostics: can_place=%s, tile=%s, blocking=%s\"",
+                entity,
+                position.x,
+                position.y,
+                tostring(diag.can_place),
+                diag.tile_name,
+                #blocking_names > 0 and table.concat(blocking_names, ", ") or "none"
+            )
+            error(error_msg)
         end
     end
 
@@ -347,10 +444,10 @@ global.actions.place_entity = function(player_index, entity, direction, x, y, ex
     validate_distance()
     validate_entity()
     validate_inventory()
-    global.utils.avoid_entity(player_index, entity, position)
+    storage.utils.avoid_entity(player_index, entity, position)
 
-    -- Choose placement method based on global.fast setting
-    if global.fast then
+    -- Choose placement method based on storage.fast setting
+    if storage.fast then
         return fast_place()
     else
         local result = slow_place()

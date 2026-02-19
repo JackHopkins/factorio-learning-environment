@@ -2,16 +2,21 @@
 
 from typing import Dict, Final
 
-# Direction mappings
-DIRECTIONS: Final[Dict[int, str]] = {0: "north", 2: "east", 4: "south", 6: "west"}
+# Direction mappings - Factorio 2.0 uses 16-direction system (0, 4, 8, 12 for cardinals)
+DIRECTIONS: Final[Dict[int, str]] = {0: "north", 4: "east", 8: "south", 12: "west"}
 
-RELATIVE_DIRECTIONS: Final[Dict[int, str]] = {0: "up", 2: "right", 4: "down", 6: "left"}
+RELATIVE_DIRECTIONS: Final[Dict[int, str]] = {
+    0: "up",
+    4: "right",
+    8: "down",
+    12: "left",
+}
 
-# Direction constants
+# Direction constants - Factorio 2.0: directions are doubled
 NORTH: Final[int] = 0
-EAST: Final[int] = 2
-SOUTH: Final[int] = 4
-WEST: Final[int] = 6
+EAST: Final[int] = 4
+SOUTH: Final[int] = 8
+WEST: Final[int] = 12
 
 VERTICAL: Final[list[int]] = [NORTH, SOUTH]
 HORIZONTAL: Final[list[int]] = [EAST, WEST]
@@ -99,6 +104,7 @@ RENDERERS: Final[Dict[str, str]] = {
     "pipe": "pipe",
     "pipe-to-ground": "pipe-to-ground",
     "stack-inserter": "inserter",
+    "bulk-inserter": "inserter",
     "long-handed-inserter": "inserter",
     "fast-inserter": "inserter",
     "inserter": "inserter",

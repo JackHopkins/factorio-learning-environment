@@ -116,5 +116,9 @@
     "overload_multipliers": [2, 3, 4],
     "negative_path_cache_delay_interval": 20
   },
-  "max_failed_behavior_count": 3
+  "max_failed_behavior_count": 3,
+  "asteroids": {
+    "spawning_rate": 1,
+    "max_ray_portals_expanded_per_tick": 100
+  }
 }

@@ -1,9 +1,9 @@
-global.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
+storage.actions.load_blueprint = function(player_index, bp, offset_x, offset_y)
     --- https://forums.factorio.com/viewtopic.php?t=111437
     --- by CharacterOverflow @ Wed Feb 21, 2024 2:34 pm
 
     local s = game.get_surface('nauvis');
-    local f = global.agent_characters[player_index].force
+    local f = storage.agent_characters[player_index].force
     f.research_all_technologies();
 
     -- Creates a blueprint entitiy in-game - it's weird, but it works. This blueprint entity has the blueprint loaded we want to run.

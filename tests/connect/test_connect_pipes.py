@@ -176,9 +176,11 @@ def test_connect_offshore_pump_to_boiler(game):
     )
 
     game.move_to(Position(x=-30, y=0))
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
     offshore_pump = game.place_entity(
         Prototype.OffshorePump,
-        position=game.nearest(Resource.Water),
+        position=water_pos,
         direction=Direction.LEFT,
     )
     boiler = game.place_entity_next_to(

@@ -1,5 +1,5 @@
-global.actions.render_simple = function(player_index, method, arg1, arg2, arg3, arg4)
-    local player = global.agent_characters[player_index]
+storage.actions.render_simple = function(player_index, method, arg1, arg2, arg3, arg4)
+    local player = storage.agent_characters[player_index]
     local position, bounding_box, radius
 
     if method == "bounding_box" then

@@ -14,22 +14,33 @@ from unittest.mock import MagicMock
 import pytest
 from PIL import Image as PILImage
 
-from fle.commons.cluster_ips import get_local_container_ips
-from fle.env.protocols._mcp.resources import (
-    render_at,
-    entities,
-    inventory,
-    position,
-    recipe,
-    manual,
-    schema,
-    status,
-    prototypes,
+# Skip all tests in this module if fastmcp is not installed
+import importlib.util
+
+_FASTMCP_AVAILABLE = importlib.util.find_spec("fastmcp") is not None
+
+pytestmark = pytest.mark.skipif(
+    not _FASTMCP_AVAILABLE, reason="fastmcp is not installed"
 )
-from fle.env.protocols._mcp.tools import reconnect
-from fle.env.protocols._mcp.init import state, initialize_session
+
 from fle.env.instance import FactorioInstance
-from mcp.types import ImageContent
+
+if _FASTMCP_AVAILABLE:
+    from fle.commons.cluster_ips import get_local_container_ips
+    from fle.env.protocols._mcp.resources import (
+        render_at,
+        entities,
+        inventory,
+        position,
+        recipe,
+        manual,
+        schema,
+        status,
+        prototypes,
+    )
+    from fle.env.protocols._mcp.tools import reconnect
+    from fle.env.protocols._mcp.init import state, initialize_session
+    from mcp.types import ImageContent
 
 from dotenv import load_dotenv
 
@@ -125,7 +136,7 @@ class TestMCPResources:
                 image_data = base64.b64decode(result.data)
                 img = PILImage.open(io.BytesIO(image_data))
                 print(f"\nImage dimensions: {img.size}, mode: {img.mode}")
-                img.show()
+                # img.show()
         elif isinstance(result, (str, bytes)):
             print(f"Render returned: {type(result)}")
 

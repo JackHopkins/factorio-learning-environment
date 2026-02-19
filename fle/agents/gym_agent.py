@@ -189,6 +189,7 @@ class GymAgent(AgentABC):
                 max_tokens=self.generation_params.max_tokens,
                 model=self.generation_params.model,
             )
+            print(model_response)
             policy = parse_response(model_response)
             if not policy:
                 raise Exception("Policy not valid Python. Skipping.")

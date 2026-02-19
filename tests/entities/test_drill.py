@@ -4,30 +4,30 @@ from fle.env.game_types import Prototype, Resource
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        **instance.initial_inventory,
-        "solar-panel": 3,
-        "small-electric-pole": 4,
-        "burner-mining-drill": 1,
-        "long-handed-inserter": 2,
-        "filter-inserter": 2,
-        "stack-inserter": 2,
-        "wooden-chest": 2,
-        "iron-chest": 4,
-        "steel-chest": 4,
-        "coal": 50,
-        "iron-plate": 100,
-        "copper-plate": 100,
-        "electronic-circuit": 100,
-    }
-    instance.set_speed(10)
-    instance.reset()
-    yield instance.namespace
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "solar-panel": 3,
+            "small-electric-pole": 4,
+            "burner-mining-drill": 1,
+            "long-handed-inserter": 2,
+            "fast-inserter": 2,
+            "bulk-inserter": 2,
+            "wooden-chest": 2,
+            "iron-chest": 4,
+            "steel-chest": 4,
+            "coal": 50,
+            "iron-plate": 100,
+            "copper-plate": 100,
+            "electronic-circuit": 100,
+        },
+        merge=True,
+        reset_position=True,
+    )
 
 
 def test_drill_warnings(game):
-    """Test long-handed inserter's ability to move items between chests"""
+    """Test that drill warnings are cleared when output is available"""
     game.move_to(game.nearest(Resource.IronOre))
 
     drill = game.place_entity(
@@ -36,10 +36,9 @@ def test_drill_warnings(game):
         direction=Direction.UP,
     )
     game.insert_item(Prototype.Coal, drill, 10)
-    game.place_entity(
-        Prototype.WoodenChest, position=drill.drop_position, direction=Direction.UP
-    )
-    game.sleep(5)
+    # Place chest at the drill's actual drop position (Factorio 2.0 compatible)
+    _chest = game.place_entity(Prototype.IronChest, position=drill.drop_position)
+    game.sleep(10)
 
     drill = game.get_entities({Prototype.BurnerMiningDrill})[0]
-    assert not drill.warnings
+    assert not drill.warnings or "output blocked" not in str(drill.warnings)

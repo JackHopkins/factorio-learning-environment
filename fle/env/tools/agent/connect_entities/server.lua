@@ -101,12 +101,15 @@ function math.round(x)
 end
 
 local function has_valid_fluidbox(entity)
-    return entity.fluidbox and #entity.fluidbox > 0 and entity.fluidbox[1] and entity.fluidbox[1].get_fluid_system_id
+    -- Factorio 2.0: fluidbox methods are on the LuaFluidBox object, not individual elements
+    -- Also: get_fluid_system_id -> get_fluid_segment_id
+    return entity.fluidbox and #entity.fluidbox > 0 and entity.fluidbox[1] and entity.fluidbox.get_fluid_segment_id
 end
 
 local function are_fluidboxes_connected(entity1, entity2)
     if has_valid_fluidbox(entity1) and has_valid_fluidbox(entity2) then
-        return entity1.fluidbox[1].get_fluid_system_id() == entity2.fluidbox[1].get_fluid_system_id()
+        -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+        return entity1.fluidbox.get_fluid_segment_id(1) == entity2.fluidbox.get_fluid_segment_id(1)
     end
     return false
 end
@@ -315,7 +318,8 @@ local function is_placeable(position)
 
     local entities = game.surfaces[1].find_entities_filtered{
         position = position,
-        collision_mask = "player-layer"
+        -- Factorio 2.0: collision_mask expects a collision layer name string
+        collision_mask = "player"
     }
     if #entities == 1 then
         if entities[1].name == "character" then
@@ -777,19 +781,21 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
     if #connection_types == 1 and connection_types[1] == 'pipe-to-ground' then
         
         -- Calculate the direction from start to end.
+        -- Factorio 2.0: get_direction returns 0, 4, 8, 12 - pass directly to get_entity_direction
         local dir = storage.utils.get_direction(start_position, end_position)
-        local entrance_dir = storage.utils.get_entity_direction(underground_type, dir / 2)
-        
+        local entrance_dir = storage.utils.get_entity_direction(underground_type, dir)
+
         -- Place the underground entrance at the start position.
         place_at_position(player, underground_type, start_position, entrance_dir,
                           serialized_entities, dry_run, counter_state, false)
-        
+
         local exit_dir
         if underground_type == "pipe-to-ground" then
           -- For pipe-to-ground, rotate the direction 180° for the exit.
-          exit_dir = storage.utils.get_entity_direction(underground_type, (dir / 2 + 2) % 4)
+          -- Factorio 2.0: rotate 180° by adding 8 and mod 16
+          exit_dir = storage.utils.get_entity_direction(underground_type, (dir + 8) % 16)
         else
-          exit_dir = storage.utils.get_entity_direction(underground_type, dir / 2)
+          exit_dir = storage.utils.get_entity_direction(underground_type, dir)
         end
         
         -- Place the underground exit at the end position.
@@ -830,9 +836,10 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             while current_index < section.start_index do
                 local current_pos = path[current_index].position
                 local next_pos = path[current_index + 1].position
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
                 local dir = storage.utils.get_direction(current_pos, next_pos)
                 place_at_position(player, default_connection_type, current_pos,
-                        storage.utils.get_entity_direction(default_connection_type, dir/2),
+                        storage.utils.get_entity_direction(default_connection_type, dir),
                         serialized_entities, dry_run, counter_state, false)
                 current_index = current_index + 1
                 if current_index > MAX_INDEX_PLACEMENT then
@@ -844,8 +851,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             local margin_pos = path[section.start_index].position
             local margin_next_pos = path[section.start_index + 1].position
             local margin_dir = storage.utils.get_direction(margin_pos, margin_next_pos)
+            -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
             place_at_position(player, default_connection_type, margin_pos,
-                    storage.utils.get_entity_direction(default_connection_type, margin_dir/2),
+                    storage.utils.get_entity_direction(default_connection_type, margin_dir),
                     serialized_entities, dry_run, counter_state, false)
 
             -- Split the section into multiple underground segments, limited by remaining_sections
@@ -860,15 +868,16 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 local exit_pos = path[segment.exit_index].position
                 local dir = storage.utils.get_direction(entrance_pos, exit_pos)
 
-                local entity_dir = storage.utils.get_entity_direction(underground_type, dir/2)
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
+                local entity_dir = storage.utils.get_entity_direction(underground_type, dir)
 
                 place_at_position(player, underground_type, entrance_pos,
                         entity_dir,
                         serialized_entities, dry_run, counter_state, false)
 
-                -- Adjust direction for pipe-to-ground exit and place exit pipe
+                -- Adjust direction for pipe-to-ground exit (rotate 180°)
                 if underground_type == 'pipe-to-ground' then
-                    entity_dir = storage.utils.get_entity_direction(underground_type, (dir/2 + 2)%4)
+                    entity_dir = storage.utils.get_entity_direction(underground_type, (dir + 8) % 16)
                 end
 
                 place_at_position(player, underground_type, exit_pos,
@@ -883,8 +892,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                 local final_margin_pos = path[section.end_index].position
                 local final_prev_pos = path[section.end_index - 1].position
                 local final_dir = storage.utils.get_direction(final_prev_pos, final_margin_pos)
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
                 place_at_position(player, default_connection_type, final_margin_pos,
-                        storage.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        storage.utils.get_entity_direction(default_connection_type, final_dir),
                         serialized_entities, dry_run, counter_state, false)
             end
 
@@ -899,9 +909,10 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         while current_index < #path do
             local current_pos = path[current_index].position
             local next_pos = path[current_index + 1].position
+            -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
             local dir = storage.utils.get_direction(current_pos, next_pos)
             place_at_position(player, default_connection_type, current_pos,
-                    storage.utils.get_entity_direction(default_connection_type, dir/2),
+                    storage.utils.get_entity_direction(default_connection_type, dir),
                     serialized_entities, dry_run, counter_state, false)
             current_index = current_index + 1
         end
@@ -910,9 +921,10 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
         if current_index == #path and not path[#path].has_entity then
             local final_pos = path[#path].position
             local prev_pos = path[#path-1].position
+            -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
             local dir = storage.utils.get_direction(prev_pos, final_pos)
             place_at_position(player, default_connection_type, final_pos,
-                    storage.utils.get_entity_direction(default_connection_type, dir/2),
+                    storage.utils.get_entity_direction(default_connection_type, dir),
                     serialized_entities, dry_run, counter_state, false)
         end
     else
@@ -946,7 +958,8 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             for i = 1, #path, step_size do
                 local current_pos = path[i].position
                 local dir = storage.utils.get_direction(current_pos, path[math.min(i + step_size, #path)].position)
-                local entity_dir = storage.utils.get_entity_direction(default_connection_type, dir/2)
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
+                local entity_dir = storage.utils.get_entity_direction(default_connection_type, dir)
 
                 -- Place the pole
                 local placed_entity = place_at_position(player, default_connection_type, current_pos, entity_dir, serialized_entities, dry_run, counter_state)
@@ -968,8 +981,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
             if not dry_run and last_pole and target_entity and not are_poles_connected(last_pole, target_entity) then
                 local final_dir = storage.utils.get_direction(path[#path].position, end_position)
                 -- game.print("Placing final pole at "..serpent.line(end_position))
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
                 place_at_position(player, default_connection_type, end_position,
-                        storage.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        storage.utils.get_entity_direction(default_connection_type, final_dir),
                         serialized_entities, dry_run, counter_state)
             end
         else
@@ -979,8 +993,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
             for i = 1, #path-1, step_size do
                 local dir = storage.utils.get_direction(path[i].position, path[math.min(i + step_size, #path)].position)
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
                 local placed = place_at_position(player, default_connection_type, path[i].position,
-                        storage.utils.get_entity_direction(default_connection_type, dir/2),
+                        storage.utils.get_entity_direction(default_connection_type, dir),
                         serialized_entities, dry_run, counter_state)
                 if placed then
                     last_placed_entity = placed
@@ -1014,8 +1029,9 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
                         path[last_path_index].position
                 )
 
+                -- Factorio 2.0: get_direction returns 0/4/8/12 - pass directly
                 local final_entity = place_at_position(player, default_connection_type, end_position,
-                        storage.utils.get_entity_direction(default_connection_type, final_dir/2),
+                        storage.utils.get_entity_direction(default_connection_type, final_dir),
                         serialized_entities, dry_run, counter_state)
                         
 
@@ -1334,10 +1350,11 @@ local function are_positions_pipe_connected(start_pos, end_pos, connection_type)
         end
         
         if end_pipe and has_valid_fluidbox(end_pipe) then
-            return start_pipe.fluidbox[1].get_fluid_system_id() == end_pipe.fluidbox[1].get_fluid_system_id()
+            -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+            return start_pipe.fluidbox.get_fluid_segment_id(1) == end_pipe.fluidbox.get_fluid_segment_id(1)
         end
     end
-    
+
     return false
 end
 
@@ -1346,45 +1363,47 @@ local function serialize_pipe_group(entity)
     if not entity or not entity.valid or (entity.type ~= "pipe" and entity.type ~= "pipe-to-ground") then
         return nil
     end
-    
+
     if not has_valid_fluidbox(entity) then
         return nil
     end
-    
+
     local serialized = {}
     local visited = {}
     local queue = {entity}
     local max_search = 200
     local search_count = 0
-    local system_id = entity.fluidbox[1].get_fluid_system_id()
-    
+    -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+    local system_id = entity.fluidbox.get_fluid_segment_id(1)
+
     while #queue > 0 and search_count < max_search do
         search_count = search_count + 1
         local current_pipe = table.remove(queue, 1)
-        
+
         if not current_pipe or not current_pipe.valid then
             goto continue
         end
-        
+
         local pipe_id = current_pipe.unit_number
         if visited[pipe_id] then
             goto continue
         end
         visited[pipe_id] = true
-        
+
         -- Serialize current pipe
         table.insert(serialized, storage.utils.serialize_entity(current_pipe))
-        
+
         -- Find all connected pipes in the same fluid system
         local all_pipes = game.surfaces[1].find_entities_filtered{
             position = current_pipe.position,
             radius = 10,
             type = {"pipe", "pipe-to-ground"}
         }
-        
+
         for _, pipe in pairs(all_pipes) do
             if pipe.valid and has_valid_fluidbox(pipe) and not visited[pipe.unit_number] then
-                if pipe.fluidbox[1].get_fluid_system_id() == system_id then
+                -- Factorio 2.0: get_fluid_system_id -> get_fluid_segment_id
+                if pipe.fluidbox.get_fluid_segment_id(1) == system_id then
                     table.insert(queue, pipe)
                 end
             end

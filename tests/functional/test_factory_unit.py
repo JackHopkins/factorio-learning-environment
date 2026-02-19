@@ -103,8 +103,8 @@ def test_steam_engines(game):
     _ = game.get_entity(Prototype.AssemblingMachine1, assembler.position)
     # assert inspected_assembler.status == EntityStatus.NO_RECIPE
 
-    image = game._render(position=assembler.position, layers=Layer.ALL)
-    image.show()
+    _image = game._render(position=assembler.position, layers=Layer.ALL)
+    # image.show()
     pass
 
 

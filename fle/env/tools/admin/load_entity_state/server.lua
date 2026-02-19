@@ -151,21 +151,17 @@ storage.actions.load_entity_state = function(player, stored_json_data)
         for inv_name, contents in pairs(state.inventories or {}) do
             local inventory = nil
 
-            -- Only try to access inventories that match the entity type
+            -- Only try to access inventories that match the entity type (Factorio 2.0: unified crafter_* defines)
             if inv_name == "chest" and entity_type == "container" then
                 inventory = entity.get_inventory(defines.inventory.chest)
-            elseif inv_name == "furnace_source" and entity_type == "furnace" then
-                inventory = entity.get_inventory(defines.inventory.furnace_source)
-            elseif inv_name == "furnace_result" and entity_type == "furnace" then
-                inventory = entity.get_inventory(defines.inventory.furnace_result)
+            elseif inv_name == "crafter_input" and (entity_type == "furnace" or entity_type == "assembling-machine" or entity_type == "rocket-silo") then
+                inventory = entity.get_inventory(defines.inventory.crafter_input)
+            elseif inv_name == "crafter_output" and (entity_type == "furnace" or entity_type == "assembling-machine" or entity_type == "rocket-silo") then
+                inventory = entity.get_inventory(defines.inventory.crafter_output)
             elseif inv_name == "fuel" and entity.burner then
                 inventory = entity.get_inventory(defines.inventory.fuel)
             elseif inv_name == "burnt_result" and entity.burner then
                 inventory = entity.get_inventory(defines.inventory.burnt_result)
-            elseif inv_name == "assembling_machine_input" and entity_type == "assembling-machine" then
-                inventory = entity.get_inventory(defines.inventory.assembling_machine_input)
-            elseif inv_name == "assembling_machine_output" and entity_type == "assembling-machine" then
-                inventory = entity.get_inventory(defines.inventory.assembling_machine_output)
             elseif inv_name == "turret_ammo" and entity_type == "ammo-turret" then
                 inventory = entity.get_inventory(defines.inventory.turret_ammo)
             elseif inv_name == "lab_input" and entity_type == "lab" then

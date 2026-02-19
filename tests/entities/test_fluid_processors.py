@@ -189,6 +189,8 @@ def test_end_to_end_lubricant_tanks(game):
     game.move_to(oil_refinery_pos)
     oil_refinery = game.place_entity(Prototype.OilRefinery, position=oil_refinery_pos)
     game.set_entity_recipe(oil_refinery, RecipeName.AdvancedOilProcessing)
+    # Get the refinery entity with output connection points after setting recipe
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
 
     setup_power(game, oil_refinery_pos.down(10), oil_refinery)
 
@@ -219,18 +221,33 @@ def test_end_to_end_lubricant_tanks(game):
         Prototype.StorageTank, position=storage_tank_3_pos
     )
 
+    # Use explicit output connection points to ensure deterministic fluid routing
+    output_petroleum_gas = [
+        x for x in oil_refinery.output_connection_points if x.type == "petroleum-gas"
+    ][0]
+    output_light_oil = [
+        x for x in oil_refinery.output_connection_points if x.type == "light-oil"
+    ][0]
+    output_heavy_oil = [
+        x for x in oil_refinery.output_connection_points if x.type == "heavy-oil"
+    ][0]
+
+    # Connect specific outputs to specific tanks:
+    # storage_tank_1 gets petroleum-gas
+    # storage_tank_2 gets light-oil
+    # storage_tank_3 gets heavy-oil (for lubricant)
     game.connect_entities(
-        oil_refinery,
+        output_petroleum_gas,
         storage_tank_1,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
     game.connect_entities(
-        oil_refinery,
+        output_light_oil,
         storage_tank_2,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
     game.connect_entities(
-        oil_refinery,
+        output_heavy_oil,
         storage_tank_3,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
@@ -242,7 +259,7 @@ def test_end_to_end_lubricant_tanks(game):
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
 
     # Wait for fluid to flow from the refinery to the storage tanks
-    game.sleep(10)
+    game.sleep(15)
 
     error = True
     try:
@@ -417,7 +434,32 @@ def test_multiple_positions_to_tanks_with_positions(game):
     )
 
     # Wait for fluid to flow from the refinery to the storage tanks
-    game.sleep(10)
+    # Poll until storage_tank_1 has heavy-oil (which is what we need to verify)
+    # This is more reliable than a fixed sleep time
+    max_wait_time = 60  # seconds
+    poll_interval = 2  # seconds
+    waited = 0
+    while waited < max_wait_time:
+        game.sleep(poll_interval)
+        waited += poll_interval
+        storage_tank_1 = game.get_entity(Prototype.StorageTank, storage_tank_1.position)
+        # Check if storage tank has fluid by examining its connection points
+        has_fluid = any(
+            cp.type and cp.type != ""
+            for cp in storage_tank_1.connection_points
+            if hasattr(cp, "type")
+        )
+        # Also check fluid_box if available
+        if hasattr(storage_tank_1, "fluid_box") and storage_tank_1.fluid_box:
+            fluid_amounts = [
+                f.get("amount", 0)
+                for f in storage_tank_1.fluid_box
+                if isinstance(f, dict)
+            ]
+            if any(amt > 0 for amt in fluid_amounts):
+                has_fluid = True
+        if has_fluid:
+            break
 
     chemical_plant_pos = Position(x=52.5, y=45.5)
     game.move_to(chemical_plant_pos)

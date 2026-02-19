@@ -156,10 +156,11 @@ script.on_nth_tick(15, function(event)
             local ticks_mining = game.tick - queue.current_mining.start_tick
             if ticks_mining >= 30 then
                 -- Time to finish mining
-                local inv_before = player.get_main_inventory().get_contents()
+                -- Factorio 2.0: Use compat wrapper for get_contents()
+                local inv_before = storage.utils.get_contents_compat(player.get_main_inventory())
                 local mined_ok = player.mine_entity(entity)  -- Instantly mines & adds items
                 if mined_ok then
-                    local inv_after = player.get_main_inventory().get_contents()
+                    local inv_after = storage.utils.get_contents_compat(player.get_main_inventory())
 
                     -- Figure out how many items we actually gained
                     local items_added = 0
@@ -245,7 +246,7 @@ local function find_entity_type_at_position(surface, position)
     local exact_entities = surface.find_entities_filtered{
         position = position,
         type = {"tree", "resource", "simple-entity"},--, "optimized-decorative"},
-        radius = 1  -- Tiny radius for exact position check
+        radius = 1.5  -- Slightly larger radius to include entities at boundary
     }
 
     if #exact_entities > 0 then

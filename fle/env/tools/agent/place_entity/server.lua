@@ -235,10 +235,12 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
                 -- special logic for orienting offshore pumps correctly.
                 if entity == 'offshore-pump' then
                     local pos_dir = find_offshore_pump_position(player, position)
-                    -- Factorio 2.0: direction is already in 16-direction format, no division needed
-                    entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction'])
-                    new_position = pos_dir['position']
-                    found_position = true
+                    if pos_dir then
+                        -- Factorio 2.0: direction is already in 16-direction format, no division needed
+                        entity_direction = storage.utils.get_entity_direction(entity, pos_dir['direction'])
+                        new_position = pos_dir['position']
+                        found_position = true
+                    end
                 else
                     -- Existing search logic for nearby valid position
                     local radius = 1
@@ -377,8 +379,14 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
             -- game.print("Placed " .. entity .. " at " .. position.x .. ", " .. position.y)
 
             -- Find and return the placed entity
-            local width = 0.5
-            local height = 0.5
+            -- Use the entity prototype's tile dimensions for search area
+            local prototype = prototypes.entity[entity]
+            local width = 1
+            local height = 1
+            if prototype and prototype.tile_width then
+                width = prototype.tile_width / 2 + 0.5
+                height = prototype.tile_height / 2 + 0.5
+            end
             local target_area = {
                 {position.x - width, position.y - height},
                 {position.x + width, position.y + height}

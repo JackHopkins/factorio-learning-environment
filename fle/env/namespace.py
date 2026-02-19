@@ -242,9 +242,26 @@ class FactorioNamespace:
 
     def reset(self):
         """
-        Delete all variables that have accrued in the namespace by the agent, except for preexisting members
+        Delete all variables that have accrued in the namespace by the agent, except for preexisting members.
+        Also reset internal state variables to ensure clean test isolation.
         @return:
         """
+        # Reset internal state variables that are in _static_members but should be cleared
+        self.logging_results = {}
+        self.log_counter = 0
+        self.line_value = 0
+        self.player_location = ent.Position(x=0, y=0)
+        self.loop_context = LoopContext()
+        self._sequential_exception_count = 0
+
+        # Clear agent-defined variables from persistent_vars, keeping only builtins
+        # Filter to only keep items that are in essential_builtins or are builtins
+        builtin_names = set(self.essential_builtins.keys()) | set(dir(builtins))
+        self.persistent_vars = {
+            k: v for k, v in self.persistent_vars.items() if k in builtin_names
+        }
+
+        # Clear agent-created attributes (non-callable, non-private, non-static)
         for attr in dir(self):
             if (
                 not callable(getattr(self, attr))

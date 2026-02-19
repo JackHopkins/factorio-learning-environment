@@ -6,7 +6,8 @@ Decider combinator renderer with display
 from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
-DIRECTIONS = {0: "north", 2: "east", 4: "south", 6: "west"}
+# Factorio 2.0: 16-direction system (0, 4, 8, 12 for cardinals)
+DIRECTIONS = {0: "north", 4: "east", 8: "south", 12: "west"}
 
 COMBINATOR_TO_NORMAL = {
     None: "empty",
@@ -93,7 +94,7 @@ def get_key(entity: Dict, grid) -> str:
 def get_size(entity: Dict) -> Tuple[float, float]:
     """Get size based on direction"""
     direction = entity.get("direction", 0)
-    if direction in [2, 6]:  # East/West
+    if direction in [4, 12]:  # East/West
         return (2, 1)
     else:  # North/South
         return (1, 2)

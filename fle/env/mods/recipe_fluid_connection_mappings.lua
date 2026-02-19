@@ -22,17 +22,19 @@ local function get_refinery_position_offsets(fluid_type, recipe, is_input)
     if #recipe.ingredients == 2 and recipe.ingredients[2].name == "crude-oil" then
         if is_input then
             if fluid_type == "crude-oil" then
-                return 1, 3  -- Top left
+                return 1, 3  -- South side (for north-facing refinery)
             else
-                return -1, 3   -- Top right (water)
+                return -1, 3   -- South side (water)
             end
         else
+            -- For north-facing refinery, outputs are on north side (y = -3)
+            -- From left to right: heavy-oil (-2), light-oil (0), petroleum-gas (+2)
             if fluid_type == "heavy-oil" then
-                return -2, -3     -- Bottom left
+                return -2, -3     -- North side, left
             elseif fluid_type == "light-oil" then
-                return 0, -3      -- Bottom middle
+                return 0, -3      -- North side, middle
             else
-                return 2, -3      -- Bottom right (heavy oil)
+                return 2, -3      -- North side, right (petroleum-gas)
             end
         end
     end
@@ -59,17 +61,20 @@ local function get_refinery_position_offsets(fluid_type, recipe, is_input)
 end
 
 -- Helper function to get chemical plant position offsets
+-- For north-facing chemical plant:
+--   Inputs are on the south side (y + 1.5)
+--   Outputs are on the north side (y - 1.5)
 local function get_chemical_plant_position_offsets(index, total, is_input)
     if is_input then
         if total == 1 then
-            return -1, -1.5  -- Bottom left for single input
+            return -1, 1.5  -- South side for single input
         else
-            -- For two inputs, space them out
-            return -1 + (index - 1) * 2, -1.5
+            -- For two inputs, space them out on south side
+            return -1 + (index - 1) * 2, 1.5
         end
     else
-        -- Outputs always go on the left side
-        return -1, 1.5
+        -- Outputs are on the north side
+        return -1, -1.5
     end
 end
 

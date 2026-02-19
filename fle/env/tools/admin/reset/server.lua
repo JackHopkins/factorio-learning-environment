@@ -68,6 +68,12 @@ storage.actions.reset = function(inventories_json, reset_position, all_technolog
 			valid_character.force.research_all_technologies()
 		else
 			valid_character.force.reset()
+			-- Factorio 2.0: Pre-research automation-science-pack as it's a prerequisite for automation
+			-- This allows the basic research functionality to work
+			local asp_tech = valid_character.force.technologies["automation-science-pack"]
+			if asp_tech and not asp_tech.researched then
+				asp_tech.researched = true
+			end
 		end
 	elseif all_technologies_researched == true or all_technologies_researched == false then
 		-- If no valid characters but technology reset was requested,
@@ -78,6 +84,11 @@ storage.actions.reset = function(inventories_json, reset_position, all_technolog
 				force.research_all_technologies()
 			else
 				force.reset()
+				-- Factorio 2.0: Pre-research automation-science-pack as it's a prerequisite for automation
+				local asp_tech = force.technologies["automation-science-pack"]
+				if asp_tech and not asp_tech.researched then
+					asp_tech.researched = true
+				end
 			end
 		end
 	end

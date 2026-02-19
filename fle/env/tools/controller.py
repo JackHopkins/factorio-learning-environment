@@ -193,7 +193,18 @@ class Controller:
                 parsed, lua_response = self._execute_once(*args)
 
                 if parsed is None:
-                    return {}, lua_response  # elapsed
+                    # Parsing failed - try to extract error message from raw RCON response
+                    # This handles cases where pcall error strings break the Lua parser
+                    parts = lua_response.split('["b"] = ') if lua_response else []
+                    if len(parts) > 1:
+                        msg = parts[1].rstrip()
+                        if msg.endswith(",}") or msg.endswith(", }"):
+                            msg = msg.rsplit(",", 1)[0]
+                        elif msg.endswith("}"):
+                            msg = msg[:-1]
+                        msg = msg.strip()
+                        return msg, lua_response
+                    return {}, lua_response
 
                 if (
                     not parsed.get("a")

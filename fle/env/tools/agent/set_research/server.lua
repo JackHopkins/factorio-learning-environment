@@ -43,7 +43,7 @@ storage.actions.set_research = function(player_index, technology_name)
             technology_name, result))
     end
     if force.current_research then
-        force.set_saved_technology_progress(force.current_research.name, force.research_progress)
+        force.technologies[force.current_research.name].saved_progress = force.research_progress
     end
     -- Cancel current research if any
     --force.cancel_current_research()

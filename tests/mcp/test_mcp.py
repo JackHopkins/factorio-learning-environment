@@ -136,7 +136,7 @@ class TestMCPResources:
                 image_data = base64.b64decode(result.data)
                 img = PILImage.open(io.BytesIO(image_data))
                 print(f"\nImage dimensions: {img.size}, mode: {img.mode}")
-                img.show()
+                # img.show()
         elif isinstance(result, (str, bytes)):
             print(f"Render returned: {type(result)}")
 

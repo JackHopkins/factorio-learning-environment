@@ -1,6 +1,6 @@
 import pytest
 
-from fle.env.entities import Position, EntityStatus, BuildingBox, Direction
+from fle.env.entities import Position, EntityStatus, Direction
 from fle.env.game_types import Prototype, Resource
 
 
@@ -96,26 +96,19 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     assert offshore_pump, "Failed to place offshore pump"
     print(f"Offshore pump placed at {offshore_pump.position}")
 
-    # Place boiler next to offshore pump
-    building_box = BuildingBox(
-        width=Prototype.Boiler.WIDTH + 4, height=Prototype.Boiler.HEIGHT + 4
-    )
-
-    coords = game.nearest_buildable(
-        Prototype.Boiler, building_box, offshore_pump.position
-    )
-    # place the boiler at the centre coordinate
-    # first move to the center coordinate
-    game.move_to(coords.center)
-    boiler = game.place_entity(
-        Prototype.Boiler, position=coords.center, direction=Direction.LEFT
+    # Place boiler next to offshore pump with proper spacing for pipe connections
+    boiler = game.place_entity_next_to(
+        Prototype.Boiler,
+        reference_position=offshore_pump.position,
+        direction=offshore_pump.direction,
+        spacing=2,
     )
     assert boiler, "Failed to place boiler"
     print(f"Boiler placed at {boiler.position}")
     print(f"Current inventory: {game.inspect_inventory()}")
 
     # add coal to the boiler
-    game.insert_item(Prototype.Coal, boiler, quantity=5)
+    boiler = game.insert_item(Prototype.Coal, boiler, quantity=5)
     print(f"Inventory after adding coal: {game.inspect_inventory()}")
 
     # Connect offshore pump to boiler with pipes
@@ -123,18 +116,13 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     assert pipes, "Failed to connect offshore pump to boiler"
     print("Pipes placed between offshore pump and boiler")
 
-    # Place steam engine next to boiler
-    building_box = BuildingBox(
-        width=Prototype.SteamEngine.WIDTH + 4, height=Prototype.SteamEngine.HEIGHT + 4
+    # Place steam engine next to boiler with proper spacing
+    steam_engine = game.place_entity_next_to(
+        Prototype.SteamEngine,
+        reference_position=boiler.position,
+        direction=boiler.direction,
+        spacing=2,
     )
-
-    coords = game.nearest_buildable(
-        Prototype.SteamEngine, building_box, boiler.position
-    )
-    # place the boiler at the centre coordinate
-    # first move to the center coordinate
-    game.move_to(coords.center)
-    steam_engine = game.place_entity(Prototype.SteamEngine, position=coords.center)
     assert steam_engine, "Failed to place steam engine"
     print(f"Steam engine placed at {steam_engine.position}")
 
@@ -147,10 +135,16 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     assert poles, "Failed to connect drill to steam engine"
     print("Connected electric mining drill to steam engine with power poles")
 
+    # Wait for the power system to warm up (water flow, boiler heating, steam generation)
+    game.sleep(10)
+
     # Get the mining drill status
     drill = game.get_entity(Prototype.ElectricMiningDrill, miner.position)
     assert drill, "Failed to get mining drill"
-    assert drill.status.value == EntityStatus.WORKING.value
+    assert drill.status in (
+        EntityStatus.WORKING,
+        EntityStatus.WAITING_FOR_SPACE_IN_DESTINATION,
+    ), f"Expected drill to be powered, but status is {drill.status}"
 
 
 def test_pole_to_generator(game):

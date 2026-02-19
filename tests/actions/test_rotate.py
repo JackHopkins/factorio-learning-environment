@@ -49,7 +49,7 @@ def test_rotate_assembling_machine_2_with_recipe(game):
     # orthogonal direction to the boiler
     orthogonal_direction = Direction.DOWN
 
-    game.set_entity_recipe(assembler, RecipeName.FillCrudeOilBarrel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.FillCrudeOilBarrel)
     # rotate the boiler to face the offshore pump
     assembler = game.rotate_entity(assembler, orthogonal_direction)
 

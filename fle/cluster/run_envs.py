@@ -116,10 +116,20 @@ class ComposeGenerator:
         ]
         if self.scenario == "open_world":
             args.append(f"--map-gen-seed {self.map_gen_seed}")
-        if self.attach_mod:
-            args.append("--mod-directory /opt/factorio/mods")
+        # Always enable mods directory for bundled mod-list config
+        args.append("--mod-directory /opt/factorio/mods")
         factorio_bin = f"{self._emulator()} /opt/factorio/bin/x64/factorio".strip()
-        return " ".join([factorio_bin, launch_command] + args)
+        factorio_cmd = " ".join([factorio_bin, launch_command] + args)
+        # Remove DLC data dirs so the server runs vanilla base-game only;
+        # this prevents "Sync mods with server" / "No release" errors for
+        # clients that don't own Space Age.
+        return (
+            f"/bin/sh -c '"
+            f"rm -rf /opt/factorio/data/elevated-rails "
+            f"/opt/factorio/data/quality "
+            f"/opt/factorio/data/space-age && "
+            f"exec {factorio_cmd}'"
+        )
 
     def _mod_path(self):
         env_override = os.environ.get("FLE_MODS_PATH")
@@ -160,6 +170,18 @@ class ComposeGenerator:
     def _mods_volume(self):
         return {
             "source": str(self._mod_path().resolve()),
+            "target": "/opt/factorio/mods",
+            "type": "bind",
+        }
+
+    def _bundled_mods_volume(self):
+        """Returns bundled mod-list config (disables DLC mods for client sync)."""
+        pkg_root = ir.files("fle.cluster")
+        mods_dir = Path(pkg_root / "mods")
+        if not mods_dir.exists():
+            raise ValueError(f"Bundled mods directory '{mods_dir}' does not exist.")
+        return {
+            "source": str(mods_dir.resolve()),
             "target": "/opt/factorio/mods",
             "type": "bind",
         }
@@ -217,11 +239,12 @@ class ComposeGenerator:
                 self._scenarios_volume(),
                 self._config_volume(),
                 self._screenshots_volume(),
+                # Include bundled mod-list config (disables DLC for client sync)
+                self._bundled_mods_volume(),
             ]
             if self.save_file:
                 volumes.append(self._save_volume())
-            if self.attach_mod:
-                volumes.append(self._mods_volume())
+            # Note: attach_mod overlays user mods on top of bundled mods (not currently used)
             services[f"factorio_{i}"] = {
                 "image": self.image,
                 "platform": self._docker_platform(),

@@ -1,10 +1,15 @@
+-- Function to check if an item is a module
+local function is_module(item_name)
+    local item_proto = prototypes.item[item_name]
+    return item_proto and item_proto.type == "module"
+end
+
 -- Function to get inventory fullness information
 local function get_inventory_info(entity)
     if entity.get_inventory then
-        -- Try common inventory types
+        -- Try common inventory types (Factorio 2.0: unified crafter_input for furnaces/assemblers)
         local inv = entity.get_inventory(defines.inventory.chest) or          -- For chests
-                   entity.get_inventory(defines.inventory.furnace_source) or  -- For furnaces
-                   entity.get_inventory(defines.inventory.assembling_machine_input) -- For assemblers
+                   entity.get_inventory(defines.inventory.crafter_input)      -- For furnaces, assemblers, rocket silos
 
         if inv then
             -- Get actual item count and inventory capacity
@@ -72,6 +77,11 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
             return item_prototype and item_prototype.type == "tool"
 
         elseif entity.type == "assembling-machine" then
+            -- Check if it's a module first
+            if is_module(item_name) then
+                local module_inv = entity.get_module_inventory()
+                return module_inv and not module_inv.is_full()
+            end
             local recipe = entity.get_recipe()
             if recipe then
                -- Check if the item is an ingredient or the result of the recipe
@@ -93,8 +103,8 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
             if prototypes.item[item_name].fuel_value > 0 then
                 return true
             end
-            -- Check furnace inventory for incompatible items
-            local inventory = entity.get_inventory(defines.inventory.furnace_source)
+            -- Check furnace inventory for incompatible items (Factorio 2.0: crafter_input)
+            local inventory = entity.get_inventory(defines.inventory.crafter_input)
             if inventory and not inventory.is_empty() then
                 local existing_item = nil
                 for i = 1, #inventory do
@@ -139,6 +149,13 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
             return prototypes.item[item_name].fuel_value > 0
         elseif entity.type == "container" or entity.type == "logistic-container" then
             return true  -- Containers can accept any item
+        elseif entity.type == "beacon" then
+            -- Beacons only accept modules
+            if is_module(item_name) then
+                local module_inv = entity.get_module_inventory()
+                return module_inv and not module_inv.is_full()
+            end
+            return false
         end
         -- Add more entity types as needed
         return true
@@ -196,25 +213,47 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
         -- game.print("Inserting ".. insertable_count.. " items onto transport belt...")
         inserted = insert_on_belt(closest_entity, insert_item)
     elseif closest_entity.type == "assembling-machine" then
-        local recipe = closest_entity.get_recipe()
-        if recipe then
-            local is_product = false
-            for _, product in pairs(recipe.products) do
-                if product.name == insert_item then
-                    is_product = true
-                    break
-                end
-            end
-
-            if is_product then
-                -- Insert into output inventory
-                inserted = closest_entity.get_output_inventory().insert({name=insert_item, count=insertable_count})
+        -- Check if inserting a module
+        if is_module(insert_item) then
+            local module_inv = closest_entity.get_module_inventory()
+            if module_inv then
+                inserted = module_inv.insert({name=insert_item, count=insertable_count})
             else
-                -- Insert into input inventory
-                inserted = closest_entity.get_inventory(defines.inventory.assembling_machine_input).insert({name=insert_item, count=insertable_count})
+                error("\"Assembling machine does not support modules\"")
             end
         else
-            error("No recipe set for the assembling machine.")
+            local recipe = closest_entity.get_recipe()
+            if recipe then
+                local is_product = false
+                for _, product in pairs(recipe.products) do
+                    if product.name == insert_item then
+                        is_product = true
+                        break
+                    end
+                end
+
+                if is_product then
+                    -- Insert into output inventory
+                    inserted = closest_entity.get_output_inventory().insert({name=insert_item, count=insertable_count})
+                else
+                    -- Insert into input inventory (Factorio 2.0: crafter_input)
+                    inserted = closest_entity.get_inventory(defines.inventory.crafter_input).insert({name=insert_item, count=insertable_count})
+                end
+            else
+                error("No recipe set for the assembling machine.")
+            end
+        end
+    elseif closest_entity.type == "beacon" then
+        -- Beacons only accept modules
+        if is_module(insert_item) then
+            local module_inv = closest_entity.get_module_inventory()
+            if module_inv then
+                inserted = module_inv.insert({name=insert_item, count=insertable_count})
+            else
+                error("\"Beacon does not have a module inventory\"")
+            end
+        else
+            error("\"Beacons can only accept modules\"")
         end
     else
         -- For other entities, use the normal insert method

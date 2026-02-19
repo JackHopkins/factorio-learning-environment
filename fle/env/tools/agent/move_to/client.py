@@ -48,9 +48,7 @@ class MoveTo(Tool):
         try:
             self.get_path(path_handle)
         except Exception as e:
-            raise Exception(
-                f"Path computation failed for path_handle={path_handle}: {e}"
-            )
+            raise Exception(f"Could not get path to ({x}, {y}): {e}")
 
         # Track elapsed ticks for fast forward
         ticks_before = self.game_state.instance.get_elapsed_ticks()

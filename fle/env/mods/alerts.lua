@@ -29,8 +29,11 @@ local function is_transport_belt_blocked(entity)
         end
 
         if not has_sink then
-            local line_1_moving = line_1 and line_1.get_contents() and not line_1.can_insert_at_back()
-            local line_2_moving = line_2 and line_2.get_contents() and not line_2.can_insert_at_back()
+            -- Factorio 2.0: Use compat wrapper and check for non-empty contents
+            local contents_1 = line_1 and storage.utils.get_contents_compat(line_1) or {}
+            local contents_2 = line_2 and storage.utils.get_contents_compat(line_2) or {}
+            local line_1_moving = next(contents_1) ~= nil and not line_1.can_insert_at_back()
+            local line_2_moving = next(contents_2) ~= nil and not line_2.can_insert_at_back()
 
             if line_1_moving or line_2_moving then
                 return true

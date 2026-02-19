@@ -138,7 +138,9 @@ end
 
 storage.utils.get_boiler_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation * 8
+    -- Factorio 2.0: orientation is 0, 0.25, 0.5, 0.75 for cardinals
+    -- defines.direction values are 0, 4, 8, 12 (16-direction system)
+    local orientation = entity.orientation * 16
 
     local dx, dy = 0, 0
     if orientation == defines.direction.north then
@@ -200,7 +202,9 @@ end
 
 storage.utils.get_offshore_pump_connection_points = function(entity)
     local x, y = entity.position.x, entity.position.y
-    local orientation = entity.orientation * 8
+    -- Factorio 2.0: orientation is 0, 0.25, 0.5, 0.75 for cardinals
+    -- defines.direction values are 0, 4, 8, 12 (16-direction system)
+    local orientation = entity.orientation * 16
 
     local dx, dy
     if orientation == defines.direction.north then

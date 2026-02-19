@@ -63,13 +63,13 @@ class RecipeName(enum.Enum):
     SolidFuelFromLightOil = "solid-fuel-from-light-oil"  # Recipe for producing solid fuel in a chemical plant
     SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas"  # Recipe for producing solid fuel in a chemical plant
 
-    FillCrudeOilBarrel = "fill-crude-oil-barrel"
-    FillHeavyOilBarrel = "fill-heavy-oil-barrel"
-    FillLightOilBarrel = "fill-light-oil-barrel"
-    FillLubricantBarrel = "fill-lubricant-barrel"
-    FillPetroleumGasBarrel = "fill-petroleum-gas-barrel"
-    FillSulfuricAcidBarrel = "fill-sulfuric-acid-barrel"
-    FillWaterBarrel = "fill-water-barrel"
+    FillCrudeOilBarrel = "crude-oil-barrel"
+    FillHeavyOilBarrel = "heavy-oil-barrel"
+    FillLightOilBarrel = "light-oil-barrel"
+    FillLubricantBarrel = "lubricant-barrel"
+    FillPetroleumGasBarrel = "petroleum-gas-barrel"
+    FillSulfuricAcidBarrel = "sulfuric-acid-barrel"
+    FillWaterBarrel = "water-barrel"
 
     EmptyCrudeOilBarrel = "empty-crude-oil-barrel"
     EmptyHeavyOilBarrel = "empty-heavy-oil-barrel"
@@ -92,12 +92,15 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     # stack-filter-inserter renamed to bulk-inserter
 
     LongHandedInserter = "long-handed-inserter", ent.Inserter
-    StackInserter = "stack-inserter", ent.Inserter
     BulkInserter = (
         "bulk-inserter",
         ent.Inserter,
-    )  # Factorio 2.0: replaces stack-filter-inserter
+    )  # Factorio 2.0: old stack-inserter renamed to bulk-inserter
     # Backwards compatibility aliases - map to closest equivalent
+    StackInserter = (
+        "bulk-inserter",
+        ent.Inserter,
+    )  # Factorio 2.0: old stack-inserter renamed to bulk-inserter
     FilterInserter = (
         "fast-inserter",
         ent.Inserter,
@@ -303,6 +306,10 @@ prototype_by_title = {str(prototype): prototype for prototype in Prototype}
 
 
 class Technology(enum.Enum):
+    # Science pack technologies (Factorio 2.0 prerequisites)
+    SteamPower = "steam-power"  # Starting tech, no prerequisites
+    AutomationSciencePack = "automation-science-pack"  # Requires steam-power
+
     # Basic automation technologies
     Automation = "automation"  # Unlocks assembling machine 1
     Automation2 = "automation-2"  # Unlocks assembling machine 2

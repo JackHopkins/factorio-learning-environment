@@ -55,8 +55,8 @@ class GetEntity(Tool):
                 response, elapsed = self.execute(self.player_index, name, x, y)
 
                 if response is None or response == {} or isinstance(response, str):
-                    msg = response.split(":")[-1]
-                    raise Exception(msg)
+                    # No entity found at position - return None instead of raising
+                    return None
 
                 cleaned_response = self.clean_response(response)
                 try:

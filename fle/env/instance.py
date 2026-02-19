@@ -224,6 +224,7 @@ class FactorioInstance:
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
+        self.all_technologies_researched = all_technologies_researched
         self.initialise(fast, all_technologies_researched, clear_entities)
         self.initial_score = 0
         try:
@@ -269,9 +270,15 @@ class FactorioInstance:
         self,
         game_state: Optional[GameState] = None,
         reset_position: bool = False,
-        all_technologies_researched: bool = False,
+        all_technologies_researched: bool = None,
         clear_entities: bool = True,
     ):
+        # Use the stored value from __init__ if not explicitly provided
+        if all_technologies_researched is None:
+            all_technologies_researched = getattr(
+                self, "all_technologies_researched", False
+            )
+
         # Ensure RCON connection is healthy before resetting
         # This prevents cascading failures when the connection was broken by a previous test
         self.ensure_connected()

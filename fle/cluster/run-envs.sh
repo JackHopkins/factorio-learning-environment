@@ -115,13 +115,13 @@ EOF
   factorio_${i}:
     image: factoriotools/factorio:2.0.73
     platform: \${DOCKER_PLATFORM:-linux/amd64}
-    command: ${EMULATOR} /opt/factorio/bin/x64/factorio ${COMMAND}
+    command: /bin/sh -c 'rm -rf /opt/factorio/data/elevated-rails /opt/factorio/data/quality /opt/factorio/data/space-age && exec ${EMULATOR} /opt/factorio/bin/x64/factorio ${COMMAND}
       --port 34197 --server-settings /opt/factorio/config/server-settings.json --map-gen-settings
       /opt/factorio/config/map-gen-settings.json --map-settings /opt/factorio/config/map-settings.json
       --server-banlist /opt/factorio/config/server-banlist.json --rcon-port 27015
       --rcon-password "factorio" --server-whitelist /opt/factorio/config/server-whitelist.json
       --use-server-whitelist --server-adminlist /opt/factorio/config/server-adminlist.json
-      --mod-directory /opt/factorio/mods --map-gen-seed 44340
+      --mod-directory /opt/factorio/mods --map-gen-seed 44340'
     deploy:
       resources:
         limits:
@@ -144,8 +144,10 @@ EOF
     - source: ../../.fle/data/_screenshots
       target: /opt/factorio/script-output
       type: bind
+    - source: ./mods
+      target: /opt/factorio/mods
+      type: bind
 ${SAVE_VOLUME}
-${MODS_VOLUME}
 EOF
     done
     

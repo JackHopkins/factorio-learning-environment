@@ -263,6 +263,11 @@ def consolidate_underground_belts(belt_groups):
     ] + [group for group in belt_groups if not isinstance(group, BeltGroup)]
 
 
+def _round_pos(x, y, precision=2):
+    """Round position coordinates to avoid floating point comparison issues."""
+    return (round(x, precision), round(y, precision))
+
+
 def construct_belt_groups(
     belts: List[Union[TransportBelt, UndergroundBelt]], prototype
 ):
@@ -278,7 +283,7 @@ def construct_belt_groups(
 
     # First pass: organize belts and identify underground entrances/exits
     for belt in belts:
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
         belts_by_position[pos] = belt
 
         if isinstance(belt, UndergroundBelt):
@@ -336,7 +341,7 @@ def construct_belt_groups(
         return closest_exit
 
     def get_next_belt_position(belt):
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
 
         # If this is an underground entrance, find its matching exit
         if isinstance(belt, UndergroundBelt) and belt.is_input:
@@ -346,10 +351,10 @@ def construct_belt_groups(
 
         # Otherwise use normal output position
         output = belt.output_position
-        return (output.x, output.y)
+        return _round_pos(output.x, output.y)
 
     def get_prev_belt_position(belt):
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
 
         # If this is an underground exit, find its matching entrance
         if isinstance(belt, UndergroundBelt) and not belt.is_input:
@@ -359,10 +364,10 @@ def construct_belt_groups(
 
         # Otherwise use normal input position
         input = belt.input_position
-        return (input.x, input.y)
+        return _round_pos(input.x, input.y)
 
     def walk_forward(belt, group):
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
         if pos in visited:
             return group
 
@@ -384,7 +389,7 @@ def construct_belt_groups(
         return group
 
     def walk_backward(belt, group):
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
         if pos in visited:
             return group
 
@@ -407,14 +412,14 @@ def construct_belt_groups(
 
     # Build initial groups starting from sources
     for source in source_belts:
-        if (source.position.x, source.position.y) not in visited:
+        if _round_pos(source.position.x, source.position.y) not in visited:
             group = walk_forward(source, [])
             if group:
                 initial_groups.append(group)
 
     # Then try terminals if we missed any
     for terminal in terminal_belts:
-        if (terminal.position.x, terminal.position.y) not in visited:
+        if _round_pos(terminal.position.x, terminal.position.y) not in visited:
             group = walk_backward(terminal, [])
             if group:
                 initial_groups.append(group)
@@ -439,7 +444,7 @@ def construct_belt_groups(
     # This handles belts that connect to splitters or other non-belt entities
     # These belts may not be reachable via the normal walk algorithm
     for belt in belts:
-        pos = (belt.position.x, belt.position.y)
+        pos = _round_pos(belt.position.x, belt.position.y)
         if pos not in visited:
             # Try to extend from this belt in both directions
             group = []
@@ -449,7 +454,7 @@ def construct_belt_groups(
             if group:
                 # Clear visited for all belts in this partial group to re-walk
                 for b in group:
-                    visited.discard((b.position.x, b.position.y))
+                    visited.discard(_round_pos(b.position.x, b.position.y))
                 group.clear()
             # Now walk forward from this belt
             walk_forward(belt, group)

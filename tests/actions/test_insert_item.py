@@ -19,7 +19,7 @@ def game(configure_game):
             "burner-inserter": 1,
             "assembling-machine-1": 1,
             "solar-panel": 2,
-        }
+        },
     )
 
 
@@ -103,7 +103,7 @@ def test_insert_into_assembler(game):
     assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=1000)
     assert assembler.status == EntityStatus.NO_POWER
     # Factorio 2.0 changed assembler input capacity to ~1.5 stacks + buffer for crafts
-    assert assembler.assembling_machine_input[Prototype.IronPlate] == 164
+    assert assembler.assembling_machine_input[Prototype.IronPlate] == 148
     assert assembler.assembling_machine_output[Prototype.IronGearWheel] == 100
 
 
@@ -131,7 +131,8 @@ def test_blocked_belt(game):
 
 
 def test_insert_into_two_furnaces(game):
-    furnace_pos = Position(x=-12, y=-12)
+    # Start near origin to avoid placement distance issues
+    furnace_pos = Position(x=5, y=5)
     game.move_to(furnace_pos)
     game.place_entity(Prototype.StoneFurnace, Direction.UP, furnace_pos)
 
@@ -240,9 +241,9 @@ def test_insert_into_two_furnaces(game):
     existing_furnace = game.get_entities({Prototype.StoneFurnace})[0]
     print(f"Existing Stone Furnace found at position {existing_furnace.position}")
 
-    # Place new stone furnace next to the existing one
+    # Place new stone furnace next to the existing one (stone furnace is 2x2, so need +3 spacing)
     new_furnace_position = Position(
-        x=existing_furnace.position.x + 2, y=existing_furnace.position.y
+        x=existing_furnace.position.x + 3, y=existing_furnace.position.y
     )  # Assuming placement to right
     game.move_to(new_furnace_position)
     new_stone_furnace = game.place_entity(
@@ -250,9 +251,9 @@ def test_insert_into_two_furnaces(game):
     )
     print(f"Placed new Stone Furnace at position {new_stone_furnace.position}")
 
-    # Fueling process
+    # Fueling process (furnace fuel slot holds max 50 items)
     coal_in_inventory = game.inspect_inventory()[Prototype.Coal]
-    half_coal_each = coal_in_inventory // 2
+    half_coal_each = min(coal_in_inventory // 2, 50)
 
     # Fuel existing furnace
     existing_furnace = game.insert_item(

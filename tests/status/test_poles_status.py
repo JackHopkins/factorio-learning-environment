@@ -5,24 +5,26 @@ from fle.env.game_types import Resource, Prototype
 
 
 @pytest.fixture()
-def game(instance):
-    instance.initial_inventory = {
-        **instance.initial_inventory,
-        "stone-furnace": 10,
-        "burner-inserter": 50,
-        "offshore-pump": 4,
-        "pipe": 100,
-        "small-electric-pole": 50,
-        "transport-belt": 200,
-        "coal": 100,
-        "wooden-chest": 1,
-        "assembling-machine-1": 10,
-        "boiler": 3,
-        "steam-engine": 3,
-    }
-    instance.reset()
-    yield instance.namespace
-    instance.reset()
+def game(configure_game):
+    return configure_game(
+        inventory={
+            "stone-furnace": 10,
+            "burner-inserter": 50,
+            "offshore-pump": 4,
+            "pipe": 100,
+            "small-electric-pole": 50,
+            "transport-belt": 200,
+            "coal": 100,
+            "wooden-chest": 1,
+            "assembling-machine-1": 10,
+            "boiler": 3,
+            "steam-engine": 3,
+            "electric-mining-drill": 1,
+            "iron-chest": 1,
+        },
+        merge=True,
+        reset_position=True,
+    )
 
 
 def test_connect_power_poles_without_blocking_mining_drill(game):
@@ -49,9 +51,9 @@ def test_connect_power_poles_without_blocking_mining_drill(game):
     assert offshore_pump, "Failed to place offshore pump"
     print(f"Offshore pump placed at {offshore_pump.position}")
 
-    # Place boiler next to offshore pump
+    # Place boiler next to offshore pump (horizontally to avoid water)
     boiler = game.place_entity_next_to(
-        Prototype.Boiler, offshore_pump.position, Direction.UP, spacing=2
+        Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=2
     )
     assert boiler, "Failed to place boiler"
     print(f"Boiler placed at {boiler.position}")

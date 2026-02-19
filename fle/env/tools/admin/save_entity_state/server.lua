@@ -46,19 +46,17 @@ storage.actions.save_entity_state = function(player_index, distance, player_enti
     local entity_array = {}
     for _, entity in pairs(entities) do
 
-        -- Serialize inventories by type
+        -- Serialize inventories by type (Factorio 2.0: unified crafter_* defines)
         local inventory_defines = {
             chest = defines.inventory.chest,
-            furnace_source = defines.inventory.furnace_source,
-            furnace_result = defines.inventory.furnace_result,
+            crafter_input = defines.inventory.crafter_input,      -- was furnace_source/assembling_machine_input
+            crafter_output = defines.inventory.crafter_output,    -- was furnace_result/assembling_machine_output
             fuel = defines.inventory.fuel,
             burnt_result = defines.inventory.burnt_result,
-            assembling_machine_input = defines.inventory.assembling_machine_input,
-            assembling_machine_output = defines.inventory.assembling_machine_output,
             turret_ammo = defines.inventory.turret_ammo,
             lab_input = defines.inventory.lab_input,
             lab_modules = defines.inventory.lab_modules,
-            assembling_machine_modules = defines.inventory.assembling_machine_modules
+            crafter_modules = defines.inventory.crafter_modules   -- was assembling_machine_modules
         }
 
         if entity.name == "item-on-ground" then
@@ -138,9 +136,19 @@ storage.actions.save_entity_state = function(player_index, distance, player_enti
 
             -- Handle burner state
             if entity.burner then
+                -- Factorio 2.0: currently_burning may be a LuaItemPrototype userdata
+                local burning_name = nil
+                if entity.burner.currently_burning then
+                    -- Try to get the name safely (could be userdata or table)
+                    local ok, name = pcall(function()
+                        return entity.burner.currently_burning.name
+                    end)
+                    if ok and name then
+                        burning_name = '"' .. tostring(name) .. '"'
+                    end
+                end
                 state.burner = {
-                    currently_burning = entity.burner.currently_burning and
-                            '"' .. entity.burner.currently_burning.name .. '"' or nil,
+                    currently_burning = burning_name,
                     remaining_burning_fuel = serialize_number(entity.burner.remaining_burning_fuel or 0),
                     heat = serialize_number(entity.burner.heat or 0)
                 }
@@ -270,7 +278,9 @@ storage.actions.save_entity_state = function(player_index, distance, player_enti
                 state.inventory = {}
                 for i = 1, 2 do
                     state.inventory[i] = {}
-                    for name, count in pairs(entity.get_transport_line(i).get_contents()) do
+                    -- Factorio 2.0: Use compat wrapper for get_contents()
+                    local contents = storage.utils.get_contents_compat(entity.get_transport_line(i))
+                    for name, count in pairs(contents) do
                         state.inventory[i][tostring(name)] = serialize_number(count)
                     end
                 end
@@ -337,7 +347,8 @@ storage.actions.save_entity_state = function(player_index, distance, player_enti
 
             if inventory then
                 state.inventory = {}
-                local contents = inventory.get_contents()
+                -- Factorio 2.0: Use compat wrapper for get_contents()
+                local contents = storage.utils.get_contents_compat(inventory)
                 for item_name, count in pairs(contents) do
                     if item_name and item_name ~= "" then
                         state.inventory[tostring(item_name)] = serialize_number(count)

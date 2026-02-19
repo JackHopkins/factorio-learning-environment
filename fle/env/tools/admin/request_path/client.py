@@ -38,12 +38,14 @@ class RequestPath(Tool):
                 resolution,
             )
 
-            if response is None or response == {} or isinstance(response, str):
-                raise Exception("Could not request path (request_path)", response)
+            if response is None or response == {}:
+                raise Exception("Could not request path (request_path)")
+            if isinstance(response, str):
+                raise Exception(f"Could not request path (request_path): {response}")
 
             path_handle = int(response)
 
             return path_handle
 
         except Exception as e:
-            raise Exception(f"Could not get path from {start} to {finish}", e)
+            raise Exception(f"Could not get path from {start} to {finish}: {e}") from e

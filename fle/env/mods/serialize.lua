@@ -1219,15 +1219,12 @@ storage.utils.serialize_entity = function(entity)
         -- Basic rocket silo properties
         serialized.rocket_parts = 0  -- Will be updated with actual count
         serialized.rocket_progress = 0.0  -- Will be updated with actual progress
-        serialized.launch_count = entity.launch_count or 0
+        -- Factorio 2.0: launch_count removed (no longer available on LuaEntity)
 
-        -- Get part construction progress
-        local parts_inventory = entity.get_inventory(defines.inventory.rocket_silo_input)
-        if parts_inventory then
-            serialized.rocket_parts = parts_inventory.get_item_count("rocket-part")
-            -- Each rocket needs 100 parts, calculate progress
-            serialized.rocket_progress = (serialized.rocket_parts / 100.0) * 100.0
-        end
+        -- Get part construction progress using the direct entity property (Factorio 2.0 compatible)
+        serialized.rocket_parts = entity.rocket_parts or 0
+        local parts_required = entity.prototype.rocket_parts_required or 100
+        serialized.rocket_progress = (serialized.rocket_parts / parts_required) * 100.0
 
         -- Get input inventories for rocket components
         local rocket_inventory = {
@@ -1249,7 +1246,7 @@ storage.utils.serialize_entity = function(entity)
             elseif serialized.rocket.payload then
                 serialized.status = "\"waiting_to_launch_rocket\""
             end
-        elseif serialized.rocket_parts < 100 then
+        elseif serialized.rocket_parts < parts_required then
             if serialized.rocket_parts > 0 then
                 serialized.status = "\"preparing_rocket_for_launch\""
             end
@@ -1259,7 +1256,7 @@ storage.utils.serialize_entity = function(entity)
         if not serialized.warnings then
             serialized.warnings = {}
         end
-        if serialized.rocket_parts < 100 and serialized.rocket_parts > 0 then
+        if serialized.rocket_parts < parts_required and serialized.rocket_parts > 0 then
             table.insert(serialized.warnings, "\"waiting for rocket parts\"")
         elseif serialized.status == "\"waiting_to_launch_rocket\"" then
             table.insert(serialized.warnings, "\"ready to launch\"")

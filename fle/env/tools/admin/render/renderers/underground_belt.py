@@ -7,7 +7,8 @@ from typing import Dict, Tuple, Optional, Callable
 from PIL import Image
 
 
-RELATIVE_DIRECTIONS = {0: "up", 2: "right", 4: "down", 6: "left"}
+# Factorio 2.0: 16-direction system (0, 4, 8, 12 for cardinals)
+RELATIVE_DIRECTIONS = {0: "up", 4: "right", 8: "down", 12: "left"}
 
 
 def render(entity: Dict, grid, image_resolver: Callable) -> Optional[Image.Image]:

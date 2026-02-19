@@ -53,23 +53,13 @@ storage.actions.inspect_inventory = function(player_index, is_character_inventor
            end)
        end
 
-       if closest_entity.type == "furnace" then
+       -- Factorio 2.0: unified crafter_input/crafter_output for furnaces, assemblers, rocket silos
+       if closest_entity.type == "furnace" or closest_entity.type == "assembling-machine" or closest_entity.type == "rocket-silo" then
            if not closest_entity or not closest_entity.valid then
                error("No valid entity at given coordinates.")
            end
-           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.furnace_source))
-           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.furnace_result))
-           for k, v in pairs(output) do
-               source[k] = (source[k] or 0) + v
-           end
-           return source
-       end
-       if closest_entity.type == "assembling-machine" then
-           if not closest_entity or not closest_entity.valid then
-               error("No valid entity at given coordinates.")
-           end
-           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_input))
-           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_output))
+           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.crafter_input))
+           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.crafter_output))
            for k, v in pairs(output) do
                source[k] = (source[k] or 0) + v
            end
@@ -81,19 +71,7 @@ storage.actions.inspect_inventory = function(player_index, is_character_inventor
            end
            return storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.lab_input))
        end
-       -- Handle centrifuge inventories
-       if closest_entity.type == "assembling-machine" and closest_entity.name == "centrifuge" then
-           if not closest_entity or not closest_entity.valid then
-               error("No valid entity at given coordinates.")
-           end
-           local source = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_input))
-           local output = storage.utils.get_contents_compat(closest_entity.get_inventory(defines.inventory.assembling_machine_output))
-           -- Merge input and output contents
-           for k, v in pairs(output) do
-               source[k] = (source[k] or 0) + v
-           end
-           return source
-       end
+       -- Note: centrifuge is now handled by the unified assembling-machine block above
        if not closest_entity or not closest_entity.valid then
            error("No valid entity at given coordinates.")
        end

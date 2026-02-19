@@ -311,7 +311,7 @@ class FactorioGymEnv(gym.Env):
             logger.warning(f"Error getting entities: {e}")
             raise Exception("Error getting entities while getting observation") from e
 
-        entity_obs = [e.__dict__ for e in entities]
+        entity_obs = [str(e) for e in entities]
 
         # Get inventory observations
         inventory_obs = namespace.inspect_inventory()
@@ -550,7 +550,8 @@ class FactorioGymEnv(gym.Env):
         self.last_message_timestamps = {i: 0.0 for i in range(self.instance.num_agents)}
         # Convert observation to dictionary to match gym standards
         observation = self.get_observation(0).to_dict()
-        return observation  # Return observation for first agent
+        info = {}  # Additional info dict per Gym API
+        return observation, info  # Return (observation, info) tuple per Gym API
 
     def close(self):
         """Clean up resources"""

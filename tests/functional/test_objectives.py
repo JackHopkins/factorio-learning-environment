@@ -335,9 +335,9 @@ def test_build_iron_gear_factory(game):
     # connect the steam engine and assembly machine with power poles
 
     # harvest nearby trees for wood
-    tree_patch = game.get_resource_patch(Resource.Wood, game.nearest(Resource.Wood))
-    game.move_to(tree_patch.bounding_box.left_top + Position(x=1, y=1))
-    game.harvest_resource(tree_patch.bounding_box.left_top, quantity=30)
+    wood_position = game.nearest(Resource.Wood)
+    game.move_to(wood_position)
+    game.harvest_resource(wood_position, quantity=30)
 
     # craft 15 small electric poles
     recipe = game.get_prototype_recipe(Prototype.SmallElectricPole)

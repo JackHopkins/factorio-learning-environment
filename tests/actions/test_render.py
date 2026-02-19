@@ -30,6 +30,6 @@ def test_basic_render(game):
     game.connect_entities(
         Position(x=0, y=-10), Position(x=15, y=-10), {Prototype.SmallElectricPole}
     )
-    image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
-    image.show()
+    _image = game._render(position=Position(x=0, y=5), layers=Layer.ALL)
+    # image.show()
     pass

@@ -172,7 +172,7 @@ def test_connect_boilers(game):
 
 def test_multiple(game):
     # Find water source for power system
-    water_pos = Position(x=-1.0, y=28.0)
+    water_pos = game.nearest(Resource.Water)
     print(f"Found water source at {water_pos}")
 
     # Place offshore pump
@@ -218,17 +218,26 @@ def test_multiple(game):
 
 
 def test_for_attribute_error(game):
-    boiler_position = Position(x=2.5, y=29.5)
-    game.move_to(boiler_position)
-    boiler = game.place_entity(Prototype.Boiler, position=boiler_position)
-    offshore_pump_pos = Position(x=-0, y=29)
+    # Find water dynamically and place offshore pump
+    water_pos = game.nearest(Resource.Water)
+    game.move_to(water_pos)
     pump = game.place_entity(
-        Prototype.OffshorePump, position=offshore_pump_pos, direction=Direction.UP
+        Prototype.OffshorePump, position=water_pos, direction=Direction.UP
+    )
+    # Place boiler near the pump
+    boiler = game.place_entity_next_to(
+        Prototype.Boiler,
+        reference_position=pump.position,
+        direction=pump.direction,
+        spacing=3,
     )
     game.connect_entities(pump, boiler, Prototype.Pipe)
     try:
-        engine = game.place_entity(
-            Prototype.SteamEngine, position=Position(x=8.5, y=28.5)
+        engine = game.place_entity_next_to(
+            Prototype.SteamEngine,
+            reference_position=boiler.position,
+            direction=boiler.direction,
+            spacing=3,
         )
         game.connect_entities(engine, boiler, Prototype.Pipe)
     except Exception as e:

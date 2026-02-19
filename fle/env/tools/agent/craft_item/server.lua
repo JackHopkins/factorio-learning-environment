@@ -63,8 +63,10 @@ storage.actions.craft_item = function(player_index, entity, count)
 
     local function get_required_technology(recipe_name, force)
         for _, tech in pairs(force.technologies) do
-            if tech.effects then
-                for _, effect in pairs(tech.effects) do
+            -- Factorio 2.0: effects are on the technology prototype
+            local effects = tech.prototype and tech.prototype.effects
+            if effects then
+                for _, effect in pairs(effects) do
                     if effect.type == "unlock-recipe" and effect.recipe == recipe_name then
                         return tech.name
                     end
@@ -84,8 +86,25 @@ storage.actions.craft_item = function(player_index, entity, count)
             local tech_message = required_tech and string.format(" (requires %s technology)", required_tech) or ""
             return false, "recipe for " .. recipe_name .. " is not unlocked yet" .. tech_message .. ". You need to research the technology first"
         end
-        if recipe.category ~= "crafting" then
-            return false, "Item " .. recipe_name .. " cannot be crafted. Recipe requires a crafting machine or smelting in a furnace"
+        -- Factorio 2.0: Check if the recipe category is one the character can craft
+        -- Note: 'player' here is actually the character entity (returned by ensure_valid_character)
+        local can_hand_craft = false
+        local proto = player.prototype
+        if proto then
+            local cats = proto.crafting_categories
+            if cats then
+                can_hand_craft = cats[recipe.category] or false
+            else
+                -- Character prototype exists but has no crafting_categories
+                -- Fallback: allow "crafting" category only
+                can_hand_craft = (recipe.category == "crafting")
+            end
+        else
+            -- No prototype - fallback
+            can_hand_craft = (recipe.category == "crafting")
+        end
+        if not can_hand_craft then
+            return false, "Item " .. recipe_name .. " cannot be crafted (category: " .. tostring(recipe.category) .. "). Recipe requires a crafting machine or smelting in a furnace"
         end
         return true, recipe
     end

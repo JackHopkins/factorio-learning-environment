@@ -48,7 +48,7 @@ from fle.env.tools.agent.sleep.client import Sleep
 import importlib.resources
 from pathlib import Path
 from jinja2 import Template
-import gym
+import gymnasium as gym
 
 
 def _load_prompt_template(filename: str) -> Template:

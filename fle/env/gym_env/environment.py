@@ -1,8 +1,8 @@
 import logging
 
-import gym
+import gymnasium as gym
 import numpy as np
-from gym import spaces
+from gymnasium import spaces
 from typing import Dict, Optional, Tuple, Any
 import pickle
 import datetime
@@ -532,7 +532,7 @@ class FactorioGymEnv(gym.Env):
 
     def reset(
         self, options: Optional[Dict[str, Any]] = None, seed: Optional[int] = None
-    ) -> Dict[str, Any]:
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Reset the environment to initial state
 
         Args:

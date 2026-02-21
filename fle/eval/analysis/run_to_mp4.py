@@ -21,7 +21,7 @@ import math
 # Add parent directories to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-import gym
+import gymnasium as gym
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.registry import list_available_environments

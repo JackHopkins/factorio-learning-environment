@@ -62,7 +62,7 @@ from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
 
 import importlib.resources
-import gym
+import gymnasium as gym
 
 
 logger = logging.getLogger(__name__)

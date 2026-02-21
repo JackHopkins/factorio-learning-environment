@@ -88,8 +88,20 @@ class Controller:
         for key, value in response.items():
             # if key == 'status' and isinstance(value, str):
             # cleaned_response[key] = EntityStatus.from_string(value)
-            if key == "direction" and isinstance(value, str):
-                cleaned_response[key] = Direction.from_string(value)
+            if key == "direction":
+                if isinstance(value, str):
+                    cleaned_response[key] = Direction.from_string(value)
+                elif isinstance(value, (int, float)):
+                    dir_val = int(value)
+                    # Values > 6 are raw Factorio 2.0 defines.direction (0,4,8,12)
+                    # that weren't converted by the Lua side; convert to Python enum (0,2,4,6)
+                    if dir_val > 6:
+                        dir_val = dir_val // 2
+                    try:
+                        cleaned_response[key] = Direction(dir_val)
+                    except ValueError:
+                        cleaned_response[key] = dir_val
+                    continue
             elif not value and key in (
                 "warnings",
                 "input_connection_points",

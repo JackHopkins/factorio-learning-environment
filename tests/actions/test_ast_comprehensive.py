@@ -19,10 +19,12 @@ from fle.env import FactorioInstance
 @pytest.fixture
 def fle_instance():
     """Create a test FLE instance"""
+    address = os.getenv("FACTORIO_HOST", "localhost")
+    port = int(os.getenv("FACTORIO_RCON_PORT", "27000"))
     try:
         instance = FactorioInstance(
-            address="localhost",
-            tcp_port=27000,
+            address=address,
+            tcp_port=port,
             num_agents=1,
             fast=True,
             cache_scripts=True,

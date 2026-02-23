@@ -87,6 +87,7 @@ Note: `python run_with_video.py` now defaults to the reliable profile (`benchmar
 ### 2) Mandatory constraints
 
 - Do not set `SKIP_WORLD_CHECK=1` (world preflight must stay enabled).
+- Required model for this workflow is `claude-sonnet-4-6` (do not run with other models).
 - Do not use `SCREENSHOT_BACKEND=render_simple` for production runs.
 - Do not set `CATCHUP_RENDER_TICKS` or `RENDER_TICKS` below `60`.
 - Keep renderer parallelism at `1` unless a soak test proves higher values are stable.

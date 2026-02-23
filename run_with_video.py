@@ -39,8 +39,10 @@ from fle.env.utils.controller_loader.system_prompt_generator import SystemPrompt
 
 # ---------- CONFIG ----------
 MODEL = "claude-sonnet-4-6"
-ENV_ID = "automation_science_pack_throughput"
-MAX_STEPS = 30
+ENV_ID = os.getenv("ENV_ID", "automation_science_pack_throughput").strip()
+MAX_STEPS = int(os.getenv("MAX_STEPS", "30"))
+if MAX_STEPS <= 0:
+    sys.exit("ERROR: MAX_STEPS must be > 0")
 SCREENSHOT_BASE = Path(".fle/run_screenshots")
 SAVES_DIR = Path("/tmp/fle-run-saves")
 FACTORIO_BINARY = Path("/tmp/factorio/bin/x64/factorio")

@@ -10,6 +10,11 @@ if [[ "${PROFILE}" != "open_world" && "${PROFILE}" != "default_lab_scenario" ]];
   exit 1
 fi
 
+if [[ -n "${MODEL:-}" && "${MODEL}" != "claude-sonnet-4-6" ]]; then
+  echo "ERROR: MODEL must be claude-sonnet-4-6 for reliable runs (got '${MODEL}')." >&2
+  exit 1
+fi
+
 PORT="${1:-}"
 if [[ -z "${PORT}" ]]; then
   if [[ "${PROFILE}" == "default_lab_scenario" ]]; then
@@ -56,6 +61,7 @@ fi
 export FACTORIO_SERVER_ADDRESS="127.0.0.1"
 export FACTORIO_SERVER_PORT="${PORT}"
 export WORLD_PROFILE="${PROFILE}"
+export MODEL="claude-sonnet-4-6"
 export SCREENSHOT_BACKEND="benchmark"
 export LIVE_RENDER_PARALLEL="0"
 export CATCHUP_RENDER_PARALLEL="1"

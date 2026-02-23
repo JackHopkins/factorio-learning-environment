@@ -31,7 +31,7 @@ if ! docker ps --format '{{.Names}} {{.Ports}}' | grep -Eq "(^| )[^ ]*factorio[^
   exit 1
 fi
 
-CONTAINER="$(docker ps --format '{{.Names}} {{.Ports}}' | awk '/factorio/ && /'"${PORT}"'->27015\\/tcp/ {print $1; exit}')"
+CONTAINER="$(docker ps --format '{{.Names}} {{.Ports}}' | grep -m1 -E "factorio.*${PORT}->27015/tcp" | awk '{print $1}')"
 if [[ "${WORLD_RESET_BEFORE_RUN:-0}" == "1" ]]; then
   if [[ -z "${CONTAINER}" ]]; then
     echo "ERROR: cannot determine container for tcp/${PORT} to reset." >&2

@@ -33,6 +33,7 @@ These are the only Factorio ports reserved for this workspace/user. Do not use a
 - Use only the ports above for Factorio-related runs, containers, and tooling.
 - Do not use shared/default cluster ports (for example `27000-27005`, `28000`, `40100`, `40200`).
 - If one of the reserved ports is occupied, stop and coordinate rather than switching to an unreserved port.
+- Port isolation is not enough by itself: for `41000`, use only the isolated codex container mounts under `/tmp/factorio-agent-1-codex/*` for `mods/config/scenarios/saves/script-output`.
 
 ## Allowed World Profiles (Only These)
 
@@ -63,6 +64,7 @@ WORLD_PROFILE=default_lab_scenario ./run_video_reliable.sh
 ```
 
 If no port is passed, the wrapper auto-resolves a running server that matches `WORLD_PROFILE`.
+For `WORLD_PROFILE=default_lab_scenario` on `41000`, the wrapper auto-runs `./ensure_codex_factorio_server.sh` to enforce isolated mounts and recreate the container if needed.
 
 Fallback (explicit env form):
 

@@ -207,16 +207,18 @@ class Observation:
             ],
         }
 
-        return {
-            "raw_text": self.raw_text,
-            "map_image": self.map_image,
-            "entities": self.entities,  # Use string representation of entities
-            "inventory": [
-                {"quantity": np.int32(v), "type": k}
-                for k, v in self.inventory.items()
-                if v > 0
-            ],
-            "research": {
+        research_payload = {
+            "technologies": [],
+            "current_research": "None",
+            "research_progress": 0,
+            "research_queue": [],
+            "progress": [],
+        }
+        if self.research is not None:
+            technologies = self.research.technologies or {}
+            progress = self.research.progress or {}
+            research_queue = self.research.research_queue or []
+            research_payload = {
                 "technologies": [
                     {
                         "name": tech.name,
@@ -228,18 +230,29 @@ class Observation:
                         "prerequisites": tech.prerequisites,
                         "ingredients": [],
                     }
-                    for tech in self.research.technologies.values()
+                    for tech in technologies.values()
                 ],
                 "current_research": self.research.current_research
                 if self.research.current_research is not None
                 else "None",
-                "research_progress": self.research.research_progress,
-                "research_queue": self.research.research_queue,
+                "research_progress": self.research.research_progress or 0,
+                "research_queue": research_queue,
                 "progress": [
                     {"name": name, "value": value}
-                    for name, value in self.research.progress.items()
+                    for name, value in progress.items()
                 ],
-            },
+            }
+
+        return {
+            "raw_text": self.raw_text,
+            "map_image": self.map_image,
+            "entities": self.entities,  # Use string representation of entities
+            "inventory": [
+                {"quantity": np.int32(v), "type": k}
+                for k, v in self.inventory.items()
+                if v > 0
+            ],
+            "research": research_payload,
             "game_info": {
                 "tick": self.game_info.tick,
                 "time": self.game_info.time,

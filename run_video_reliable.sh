@@ -12,7 +12,12 @@ fi
 
 PORT="${1:-}"
 if [[ -z "${PORT}" ]]; then
-  PORT="$(python resolve_scenario_port.py --profile "${PROFILE}" --ports "41000-41009" --output port)"
+  if [[ "${PROFILE}" == "default_lab_scenario" ]]; then
+    # Default-lab runs are pinned to our isolated dedicated server.
+    PORT="41000"
+  else
+    PORT="$(python resolve_scenario_port.py --profile "${PROFILE}" --ports "41000-41009" --output port)"
+  fi
 else
   if ! [[ "${PORT}" =~ ^[0-9]+$ ]]; then
     echo "ERROR: port must be numeric (got '${PORT}')." >&2
@@ -22,9 +27,15 @@ else
     echo "ERROR: port ${PORT} is outside reserved range 41000-41009." >&2
     exit 1
   fi
-  # Explicit port must match selected scenario profile.
-  python resolve_scenario_port.py --profile "${PROFILE}" --ports "${PORT}" --output port >/dev/null
 fi
+
+if [[ "${ENSURE_ISOLATED_CODEX_SERVER:-1}" == "1" && "${PORT}" == "41000" && "${PROFILE}" == "default_lab_scenario" ]]; then
+  UDP_PORT="${FACTORIO_SERVER_UDP_PORT:-$((46000 + PORT - 41000))}"
+  "${ROOT_DIR}/ensure_codex_factorio_server.sh" "${PROFILE}" "${PORT}" "${UDP_PORT}"
+fi
+
+# Validate selected port matches requested scenario profile.
+python resolve_scenario_port.py --profile "${PROFILE}" --ports "${PORT}" --output port >/dev/null
 
 if ! docker ps --format '{{.Names}} {{.Ports}}' | grep -Eq "(^| )[^ ]*factorio[^ ]* .*(${PORT}->27015/tcp)"; then
   echo "ERROR: no running Factorio container is mapped on tcp port ${PORT}." >&2

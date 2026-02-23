@@ -36,3 +36,15 @@ Do not use any other Factorio ports.
 - `open_world`
 
 Do not use any other world/scenario profile names.
+
+# World Isolation
+
+For the dedicated codex server on `41000`, use isolated mounts under `/tmp/factorio-agent-1-codex/*` for:
+
+- `mods`
+- `config`
+- `scenarios`
+- `saves`
+- `script-output`
+
+Do not bind these from `/tmp/factorio-verifier-cluster/*`.

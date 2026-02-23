@@ -1,0 +1,91 @@
+# CONTINUITY
+
+[PLANS]
+- 2026-02-22T19:24Z [CODE] Implement live per-step save rendering in `run_with_video.py` so screenshot rendering overlaps with agent execution, then keep a final catch-up render phase for completeness.
+
+[DECISIONS]
+- 2026-02-22T19:24Z [CODE] Kept rendering backend as subprocess-driven Factorio benchmark rendering; avoided ProcessPool-based Python worker imports.
+- 2026-02-22T19:24Z [CODE] Added a hybrid flow: live render during run plus final catch-up renderer with `--skip-existing --no-clear`.
+- 2026-02-22T19:25Z [CODE] `LIVE_RENDER_PARALLEL=0` now explicitly disables live rendering; nonzero values enable background render workers.
+- 2026-02-22T20:05Z [USER] Reserved a dedicated personal Factorio port block for collision avoidance: TCP `41000-41009` and UDP `46000-46009`.
+- 2026-02-22T20:08Z [USER] Requested explicit documentation that these reserved ports are the only allowed ports.
+- 2026-02-22T20:52Z [CODE] Added a mandatory world-signature preflight in `run_with_video.py` (can be bypassed with `SKIP_WORLD_CHECK=1`) to fail fast on wrong maps.
+- 2026-02-22T20:52Z [CODE] Container selection for save copy/render now keys off the actual connected RCON tcp port, not “first matching factorio container”.
+- 2026-02-22T20:57Z [USER] Confirmed desired world signature is the one with nearby crude oil and large rectangular ore patches.
+- 2026-02-22T21:02Z [CODE] `run_with_video.py` now defaults to pinned server `127.0.0.1:28000` and default required resources include `crude-oil`.
+- 2026-02-22T22:42Z [CODE] Switched default screenshot backend to real benchmark rendering (`SCREENSHOT_BACKEND=benchmark`) and kept `render_simple` only as opt-in override.
+- 2026-02-22T22:42Z [CODE] Benchmark screenshot hook now uses only `script.on_configuration_changed` (no `on_load`/`on_init`) plus `--benchmark-ignore-paused`.
+- 2026-02-22T22:42Z [CODE] Removed verifier/screenshot_taker mod injection from benchmark renderer to avoid modset-induced crashes/errors during save load.
+- 2026-02-22T22:42Z [CODE] Increased default benchmark ticks for catch-up renders to `60` (`CATCHUP_RENDER_TICKS`, `RENDER_TICKS`) to avoid race conditions where screenshot files are missing at auto-quit.
+- 2026-02-22T23:27Z [CODE] `run_with_video.py` defaults now align with reliable profile: default server port `41000`, catch-up timeout `900`, retries `1`.
+- 2026-02-22T23:27Z [CODE] Added `run_video_reliable.sh` wrapper as the primary run entrypoint to enforce reserved-port validation and avoid long env command repetition.
+- 2026-02-22T23:30Z [CODE] Wrapper now enforces reliable env values unconditionally (`benchmark`, fixed catch-up settings, `SKIP_WORLD_CHECK=0`) to remove accidental override drift.
+- 2026-02-22T23:30Z [CODE] MP4 generation is now fail-fast in both pipelines (`run_with_video.py` and `render_saves.py`) when `ffmpeg` is missing or encoding fails.
+- 2026-02-23T00:10Z [CODE] Wrapper port validation now requires a running Factorio container mapped on the chosen reserved port, instead of rejecting ports that are in use.
+
+[PROGRESS]
+- 2026-02-22T19:24Z [CODE] Added `copy_save_from_docker` and `render_step_from_docker` helpers to `run_with_video.py`.
+- 2026-02-22T19:24Z [CODE] Added background `ThreadPoolExecutor` submission after each save (including initial save and exception-path save).
+- 2026-02-22T19:24Z [CODE] Updated `render_saves.py` CLI to accept `--skip-existing` and `--no-clear`.
+- 2026-02-22T19:25Z [CODE] Added `submit_live_render` helper in `run_with_video.py` to centralize conditional queueing and reduce duplication.
+- 2026-02-22T19:51Z [TOOL] Executed full `run_with_video.py` run (`version 10`) with `LIVE_RENDER_PARALLEL=1`; run completed successfully end-to-end.
+- 2026-02-22T20:08Z [CODE] Added new root `AGENTS.md` with strict Factorio-only port policy for TCP `41000-41009` and UDP `46000-46009`.
+- 2026-02-22T20:08Z [CODE] Added new root `CLAUDe.md` mirroring the same “only these ports” policy.
+- 2026-02-22T20:52Z [CODE] Removed early `PORT_OFFSET=0` default from `run_with_video.py` so `.env` `PORT_OFFSET` is honored.
+- 2026-02-22T20:52Z [CODE] Added `probe_world_signature` + required-resource gate (`WORLD_REQUIRED_RESOURCES`, `WORLD_RESOURCE_RADIUS`, `WORLD_WATER_RADIUS`) in `run_with_video.py`.
+- 2026-02-22T20:52Z [CODE] Added `FLE_RENDER_CONTAINER` propagation from `run_with_video.py` to `render_saves.py` and support in `render_saves.py` to pin mod-copy source container.
+- 2026-02-22T21:02Z [TOOL] Created missing `/factorio/saves` in oil-world containers (`factorio-verifier-cluster-api2-factorio_0-1`, `factorio-verifier-demo-factorio_0-1`, `factorio-verifier-live-factorio_0-1`) to restore autosave compatibility.
+- 2026-02-22T22:42Z [CODE] Updated both `run_with_video.py` and `render_saves.py` benchmark commands to include `--benchmark-ignore-paused` and the safer screenshot mod hook.
+- 2026-02-22T22:42Z [TOOL] Replaced `.fle/run_screenshots/v14` artifacts with the validated real benchmark outputs (31 PNGs + MP4) for immediate viewer verification.
+- 2026-02-22T23:25Z [CODE] Expanded root `AGENTS.md` with a required "Reliable Runbook" containing exact env vars/command, constraints, post-run verification checks, and recovery render command.
+- 2026-02-22T23:27Z [CODE] Updated `AGENTS.md` runbook to prefer one-command execution: `./run_video_reliable.sh <reserved_port>`.
+- 2026-02-22T23:27Z [CODE] Added executable root script `run_video_reliable.sh` with default reliable env settings and reserved-port range checks (`41000-41009`).
+- 2026-02-23T00:10Z [TOOL] Executed full end-to-end run on oil world server (`FACTORIO_SERVER_PORT=28000`) with benchmark backend and catch-up renderer; run completed as `version 15`.
+
+[DISCOVERIES]
+- 2026-02-22T19:24Z [TOOL] `python -m py_compile run_with_video.py render_saves.py` passed.
+- 2026-02-22T19:24Z [TOOL] `render_saves.py --help` confirms new options are available.
+- 2026-02-22T19:25Z [TOOL] Re-ran `python -m py_compile run_with_video.py render_saves.py` after disabling-path update; still passes.
+- 2026-02-22T19:51Z [TOOL] During the run, screenshots appeared before loop completion (`step_000` existed at step 2; later checks showed 3, 6, 9, 12, 16, 18 PNGs while steps were still running), confirming true overlap.
+- 2026-02-22T19:51Z [TOOL] End-of-run logs show `Waiting for 31 live render jobs`, `Live render complete: 31/31`, then catch-up renderer skipped all 31 existing screenshots.
+- 2026-02-22T19:51Z [TOOL] Output artifacts validated: 31 PNGs and `run.mp4` (9.3M, 93.034s) at `.fle/run_screenshots/v10`.
+- 2026-02-22T19:55Z [TOOL] Viewer API at `http://localhost:5050/api/runs` lists `version: 10` with `has_screenshots: true` and `has_video: true` (created_at `2026-02-22 19:28:38`).
+- 2026-02-22T19:57Z [TOOL] Port check: `:5050` is this repo’s Flask `viewer.py`; `:8080` is unrelated `shinka_visualize` serving `/home/alex/scrd/rl/research/worm-evolve/results/`; `:8501` is unrelated Streamlit app from `/home/alex/scrd/rl/research/factory-gnn`.
+- 2026-02-22T20:01Z [TOOL] Current Factorio Docker port map includes cluster TCP `27000-27005` (UDP `34197-34202`), plus TCP/UDP `28000/35200`, `40100/45100`, `40200/45200`.
+- 2026-02-22T20:01Z [CODE] `.env` contains `PORT_OFFSET=5`, but `run_with_video.py` sets `PORT_OFFSET` default to `0` before `load_dotenv`, so runs without explicit env override still target container index 0 (`127.0.0.1:27000`), which can cause collisions with others expecting offset 5.
+- 2026-02-22T20:05Z [TOOL] Verified reservation candidates are currently free on host: TCP `41000-41009`, UDP `46000-46009` (no listeners in `ss`, bind checks succeeded).
+- 2026-02-22T20:08Z [TOOL] Verified both docs exist and contain the reserved-only port lists.
+- 2026-02-22T20:13Z [TOOL] Viewer is actively serving this repo on `0.0.0.0:5050` and `/api/runs` returns latest run data (`version 10` present).
+- 2026-02-22T20:13Z [TOOL] VM public IP resolved consistently via `ifconfig.me`, `api.ipify.org`, and `checkip.amazonaws.com` as `34.123.211.74`.
+- 2026-02-22T20:20Z [TOOL] `v10` telemetry shows a hard state discontinuity between iter16 and iter17: inventory/elapsed-time/entity set change from established factory state (`Elapsed Time 0:20:05`, 4 electric drills) to a different scenario (`Elapsed Time 0:01:06`, 6 burner drills on coal) without any reset action in program code.
+- 2026-02-22T20:20Z [TOOL] `agent0_iter18_program.py` and `agent0_iter23_program.py` only *fuel* existing burner drills; no `place_entity(Prototype.BurnerMiningDrill, ...)` exists in `v10` program files.
+- 2026-02-22T20:20Z [TOOL] Run log confirms the session used shared port `127.0.0.1:27000` and score dropped abruptly from `4785` at step 16 to `0` at step 17, matching the state jump.
+- 2026-02-22T20:20Z [CODE] Port-selection bug still present: `run_with_video.py` sets `PORT_OFFSET=0` before dotenv load, overriding `.env` `PORT_OFFSET=5` unless explicitly exported.
+- 2026-02-22T20:52Z [TOOL] Read-only RCON world probes show distinct map signatures by port: `27000/41000` have iron+copper+coal+stone nearby, while `27001-27005` have only iron+coal near origin (no nearby copper/stone), matching the “wrong small patch” report.
+- 2026-02-22T20:52Z [TOOL] Smoke test `PORT_OFFSET=5 LIVE_RENDER_PARALLEL=0 python run_with_video.py` now fails early with `ERROR: Wrong world signature detected ... Missing resources ... copper-ore, stone` instead of running the full pipeline.
+- 2026-02-22T20:52Z [TOOL] `python -m py_compile run_with_video.py render_saves.py` passes after the world-check/container-selection changes.
+- 2026-02-22T20:55Z [TOOL] Current world signatures group as: `28000/40100/40200` (oil + full ore patches), `27000/41000` (mixed ores without nearby oil), and `27001-27005` (small iron/coal-only start).
+- 2026-02-22T21:01Z [TOOL] Before fix, `28000/40100/40200` autosaves failed with `filesystem error: create_directories "/opt/factorio/saves" failed` because `/factorio/saves` was missing behind `/opt/factorio/saves` symlink.
+- 2026-02-22T21:02Z [TOOL] After creating `/factorio/saves`, autosave and copy work on `28000` (`_autosave-probe28000_afterfix.zip` successfully copied).
+- 2026-02-22T21:03Z [TOOL] Pinned smoke run created `v12` on the oil world (evidence: `.fle/trajectory_logs/v12/agent0_iter1_observation.txt` includes large rectangular iron patch bounds and copper entities consistent with the target map).
+- 2026-02-22T22:42Z [TOOL] Repro test on `v14` save showed Factorio native crash (`Received SIGSEGV` in `InLoadingGameBox::process`) when screenshot code runs in `on_load`/`on_init` during `--benchmark-graphics`.
+- 2026-02-22T22:42Z [TOOL] Repro test with injected `verifier` mod failed deterministically with `verifier::on_load()` global CRC mismatch (`on_load() should never change the global table`).
+- 2026-02-22T22:42Z [TOOL] Repro test using only `fle_screenshot` + `on_configuration_changed` produced `script-output/factory.png` at `1920x1080` with exit code `0`.
+- 2026-02-22T22:42Z [TOOL] `render_saves.py` misses screenshots with `RENDER_TICKS=1` on this map/save but succeeds with `RENDER_TICKS=60`.
+- 2026-02-22T23:27Z [TOOL] Validation checks passed after updates: `python -m py_compile run_with_video.py render_saves.py` and `bash -n run_video_reliable.sh`.
+- 2026-02-22T23:27Z [TOOL] Wrapper port guard works: `./run_video_reliable.sh 41000` exits immediately with `ERROR: port 41000 is already in use`.
+- 2026-02-22T23:30Z [TOOL] Post-hardening validation passed: `python -m py_compile run_with_video.py render_saves.py` and `bash -n run_video_reliable.sh`.
+- 2026-02-23T00:10Z [TOOL] `./run_video_reliable.sh 41000` now reaches pipeline startup and fails fast on world probe (`crude-oil@none`) rather than failing port precheck.
+- 2026-02-23T00:10Z [TOOL] Run `v15` completed with `31` screenshots and MP4; PNGs are real `1920x1080`, MP4 size `14,576,388` bytes at `.fle/run_screenshots/v15/run.mp4`.
+- 2026-02-23T00:10Z [TOOL] Viewer API confirms `version 15` with `has_screenshots: true` and `has_video: true`.
+
+[OUTCOMES]
+- 2026-02-22T19:24Z [CODE] Pipeline now starts rendering while the agent loop is still running; final renderer still guarantees missing frames and MP4 output.
+- 2026-02-22T19:51Z [TOOL] Full real run confirmed the new behavior works in practice, not just syntactically.
+- 2026-02-22T20:08Z [CODE] Port reservation policy is now explicitly written in both `AGENTS.md` and `CLAUDe.md`.
+- 2026-02-22T20:20Z [TOOL] Telemetry analysis indicates six-coal-drill appearance was not placed by this run’s agent code; observed behavior is consistent with external reset/world swap (likely shared-port collision).
+- 2026-02-22T20:52Z [CODE] Cancellation safety now includes a preflight guard that prevents starting long runs on the wrong world template and reduces cross-container drift in save/render phases.
+- 2026-02-22T22:42Z [TOOL] Full benchmark render of `/tmp/fle-run-saves/v14` succeeded `31/31` with real `1920x1080` PNGs and MP4 output at `/tmp/fle-bench-v14-full-real/run.mp4` (16.1 MB).
+- 2026-02-22T23:25Z [CODE] Future run procedure is now codified in `AGENTS.md` to reduce operator drift and keep screenshot/video generation consistent across runs.
+- 2026-02-22T23:27Z [CODE] Future runs can now be started with a single command while preserving the same reliable benchmark-render configuration.
+- 2026-02-23T00:10Z [TOOL] Current pipeline configuration is validated by an actual full run after hardening, not just smoke tests.

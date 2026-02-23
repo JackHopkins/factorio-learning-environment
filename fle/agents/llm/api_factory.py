@@ -1,8 +1,15 @@
 import os
 import logging
 
-from openai import AsyncOpenAI
-from tenacity import retry, wait_exponential
+from openai import (
+    AsyncOpenAI,
+    APIConnectionError,
+    APITimeoutError,
+    APIStatusError,
+    InternalServerError,
+    RateLimitError,
+)
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from fle.agents.llm.metrics import timing_tracker, track_timing_async
 from fle.agents.llm.utils import (
@@ -23,6 +30,54 @@ def _get_api_key_manager():
 
 
 API_KEY_MANAGER_AVAILABLE = True  # Assume available, handle at runtime
+
+
+def _parse_retry_attempts() -> int:
+    raw = os.getenv("FLE_LLM_MAX_RETRIES", "6").strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        logging.warning(
+            "Invalid FLE_LLM_MAX_RETRIES=%r, falling back to 6 attempts.",
+            raw,
+        )
+        return 6
+    if value < 1:
+        logging.warning(
+            "FLE_LLM_MAX_RETRIES must be >=1 (got %d), falling back to 6 attempts.",
+            value,
+        )
+        return 6
+    return value
+
+
+DEFAULT_MAX_RETRIES = _parse_retry_attempts()
+
+
+def _is_retryable_exception(error: Exception) -> bool:
+    """Retry transient API failures only."""
+    if isinstance(
+        error,
+        (
+            APITimeoutError,
+            APIConnectionError,
+            RateLimitError,
+            InternalServerError,
+        ),
+    ):
+        return True
+
+    if isinstance(error, APIStatusError):
+        status_code = getattr(error, "status_code", None)
+        if status_code is None:
+            return False
+        if status_code >= 500:
+            return True
+        if status_code in {408, 409, 425, 429}:
+            return True
+        return False
+
+    return False
 
 
 class APIFactory:
@@ -184,7 +239,12 @@ class APIFactory:
                 )
 
     @track_timing_async("llm_api_call")
-    @retry(wait=wait_exponential(multiplier=2, min=2, max=15))
+    @retry(
+        reraise=True,
+        retry=retry_if_exception(_is_retryable_exception),
+        wait=wait_exponential(multiplier=2, min=2, max=15),
+        stop=stop_after_attempt(DEFAULT_MAX_RETRIES),
+    )
     async def acall(self, **kwargs):
         model_to_use = kwargs.get("model", self.model)
         messages = kwargs.get("messages", [])

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 """
-Run FLE eval with Sonnet 4.6, 30 steps, real Factorio screenshots + MP4.
+Run FLE eval with claude-sonnet-4-6 and produce real benchmark screenshots + MP4.
 
-Saves game state after each step, renders screenshots live in the background,
-then runs a catch-up render phase for any missing frames.
-
-Usage:
-    python run_with_video.py
+Flow:
+1) Run agent loop and save game state after each step.
+2) Copy all saves from the selected Factorio container.
+3) Invoke render_saves.py once for catch-up rendering + video generation.
 """
 
 import os
@@ -16,17 +15,18 @@ import json
 import shutil
 import asyncio
 import subprocess
-import tempfile
+import importlib.resources
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Set, Tuple
 
 from dotenv import load_dotenv
+
 load_dotenv()
 os.environ.setdefault("FACTORIO_SERVER_ADDRESS", "127.0.0.1")
 os.environ.setdefault("FACTORIO_SERVER_PORT", "41000")
 
 import gym
-import importlib.resources
+
 from fle.agents.gym_agent import GymAgent
 from fle.commons.db_client import create_db_client, get_next_version
 from fle.eval.tasks import TaskFactory
@@ -37,190 +37,93 @@ from fle.env.gym_env.observation_formatter import BasicObservationFormatter
 from fle.env.gym_env.system_prompt_formatter import SystemPromptFormatter
 from fle.env.utils.controller_loader.system_prompt_generator import SystemPromptGenerator
 
+
 # ---------- CONFIG ----------
 MODEL = "claude-sonnet-4-6"
 ENV_ID = os.getenv("ENV_ID", "automation_science_pack_throughput").strip()
-MAX_STEPS = int(os.getenv("MAX_STEPS", "30"))
-if MAX_STEPS <= 0:
-    sys.exit("ERROR: MAX_STEPS must be > 0")
+if not ENV_ID:
+    sys.exit("ERROR: ENV_ID must be non-empty")
+
+
+
+def _env_int(name: str, default: int, minimum: int = None) -> int:
+    raw = os.getenv(name, str(default)).strip()
+    try:
+        value = int(raw)
+    except ValueError:
+        sys.exit(f"ERROR: {name} must be an integer (got '{raw}')")
+    if minimum is not None and value < minimum:
+        sys.exit(f"ERROR: {name} must be >= {minimum} (got {value})")
+    return value
+
+
+MAX_STEPS = _env_int("MAX_STEPS", 30, minimum=1)
 SCREENSHOT_BASE = Path(".fle/run_screenshots")
 SAVES_DIR = Path("/tmp/fle-run-saves")
 FACTORIO_BINARY = Path("/tmp/factorio/bin/x64/factorio")
-FACTORIO_DATA = Path("/tmp/factorio/data")
+
 SCREENSHOT_BACKEND = os.getenv("SCREENSHOT_BACKEND", "benchmark").strip().lower()
-MAX_RENDER_PARALLEL = 2  # concurrent --benchmark-graphics processes
-LIVE_RENDER_PARALLEL = int(os.getenv("LIVE_RENDER_PARALLEL", "0"))  # default off for reliability
-CATCHUP_RENDER_PARALLEL = int(os.getenv("CATCHUP_RENDER_PARALLEL", "1"))
-CATCHUP_RENDER_TIMEOUT = int(os.getenv("CATCHUP_RENDER_TIMEOUT", "900"))
-CATCHUP_RENDER_RETRIES = int(os.getenv("CATCHUP_RENDER_RETRIES", "1"))
-CATCHUP_RENDER_TICKS = int(os.getenv("CATCHUP_RENDER_TICKS", "60"))
-CATCHUP_PHASE_TIMEOUT = int(os.getenv("CATCHUP_PHASE_TIMEOUT", "14400"))
+if SCREENSHOT_BACKEND != "benchmark":
+    sys.exit(
+        "ERROR: run_with_video.py only supports SCREENSHOT_BACKEND=benchmark. "
+        "Use run_video_reliable.sh for the supported workflow."
+    )
+
+CATCHUP_RENDER_PARALLEL = _env_int("CATCHUP_RENDER_PARALLEL", 1, minimum=1)
+CATCHUP_RENDER_TIMEOUT = _env_int("CATCHUP_RENDER_TIMEOUT", 900, minimum=1)
+CATCHUP_RENDER_RETRIES = _env_int("CATCHUP_RENDER_RETRIES", 1, minimum=0)
+CATCHUP_RENDER_TICKS = _env_int("CATCHUP_RENDER_TICKS", 60, minimum=1)
+CATCHUP_PHASE_TIMEOUT = _env_int("CATCHUP_PHASE_TIMEOUT", 14400, minimum=1)
+
 WORLD_PROFILE = os.getenv("WORLD_PROFILE", "open_world").strip()
 if WORLD_PROFILE not in {"open_world", "default_lab_scenario"}:
     sys.exit(
-        "ERROR: WORLD_PROFILE must be one of: "
-        "open_world, default_lab_scenario"
+        "ERROR: WORLD_PROFILE must be one of: open_world, default_lab_scenario"
     )
+
 _WORLD_PROFILE_DEFAULT_RESOURCES = {
     "open_world": "iron-ore,copper-ore,coal,stone,crude-oil",
     "default_lab_scenario": "iron-ore,copper-ore,coal,stone",
 }
-WORLD_RESOURCE_RADIUS = int(os.getenv("WORLD_RESOURCE_RADIUS", "600"))
-WORLD_WATER_RADIUS = int(os.getenv("WORLD_WATER_RADIUS", "1200"))
+WORLD_RESOURCE_RADIUS = _env_int("WORLD_RESOURCE_RADIUS", 600, minimum=1)
+WORLD_WATER_RADIUS = _env_int("WORLD_WATER_RADIUS", 1200, minimum=1)
 WORLD_REQUIRED_RESOURCES = tuple(
-    r.strip()
-    for r in os.getenv(
+    resource.strip()
+    for resource in os.getenv(
         "WORLD_REQUIRED_RESOURCES",
         _WORLD_PROFILE_DEFAULT_RESOURCES[WORLD_PROFILE],
     ).split(",")
-    if r.strip()
+    if resource.strip()
 )
 SKIP_WORLD_CHECK = os.getenv("SKIP_WORLD_CHECK", "0") == "1"
 # ----------------------------
 
 
-# ── Screenshot mod that fires on load (for --benchmark-graphics) ──────────
-_SCREENSHOT_MOD_INFO = """{
-  "name": "fle_screenshot",
-  "version": "1.0.0",
-  "title": "FLE Screenshot Renderer",
-  "author": "FLE",
-  "factorio_version": "1.1"
-}"""
-
-# This mod runs when a save is loaded via --benchmark-graphics.
-# It calculates camera bounds from player-force entities and takes
-# a 1920x1080 screenshot centered on the factory.
-_SCREENSHOT_MOD_CONTROL = r"""
-local EX = {
-    ["character"] = true,
-    ["entity-ghost"] = true,
-    ["tile-ghost"] = true,
-    ["electric-energy-interface"] = true,
-    ["resource"] = true,
-}
-
-local function take_factory_screenshot()
-    local s = game.surfaces[1]
-    local raw = s.find_entities_filtered{force = "player"}
-    local es = {}
-    for _, e in pairs(raw) do
-        if not EX[e.type] then es[#es + 1] = e end
-    end
-
-    local cx, cy, zoom = 0, 0, 0.5
-    if #es > 0 then
-        local xs, ys = {}, {}
-        for _, e in pairs(es) do
-            xs[#xs + 1] = e.position.x
-            ys[#ys + 1] = e.position.y
-        end
-        table.sort(xs)
-        table.sort(ys)
-        local mid = math.floor(#xs / 2) + 1
-        local mx, my = xs[mid], ys[mid]
-
-        -- Robust outlier filtering via MAD
-        local da, db = {}, {}
-        for i, x in ipairs(xs) do da[i] = math.abs(x - mx) end
-        for i, y in ipairs(ys) do db[i] = math.abs(y - my) end
-        table.sort(da)
-        table.sort(db)
-        local ma = math.max(da[mid], 5)
-        local mb = math.max(db[mid], 5)
-        local tx, ty = ma * 5, mb * 5
-
-        local nb = {}
-        for _, e in pairs(es) do
-            if math.abs(e.position.x - mx) <= tx and math.abs(e.position.y - my) <= ty then
-                nb[#nb + 1] = e
-            end
-        end
-        if #nb == 0 then nb = es end
-
-        local x1, y1, x2, y2 = math.huge, math.huge, -math.huge, -math.huge
-        for _, e in pairs(nb) do
-            local b = e.bounding_box
-            if b.left_top.x < x1 then x1 = b.left_top.x end
-            if b.left_top.y < y1 then y1 = b.left_top.y end
-            if b.right_bottom.x > x2 then x2 = b.right_bottom.x end
-            if b.right_bottom.y > y2 then y2 = b.right_bottom.y end
-        end
-        cx = (x1 + x2) / 2
-        cy = (y1 + y2) / 2
-        local w = x2 - x1 + 6
-        local h = y2 - y1 + 6
-        zoom = math.min(1920 / (w * 32), 1080 / (h * 32), 2)
-        zoom = math.max(zoom, 0.125)
-    end
-
-    -- Chart the area so it's revealed
-    game.forces["player"].chart(s, {{cx - 200, cy - 200}, {cx + 200, cy + 200}})
-
-    -- Set daytime
-    s.always_day = true
-    s.daytime = 0
-    s.freeze_daytime = true
-
-    -- Clear rendering overlays
-    rendering.clear()
-
-    game.take_screenshot{
-        surface = s,
-        position = {cx, cy},
-        resolution = {1920, 1080},
-        zoom = zoom,
-        path = "factory.png",
-        show_entity_info = true,
-        show_gui = false,
-        force_render = true,
-    }
-end
-
-local function capture_once()
-    local ok, err = pcall(take_factory_screenshot)
-    log("FLE_SCREENSHOT config_changed ok=" .. tostring(ok) .. " err=" .. tostring(err))
-end
-
--- --benchmark-graphics reliably runs this hook when an extra mod is injected.
--- on_load/on_init screenshot calls can crash this Factorio build for some saves.
-script.on_configuration_changed(capture_once)
-"""
-
-
-def _find_factorio_container() -> str:
-    """Find any running Factorio Docker container."""
-    try:
-        result = subprocess.run(
-            ["docker", "ps", "--filter", "name=factorio_",
-             "--format", "{{.Names}}"],
-            capture_output=True, text=True, timeout=10,
-        )
-        for line in result.stdout.strip().split("\n"):
-            if line.strip():
-                return line.strip()
-    except Exception:
-        pass
-    return None
-
 
 def _find_factorio_container_for_tcp_port(tcp_port: int) -> str:
-    """Find the running Factorio container that maps host tcp_port."""
+    """Return running Factorio container that maps host tcp_port, else None."""
     try:
         result = subprocess.run(
             ["docker", "ps", "--format", "{{.Names}}"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
-        names = [line.strip() for line in result.stdout.strip().split("\n") if line.strip()]
+        names = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
         for name in names:
             if "factorio" not in name.lower():
                 continue
+
             inspect = subprocess.run(
                 ["docker", "inspect", name],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if inspect.returncode != 0 or not inspect.stdout.strip():
                 continue
+
             info = json.loads(inspect.stdout)[0]
             ports = info.get("NetworkSettings", {}).get("Ports", {})
             for port_spec, bindings in ports.items():
@@ -231,12 +134,14 @@ def _find_factorio_container_for_tcp_port(tcp_port: int) -> str:
                     if host_port and int(host_port) == int(tcp_port):
                         return name
     except Exception:
-        pass
+        return None
+
     return None
 
 
-def probe_world_signature(rcon_client, resource_radius: int, water_radius: int):
-    """Read-only world probe used to reject obviously wrong maps before a run."""
+
+def probe_world_signature(rcon_client, resource_radius: int, water_radius: int) -> Tuple[str, Dict[str, str]]:
+    """Read-only world probe used to reject wrong maps before a run."""
     probe_cmd = (
         "/sc "
         "local p=game.players[1]; local s=game.surfaces[1]; "
@@ -269,8 +174,9 @@ def probe_world_signature(rcon_client, resource_radius: int, water_radius: int):
         "end; "
         "rcon.print(table.concat(out,'|'))"
     )
+
     raw = rcon_client.send_command(probe_cmd) or ""
-    parsed = {}
+    parsed: Dict[str, str] = {}
     for token in raw.split("|"):
         if "@" not in token:
             continue
@@ -279,22 +185,34 @@ def probe_world_signature(rcon_client, resource_radius: int, water_radius: int):
     return raw, parsed
 
 
+
 def save_game_state(rcon_client, step_num: int, version: int) -> str:
-    """Save game state via RCON. Returns the save name."""
+    """Save game state via RCON and return the save name."""
     save_name = f"fle_run_v{version}_step_{step_num:03d}"
     rcon_client.send_command(f'/sc game.auto_save("{save_name}")')
-    time.sleep(0.3)  # brief pause for save to complete
+    time.sleep(0.3)
     return save_name
 
 
-def copy_save_from_docker(container: str, save_name: str, dest_dir: Path):
-    """Copy a single save file from Docker. Returns local path or None."""
+
+def append_unique_save(save_names: List[str], seen: Set[str], save_name: str) -> None:
+    if save_name in seen:
+        return
+    seen.add(save_name)
+    save_names.append(save_name)
+
+
+
+def copy_save_from_docker(container: str, save_name: str, dest_dir: Path) -> Path:
+    """Copy one autosave from docker; returns local path or None."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     docker_path = f"{container}:/opt/factorio/saves/_autosave-{save_name}.zip"
     local_path = dest_dir / f"{save_name}.zip"
     result = subprocess.run(
         ["docker", "cp", docker_path, str(local_path)],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     if result.returncode != 0 or not local_path.exists():
         print(f"  Warning: failed to copy save {save_name}")
@@ -302,180 +220,49 @@ def copy_save_from_docker(container: str, save_name: str, dest_dir: Path):
     return local_path
 
 
-def copy_saves_from_docker(container: str, save_names: list, dest_dir: Path):
-    """Copy save files from Docker container to local filesystem."""
+
+def copy_saves_from_docker(container: str, save_names: List[str], dest_dir: Path) -> None:
+    """Copy all unique save files from docker to local filesystem."""
     for name in save_names:
         copy_save_from_docker(container, name, dest_dir)
 
 
-def render_step_from_docker(
-    container: str,
-    save_name: str,
-    step_idx: int,
-    save_dir: Path,
-    screenshot_dir: Path,
-) -> bool:
-    """Copy one save from Docker and render it to step_{idx}.png."""
-    save_zip = copy_save_from_docker(container, save_name, save_dir)
-    if not save_zip:
-        return False
-    output_png = screenshot_dir / f"step_{step_idx:03d}.png"
-    return render_screenshot(save_zip, output_png, container=container)
 
-
-def render_simple_screenshot(instance, output_png: Path) -> bool:
-    """Render screenshot using Python-side renderer (no Factorio benchmark)."""
-    try:
-        image = instance.namespace._render_simple()
-        output_png.parent.mkdir(parents=True, exist_ok=True)
-        image.image.save(output_png)
-        return True
-    except Exception as e:
-        print(f"  Error render_simple for {output_png.name}: {e}")
-        return False
-
-
-def render_screenshot(save_zip: Path, output_png: Path, container: str = None) -> bool:
-    """Render a screenshot from a save file using --benchmark-graphics.
-
-    This is a standalone function suitable for ProcessPoolExecutor.
-    Returns True on success.
-    """
-    tmpdir = tempfile.mkdtemp(prefix="fle_render_")
-    try:
-        # Create mod directory
-        mod_dir = Path(tmpdir) / "mods" / "fle_screenshot"
-        mod_dir.mkdir(parents=True)
-        (mod_dir / "info.json").write_text(_SCREENSHOT_MOD_INFO)
-        (mod_dir / "control.lua").write_text(_SCREENSHOT_MOD_CONTROL)
-
-        # Write config.ini
-        config_ini = Path(tmpdir) / "config.ini"
-        script_output = Path(tmpdir) / "script-output"
-        script_output.mkdir()
-        config_ini.write_text(
-            f"[path]\n"
-            f"read-data={FACTORIO_DATA}\n"
-            f"write-data={tmpdir}\n"
-        )
-
-        # Run benchmark-graphics
-        cmd = [
-            "xvfb-run", "-a", "-s", "-screen 0 1920x1080x24",
-            str(FACTORIO_BINARY),
-            "--benchmark-graphics", str(save_zip),
-            "--benchmark-ticks", str(CATCHUP_RENDER_TICKS),
-            "--benchmark-ignore-paused",
-            "--mod-directory", str(Path(tmpdir) / "mods"),
-            "-c", str(config_ini),
-            "--disable-audio",
-            "--disable-migration-window",
-        ]
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=180,
-        )
-
-        # Find the screenshot
-        screenshot = script_output / "factory.png"
-        if screenshot.exists() and screenshot.stat().st_size > 0:
-            output_png.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(screenshot, output_png)
-            return True
-        else:
-            print(f"  Warning: no screenshot produced for {save_zip.name}")
-            if result.returncode != 0:
-                print(f"  Exit code: {result.returncode}")
-                stderr_tail = result.stderr[-500:] if result.stderr else ""
-                print(f"  Stderr: {stderr_tail}")
-            return False
-    except Exception as e:
-        print(f"  Error rendering {save_zip.name}: {e}")
-        return False
-    finally:
-        shutil.rmtree(tmpdir, ignore_errors=True)
-
-
-def batch_render_screenshots(
-    save_dir: Path,
-    screenshot_dir: Path,
-    max_parallel: int = MAX_RENDER_PARALLEL,
-):
-    """Render all saves to screenshots in parallel."""
-    saves = sorted(save_dir.glob("*.zip"))
-    if not saves:
-        print("No saves to render")
-        return 0
-
-    screenshot_dir.mkdir(parents=True, exist_ok=True)
-    print(f"\nRendering {len(saves)} screenshots ({max_parallel} parallel)...")
-    t0 = time.time()
-    success = 0
-
-    with ThreadPoolExecutor(max_workers=max_parallel) as executor:
-        futures = {}
-        for i, save_zip in enumerate(saves):
-            output_png = screenshot_dir / f"step_{i:03d}.png"
-            future = executor.submit(render_screenshot, save_zip, output_png)
-            futures[future] = (i, save_zip.name)
-
-        for future in as_completed(futures):
-            idx, name = futures[future]
-            try:
-                ok = future.result()
-                if ok:
-                    success += 1
-                    print(f"  [{success}/{len(saves)}] Rendered step_{idx:03d}.png")
-            except Exception as e:
-                print(f"  Error rendering {name}: {e}")
-
-    dt = time.time() - t0
-    print(f"Rendered {success}/{len(saves)} screenshots in {dt:.1f}s")
-    return success
-
-
-def png_to_mp4(png_dir: Path, output_path: Path, seconds_per_frame: float = 3.0) -> bool:
-    """Convert PNGs to MP4, holding each frame for seconds_per_frame seconds."""
-    pngs = sorted(f for f in png_dir.glob("step_*.png"))
-    if not pngs:
-        print("No PNGs to convert")
-        return False
-    if not shutil.which("ffmpeg"):
-        print("ffmpeg not found in PATH")
-        return False
-
-    concat_file = png_dir / "_concat.txt"
-    with concat_file.open("w") as f:
-        for png in pngs:
-            f.write(f"file '{png.resolve()}'\n")
-            f.write(f"duration {seconds_per_frame}\n")
-        f.write(f"file '{pngs[-1].resolve()}'\n")
-
+def run_catchup_renderer(save_dir: Path, screenshot_dir: Path) -> None:
+    """Run standalone renderer on all copied saves."""
+    render_script = Path(__file__).parent / "render_saves.py"
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "concat", "-safe", "0",
-        "-i", str(concat_file),
-        "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30",
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-crf", "23",
-        "-pix_fmt", "yuv420p",
-        str(output_path),
+        sys.executable,
+        str(render_script),
+        str(save_dir),
+        str(screenshot_dir),
+        "--skip-existing",
+        "--no-clear",
     ]
-    print(f"\nGenerating video: {output_path}")
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    concat_file.unlink(missing_ok=True)
 
+    print(
+        "\nLaunching catch-up renderer: "
+        f"python {render_script} {save_dir} {screenshot_dir} --skip-existing --no-clear"
+    )
+
+    result = subprocess.run(
+        cmd,
+        timeout=CATCHUP_PHASE_TIMEOUT,
+        env={
+            **os.environ,
+            "RENDER_MAX_PARALLEL": str(CATCHUP_RENDER_PARALLEL),
+            "RENDER_TIMEOUT": str(CATCHUP_RENDER_TIMEOUT),
+            "RENDER_RETRIES": str(CATCHUP_RENDER_RETRIES),
+            "RENDER_TICKS": str(CATCHUP_RENDER_TICKS),
+        },
+    )
     if result.returncode != 0:
-        print(f"ffmpeg error: {result.stderr[-300:]}")
-        return False
-    else:
-        print(f"Video saved: {output_path} ({len(pngs)} frames, {seconds_per_frame}s each)")
-        return True
+        sys.exit(f"ERROR: catch-up renderer exited with code {result.returncode}")
 
 
 async def main():
     print(f"=== FLE Run: {MODEL} on {ENV_ID}, {MAX_STEPS} steps ===")
-    print(f"    Save per step + screenshot backend: {SCREENSHOT_BACKEND}")
+    print("    Save per step + screenshot backend: benchmark")
     print(
         "    World profile: "
         f"{WORLD_PROFILE} "
@@ -483,34 +270,32 @@ async def main():
         f"resource_radius={WORLD_RESOURCE_RADIUS}, water_radius={WORLD_WATER_RADIUS})\n"
     )
 
-    if SCREENSHOT_BACKEND not in {"render_simple", "benchmark"}:
-        sys.exit(
-            f"ERROR: invalid SCREENSHOT_BACKEND={SCREENSHOT_BACKEND}. "
-            "Use 'render_simple' or 'benchmark'."
-        )
-
     if not FACTORIO_BINARY.is_file():
         sys.exit(f"ERROR: Factorio binary not found at {FACTORIO_BINARY}")
     if not shutil.which("ffmpeg"):
         sys.exit("ERROR: ffmpeg not found (install ffmpeg)")
-    if SCREENSHOT_BACKEND == "benchmark" and not shutil.which("xvfb-run"):
+    if not shutil.which("xvfb-run"):
         sys.exit("ERROR: xvfb-run not found (install xvfb)")
 
     # Setup
     db_client = await create_db_client()
     env_info = get_environment_info(ENV_ID)
     task = TaskFactory.create_task(env_info["task_config_path"])
-    object.__setattr__(task, 'trajectory_length', MAX_STEPS)
+    object.__setattr__(task, "trajectory_length", MAX_STEPS)
 
     gym_env = gym.make(ENV_ID, run_idx=0)
     instance = gym_env.unwrapped.instance
     server_tcp_port = int(getattr(instance, "tcp_port", 0))
+    if server_tcp_port <= 0:
+        sys.exit(f"ERROR: invalid tcp port from environment instance: {server_tcp_port}")
 
     container = _find_factorio_container_for_tcp_port(server_tcp_port)
     if not container:
-        container = _find_factorio_container()
-    if not container:
-        sys.exit("ERROR: No Factorio Docker container found")
+        sys.exit(
+            "ERROR: could not resolve Factorio container for "
+            f"tcp/{server_tcp_port}; refusing cross-world fallback."
+        )
+
     print(f"Factorio server: 127.0.0.1:{server_tcp_port}")
     print(f"Docker container: {container}")
 
@@ -523,11 +308,13 @@ async def main():
         print(f"World probe: {raw_probe}")
 
         missing_resources = [
-            resource for resource in WORLD_REQUIRED_RESOURCES
+            resource
+            for resource in WORLD_REQUIRED_RESOURCES
             if parsed_probe.get(resource, "none").startswith("none")
         ]
         if parsed_probe.get("water_tile", "none").startswith("none"):
             missing_resources.append("water_tile")
+
         if missing_resources:
             sys.exit(
                 "ERROR: Wrong world signature detected for profile "
@@ -564,60 +351,30 @@ async def main():
 
     log_dir = os.path.join(".fle", "trajectory_logs", f"v{version}")
 
-    SCREENSHOT_DIR = SCREENSHOT_BASE / f"v{version}"
-    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    for f in SCREENSHOT_DIR.glob("step_*.png"):
-        f.unlink()
+    screenshot_dir = SCREENSHOT_BASE / f"v{version}"
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+    for old_png in screenshot_dir.glob("step_*.png"):
+        old_png.unlink()
 
-    # Prepare save directory
-    SAVE_DIR = SAVES_DIR / f"v{version}"
-    SAVE_DIR.mkdir(parents=True, exist_ok=True)
-    for f in SAVE_DIR.glob("*.zip"):
-        f.unlink()
+    save_dir = SAVES_DIR / f"v{version}"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    for old_zip in save_dir.glob("*.zip"):
+        old_zip.unlink()
 
     print(f"Version: {version}")
     print(f"Logs: {log_dir}")
-    print(f"Screenshots: {SCREENSHOT_DIR}")
-    print(f"Saves: {SAVE_DIR}")
-    print(f"Screenshot backend: {SCREENSHOT_BACKEND}")
+    print(f"Screenshots: {screenshot_dir}")
+    print(f"Saves: {save_dir}")
     print(f"World profile: {WORLD_PROFILE}")
-    print(f"Live render workers: {LIVE_RENDER_PARALLEL}")
     print()
 
-    use_benchmark_backend = SCREENSHOT_BACKEND == "benchmark"
-    live_render_enabled = use_benchmark_backend and LIVE_RENDER_PARALLEL > 0
-    live_render_executor = ThreadPoolExecutor(max_workers=LIVE_RENDER_PARALLEL) if live_render_enabled else None
-    live_render_futures = {}
+    save_names: List[str] = []
+    seen_save_names: Set[str] = set()
 
-    def submit_live_render(step_idx: int, save_name: str):
-        if not live_render_enabled:
-            return
-        step_future = live_render_executor.submit(
-            render_step_from_docker,
-            container,
-            save_name,
-            step_idx,
-            SAVE_DIR,
-            SCREENSHOT_DIR,
-        )
-        live_render_futures[step_future] = (step_idx, save_name)
-
-    # Save initial game state
-    save_names = []
     initial_save = save_game_state(instance.rcon_client, 0, version)
-    save_names.append(initial_save)
+    append_unique_save(save_names, seen_save_names, initial_save)
     print(f"Saved initial state: {initial_save}")
-    if use_benchmark_backend:
-        submit_live_render(0, initial_save)
-    else:
-        output_png = SCREENSHOT_DIR / "step_000.png"
-        ok = render_simple_screenshot(instance, output_png)
-        if ok:
-            print("Captured step_000.png via render_simple")
-        else:
-            print("Warning: failed to capture step_000.png via render_simple")
 
-    # Run the trajectory
     runner = GymTrajectoryRunner(
         config=config,
         gym_env=gym_env,
@@ -626,25 +383,27 @@ async def main():
         process_id=0,
     )
 
-    max_steps = MAX_STEPS
     current_state, agent_steps = await runner._initialize_trajectory_state()
+    _ = current_state
 
-    for idx, a in enumerate(runner.agents):
-        runner.logger.save_system_prompt(a, idx)
+    for idx, configured_agent in enumerate(runner.agents):
+        runner.logger.save_system_prompt(configured_agent, idx)
 
     from itertools import product as iprod
+
     from fle.env.gym_env.action import Action
     from fle.env.gym_env.observation import Observation
     from fle.agents import CompletionReason, CompletionResult
 
     step_count = 0
     done = False
-    for _, agent_idx in iprod(range(max_steps), range(len(runner.agents))):
+
+    for _, agent_idx in iprod(range(MAX_STEPS), range(len(runner.agents))):
         agent_r = runner.agents[agent_idx]
         iteration_start = time.time()
 
         try:
-            while agent_steps[agent_idx] < max_steps:
+            while agent_steps[agent_idx] < MAX_STEPS:
                 policy = await agent_r.generate_policy()
                 agent_steps[agent_idx] += 1
                 step_count += 1
@@ -673,45 +432,49 @@ async def main():
                 await agent_r.update_conversation(observation, previous_program=program)
 
                 runner._log_trajectory_state(
-                    iteration_start, agent_r, agent_idx,
-                    agent_steps[agent_idx], production_score, program, observation,
+                    iteration_start,
+                    agent_r,
+                    agent_idx,
+                    agent_steps[agent_idx],
+                    production_score,
+                    program,
+                    observation,
                 )
 
                 elapsed = time.time() - iteration_start
-                print(f"[step {step_count:2d}/{max_steps}] reward={reward:.2f} score={production_score:.2f} err={info['error_occurred']} ({elapsed:.1f}s)")
+                print(
+                    f"[step {step_count:2d}/{MAX_STEPS}] "
+                    f"reward={reward:.2f} score={production_score:.2f} "
+                    f"err={info['error_occurred']} ({elapsed:.1f}s)"
+                )
 
-                # Save game state after this step
-                sn = save_game_state(instance.rcon_client, step_count, version)
-                save_names.append(sn)
-                if use_benchmark_backend:
-                    submit_live_render(step_count, sn)
-                else:
-                    output_png = SCREENSHOT_DIR / f"step_{step_count:03d}.png"
-                    ok = render_simple_screenshot(instance, output_png)
-                    if not ok:
-                        print(f"Warning: failed to capture {output_png.name} via render_simple")
+                save_name = save_game_state(instance.rcon_client, step_count, version)
+                append_unique_save(save_names, seen_save_names, save_name)
 
                 if done:
                     print(f"\n*** TASK COMPLETED at step {step_count}! ***")
-                    for a in runner.agents:
-                        await a.end(CompletionResult(step=agent_steps[agent_idx], reason=CompletionReason.SUCCESS))
+                    for configured_agent in runner.agents:
+                        await configured_agent.end(
+                            CompletionResult(
+                                step=agent_steps[agent_idx],
+                                reason=CompletionReason.SUCCESS,
+                            )
+                        )
                     break
 
             if done:
                 break
 
-        except Exception as e:
-            print(f"[step {step_count}] Error: {e}")
+        except Exception as exc:
+            print(f"[step {step_count}] Error: {exc}")
             import traceback
+
             traceback.print_exc()
-            # Save anyway
-            sn = save_game_state(instance.rcon_client, step_count, version)
-            save_names.append(sn)
-            if use_benchmark_backend:
-                submit_live_render(step_count, sn)
-            else:
-                output_png = SCREENSHOT_DIR / f"step_{step_count:03d}.png"
-                render_simple_screenshot(instance, output_png)
+
+            # Keep a snapshot for post-mortem, but dedupe names so counts stay stable.
+            snapshot_step = max(step_count, 0)
+            save_name = save_game_state(instance.rcon_client, snapshot_step, version)
+            append_unique_save(save_names, seen_save_names, save_name)
             continue
 
         if done:
@@ -719,67 +482,25 @@ async def main():
 
     await db_client.cleanup()
 
-    if use_benchmark_backend:
-        if live_render_enabled:
-            print(f"\nWaiting for {len(live_render_futures)} live render jobs to finish...")
-            live_render_success = 0
-            for future in as_completed(live_render_futures):
-                step_idx, name = live_render_futures[future]
-                try:
-                    ok = future.result()
-                    if ok:
-                        live_render_success += 1
-                        print(f"  Live render OK: step_{step_idx:03d}.png ({name})")
-                    else:
-                        print(f"  Live render failed: step_{step_idx:03d}.png ({name})")
-                except Exception as e:
-                    print(f"  Live render error step_{step_idx:03d} ({name}): {e}")
-            live_render_executor.shutdown(wait=True)
-            print(f"Live render complete: {live_render_success}/{len(live_render_futures)}")
-        else:
-            print("\nLive rendering disabled (LIVE_RENDER_PARALLEL=0)")
+    print(f"\nCopying {len(save_names)} saves from Docker...")
+    copy_saves_from_docker(container, save_names, save_dir)
 
-        # Copy saves from Docker container to ensure full local save set
-        print(f"\nCopying {len(save_names)} saves from Docker...")
-        copy_saves_from_docker(container, save_names, SAVE_DIR)
+    run_catchup_renderer(save_dir, screenshot_dir)
 
-        # Catch-up render for any missing screenshots + MP4 generation.
-        render_script = Path(__file__).parent / "render_saves.py"
-        print(f"\nLaunching catch-up renderer: python {render_script} {SAVE_DIR} {SCREENSHOT_DIR} --skip-existing --no-clear")
-        render_result = subprocess.run(
-            [sys.executable, str(render_script), str(SAVE_DIR), str(SCREENSHOT_DIR), "--skip-existing", "--no-clear"],
-            timeout=CATCHUP_PHASE_TIMEOUT,
-            env={
-                **os.environ,
-                "FLE_RENDER_CONTAINER": container,
-                "RENDER_MAX_PARALLEL": str(CATCHUP_RENDER_PARALLEL),
-                "RENDER_TIMEOUT": str(CATCHUP_RENDER_TIMEOUT),
-                "RENDER_RETRIES": str(CATCHUP_RENDER_RETRIES),
-                "RENDER_TICKS": str(CATCHUP_RENDER_TICKS),
-            },
-        )
-        if render_result.returncode != 0:
-            sys.exit(f"ERROR: catch-up renderer exited with code {render_result.returncode}")
-    else:
-        print("\nUsing render_simple backend: screenshots captured inline during the run.")
-        print(f"\nCopying {len(save_names)} saves from Docker...")
-        copy_saves_from_docker(container, save_names, SAVE_DIR)
-        if not png_to_mp4(SCREENSHOT_DIR, SCREENSHOT_DIR / "run.mp4", seconds_per_frame=3.0):
-            sys.exit("ERROR: failed to generate run.mp4")
-
-    screenshot_count = len(list(SCREENSHOT_DIR.glob("step_*.png")))
+    screenshot_count = len(list(screenshot_dir.glob("step_*.png")))
     expected_screenshots = len(save_names)
     if screenshot_count != expected_screenshots:
         sys.exit(
             f"ERROR: expected {expected_screenshots} screenshots, got {screenshot_count}."
         )
-    print(f"\n{'='*60}")
-    print(f"Run complete: {step_count} steps, {screenshot_count} screenshots")
-    print(f"{'='*60}")
 
-    print(f"\n=== ALL OUTPUTS ===")
-    print(f"  Video:       {(SCREENSHOT_DIR / 'run.mp4').resolve()}")
-    print(f"  Screenshots: {SCREENSHOT_DIR.resolve()}/step_*.png")
+    print(f"\n{'=' * 60}")
+    print(f"Run complete: {step_count} steps, {screenshot_count} screenshots")
+    print(f"{'=' * 60}")
+
+    print("\n=== ALL OUTPUTS ===")
+    print(f"  Video:       {(screenshot_dir / 'run.mp4').resolve()}")
+    print(f"  Screenshots: {screenshot_dir.resolve()}/step_*.png")
     print(f"  Logs:        {Path(log_dir).resolve()}/")
     print(f"  DB:          .fle/data.db (version {version})")
 

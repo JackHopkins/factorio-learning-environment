@@ -74,7 +74,6 @@ set -euo pipefail
 FACTORIO_SERVER_ADDRESS=127.0.0.1 \
 FACTORIO_SERVER_PORT=41000 \
 SCREENSHOT_BACKEND=benchmark \
-LIVE_RENDER_PARALLEL=0 \
 CATCHUP_RENDER_PARALLEL=1 \
 CATCHUP_RENDER_TIMEOUT=900 \
 CATCHUP_RENDER_RETRIES=1 \
@@ -88,7 +87,7 @@ Note: `python run_with_video.py` now defaults to the reliable profile (`benchmar
 
 - Do not set `SKIP_WORLD_CHECK=1` (world preflight must stay enabled).
 - Required model for this workflow is `claude-sonnet-4-6` (do not run with other models).
-- Do not use `SCREENSHOT_BACKEND=render_simple` for production runs.
+- Do not use any screenshot backend other than `SCREENSHOT_BACKEND=benchmark`.
 - Do not set `CATCHUP_RENDER_TICKS` or `RENDER_TICKS` below `60`.
 - Keep renderer parallelism at `1` unless a soak test proves higher values are stable.
 

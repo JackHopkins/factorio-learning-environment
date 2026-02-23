@@ -17,6 +17,7 @@ An open source framework for developing and evaluating LLM agents in the game of
 
 - [Installation](#installation)
 - [Environment](#environment)
+- [Reliable Video Run](#reliable-video-run)
 - [Contributing](#contributing)
 
 ## Installation
@@ -55,6 +56,45 @@ fle cluster start
 # Run evaluation trajectories (requires [eval] dependencies)
 fle eval --config configs/gym_run_config.json
 ```
+
+## Reliable Video Run
+
+Use the wrapper script to run an agent trajectory and generate:
+
+- step screenshots (`step_000.png` ...),
+- `run.mp4`,
+- trajectory logs.
+
+```bash
+# Recommended default-lab run on reserved port 41000
+./run_video_reliable.sh 41000
+```
+
+Select scenario profile explicitly:
+
+```bash
+WORLD_PROFILE=default_lab_scenario ./run_video_reliable.sh
+WORLD_PROFILE=open_world ./run_video_reliable.sh
+```
+
+Optional run length/task overrides:
+
+```bash
+ENV_ID=iron_gear_wheel_throughput MAX_STEPS=10 ./run_video_reliable.sh 41000
+```
+
+Key behavior of this workflow:
+
+- Uses model `claude-sonnet-4-6`.
+- Uses real benchmark rendering (`SCREENSHOT_BACKEND=benchmark`).
+- Runs save-per-step + catch-up rendering via `render_saves.py`.
+- Enforces world preflight checks unless `SKIP_WORLD_CHECK=1` is manually set.
+
+Artifacts are written to:
+
+- Screenshots/video: `.fle/run_screenshots/v<version>/`
+- Logs: `.fle/trajectory_logs/v<version>/`
+- Saves used for rendering: `/tmp/fle-run-saves/v<version>/`
 
 ## Environment
 

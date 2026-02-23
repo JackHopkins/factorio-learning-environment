@@ -5,6 +5,7 @@
 - 2026-02-22T19:24Z [CODE] Implement live per-step save rendering in `run_with_video.py` so screenshot rendering overlaps with agent execution, then keep a final catch-up render phase for completeness.
 
 [DECISIONS]
+- 2026-02-23T03:17Z [USER] Prioritize code clarity and reliability over fallback breadth; reduce non-essential fallback branches in run/video orchestration.
 - 2026-02-23T01:28Z [USER] Standardize all reliable runs to model `claude-sonnet-4-6`; disallow ad-hoc model switching in shared workflow.
 - 2026-02-23T01:06Z [CODE] Added a dedicated isolation bootstrap for the codex server (`ensure_codex_factorio_server.sh`) and made `run_video_reliable.sh` invoke it for `default_lab_scenario` on tcp/41000.
 - 2026-02-23T01:06Z [CODE] Treat server-volume isolation as required (not optional) for world stability: `mods/config/scenarios/saves/script-output` must come from `/tmp/factorio-agent-1-codex/*`.
@@ -31,6 +32,10 @@
 - 2026-02-23T00:10Z [CODE] Wrapper port validation now requires a running Factorio container mapped on the chosen reserved port, instead of rejecting ports that are in use.
 
 [PROGRESS]
+- 2026-02-23T03:22Z [CODE] Updated `README.md` with a new "Reliable Video Run" section documenting wrapper usage, profile/task overrides, expected behavior, and artifact paths.
+- 2026-02-23T03:17Z [CODE] Refactored `run_with_video.py` to a single benchmark-only render path: removed inline/live renderer branching, enforced strict container resolution by tcp port, and centralized catch-up rendering in `render_saves.py`.
+- 2026-02-23T03:17Z [CODE] Hardened LLM retry behavior in `fle/agents/llm/api_factory.py` with bounded retries (`stop_after_attempt`) and transient-only retry classification.
+- 2026-02-23T03:17Z [TOOL] Smoke-tested refactored path (`WORLD_PROFILE=default_lab_scenario ENV_ID=iron_gear_wheel_throughput MAX_STEPS=2 ./run_video_reliable.sh 41000`) and completed as `version 20`.
 - 2026-02-23T02:39Z [TOOL] Executed full reliable run (`WORLD_PROFILE=default_lab_scenario ENV_ID=automation_science_pack_throughput MAX_STEPS=30 ./run_video_reliable.sh 41000`); completed as `version 19` with `31/31` benchmark screenshots and MP4 generation.
 - 2026-02-23T01:50Z [TOOL] Ran short reliable smoke (`WORLD_PROFILE=default_lab_scenario ENV_ID=iron_gear_wheel_throughput MAX_STEPS=4 ./run_video_reliable.sh 41000`); completed as `version 18` with benchmark catch-up render `5/5` and MP4 output.
 - 2026-02-23T01:32Z [TOOL] Attempted short smoke run (`ENV_ID=iron_gear_wheel_throughput`, `MAX_STEPS=6`) on isolated `default_lab_scenario`; startup/probe succeeded but policy generation did not proceed due repeated Anthropic 400 responses.
@@ -62,6 +67,8 @@
 - 2026-02-23T00:10Z [TOOL] Executed full end-to-end run on oil world server (`FACTORIO_SERVER_PORT=28000`) with benchmark backend and catch-up renderer; run completed as `version 15`.
 
 [DISCOVERIES]
+- 2026-02-23T03:17Z [TOOL] Refactor smoke artifacts validated for `v20`: 3 PNGs (`step_000..step_002`) and MP4 (`1920x1080`, `9.034s`) generated successfully through the simplified pipeline.
+- 2026-02-23T03:09Z [CODE] Reliability review found material hardening gaps: unbounded LLM retries in `fle/agents/llm/api_factory.py` (permanent 4xx can loop forever), silent container fallback in `run_with_video.py` (can cross worlds if port mapping fails), and screenshot cardinality mismatch risk on exception-path duplicate save names.
 - 2026-02-23T02:39Z [TOOL] `v19` artifact verification passed: `.fle/run_screenshots/v19` contains `31` PNGs (`step_000`..`step_030`); MP4 metadata is `1920x1080`, `93.034s`, size `9,048,194` bytes.
 - 2026-02-23T01:44Z [TOOL] Direct Anthropic compatibility endpoint check now returns `HTTP 200` for model `claude-sonnet-4-6` (usage-limit lockout cleared after account limit increase).
 - 2026-02-23T01:37Z [TOOL] Re-check of Anthropic compatibility endpoint still returns `400 invalid_request_error` with `You have reached your specified API usage limits. You will regain access on 2026-03-01 at 00:00 UTC.` (not yet cleared).
@@ -111,6 +118,7 @@
 - 2026-02-23T00:10Z [TOOL] Viewer API confirms `version 15` with `has_screenshots: true` and `has_video: true`.
 
 [OUTCOMES]
+- 2026-02-23T03:17Z [CODE] Run/video orchestration is now cleaner and more deterministic: one rendering implementation (`render_saves.py`), strict port-to-container binding (no cross-world fallback), and bounded LLM retries for non-transient API failures.
 - 2026-02-23T02:39Z [TOOL] Full-length reliable pipeline is currently validated end-to-end on isolated default-lab server (`41000`): run `v19` finished with screenshots/video and viewer API lists `version 19` with `has_screenshots=true`, `has_video=true`.
 - 2026-02-23T01:50Z [TOOL] Current blocker status is resolved: API calls succeed and a fresh reliable run (`v18`) produced screenshots and MP4 (`.fle/run_screenshots/v18/run.mp4`) with viewer metadata showing `has_screenshots=true` and `has_video=true`.
 - 2026-02-23T01:06Z [CODE] Dedicated codex world isolation is now enforced in tooling, eliminating shared cluster volume coupling for the default-lab server path.

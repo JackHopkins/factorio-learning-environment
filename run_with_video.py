@@ -53,11 +53,24 @@ CATCHUP_RENDER_TIMEOUT = int(os.getenv("CATCHUP_RENDER_TIMEOUT", "900"))
 CATCHUP_RENDER_RETRIES = int(os.getenv("CATCHUP_RENDER_RETRIES", "1"))
 CATCHUP_RENDER_TICKS = int(os.getenv("CATCHUP_RENDER_TICKS", "60"))
 CATCHUP_PHASE_TIMEOUT = int(os.getenv("CATCHUP_PHASE_TIMEOUT", "14400"))
+WORLD_PROFILE = os.getenv("WORLD_PROFILE", "open_world").strip()
+if WORLD_PROFILE not in {"open_world", "default_lab_scenario"}:
+    sys.exit(
+        "ERROR: WORLD_PROFILE must be one of: "
+        "open_world, default_lab_scenario"
+    )
+_WORLD_PROFILE_DEFAULT_RESOURCES = {
+    "open_world": "iron-ore,copper-ore,coal,stone,crude-oil",
+    "default_lab_scenario": "iron-ore,copper-ore,coal,stone",
+}
 WORLD_RESOURCE_RADIUS = int(os.getenv("WORLD_RESOURCE_RADIUS", "600"))
 WORLD_WATER_RADIUS = int(os.getenv("WORLD_WATER_RADIUS", "1200"))
 WORLD_REQUIRED_RESOURCES = tuple(
     r.strip()
-    for r in os.getenv("WORLD_REQUIRED_RESOURCES", "iron-ore,copper-ore,coal,stone,crude-oil").split(",")
+    for r in os.getenv(
+        "WORLD_REQUIRED_RESOURCES",
+        _WORLD_PROFILE_DEFAULT_RESOURCES[WORLD_PROFILE],
+    ).split(",")
     if r.strip()
 )
 SKIP_WORLD_CHECK = os.getenv("SKIP_WORLD_CHECK", "0") == "1"
@@ -460,7 +473,13 @@ def png_to_mp4(png_dir: Path, output_path: Path, seconds_per_frame: float = 3.0)
 
 async def main():
     print(f"=== FLE Run: {MODEL} on {ENV_ID}, {MAX_STEPS} steps ===")
-    print(f"    Save per step + screenshot backend: {SCREENSHOT_BACKEND}\n")
+    print(f"    Save per step + screenshot backend: {SCREENSHOT_BACKEND}")
+    print(
+        "    World profile: "
+        f"{WORLD_PROFILE} "
+        f"(required={','.join(WORLD_REQUIRED_RESOURCES)}, "
+        f"resource_radius={WORLD_RESOURCE_RADIUS}, water_radius={WORLD_WATER_RADIUS})\n"
+    )
 
     if SCREENSHOT_BACKEND not in {"render_simple", "benchmark"}:
         sys.exit(
@@ -509,14 +528,15 @@ async def main():
             missing_resources.append("water_tile")
         if missing_resources:
             sys.exit(
-                "ERROR: Wrong world signature detected. Missing resources in probe: "
+                "ERROR: Wrong world signature detected for profile "
+                + f"{WORLD_PROFILE}. Missing resources in probe: "
                 + ", ".join(missing_resources)
                 + f" (required={','.join(WORLD_REQUIRED_RESOURCES)}, "
                 + f"radius={WORLD_RESOURCE_RADIUS}, water_radius={WORLD_WATER_RADIUS}). "
                 + "Set SKIP_WORLD_CHECK=1 to bypass."
             )
     else:
-        print("World probe skipped (SKIP_WORLD_CHECK=1)")
+        print(f"World probe skipped (SKIP_WORLD_CHECK=1) for profile={WORLD_PROFILE}")
 
     generator = SystemPromptGenerator(str(importlib.resources.files("fle") / "env"))
     system_prompt = generator.generate_for_agent(agent_idx=0, num_agents=1)
@@ -558,6 +578,7 @@ async def main():
     print(f"Screenshots: {SCREENSHOT_DIR}")
     print(f"Saves: {SAVE_DIR}")
     print(f"Screenshot backend: {SCREENSHOT_BACKEND}")
+    print(f"World profile: {WORLD_PROFILE}")
     print(f"Live render workers: {LIVE_RENDER_PARALLEL}")
     print()
 

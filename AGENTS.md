@@ -34,6 +34,13 @@ These are the only Factorio ports reserved for this workspace/user. Do not use a
 - Do not use shared/default cluster ports (for example `27000-27005`, `28000`, `40100`, `40200`).
 - If one of the reserved ports is occupied, stop and coordinate rather than switching to an unreserved port.
 
+## Allowed World Profiles (Only These)
+
+- `default_lab_scenario`
+- `open_world`
+
+Do not introduce or use any other world/scenario profile names in run tooling.
+
 ## Reliable Runbook: Real Screenshots + Video (Required)
 
 Use this exact workflow for every run.
@@ -47,6 +54,15 @@ Preferred (one command):
 ```
 
 Use one reserved TCP port from `41000-41009`.
+
+Profile selection:
+
+```bash
+WORLD_PROFILE=open_world ./run_video_reliable.sh
+WORLD_PROFILE=default_lab_scenario ./run_video_reliable.sh
+```
+
+If no port is passed, the wrapper auto-resolves a running server that matches `WORLD_PROFILE`.
 
 Fallback (explicit env form):
 

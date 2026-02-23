@@ -1,9 +1,13 @@
 # CONTINUITY
 
 [PLANS]
+- 2026-02-23T00:37Z [CODE] Align run tooling with repository-native scenario profiles only (`default_lab_scenario`, `open_world`) and remove custom world-profile drift.
 - 2026-02-22T19:24Z [CODE] Implement live per-step save rendering in `run_with_video.py` so screenshot rendering overlaps with agent execution, then keep a final catch-up render phase for completeness.
 
 [DECISIONS]
+- 2026-02-23T00:38Z [CODE] Restored strict reserved-port enforcement in `run_video_reliable.sh`: auto-resolution probes only `41000-41009`, and explicit ports outside that block are rejected.
+- 2026-02-23T00:37Z [USER] Canonical world profile names are the built-in scenario profiles only: `default_lab_scenario` and `open_world`.
+- 2026-02-23T00:37Z [CODE] `run_video_reliable.sh`/`run_with_video.py` profile handling remains restricted to those two values; no additional profile namespace will be added.
 - 2026-02-22T19:24Z [CODE] Kept rendering backend as subprocess-driven Factorio benchmark rendering; avoided ProcessPool-based Python worker imports.
 - 2026-02-22T19:24Z [CODE] Added a hybrid flow: live render during run plus final catch-up renderer with `--skip-existing --no-clear`.
 - 2026-02-22T19:25Z [CODE] `LIVE_RENDER_PARALLEL=0` now explicitly disables live rendering; nonzero values enable background render workers.
@@ -24,6 +28,9 @@
 - 2026-02-23T00:10Z [CODE] Wrapper port validation now requires a running Factorio container mapped on the chosen reserved port, instead of rejecting ports that are in use.
 
 [PROGRESS]
+- 2026-02-23T00:37Z [CODE] Added/kept `resolve_scenario_port.py` to classify running servers into `open_world` vs `default_lab_scenario` via read-only RCON probe and select matching port.
+- 2026-02-23T00:37Z [CODE] Updated `run_with_video.py` startup/preflight logs to print `WORLD_PROFILE` and include profile in world-signature mismatch failures.
+- 2026-02-23T00:37Z [CODE] Updated `AGENTS.md` and `CLAUDe.md` to explicitly state only the two scenario profiles are allowed.
 - 2026-02-22T19:24Z [CODE] Added `copy_save_from_docker` and `render_step_from_docker` helpers to `run_with_video.py`.
 - 2026-02-22T19:24Z [CODE] Added background `ThreadPoolExecutor` submission after each save (including initial save and exception-path save).
 - 2026-02-22T19:24Z [CODE] Updated `render_saves.py` CLI to accept `--skip-existing` and `--no-clear`.
@@ -43,6 +50,9 @@
 - 2026-02-23T00:10Z [TOOL] Executed full end-to-end run on oil world server (`FACTORIO_SERVER_PORT=28000`) with benchmark backend and catch-up renderer; run completed as `version 15`.
 
 [DISCOVERIES]
+- 2026-02-23T00:38Z [TOOL] Reserved-block probe result: `default_lab_scenario` resolves to `tcp/41000`; `open_world` has no running match in `41000-41009` and exits with code `3`.
+- 2026-02-23T00:37Z [TOOL] Validation passed after profile-alignment edits: `python -m py_compile run_with_video.py render_saves.py resolve_scenario_port.py` and `bash -n run_video_reliable.sh`.
+- 2026-02-23T00:37Z [TOOL] Live probe confirms `tcp/41000` classifies as `default_lab_scenario` and `tcp/27000`/`28000`/`40100`/`40200` classify as `open_world`; `tcp/27001-27005` remain `unknown` due to missing copper/stone.
 - 2026-02-22T19:24Z [TOOL] `python -m py_compile run_with_video.py render_saves.py` passed.
 - 2026-02-22T19:24Z [TOOL] `render_saves.py --help` confirms new options are available.
 - 2026-02-22T19:25Z [TOOL] Re-ran `python -m py_compile run_with_video.py render_saves.py` after disabling-path update; still passes.
@@ -80,6 +90,7 @@
 - 2026-02-23T00:10Z [TOOL] Viewer API confirms `version 15` with `has_screenshots: true` and `has_video: true`.
 
 [OUTCOMES]
+- 2026-02-23T00:37Z [CODE] Tooling and docs now consistently treat world profiles as only the two built-in scenarios, with runtime enforcement and auto-port resolution keyed to those names.
 - 2026-02-22T19:24Z [CODE] Pipeline now starts rendering while the agent loop is still running; final renderer still guarantees missing frames and MP4 output.
 - 2026-02-22T19:51Z [TOOL] Full real run confirmed the new behavior works in practice, not just syntactically.
 - 2026-02-22T20:08Z [CODE] Port reservation policy is now explicitly written in both `AGENTS.md` and `CLAUDe.md`.

@@ -29,3 +29,10 @@ For this workspace, use only the reserved Factorio ports below.
 - `46009`
 
 Do not use any other Factorio ports.
+
+# World Profiles (Only These)
+
+- `default_lab_scenario`
+- `open_world`
+
+Do not use any other world/scenario profile names.

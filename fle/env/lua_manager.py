@@ -22,6 +22,10 @@ class LuaScriptManager:
     def __init__(self, rcon_client: RCONClient, cache_scripts: bool = False):
         self.rcon_client = rcon_client
         self.cache_scripts = cache_scripts
+        # Scripts must be loaded at least once per Python process/session.
+        # Checksum tables persist in saves across server restarts, but Lua globals/functions do not.
+        # Tracking this locally prevents false "already loaded" skips after restarts.
+        self._loaded_scripts_this_session = set()
         if not cache_scripts:
             self._clear_game_checksums(rcon_client)
         # self.action_directory = _get_action_dir()
@@ -51,7 +55,7 @@ class LuaScriptManager:
                     return True, None
             return False, e.args[0]
 
-    def load_tool_into_game(self, name):
+    def load_tool_into_game(self, name, force: bool = False):
         # Select scripts by exact tool directory, not prefix
         tool_dirs = {
             f"agent/{name}",
@@ -62,6 +66,26 @@ class LuaScriptManager:
         tool_scripts = [
             key for key in self.tool_scripts.keys() if os.path.dirname(key) in tool_dirs
         ]
+
+        # In cache mode, unchanged scripts are omitted from self.tool_scripts.
+        # If a specific action is missing in-game, discover tool scripts directly.
+        if not tool_scripts:
+            tool_root = _get_dir("tools")
+            discovered = []
+            for scope in ("agent", "admin"):
+                directory = os.path.join(tool_root, scope, name)
+                if not os.path.isdir(directory):
+                    continue
+                for filename in os.listdir(directory):
+                    if not filename.endswith(".lua"):
+                        continue
+                    full_path = os.path.join(directory, filename)
+                    script_key = f"{scope}/{name}/{filename}"
+                    _, content = _load_script(full_path)
+                    self.tool_scripts[script_key] = content
+                    discovered.append(script_key)
+            tool_scripts = discovered
+
         # Sort scripts so server.lua comes last
         tool_scripts.sort(key=lambda x: x.endswith("server.lua"))
 
@@ -72,16 +96,21 @@ class LuaScriptManager:
                 self.tool_scripts[script_name] = script
 
             script = self.tool_scripts[script_name]
-            if self.cache_scripts:
+            if self.cache_scripts and not force:
                 checksum = self.calculate_checksum(script)
-                if (
+                checksum_matches = (
                     script_name in self.game_checksums
                     and self.game_checksums[script_name] == checksum
+                )
+                if (
+                    checksum_matches
+                    and script_name in self._loaded_scripts_this_session
                 ):
                     continue
-                self.update_game_checksum(self.rcon_client, script_name, checksum)
-                # Keep local view in sync so later loads skip
-                self.game_checksums[script_name] = checksum
+                if not checksum_matches:
+                    self.update_game_checksum(self.rcon_client, script_name, checksum)
+                    # Keep local view in sync so later loads skip
+                    self.game_checksums[script_name] = checksum
 
             correct, error = self.check_lua_syntax(script)
             if not correct:
@@ -92,6 +121,7 @@ class LuaScriptManager:
 
             if response and "error" in response.lower():
                 raise Exception(response)
+            self._loaded_scripts_this_session.add(script_name)
 
     def load_init_into_game(self, name):
         if name not in self.lib_scripts:
@@ -102,14 +132,19 @@ class LuaScriptManager:
         script = self.lib_scripts[name]
         if self.cache_scripts:
             checksum = self.calculate_checksum(script)
-            if name in self.game_checksums and self.game_checksums[name] == checksum:
+            checksum_matches = (
+                name in self.game_checksums and self.game_checksums[name] == checksum
+            )
+            if checksum_matches and name in self._loaded_scripts_this_session:
                 return
-            self.update_game_checksum(self.rcon_client, name, checksum)
+            if not checksum_matches:
+                self.update_game_checksum(self.rcon_client, name, checksum)
 
         response = self.rcon_client.send_command("/c " + script)
 
         if response and "error" in response.lower():
             raise Exception(response)
+        self._loaded_scripts_this_session.add(name)
 
         pass
 

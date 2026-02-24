@@ -35,8 +35,12 @@ else
 fi
 
 if [[ "${ENSURE_ISOLATED_CODEX_SERVER:-1}" == "1" && "${PORT}" == "41000" && "${PROFILE}" == "default_lab_scenario" ]]; then
+  DID_ISOLATED_ENSURE=1
   UDP_PORT="${FACTORIO_SERVER_UDP_PORT:-$((46000 + PORT - 41000))}"
-  "${ROOT_DIR}/ensure_codex_factorio_server.sh" "${PROFILE}" "${PORT}" "${UDP_PORT}"
+  FORCE_FRESH_WORLD="${WORLD_RESET_BEFORE_RUN:-0}" \
+    "${ROOT_DIR}/ensure_codex_factorio_server.sh" "${PROFILE}" "${PORT}" "${UDP_PORT}"
+else
+  DID_ISOLATED_ENSURE=0
 fi
 
 # Validate selected port matches requested scenario profile.
@@ -48,7 +52,7 @@ if ! docker ps --format '{{.Names}} {{.Ports}}' | grep -Eq "(^| )[^ ]*factorio[^
 fi
 
 CONTAINER="$(docker ps --format '{{.Names}} {{.Ports}}' | grep -m1 -E "factorio.*${PORT}->27015/tcp" | awk '{print $1}')"
-if [[ "${WORLD_RESET_BEFORE_RUN:-0}" == "1" ]]; then
+if [[ "${WORLD_RESET_BEFORE_RUN:-0}" == "1" && "${DID_ISOLATED_ENSURE}" != "1" ]]; then
   if [[ -z "${CONTAINER}" ]]; then
     echo "ERROR: cannot determine container for tcp/${PORT} to reset." >&2
     exit 1
@@ -68,8 +72,12 @@ export CATCHUP_RENDER_TIMEOUT="900"
 export CATCHUP_RENDER_RETRIES="1"
 export CATCHUP_RENDER_TICKS="60"
 export SKIP_WORLD_CHECK="0"
+export FLE_INCLUDE_ENTITIES="${FLE_INCLUDE_ENTITIES:-0}"
+export FLE_PROMPT_MODE="${FLE_PROMPT_MODE:-orchestrator}"
+export FLE_ENABLE_COMMAND_MODE_SWITCH="${FLE_ENABLE_COMMAND_MODE_SWITCH:-1}"
+export FLE_ENSURE_STARTER_INVENTORY="${FLE_ENSURE_STARTER_INVENTORY:-1}"
 
 echo "Running video pipeline on ${FACTORIO_SERVER_ADDRESS}:${FACTORIO_SERVER_PORT} profile=${WORLD_PROFILE}"
-echo "Backend=${SCREENSHOT_BACKEND} catchup_parallel=${CATCHUP_RENDER_PARALLEL} timeout=${CATCHUP_RENDER_TIMEOUT} retries=${CATCHUP_RENDER_RETRIES} ticks=${CATCHUP_RENDER_TICKS} reset=${WORLD_RESET_BEFORE_RUN:-0}"
+echo "Backend=${SCREENSHOT_BACKEND} catchup_parallel=${CATCHUP_RENDER_PARALLEL} timeout=${CATCHUP_RENDER_TIMEOUT} retries=${CATCHUP_RENDER_RETRIES} ticks=${CATCHUP_RENDER_TICKS} include_entities=${FLE_INCLUDE_ENTITIES} prompt_mode=${FLE_PROMPT_MODE} command_mode_switch=${FLE_ENABLE_COMMAND_MODE_SWITCH} ensure_starter_inventory=${FLE_ENSURE_STARTER_INVENTORY} reset=${WORLD_RESET_BEFORE_RUN:-0}"
 
 exec python run_with_video.py

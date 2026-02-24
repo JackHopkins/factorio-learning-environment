@@ -24,6 +24,7 @@ CONTAINER_NAME="${FACTORIO_CONTAINER_NAME:-factorio-agent-1-codex-server}"
 BASE_DIR="${FACTORIO_BASE_DIR:-/tmp/factorio-agent-1-codex}"
 IMAGE="${FACTORIO_IMAGE:-factoriotools/factorio:1.1.110}"
 START_WAIT_SECONDS="${FACTORIO_START_WAIT_SECONDS:-6}"
+FORCE_FRESH_WORLD="${FORCE_FRESH_WORLD:-0}"
 
 mkdir -p \
   "${BASE_DIR}/config" \
@@ -62,6 +63,16 @@ if [[ ! -d "${BASE_DIR}/scenarios/default_lab_scenario" ]]; then
   seed_if_missing "/tmp/factorio-verifier-cluster/scenarios" "${BASE_DIR}/scenarios"
 fi
 
+# Seed baseline saves from cluster assets only if local copies are missing.
+if [[ ! -f "${BASE_DIR}/saves/default_lab_scenario.zip" && -f "/tmp/factorio-verifier-cluster/saves/default_lab_scenario.zip" ]]; then
+  cp -n "/tmp/factorio-verifier-cluster/saves/default_lab_scenario.zip" \
+    "${BASE_DIR}/saves/default_lab_scenario.zip" || true
+fi
+if [[ ! -f "${BASE_DIR}/saves/open_world.zip" && -f "/tmp/factorio-verifier-cluster/saves/open_world.zip" ]]; then
+  cp -n "/tmp/factorio-verifier-cluster/saves/open_world.zip" \
+    "${BASE_DIR}/saves/open_world.zip" || true
+fi
+
 choose_save_file() {
   local profile="$1"
   local tcp_port="$2"
@@ -78,9 +89,10 @@ choose_save_file() {
     )
   else
     candidates=(
-      "${CODEX_OPEN_WORLD_SAVE:-open_world_seed_${tcp_port}.zip}"
-      "open_world_seed_41000.zip"
+      "${CODEX_OPEN_WORLD_SAVE:-open_world.zip}"
       "open_world.zip"
+      "open_world_seed_${tcp_port}.zip"
+      "open_world_seed_41000.zip"
     )
   fi
 
@@ -111,6 +123,7 @@ if ! SAVE_FILE="$(choose_save_file "${PROFILE}" "${TCP_PORT}" "${BASE_DIR}")"; t
   echo "       Add a seed save (for example codex_seed_${TCP_PORT}.zip or default_lab_scenario.zip)." >&2
   exit 1
 fi
+RUNTIME_SAVE_FILE="${FACTORIO_RUNTIME_SAVE:-active_${PROFILE}_${TCP_PORT}.zip}"
 
 mount_source() {
   local container_name="$1"
@@ -125,6 +138,12 @@ if docker ps -a --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
   ports_json="$(docker inspect "${CONTAINER_NAME}" --format '{{json .NetworkSettings.Ports}}')"
   host_tcp="$(echo "${ports_json}" | jq -r '."27015/tcp"[0].HostPort // empty')"
   host_udp="$(echo "${ports_json}" | jq -r '."34197/udp"[0].HostPort // empty')"
+  config_cmd="$(docker inspect "${CONTAINER_NAME}" --format '{{json .Config.Cmd}}' | tr -d '\n')"
+  expected_save_cmd="/opt/factorio/saves/${RUNTIME_SAVE_FILE}"
+  uses_runtime_save=0
+  if [[ "${config_cmd}" == *"${expected_save_cmd}"* ]]; then
+    uses_runtime_save=1
+  fi
 
   isolated=1
   for dst in \
@@ -140,7 +159,7 @@ if docker ps -a --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
     fi
   done
 
-  if [[ "${isolated}" == "1" && "${host_tcp}" == "${TCP_PORT}" && "${host_udp}" == "${UDP_PORT}" ]]; then
+  if [[ "${isolated}" == "1" && "${host_tcp}" == "${TCP_PORT}" && "${host_udp}" == "${UDP_PORT}" && "${uses_runtime_save}" == "1" && "${FORCE_FRESH_WORLD}" != "1" ]]; then
     needs_recreate=0
     running="$(docker inspect "${CONTAINER_NAME}" --format '{{.State.Running}}')"
     if [[ "${running}" != "true" ]]; then
@@ -152,6 +171,7 @@ fi
 
 if (( needs_recreate == 1 )); then
   docker rm -f "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+  cp -f "${BASE_DIR}/saves/${SAVE_FILE}" "${BASE_DIR}/saves/${RUNTIME_SAVE_FILE}"
   docker run -d \
     --name "${CONTAINER_NAME}" \
     --entrypoint /opt/factorio/bin/x64/factorio \
@@ -163,7 +183,7 @@ if (( needs_recreate == 1 )); then
     -v "${BASE_DIR}/mods:/opt/factorio/mods" \
     -v "${BASE_DIR}/config:/opt/factorio/config" \
     "${IMAGE}" \
-    --start-server "/opt/factorio/saves/${SAVE_FILE}" \
+    --start-server "/opt/factorio/saves/${RUNTIME_SAVE_FILE}" \
     --port 34197 \
     --rcon-port 27015 \
     --rcon-password factorio \
@@ -179,4 +199,4 @@ if (( needs_recreate == 1 )); then
   sleep "${START_WAIT_SECONDS}"
 fi
 
-echo "Ensured isolated container ${CONTAINER_NAME} profile=${PROFILE} tcp=${TCP_PORT} udp=${UDP_PORT} save=${SAVE_FILE}"
+echo "Ensured isolated container ${CONTAINER_NAME} profile=${PROFILE} tcp=${TCP_PORT} udp=${UDP_PORT} baseline=${SAVE_FILE} runtime=${RUNTIME_SAVE_FILE} fresh=${FORCE_FRESH_WORLD}"

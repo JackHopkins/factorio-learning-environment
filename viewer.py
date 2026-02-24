@@ -8,6 +8,7 @@ Usage:
 """
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 from flask import Flask, jsonify, send_file, abort
@@ -25,6 +26,66 @@ def get_db():
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _remove_whitespace_blocks(messages):
+    """Mirror APIFactory preprocessing for exact prompt payload reconstruction."""
+    out = []
+    for message in messages:
+        content = message.get("content")
+        if isinstance(content, str):
+            if content.strip():
+                out.append(message)
+        elif isinstance(content, list):
+            if len(content) > 0:
+                out.append(message)
+        else:
+            out.append(message)
+    return out
+
+
+def _merge_contiguous_messages(messages):
+    """Mirror APIFactory preprocessing for exact prompt payload reconstruction."""
+    if not messages:
+        return messages
+
+    merged = [dict(messages[0])]
+    for message in messages[1:]:
+        prev = merged[-1]
+        if (
+            message.get("role") == prev.get("role")
+            and isinstance(prev.get("content"), str)
+            and isinstance(message.get("content"), str)
+        ):
+            prev["content"] += "\n\n" + message["content"]
+        else:
+            merged.append(dict(message))
+    return merged
+
+
+def _normalized_llm_messages(raw_messages):
+    return _merge_contiguous_messages(_remove_whitespace_blocks(raw_messages))
+
+
+def _step_numbers_for_version(version: int, row_count: int):
+    """Best-effort canonical step numbers from trajectory logs; fallback to row order."""
+    traj_path = TRAJ_DIR / f"v{version}"
+    iter_steps = sorted(
+        int(m.group(1))
+        for p in traj_path.glob("agent0_iter*_program.py")
+        for m in [re.match(r"agent0_iter(\d+)_program\.py$", p.name)]
+        if m
+    )
+    if not iter_steps:
+        return list(range(row_count))
+
+    step_numbers = []
+    for idx in range(row_count):
+        if idx < len(iter_steps):
+            step_numbers.append(iter_steps[idx])
+        else:
+            step_numbers.append(iter_steps[-1] + (idx - len(iter_steps) + 1))
+    return step_numbers
 
 
 # ── API ──────────────────────────────────────────────────────────────────────
@@ -92,38 +153,38 @@ def api_run_steps(version):
     conn = get_db()
     rows = conn.execute(
         "SELECT depth, value, code, meta, response, conversation_json, created_at "
-        "FROM programs WHERE version=? ORDER BY depth",
+        "FROM programs WHERE version=? ORDER BY created_at, rowid",
         (version,),
     ).fetchall()
 
+    traj_path = TRAJ_DIR / f"v{version}"
+    step_numbers = _step_numbers_for_version(version, len(rows))
+
     # Read system prompt if available
-    sys_prompt_file = TRAJ_DIR / f"v{version}" / "agent0_system_prompt.txt"
+    sys_prompt_file = traj_path / "agent0_system_prompt.txt"
     system_prompt = sys_prompt_file.read_text() if sys_prompt_file.is_file() else ""
 
     steps = []
-    for r in rows:
-        step = int(r["depth"])
-        meta = json.loads(r["meta"]) if r["meta"] else {}
+    for turn_idx, r in enumerate(rows):
+        step = step_numbers[turn_idx]
+        try:
+            meta = json.loads(r["meta"]) if r["meta"] else {}
+        except json.JSONDecodeError:
+            meta = {}
 
         # Read observation from trajectory log
-        obs_file = TRAJ_DIR / f"v{version}" / f"agent0_iter{step}_observation.txt"
+        obs_file = traj_path / f"agent0_iter{step}_observation.txt"
         observation = obs_file.read_text() if obs_file.is_file() else ""
 
         # Check screenshot
         screen_path = SCREEN_DIR / f"v{version}" / f"step_{step:03d}.png"
 
-        # Extract user prompt from conversation_json.
-        # At depth N, conversation has: [system, user0, asst0, user1, asst1, ..., userN]
-        # So depth N has the assistant response for step N-1 but NOT for step N.
-        user_prompt = ""
+        conv_msgs = []
         if r["conversation_json"]:
             try:
-                msgs = json.loads(r["conversation_json"]).get("messages", [])
-                user_idx = 2 * step + 1
-                if user_idx < len(msgs) and msgs[user_idx]["role"] == "user":
-                    user_prompt = msgs[user_idx]["content"]
+                conv_msgs = json.loads(r["conversation_json"]).get("messages", [])
             except (json.JSONDecodeError, KeyError, IndexError):
-                pass
+                conv_msgs = []
 
         steps.append({
             "step": step,
@@ -133,29 +194,101 @@ def api_run_steps(version):
             "code": r["code"] or "",
             "observation": observation,
             "agent_response": "",
-            "user_prompt": user_prompt,
             "exec_output": r["response"] or "",
             "has_screenshot": screen_path.is_file(),
             "created_at": r["created_at"],
-            "_conversation_json": r["conversation_json"],
+            "_conversation_messages": conv_msgs,
         })
 
-    # Second pass: extract agent responses from the NEXT row's conversation
+    # Second pass: extract agent response from the NEXT row conversation tail.
+    # At step N+1 input, tail is [..., assistant(step N), user(step N+1)].
     for i, s in enumerate(steps):
-        next_conv = steps[i + 1]["_conversation_json"] if i + 1 < len(steps) else None
-        src = next_conv or s["_conversation_json"]
-        if src:
-            try:
-                msgs = json.loads(src).get("messages", [])
-                asst_idx = 2 * s["step"] + 2
-                if asst_idx < len(msgs) and msgs[asst_idx]["role"] == "assistant":
-                    s["agent_response"] = msgs[asst_idx]["content"]
-            except (json.JSONDecodeError, KeyError, IndexError):
-                pass
-        del s["_conversation_json"]
+        next_msgs = (
+            steps[i + 1]["_conversation_messages"] if i + 1 < len(steps) else []
+        )
+
+        if (
+            len(next_msgs) >= 2
+            and isinstance(next_msgs[-1], dict)
+            and isinstance(next_msgs[-2], dict)
+            and next_msgs[-1].get("role") == "user"
+            and next_msgs[-2].get("role") == "assistant"
+        ):
+            s["agent_response"] = next_msgs[-2].get("content", "")
+        elif next_msgs:
+            for msg in reversed(next_msgs):
+                if isinstance(msg, dict) and msg.get("role") == "assistant":
+                    s["agent_response"] = msg.get("content", "")
+                    break
+
+        del s["_conversation_messages"]
 
     conn.close()
     return jsonify({"system_prompt": system_prompt, "steps": steps})
+
+
+@app.route("/api/run/<int:version>/prompt/<int:step>")
+def api_run_prompt(version, step):
+    """Return the exact normalized messages payload sent to the LLM for a step."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT conversation_json, model, created_at "
+        "FROM programs WHERE version=? ORDER BY created_at, rowid",
+        (version,),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        abort(404)
+
+    step_numbers = _step_numbers_for_version(version, len(rows))
+    try:
+        row_idx = step_numbers.index(step)
+    except ValueError:
+        abort(404)
+
+    row = rows[row_idx]
+    raw_messages = []
+    if row["conversation_json"]:
+        try:
+            raw_messages = json.loads(row["conversation_json"]).get("messages", [])
+        except (json.JSONDecodeError, KeyError, TypeError):
+            raw_messages = []
+
+    messages = _normalized_llm_messages(raw_messages)
+    return jsonify(
+        {
+            "version": version,
+            "step": step,
+            "created_at": row["created_at"],
+            "model": row["model"],
+            "message_count": len(messages),
+            "messages": messages,
+        }
+    )
+
+
+@app.route("/api/run/<int:version>/mode-events")
+def api_run_mode_events(version):
+    traj_path = TRAJ_DIR / f"v{version}"
+    mode_path = traj_path / "mode_events.jsonl"
+
+    events = []
+    if mode_path.is_file():
+        for line in mode_path.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError:
+                events.append(
+                    {
+                        "event_type": "PARSE_ERROR",
+                        "raw_line": line,
+                    }
+                )
+
+    return jsonify({"version": version, "events": events})
 
 
 @app.route("/api/run/<int:version>/screenshot/<int:step>")
@@ -295,6 +428,36 @@ a { color: var(--accent); text-decoration: none; }
 .chain-block-content.code-block { color: #ce9178; }
 .chain-block-content.obs-block { color: var(--fg); }
 .chain-block-content.prompt-block { color: #9cdcfe; }
+.prompt-split { display: grid; gap: 10px; }
+.prompt-split-box { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--code-bg); }
+.prompt-split-title { font-size: 10px; color: var(--fg2); text-transform: uppercase; letter-spacing: 1px; padding: 6px 10px; background: var(--bg3); border-bottom: 1px solid var(--border); }
+.prompt-split-body { padding: 10px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow-y: auto; }
+.prompt-split-body.system { color: #b5cea8; }
+.prompt-split-body.user { color: #9cdcfe; }
+.prompt-mode-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--bg2); flex-wrap: wrap; }
+.prompt-mode-badge { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: bold; border-radius: 999px; padding: 3px 8px; }
+.prompt-mode-badge.mode-orchestrator { background: rgba(92,165,232,0.20); color: #b9dcff; border: 1px solid rgba(92,165,232,0.45); }
+.prompt-mode-badge.mode-build { background: rgba(78,201,112,0.20); color: #c6efcf; border: 1px solid rgba(78,201,112,0.45); }
+.prompt-mode-badge.mode-default { background: rgba(245,166,35,0.20); color: #ffdba4; border: 1px solid rgba(245,166,35,0.45); }
+.prompt-mode-legend { display: flex; gap: 8px; flex-wrap: wrap; }
+.prompt-mode-legend .chip { font-size: 10px; border-radius: 999px; padding: 2px 8px; border: 1px solid transparent; }
+.prompt-mode-legend .chip.universal { color: #ffdba4; border-color: rgba(245,166,35,0.45); background: rgba(245,166,35,0.10); }
+.prompt-mode-legend .chip.orchestrator { color: #b9dcff; border-color: rgba(92,165,232,0.45); background: rgba(92,165,232,0.10); }
+.prompt-mode-legend .chip.builder { color: #c6efcf; border-color: rgba(78,201,112,0.45); background: rgba(78,201,112,0.10); }
+.prompt-system-sections { display: grid; gap: 8px; padding: 10px; }
+.prompt-segment { border-radius: 6px; border: 1px solid var(--border); overflow: hidden; }
+.prompt-segment-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.prompt-segment-body { padding: 10px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow-y: auto; color: var(--fg); }
+.prompt-segment.missing { opacity: 0.55; }
+.prompt-segment.universal { border-left: 3px solid var(--accent); background: rgba(245,166,35,0.08); }
+.prompt-segment.universal .prompt-segment-title { color: #ffdba4; background: rgba(245,166,35,0.12); }
+.prompt-segment.orchestrator { border-left: 3px solid var(--blue); background: rgba(92,165,232,0.08); }
+.prompt-segment.orchestrator .prompt-segment-title { color: #b9dcff; background: rgba(92,165,232,0.12); }
+.prompt-segment.builder { border-left: 3px solid var(--green); background: rgba(78,201,112,0.08); }
+.prompt-segment.builder .prompt-segment-title { color: #c6efcf; background: rgba(78,201,112,0.12); }
+@media (min-width: 1200px) {
+  .prompt-split { grid-template-columns: 1fr 1fr; }
+}
 .chain-toggle { display: inline-flex; gap: 2px; background: var(--bg4); border-radius: 3px; padding: 2px; margin-left: 8px; vertical-align: middle; }
 .chain-toggle button { background: transparent; border: none; color: var(--fg2); padding: 2px 8px; border-radius: 2px; cursor: pointer; font-family: inherit; font-size: 10px; }
 .chain-toggle button:hover { color: var(--fg); }
@@ -333,6 +496,8 @@ let currentSteps = [];
 let currentStep = 0;
 let systemPrompt = '';
 let viewMode = 'chain'; // 'step' or 'chain'
+let promptCache = new Map();
+let promptRequestSeq = 0;
 
 function scoreColor(score) {
   if (score <= 0) return 'var(--red)';
@@ -375,6 +540,8 @@ function renderRunList() {
 async function selectRun(version) {
   currentRun = runs.find(r => r.version === version);
   currentStep = 0;
+  promptCache.clear();
+  promptRequestSeq += 1;
   renderRunList();
 
   const resp = await fetch(`/api/run/${version}/steps`);
@@ -454,27 +621,14 @@ function buildChainView() {
           <span class="chain-step-time">${s.created_at || ''}</span>
         </div>`;
 
-    // Screenshot if available
-    if (s.has_screenshot) {
-      html += `
-        <div class="chain-screenshot">
-          <img src="/api/run/${v}/screenshot/${s.step}" onclick="this.classList.toggle('expanded')">
-        </div>`;
-    }
-
-    // Prompt with chain toggle
-    if (s.user_prompt) {
-      html += `
-        <div class="chain-block">
-          <div class="chain-block-label">Prompt
-            <span class="chain-toggle">
-              <button class="active" onclick="showPromptMode(${i}, 'single', this)">This step</button>
-              <button onclick="showPromptMode(${i}, 'chain', this)">Full chain</button>
-            </span>
-          </div>
-          <div class="chain-block-content prompt-block" id="prompt-content-${i}">${escapeHtml(s.user_prompt)}</div>
-        </div>`;
-    }
+    // Exact prompt payload (lazy-loaded)
+    html += `
+      <div class="chain-block">
+        <div class="chain-block-label">Exact Prompt Sent to LLM</div>
+        <div class="chain-block-content prompt-block" id="prompt-content-${i}">
+          <button class="step-btn" onclick="loadChainPrompt(${i}, ${s.step}, this)">Load exact prompt</button>
+        </div>
+      </div>`;
 
     // Full agent response (reasoning + code)
     if (s.agent_response) {
@@ -498,6 +652,14 @@ function buildChainView() {
         <div class="chain-block">
           <div class="chain-block-label">Execution Output</div>
           <div class="chain-block-content exec-block">${escapeHtml(s.exec_output)}</div>
+        </div>`;
+    }
+
+    // Screenshot if available (render after execution output)
+    if (s.has_screenshot) {
+      html += `
+        <div class="chain-screenshot">
+          <img src="/api/run/${v}/screenshot/${s.step}" onclick="this.classList.toggle('expanded')">
         </div>`;
     }
 
@@ -530,27 +692,8 @@ function buildLayout() {
       </div>`;
   }
 
-  // Screenshot section or step selector
-  if (hasScreenshots) {
-    html += `
-      <div class="screenshot-section">
-        <div class="section-header">Screenshots</div>
-        <div class="filmstrip" id="filmstrip">
-          ${currentSteps.map((s, i) => s.has_screenshot ? `
-            <img class="filmstrip-thumb" data-idx="${i}"
-                 src="/api/run/${v}/screenshot/${s.step}"
-                 onclick="goToStep(${i})"
-                 title="Step ${s.step} (score: ${s.production_score})">
-          ` : '').join('')}
-        </div>
-        <div class="screenshot-nav">
-          <button id="btnPrev" onclick="prevStep()">&#9664; Prev</button>
-          <span class="step-label" id="stepLabel"></span>
-          <button id="btnNext" onclick="nextStep()">Next &#9654;</button>
-        </div>
-        <img class="screenshot-img" id="screenshotImg" src="" style="display:none">
-      </div>`;
-  } else {
+  // Step selector for runs without screenshots
+  if (!hasScreenshots) {
     html += `
       <div class="section-header">Steps</div>
       <div class="step-selector" id="stepSelector">
@@ -597,6 +740,37 @@ function buildLayout() {
       </div>
     </div>`;
 
+  html += `
+    <div class="panel" style="margin-top:16px;">
+      <div class="panel-header">
+        <h3>Exact Prompt Sent</h3>
+        <span class="meta" id="promptMeta"></span>
+      </div>
+      <div class="panel-content prompt-block" id="promptContent">Loading...</div>
+    </div>`;
+
+  // Screenshot section (moved below step details)
+  if (hasScreenshots) {
+    html += `
+      <div class="screenshot-section" style="margin-top:16px;">
+        <div class="section-header">Screenshots</div>
+        <div class="filmstrip" id="filmstrip">
+          ${currentSteps.map((s, i) => s.has_screenshot ? `
+            <img class="filmstrip-thumb" data-idx="${i}"
+                 src="/api/run/${v}/screenshot/${s.step}"
+                 onclick="goToStep(${i})"
+                 title="Step ${s.step} (score: ${s.production_score})">
+          ` : '').join('')}
+        </div>
+        <div class="screenshot-nav">
+          <button id="btnPrev" onclick="prevStep()">&#9664; Prev</button>
+          <span class="step-label" id="stepLabel"></span>
+          <button id="btnNext" onclick="nextStep()">Next &#9654;</button>
+        </div>
+        <img class="screenshot-img" id="screenshotImg" src="" style="display:none">
+      </div>`;
+  }
+
   main.innerHTML = html;
 }
 
@@ -627,11 +801,12 @@ function updateStep() {
   const btnPrev = document.getElementById('btnPrev');
   const btnNext = document.getElementById('btnNext');
   const stepLabel = document.getElementById('stepLabel');
+  const maxStep = currentSteps.length ? currentSteps[currentSteps.length - 1].step : 0;
   if (btnPrev) btnPrev.disabled = currentStep === 0;
   if (btnNext) btnNext.disabled = currentStep >= currentSteps.length - 1;
   if (stepLabel) {
     const suffix = (hasScreenshots && !step.has_screenshot) ? ' (no screenshot)' : '';
-    stepLabel.textContent = `Step ${step.step} / ${currentSteps.length - 1}${suffix}`;
+    stepLabel.textContent = `Step ${step.step} / ${maxStep}${suffix}`;
   }
 
   // Step selector buttons (non-screenshot runs)
@@ -662,60 +837,178 @@ function updateStep() {
   }
   if (obsContent) obsContent.textContent = step.observation;
 
+  updateStepPrompt(step.step);
+
   // Scroll active filmstrip thumb into view
   const activeThumb = document.querySelector('.filmstrip-thumb.active');
   if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
-function showPromptMode(stepIdx, mode, btn) {
-  // Toggle active state on buttons
-  const toggle = btn.parentElement;
-  toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+function messageContentToString(content) {
+  if (typeof content === 'string') return content;
+  return JSON.stringify(content ?? '', null, 2);
+}
 
+function splitPromptMessages(messages) {
+  const systemParts = [];
+  const userParts = [];
+
+  (messages || []).forEach((msg, idx) => {
+    const role = msg.role || 'unknown';
+    const content = messageContentToString(msg.content);
+    if (role === 'system') {
+      systemParts.push(content);
+    } else {
+      userParts.push(`[${idx}] ${role}\n${content}`);
+    }
+  });
+
+  return {
+    systemText: systemParts.length ? systemParts.join('\n\n-----\n\n') : '(no system prompt message)',
+    userText: userParts.length ? userParts.join('\n\n-----\n\n') : '(no non-system prompt messages)',
+  };
+}
+
+function analyzeSystemPrompt(systemText) {
+  const ORCH_HEADER = '## Orchestrator Operating Mode (Fix + Connect + Delegate)';
+  const BUILD_HEADER = '## Build Mode (Scoped Module Execution)';
+
+  const idxOrch = systemText.indexOf(ORCH_HEADER);
+  const idxBuild = systemText.indexOf(BUILD_HEADER);
+
+  let mode = 'default';
+  if (idxBuild >= 0) mode = 'build';
+  else if (idxOrch >= 0) mode = 'orchestrator';
+
+  const sections = [];
+  const markers = [idxOrch, idxBuild].filter(i => i >= 0);
+  const firstMarker = markers.length ? Math.min(...markers) : -1;
+
+  if (firstMarker > 0) {
+    const universal = systemText.slice(0, firstMarker).trim();
+    if (universal) {
+      sections.push({ label: 'Universal (Both Agents)', cls: 'universal', text: universal });
+    }
+  }
+
+  if (idxOrch >= 0) {
+    const orchEnd = (idxBuild > idxOrch) ? idxBuild : systemText.length;
+    const orchestrator = systemText.slice(idxOrch, orchEnd).trim();
+    if (orchestrator) {
+      sections.push({ label: 'Orchestrator-Specific', cls: 'orchestrator', text: orchestrator });
+    }
+  }
+
+  if (idxBuild >= 0) {
+    const buildEnd = (idxOrch > idxBuild) ? idxOrch : systemText.length;
+    const builder = systemText.slice(idxBuild, buildEnd).trim();
+    if (builder) {
+      sections.push({ label: 'Builder-Specific', cls: 'builder', text: builder });
+    }
+  }
+
+  if (!sections.length) {
+    sections.push({ label: 'Universal (Both Agents)', cls: 'universal', text: systemText });
+  }
+
+  return { mode, sections };
+}
+
+function renderSplitPrompt(containerEl, messages) {
+  const { systemText, userText } = splitPromptMessages(messages);
+  const analysis = analyzeSystemPrompt(systemText);
+  const byClass = Object.fromEntries(analysis.sections.map(s => [s.cls, s]));
+  const requiredSections = [
+    { cls: 'universal', label: 'Universal (Both Agents)' },
+    { cls: 'orchestrator', label: 'Orchestrator-Specific' },
+    { cls: 'builder', label: 'Builder-Specific' },
+  ];
+  const sectionHtml = requiredSections.map(section => {
+    const found = byClass[section.cls];
+    const text = found ? found.text : '(not present in this step prompt)';
+    const missingClass = found ? '' : ' missing';
+    return `
+    <div class="prompt-segment ${section.cls}${missingClass}">
+      <div class="prompt-segment-title">${section.label}</div>
+      <div class="prompt-segment-body">${escapeHtml(text)}</div>
+    </div>
+  `;
+  }).join('');
+
+  containerEl.innerHTML = `
+    <div class="prompt-split">
+      <div class="prompt-split-box">
+        <div class="prompt-split-title">System Prompt (Exact)</div>
+        <div class="prompt-mode-row">
+          <span class="prompt-mode-badge mode-${analysis.mode}">Mode: ${analysis.mode}</span>
+          <div class="prompt-mode-legend">
+            <span class="chip universal">Universal</span>
+            <span class="chip orchestrator">Orchestrator</span>
+            <span class="chip builder">Builder</span>
+          </div>
+        </div>
+        <div class="prompt-system-sections">${sectionHtml}</div>
+      </div>
+      <div class="prompt-split-box">
+        <div class="prompt-split-title">User Prompt (Exact Non-System Stream)</div>
+        <div class="prompt-split-body user">${escapeHtml(userText)}</div>
+      </div>
+    </div>`;
+  return analysis;
+}
+
+async function fetchStepPrompt(stepNumber) {
+  if (!currentRun) throw new Error('no run selected');
+  const cacheKey = `${currentRun.version}:${stepNumber}`;
+  if (promptCache.has(cacheKey)) return promptCache.get(cacheKey);
+
+  const resp = await fetch(`/api/run/${currentRun.version}/prompt/${stepNumber}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  promptCache.set(cacheKey, data);
+  return data;
+}
+
+async function updateStepPrompt(stepNumber) {
+  const contentEl = document.getElementById('promptContent');
+  const metaEl = document.getElementById('promptMeta');
+  if (!contentEl || !metaEl) return;
+
+  const reqId = ++promptRequestSeq;
+  contentEl.textContent = 'Loading exact prompt...';
+  metaEl.textContent = '';
+
+  try {
+    const data = await fetchStepPrompt(stepNumber);
+    if (reqId !== promptRequestSeq) return;
+    const analysis = renderSplitPrompt(contentEl, data.messages || []);
+    metaEl.textContent = `${data.message_count || 0} messages • mode: ${analysis.mode}`;
+  } catch (err) {
+    if (reqId !== promptRequestSeq) return;
+    contentEl.textContent = `Failed to load exact prompt: ${err.message || err}`;
+    metaEl.textContent = '';
+  }
+}
+
+async function loadChainPrompt(stepIdx, stepNumber, btn) {
   const el = document.getElementById(`prompt-content-${stepIdx}`);
   if (!el) return;
 
-  if (mode === 'single') {
-    el.innerHTML = escapeHtml(currentSteps[stepIdx].user_prompt);
-    el.className = 'chain-block-content prompt-block';
-    return;
-  }
+  const oldText = btn ? btn.textContent : '';
+  if (btn) btn.disabled = true;
+  el.textContent = 'Loading exact prompt...';
 
-  // Full chain: build all messages up to and including this step's prompt
-  let html = '';
-
-  // System prompt (truncated preview)
-  if (systemPrompt) {
-    const preview = systemPrompt.length > 500
-      ? systemPrompt.slice(0, 500) + '\n... (' + systemPrompt.length + ' chars total)'
-      : systemPrompt;
-    html += `<div class="chain-history-msg msg-system">
-      <div class="chain-history-role role-system">System</div>
-      ${escapeHtml(preview)}
-    </div>`;
-  }
-
-  // Previous steps: user prompt + agent response
-  for (let j = 0; j <= stepIdx; j++) {
-    const st = currentSteps[j];
-    if (st.user_prompt) {
-      html += `<div class="chain-history-msg msg-user">
-        <div class="chain-history-role role-user">User (step ${st.step})</div>
-        ${escapeHtml(st.user_prompt)}
-      </div>`;
-    }
-    if (j < stepIdx && st.agent_response) {
-      html += `<div class="chain-history-msg msg-assistant">
-        <div class="chain-history-role role-assistant">Assistant (step ${st.step})</div>
-        ${escapeHtml(st.agent_response)}
-      </div>`;
+  try {
+    const data = await fetchStepPrompt(stepNumber);
+    renderSplitPrompt(el, data.messages || []);
+  } catch (err) {
+    el.textContent = `Failed to load exact prompt: ${err.message || err}`;
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText || 'Load exact prompt';
     }
   }
-
-  el.innerHTML = html;
-  el.className = 'chain-block-content';
-  el.style.maxHeight = '600px';
 }
 
 function goToStep(i) {

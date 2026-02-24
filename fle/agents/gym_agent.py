@@ -77,11 +77,6 @@ your_code_here
 - Monitor resource levels
 - Track production states
 
-### Entities
-- List of entities on the map
-- Includes type, position, direction, health
-- Use for spatial reasoning
-
 ### Production Flows
 - Input and output rates
 - Monitor production efficiency
@@ -105,7 +100,7 @@ your_code_here
 - Prefer manual fueling for boilers
 {system_prompt}
 
-ALWAYS WRITE VALID PYTHON AND REMEMBER MAXIMUM 50 LINES OF CODE PER POLICY. YOUR WEIGHTS WILL BE ERASED IF YOU DON'T USE PYTHON.
+Use Python if you don't use Python or if you don't use the build mode request properly.
 
 {agent_instructions}"""
 

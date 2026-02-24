@@ -4,8 +4,9 @@ Run FLE eval with claude-sonnet-4-6 and produce real benchmark screenshots + MP4
 
 Flow:
 1) Run agent loop and save game state after each step.
-2) Copy all saves from the selected Factorio container.
-3) Invoke render_saves.py once for catch-up rendering + video generation.
+2) Optionally render step screenshots live while the run is in progress.
+3) Copy all saves from the selected Factorio container.
+4) Invoke render_saves.py once for catch-up rendering + video generation.
 """
 
 import os
@@ -16,7 +17,9 @@ import re
 import shutil
 import asyncio
 import subprocess
+import tempfile
 import importlib.resources
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -84,6 +87,7 @@ MAX_STEPS = _env_int("MAX_STEPS", 30, minimum=1)
 SCREENSHOT_BASE = Path(".fle/run_screenshots")
 SAVES_DIR = Path("/tmp/fle-run-saves")
 FACTORIO_BINARY = Path("/tmp/factorio/bin/x64/factorio")
+FACTORIO_DATA = Path("/tmp/factorio/data")
 FLE_INCLUDE_ENTITIES = _env_bool("FLE_INCLUDE_ENTITIES", default=False)
 
 PROMPT_MODES = {"default", "orchestrator", "build"}
@@ -115,6 +119,14 @@ CATCHUP_RENDER_TIMEOUT = _env_int("CATCHUP_RENDER_TIMEOUT", 900, minimum=1)
 CATCHUP_RENDER_RETRIES = _env_int("CATCHUP_RENDER_RETRIES", 1, minimum=0)
 CATCHUP_RENDER_TICKS = _env_int("CATCHUP_RENDER_TICKS", 60, minimum=1)
 CATCHUP_PHASE_TIMEOUT = _env_int("CATCHUP_PHASE_TIMEOUT", 14400, minimum=1)
+LIVE_RENDER_PARALLEL = _env_int("LIVE_RENDER_PARALLEL", 1, minimum=0)
+LIVE_RENDER_TIMEOUT = _env_int(
+    "LIVE_RENDER_TIMEOUT", CATCHUP_RENDER_TIMEOUT, minimum=1
+)
+LIVE_RENDER_RETRIES = _env_int(
+    "LIVE_RENDER_RETRIES", CATCHUP_RENDER_RETRIES, minimum=0
+)
+LIVE_RENDER_TICKS = _env_int("LIVE_RENDER_TICKS", CATCHUP_RENDER_TICKS, minimum=1)
 
 DEFAULT_STARTER_INVENTORY_SPEC = (
     "transport-belt=500,"
@@ -170,6 +182,102 @@ SKIP_WORLD_CHECK = os.getenv("SKIP_WORLD_CHECK", "0") == "1"
 
 
 DEFAULT_MODULE_REGISTRY = """existing_modules: []
+"""
+
+_SCREENSHOT_MOD_INFO = """{
+  "name": "fle_screenshot",
+  "version": "1.0.0",
+  "title": "FLE Screenshot Renderer",
+  "author": "FLE",
+  "factorio_version": "1.1"
+}"""
+
+_SCREENSHOT_MOD_CONTROL = r"""
+local EX = {
+    ["character"] = true,
+    ["entity-ghost"] = true,
+    ["tile-ghost"] = true,
+    ["electric-energy-interface"] = true,
+    ["resource"] = true,
+}
+
+local function take_factory_screenshot()
+    local s = game.surfaces[1]
+    local raw = s.find_entities_filtered{force = "player"}
+    local es = {}
+    for _, e in pairs(raw) do
+        if not EX[e.type] then es[#es + 1] = e end
+    end
+
+    local cx, cy, zoom = 0, 0, 0.5
+    if #es > 0 then
+        local xs, ys = {}, {}
+        for _, e in pairs(es) do
+            xs[#xs + 1] = e.position.x
+            ys[#ys + 1] = e.position.y
+        end
+        table.sort(xs)
+        table.sort(ys)
+        local mid = math.floor(#xs / 2) + 1
+        local mx, my = xs[mid], ys[mid]
+
+        local da, db = {}, {}
+        for i, x in ipairs(xs) do da[i] = math.abs(x - mx) end
+        for i, y in ipairs(ys) do db[i] = math.abs(y - my) end
+        table.sort(da)
+        table.sort(db)
+        local ma = math.max(da[mid], 5)
+        local mb = math.max(db[mid], 5)
+        local tx, ty = ma * 5, mb * 5
+
+        local nb = {}
+        for _, e in pairs(es) do
+            if math.abs(e.position.x - mx) <= tx and math.abs(e.position.y - my) <= ty then
+                nb[#nb + 1] = e
+            end
+        end
+        if #nb == 0 then nb = es end
+
+        local x1, y1, x2, y2 = math.huge, math.huge, -math.huge, -math.huge
+        for _, e in pairs(nb) do
+            local b = e.bounding_box
+            if b.left_top.x < x1 then x1 = b.left_top.x end
+            if b.left_top.y < y1 then y1 = b.left_top.y end
+            if b.right_bottom.x > x2 then x2 = b.right_bottom.x end
+            if b.right_bottom.y > y2 then y2 = b.right_bottom.y end
+        end
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        local w = x2 - x1 + 6
+        local h = y2 - y1 + 6
+        zoom = math.min(1920 / (w * 32), 1080 / (h * 32), 2)
+        zoom = math.max(zoom, 0.125)
+    end
+
+    game.forces["player"].chart(s, {{cx - 200, cy - 200}, {cx + 200, cy + 200}})
+    s.always_day = true
+    s.daytime = 0
+    s.freeze_daytime = true
+    rendering.clear()
+
+    game.take_screenshot{
+        surface = s,
+        position = {cx, cy},
+        resolution = {1920, 1080},
+        zoom = zoom,
+        path = "factory.png",
+        show_entity_info = true,
+        show_gui = false,
+        force_render = true,
+    }
+end
+
+local function capture_once()
+    local ok, err = pcall(take_factory_screenshot)
+    log("FLE_SCREENSHOT config_changed ok=" .. tostring(ok) .. " err=" .. tostring(err))
+end
+
+script.on_configuration_changed(capture_once)
 """
 
 
@@ -1220,11 +1328,14 @@ def save_game_state(rcon_client, step_num: int, version: int) -> str:
 
 
 
-def append_unique_save(save_names: List[str], seen: Set[str], save_name: str) -> None:
+def append_unique_save(
+    save_names: List[str], seen: Set[str], save_name: str
+) -> Optional[int]:
     if save_name in seen:
-        return
+        return None
     seen.add(save_name)
     save_names.append(save_name)
+    return len(save_names) - 1
 
 
 def _parse_starter_inventory_spec(spec: str) -> Dict[str, int]:
@@ -1308,11 +1419,15 @@ def _ensure_starter_inventory_if_empty(
 
 
 
-def copy_save_from_docker(container: str, save_name: str, dest_dir: Path) -> Path:
+def copy_save_from_docker(
+    container: str, save_name: str, dest_dir: Path
+) -> Optional[Path]:
     """Copy one autosave from docker; returns local path or None."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     docker_path = f"{container}:/opt/factorio/saves/_autosave-{save_name}.zip"
     local_path = dest_dir / f"{save_name}.zip"
+    if local_path.exists() and local_path.stat().st_size > 0:
+        return local_path
     result = subprocess.run(
         ["docker", "cp", docker_path, str(local_path)],
         capture_output=True,
@@ -1324,6 +1439,111 @@ def copy_save_from_docker(container: str, save_name: str, dest_dir: Path) -> Pat
         return None
     return local_path
 
+
+def render_screenshot(
+    save_zip: Path,
+    output_png: Path,
+    timeout_s: int,
+    retries: int,
+    ticks: int,
+) -> bool:
+    """Render a single PNG from a save zip using benchmark mode."""
+    attempts = retries + 1
+    for attempt in range(1, attempts + 1):
+        tmpdir = tempfile.mkdtemp(prefix="fle_live_render_")
+        try:
+            mod_dir = Path(tmpdir) / "mods" / "fle_screenshot"
+            mod_dir.mkdir(parents=True, exist_ok=True)
+            (mod_dir / "info.json").write_text(_SCREENSHOT_MOD_INFO)
+            (mod_dir / "control.lua").write_text(_SCREENSHOT_MOD_CONTROL)
+
+            config_ini = Path(tmpdir) / "config.ini"
+            script_output = Path(tmpdir) / "script-output"
+            script_output.mkdir(parents=True, exist_ok=True)
+            config_ini.write_text(
+                f"[path]\n"
+                f"read-data={FACTORIO_DATA}\n"
+                f"write-data={tmpdir}\n"
+            )
+
+            cmd = [
+                "xvfb-run",
+                "-a",
+                "-s",
+                "-screen 0 1920x1080x24",
+                str(FACTORIO_BINARY),
+                "--benchmark-graphics",
+                str(save_zip),
+                "--benchmark-ticks",
+                str(ticks),
+                "--benchmark-ignore-paused",
+                "--mod-directory",
+                str(Path(tmpdir) / "mods"),
+                "-c",
+                str(config_ini),
+                "--disable-audio",
+                "--disable-migration-window",
+            ]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout_s,
+            )
+
+            screenshot = script_output / "factory.png"
+            if screenshot.exists() and screenshot.stat().st_size > 0:
+                output_png.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(screenshot, output_png)
+                return True
+
+            if attempt < attempts:
+                print(
+                    f"  Live-render retry {attempt}/{attempts - 1} for {save_zip.name} "
+                    f"(no screenshot, exit={result.returncode})"
+                )
+            else:
+                print(
+                    f"  Warning: live render missing screenshot for "
+                    f"{save_zip.name} (exit={result.returncode})"
+                )
+        except Exception as exc:
+            if attempt < attempts:
+                print(
+                    f"  Live-render retry {attempt}/{attempts - 1} for "
+                    f"{save_zip.name} (error: {exc})"
+                )
+            else:
+                print(f"  Error live-rendering {save_zip.name}: {exc}")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+    return False
+
+
+def render_step_from_docker(
+    container: str,
+    save_name: str,
+    step_idx: int,
+    save_dir: Path,
+    screenshot_dir: Path,
+    timeout_s: int,
+    retries: int,
+    ticks: int,
+) -> bool:
+    """Copy one save from Docker and render it to step_<idx>.png."""
+    save_zip = copy_save_from_docker(container, save_name, save_dir)
+    if not save_zip:
+        return False
+    output_png = screenshot_dir / f"step_{step_idx:03d}.png"
+    if output_png.exists() and output_png.stat().st_size > 0:
+        return True
+    return render_screenshot(
+        save_zip=save_zip,
+        output_png=output_png,
+        timeout_s=timeout_s,
+        retries=retries,
+        ticks=ticks,
+    )
 
 
 def copy_saves_from_docker(container: str, save_names: List[str], dest_dir: Path) -> None:
@@ -1494,10 +1714,36 @@ async def main():
     print(f"Prompt mode: {current_prompt_mode}")
     print(f"Command mode switching: {FLE_ENABLE_COMMAND_MODE_SWITCH}")
     print(f"Ensure starter inventory: {FLE_ENSURE_STARTER_INVENTORY}")
+    print(
+        "Live render: "
+        f"workers={LIVE_RENDER_PARALLEL} timeout={LIVE_RENDER_TIMEOUT} "
+        f"retries={LIVE_RENDER_RETRIES} ticks={LIVE_RENDER_TICKS}"
+    )
     print()
 
     save_names: List[str] = []
     seen_save_names: Set[str] = set()
+    live_render_executor: Optional[ThreadPoolExecutor] = None
+    live_render_jobs: List[Tuple[int, str, Future[bool]]] = []
+    if LIVE_RENDER_PARALLEL > 0:
+        live_render_executor = ThreadPoolExecutor(max_workers=LIVE_RENDER_PARALLEL)
+
+    def submit_live_render(step_idx: int, save_name: str) -> None:
+        if not live_render_executor:
+            return
+        future = live_render_executor.submit(
+            render_step_from_docker,
+            container,
+            save_name,
+            step_idx,
+            save_dir,
+            screenshot_dir,
+            LIVE_RENDER_TIMEOUT,
+            LIVE_RENDER_RETRIES,
+            LIVE_RENDER_TICKS,
+        )
+        live_render_jobs.append((step_idx, save_name, future))
+
     starter_inventory = _parse_starter_inventory_spec(FLE_STARTER_INVENTORY_SPEC)
     if FLE_ENSURE_STARTER_INVENTORY and starter_inventory:
         # Ensure env.reset() starts with intended inventory, not empty default.
@@ -1524,7 +1770,9 @@ async def main():
         print("Starter inventory ensure: disabled")
 
     initial_save = save_game_state(instance.rcon_client, 0, version)
-    append_unique_save(save_names, seen_save_names, initial_save)
+    initial_idx = append_unique_save(save_names, seen_save_names, initial_save)
+    if initial_idx is not None:
+        submit_live_render(initial_idx, initial_save)
     print(f"Saved initial state: {initial_save}")
 
     for idx, configured_agent in enumerate(runner.agents):
@@ -1832,7 +2080,9 @@ async def main():
                 )
 
                 save_name = save_game_state(instance.rcon_client, step_count, version)
-                append_unique_save(save_names, seen_save_names, save_name)
+                save_idx = append_unique_save(save_names, seen_save_names, save_name)
+                if save_idx is not None:
+                    submit_live_render(save_idx, save_name)
 
                 if done:
                     print(f"\n*** TASK COMPLETED at step {step_count}! ***")
@@ -1857,11 +2107,31 @@ async def main():
             # Keep a snapshot for post-mortem, but dedupe names so counts stay stable.
             snapshot_step = max(step_count, 0)
             save_name = save_game_state(instance.rcon_client, snapshot_step, version)
-            append_unique_save(save_names, seen_save_names, save_name)
+            save_idx = append_unique_save(save_names, seen_save_names, save_name)
+            if save_idx is not None:
+                submit_live_render(save_idx, save_name)
             continue
 
         if done:
             break
+
+    if live_render_executor:
+        total_live_jobs = len(live_render_jobs)
+        print(f"\nWaiting for {total_live_jobs} live render jobs...")
+        live_success = 0
+        for step_idx, save_name, future in live_render_jobs:
+            try:
+                if future.result():
+                    live_success += 1
+            except Exception as exc:
+                print(
+                    f"  Live render job failed for step_{step_idx:03d} "
+                    f"({save_name}): {exc}"
+                )
+        live_render_executor.shutdown(wait=True)
+        print(f"Live render complete: {live_success}/{total_live_jobs}")
+    else:
+        print("\nLive rendering disabled (LIVE_RENDER_PARALLEL=0)")
 
     await db_client.cleanup()
 

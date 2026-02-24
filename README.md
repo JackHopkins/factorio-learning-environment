@@ -87,7 +87,8 @@ Key behavior of this workflow:
 
 - Uses model `claude-sonnet-4-6`.
 - Uses real benchmark rendering (`SCREENSHOT_BACKEND=benchmark`).
-- Runs save-per-step + catch-up rendering via `render_saves.py`.
+- Runs live save-per-step rendering during the run (`LIVE_RENDER_PARALLEL=1`).
+- Keeps a final catch-up render pass via `render_saves.py` (`--skip-existing --no-clear`) to fill any missing frames and always build `run.mp4`.
 - Enforces world preflight checks unless `SKIP_WORLD_CHECK=1` is manually set.
 
 Artifacts are written to:

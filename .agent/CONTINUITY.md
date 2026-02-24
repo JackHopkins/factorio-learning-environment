@@ -33,6 +33,8 @@
 - 2026-02-23T00:10Z [CODE] Wrapper port validation now requires a running Factorio container mapped on the chosen reserved port, instead of rejecting ports that are in use.
 
 [PROGRESS]
+- 2026-02-24T02:12Z [TOOL] Pushed snapshot commit `2583bcd8` (`Implement JSON build-mode control flow and viewer prompt mode UX`) to fork remote `ps19-fle` on branch `main` (`22a1c4d5..2583bcd8`).
+- 2026-02-24T02:12Z [CODE] Refactored builder-mode overlay in `run_with_video.py` to enforce geometry-first deterministic module construction (trunk-first, exact placement, explicit planning invariants, verification discipline) while preserving JSON-only `BUILD_MODE_DONE/GIVE_UP` completion contracts.
 - 2026-02-24T01:23Z [CODE] Hardened prompt highlighting UX in `viewer.py`: system prompt pane now always renders all three labeled segments (`Universal`, `Orchestrator`, `Builder`) and marks absent sections as `(not present in this step prompt)` to avoid ambiguous all-one-color rendering.
 - 2026-02-24T01:23Z [TOOL] Re-launched viewer in persistent `tmux` session (`fle_viewer`) and verified served HTML contains new prompt-mode/segmentation markers (`prompt-mode-row`, `prompt-system-sections`, `prompt-segment.missing`).
 - 2026-02-24T00:52Z [CODE] Updated `viewer.py` prompt rendering to classify system prompt content into three highlighted segments: Universal (orange), Orchestrator-specific (blue), and Builder-specific (green), and to display inferred prompt mode (`default|orchestrator|build`) per step.

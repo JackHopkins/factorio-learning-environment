@@ -19,6 +19,8 @@ import asyncio
 import subprocess
 import tempfile
 import importlib.resources
+import zipfile
+from uuid import uuid4
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -279,6 +281,32 @@ end
 
 script.on_configuration_changed(capture_once)
 """
+
+
+def _is_valid_save_zip(path: Path) -> bool:
+    return path.exists() and path.stat().st_size > 0 and zipfile.is_zipfile(path)
+
+
+def _copy_server_mods_to_dir(container: str, mods_root: Path) -> bool:
+    try:
+        result = subprocess.run(
+            ["docker", "cp", f"{container}:/opt/factorio/mods/.", str(mods_root)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as exc:
+        print(f"  Warning: failed to copy server mods ({exc})")
+        return False
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        if detail:
+            detail = detail[-200:]
+            print(f"  Warning: failed to copy server mods ({detail})")
+        else:
+            print("  Warning: failed to copy server mods")
+        return False
+    return True
 
 
 def _load_module_registry_text() -> str:
@@ -1420,27 +1448,36 @@ def _ensure_starter_inventory_if_empty(
 
 
 def copy_save_from_docker(
-    container: str, save_name: str, dest_dir: Path
+    container: str,
+    save_name: str,
+    dest_dir: Path,
+    use_existing: bool = True,
 ) -> Optional[Path]:
     """Copy one autosave from docker; returns local path or None."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     docker_path = f"{container}:/opt/factorio/saves/_autosave-{save_name}.zip"
     local_path = dest_dir / f"{save_name}.zip"
-    if local_path.exists() and local_path.stat().st_size > 0:
+    if use_existing and _is_valid_save_zip(local_path):
         return local_path
+    if local_path.exists() and not _is_valid_save_zip(local_path):
+        local_path.unlink(missing_ok=True)
+    temp_path = dest_dir / f".{save_name}.{uuid4().hex}.tmp.zip"
     result = subprocess.run(
-        ["docker", "cp", docker_path, str(local_path)],
+        ["docker", "cp", docker_path, str(temp_path)],
         capture_output=True,
         text=True,
         timeout=30,
     )
-    if result.returncode != 0 or not local_path.exists():
+    if result.returncode != 0 or not _is_valid_save_zip(temp_path):
+        temp_path.unlink(missing_ok=True)
         print(f"  Warning: failed to copy save {save_name}")
         return None
+    temp_path.replace(local_path)
     return local_path
 
 
 def render_screenshot(
+    container: str,
     save_zip: Path,
     output_png: Path,
     timeout_s: int,
@@ -1452,7 +1489,12 @@ def render_screenshot(
     for attempt in range(1, attempts + 1):
         tmpdir = tempfile.mkdtemp(prefix="fle_live_render_")
         try:
-            mod_dir = Path(tmpdir) / "mods" / "fle_screenshot"
+            mods_root = Path(tmpdir) / "mods"
+            mods_root.mkdir(parents=True, exist_ok=True)
+            if attempt > 1:
+                _copy_server_mods_to_dir(container, mods_root)
+
+            mod_dir = mods_root / "fle_screenshot"
             mod_dir.mkdir(parents=True, exist_ok=True)
             (mod_dir / "info.json").write_text(_SCREENSHOT_MOD_INFO)
             (mod_dir / "control.lua").write_text(_SCREENSHOT_MOD_CONTROL)
@@ -1478,7 +1520,7 @@ def render_screenshot(
                 str(ticks),
                 "--benchmark-ignore-paused",
                 "--mod-directory",
-                str(Path(tmpdir) / "mods"),
+                str(mods_root),
                 "-c",
                 str(config_ini),
                 "--disable-audio",
@@ -1531,13 +1573,19 @@ def render_step_from_docker(
     ticks: int,
 ) -> bool:
     """Copy one save from Docker and render it to step_<idx>.png."""
-    save_zip = copy_save_from_docker(container, save_name, save_dir)
+    save_zip = copy_save_from_docker(
+        container,
+        save_name,
+        save_dir,
+        use_existing=True,
+    )
     if not save_zip:
         return False
     output_png = screenshot_dir / f"step_{step_idx:03d}.png"
     if output_png.exists() and output_png.stat().st_size > 0:
         return True
     return render_screenshot(
+        container=container,
         save_zip=save_zip,
         output_png=output_png,
         timeout_s=timeout_s,
@@ -1549,11 +1597,11 @@ def render_step_from_docker(
 def copy_saves_from_docker(container: str, save_names: List[str], dest_dir: Path) -> None:
     """Copy all unique save files from docker to local filesystem."""
     for name in save_names:
-        copy_save_from_docker(container, name, dest_dir)
+        copy_save_from_docker(container, name, dest_dir, use_existing=False)
 
 
 
-def run_catchup_renderer(save_dir: Path, screenshot_dir: Path) -> None:
+def run_catchup_renderer(container: str, save_dir: Path, screenshot_dir: Path) -> None:
     """Run standalone renderer on all copied saves."""
     render_script = Path(__file__).parent / "render_saves.py"
     cmd = [
@@ -1579,6 +1627,7 @@ def run_catchup_renderer(save_dir: Path, screenshot_dir: Path) -> None:
             "RENDER_TIMEOUT": str(CATCHUP_RENDER_TIMEOUT),
             "RENDER_RETRIES": str(CATCHUP_RENDER_RETRIES),
             "RENDER_TICKS": str(CATCHUP_RENDER_TICKS),
+            "RENDER_CONTAINER": container,
         },
     )
     if result.returncode != 0:
@@ -2138,7 +2187,7 @@ async def main():
     print(f"\nCopying {len(save_names)} saves from Docker...")
     copy_saves_from_docker(container, save_names, save_dir)
 
-    run_catchup_renderer(save_dir, screenshot_dir)
+    run_catchup_renderer(container, save_dir, screenshot_dir)
 
     screenshot_count = len(list(screenshot_dir.glob("step_*.png")))
     expected_screenshots = len(save_names)

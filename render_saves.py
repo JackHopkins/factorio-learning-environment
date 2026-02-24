@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import tempfile
 import argparse
+import zipfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -22,6 +23,7 @@ MAX_PARALLEL = int(os.getenv("RENDER_MAX_PARALLEL", "1"))
 RENDER_TIMEOUT = int(os.getenv("RENDER_TIMEOUT", "420"))  # seconds per render
 RENDER_RETRIES = int(os.getenv("RENDER_RETRIES", "2"))  # retries per save
 RENDER_TICKS = int(os.getenv("RENDER_TICKS", "60"))
+RENDER_CONTAINER = os.getenv("RENDER_CONTAINER", "").strip()
 
 _SCREENSHOT_MOD_INFO = """{
   "name": "fle_screenshot",
@@ -122,13 +124,49 @@ script.on_configuration_changed(capture_once)
 """
 
 
+def _is_valid_save_zip(path: Path) -> bool:
+    return path.exists() and path.stat().st_size > 0 and zipfile.is_zipfile(path)
+
+
+def _copy_server_mods_to_dir(container: str, mods_root: Path) -> bool:
+    if not container:
+        return False
+    try:
+        result = subprocess.run(
+            ["docker", "cp", f"{container}:/opt/factorio/mods/.", str(mods_root)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as exc:
+        print(f"  Warning: failed to copy server mods ({exc})")
+        return False
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        if detail:
+            detail = detail[-200:]
+            print(f"  Warning: failed to copy server mods ({detail})")
+        else:
+            print("  Warning: failed to copy server mods")
+        return False
+    return True
+
+
 def render_screenshot(save_zip: Path, output_png: Path) -> bool:
     """Render a single screenshot from a save file."""
+    if not _is_valid_save_zip(save_zip):
+        print(f"  Warning: invalid save zip {save_zip}")
+        return False
     attempts = RENDER_RETRIES + 1
     for attempt in range(1, attempts + 1):
         tmpdir = tempfile.mkdtemp(prefix="fle_render_")
         try:
-            mod_dir = Path(tmpdir) / "mods" / "fle_screenshot"
+            mods_root = Path(tmpdir) / "mods"
+            mods_root.mkdir(parents=True, exist_ok=True)
+            if RENDER_CONTAINER and attempt > 1:
+                _copy_server_mods_to_dir(RENDER_CONTAINER, mods_root)
+
+            mod_dir = mods_root / "fle_screenshot"
             mod_dir.mkdir(parents=True)
             (mod_dir / "info.json").write_text(_SCREENSHOT_MOD_INFO)
             (mod_dir / "control.lua").write_text(_SCREENSHOT_MOD_CONTROL)
@@ -148,7 +186,7 @@ def render_screenshot(save_zip: Path, output_png: Path) -> bool:
                 "--benchmark-graphics", str(save_zip),
                 "--benchmark-ticks", str(RENDER_TICKS),
                 "--benchmark-ignore-paused",
-                "--mod-directory", str(Path(tmpdir) / "mods"),
+                "--mod-directory", str(mods_root),
                 "-c", str(config_ini),
                 "--disable-audio",
                 "--disable-migration-window",

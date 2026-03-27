@@ -5,7 +5,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="slpp")
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Make submodules available
 from fle import agents, env, eval, cluster, commons

@@ -25,7 +25,7 @@ An open source framework for developing and evaluating LLM agents in the game of
 
 - Docker
 - Python 3.10+
-- [Factorio](https://www.factorio.com/) (version 1.1.110), only for optional rendering.
+- [Factorio](https://www.factorio.com/) (version 2.0.73 or later), only for optional rendering.
 
 ```bash
 # Core FLE SDK package

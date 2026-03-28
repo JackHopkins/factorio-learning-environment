@@ -271,7 +271,7 @@ def run_evaluation():
         trial_dirs = export_inspect_results(
             eval_log_dir=str(output_dir / "inspect_logs"),
             output_dir=str(output_dir),
-            task_names=[env_id]
+            task_names=[f"{env_id}_harbor"]  # Match the task name created by create_vendor_eval_task
         )
 
         if trial_dirs:

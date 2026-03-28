@@ -36,7 +36,11 @@ def calculate_timestamp(
         ISO8601 timestamp string
     """
     # Start from eval creation time
-    base_time = datetime.fromtimestamp(eval_log.eval.created, timezone.utc)
+    # Handle both Unix timestamp (float) and ISO string formats
+    if isinstance(eval_log.eval.created, str):
+        base_time = datetime.fromisoformat(eval_log.eval.created.replace("Z", "+00:00"))
+    else:
+        base_time = datetime.fromtimestamp(eval_log.eval.created, timezone.utc)
 
     # Add cumulative latency up to this step
     if step_idx < len(trajectory_data.total_step_latencies):

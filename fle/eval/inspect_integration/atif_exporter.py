@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 from inspect_ai.log import EvalLog
 
-from fle.eval.inspect_integration.solver import TrajectoryData
+from fle.eval.inspect_integration.solver_utils import TrajectoryData
 
 logger = logging.getLogger(__name__)
 

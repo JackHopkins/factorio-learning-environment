@@ -408,6 +408,8 @@ RUN apt-get update && apt-get install -y \\
 # Install Python packages (using --break-system-packages for containerized env)
 # Note: factorio-rcon-py is included as a dependency of FLE
 # Using --ignore-installed to avoid conflicts with Debian packages
+# Add cache-busting argument to force git refetch on updates
+ARG CACHEBUST=1
 RUN pip3 install --no-cache-dir --break-system-packages --ignore-installed \\
     git+https://github.com/JackHopkins/PaperclipMaximiser.git@harbor-integration \\
     inspect-ai \\

@@ -24,7 +24,7 @@ from inspect_ai.scorer import (
 from inspect_ai.agent import AgentState
 from inspect_ai.util import store_as
 
-from fle.eval.inspect_integration.solver import TrajectoryData
+from fle.eval.inspect_integration.solver_utils import TrajectoryData
 
 logger = logging.getLogger(__name__)
 

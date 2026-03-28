@@ -195,6 +195,7 @@ Now begin working toward this objective step by step."""
             production_scores = []
             step_results = []
             game_ticks = []  # Track game ticks at each step
+            program_codes = []  # Track program code at each step
 
             # Store previous step's feedback to combine with next step's prompt
             # This avoids contiguous user messages in the conversation
@@ -454,6 +455,7 @@ Continue to step {step + 2}."""
                         else str(program_output),
                     }
                     step_results.append(step_result)
+                    program_codes.append(program.code)
 
                     logger.info(
                         f"✅ Step {step + 1}/{trajectory_length}: Score={production_score:.1f}, Time={step_time:.1f}s"
@@ -520,6 +522,7 @@ Continue to step {step + 2}."""
             trajectory_data.steps = step_results
             trajectory_data.scores = production_scores
             trajectory_data.ticks = game_ticks
+            trajectory_data.program_codes = program_codes
 
             # Save trajectory data to sample metadata for ATIF export
             if not hasattr(state, "metadata"):
@@ -550,6 +553,7 @@ Continue to step {step + 2}."""
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
             trajectory_data.final_score = 0.0
+            trajectory_data.program_codes = []  # Empty list on error
 
             # Save trajectory data to sample metadata for ATIF export
             if not hasattr(state, "metadata"):
@@ -1197,6 +1201,7 @@ def factorio_unbounded_solver():
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
             trajectory_data.final_score = 0.0
+            trajectory_data.program_codes = []  # Empty list on error
 
             # Save trajectory data to sample metadata for ATIF export
             if not hasattr(state, "metadata"):

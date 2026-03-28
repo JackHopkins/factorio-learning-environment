@@ -69,6 +69,9 @@ class TrajectoryData(StoreModel):
     sleep_durations: List[float] = Field(default_factory=list)
     total_step_latencies: List[float] = Field(default_factory=list)
 
+    # Program code tracking - the actual code executed at each step
+    program_codes: List[str] = Field(default_factory=list)
+
 
 @dataclass
 class SolverConfig:

@@ -402,6 +402,7 @@ RUN apt-get update && apt-get install -y \\
     python3-setuptools \\
     build-essential \\
     supervisor \\
+    git \\
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages (using --break-system-packages for containerized env)

@@ -10,7 +10,6 @@ import math
 import os
 import time
 import traceback
-from typing import List, Optional, Tuple
 
 from inspect_ai.scorer import score
 from pydantic import Field
@@ -41,6 +40,10 @@ from fle.eval.inspect_integration.simple_server_pool import (
     get_simple_server_pool,
 )
 from fle.eval.inspect_integration.atif_exporter import serialize_trajectory_to_metadata
+from fle.eval.inspect_integration.solver_utils import (
+    TrajectoryData,
+    render_vision_image,
+)
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
@@ -58,82 +61,6 @@ def _load_prompt_template(filename: str) -> Template:
     return Template(prompt_path.read_text())
 
 
-def render_vision_image(gym_env: FactorioGymEnv) -> Tuple[Optional[str], Optional[str]]:
-    """Render an image centered on the player using the full sprite renderer.
-
-    Returns:
-        Tuple of (base64_image_data_url, viewport_info_string)
-        Returns (None, None) if rendering fails
-    """
-    try:
-        # Access the namespace to use the full _render method
-        namespace = gym_env.instance.namespaces[0]
-
-        # Get player position for debugging
-        player_pos = namespace.player_location
-        vis_logger = logging.getLogger(__name__)
-        vis_logger.info(
-            f"👁️ Vision render: player at ({player_pos.x:.1f}, {player_pos.y:.1f})"
-        )
-
-        # Render with default settings - centered on player
-        # Pass position explicitly to ensure centering works
-        result = namespace._render(
-            radius=64,
-            max_render_radius=32,
-            position=player_pos,
-            include_status=True,
-        )
-
-        # Get the base64 image with proper data URL prefix for ContentImage
-        base64_data = result.to_base64()
-        image_data_url = f"data:image/png;base64,{base64_data}"
-
-        # Format viewport information
-        viewport = result.viewport
-        vis_logger.info(
-            f"👁️ Vision render: viewport center ({viewport.center_x:.1f}, {viewport.center_y:.1f}), "
-            f"size {viewport.width_tiles:.0f}x{viewport.height_tiles:.0f} tiles, "
-            f"image {viewport.image_width}x{viewport.image_height}px"
-        )
-
-        # Check if the image might be empty (only grid) by sampling pixels
-        # img = result.image
-        # if img:
-        #     # Sample some pixels to detect if image has content beyond just grid lines
-        #     pixels = list(img.getdata())
-        #     sample_size = min(1000, len(pixels))
-        #     unique_colors = len(set(pixels[:sample_size]))
-        #     if unique_colors <= 3:  # Only background and maybe grid lines
-        #         vis_logger.warning(
-        #             f"👁️ Vision render produced image with only {unique_colors} unique colors "
-        #             f"(likely empty grid). Check if sprites are installed correctly. "
-        #             f"Run 'fle sprites' to download sprites."
-        #         )
-
-        viewport_template = _load_prompt_template("vision_viewport.jinja2.md")
-        viewport_info = viewport_template.render(
-            center_x=f"{viewport.center_x:.1f}",
-            center_y=f"{viewport.center_y:.1f}",
-            world_min_x=f"{viewport.world_min_x:.1f}",
-            world_min_y=f"{viewport.world_min_y:.1f}",
-            world_max_x=f"{viewport.world_max_x:.1f}",
-            world_max_y=f"{viewport.world_max_y:.1f}",
-            width_tiles=f"{viewport.width_tiles:.0f}",
-            height_tiles=f"{viewport.height_tiles:.0f}",
-            image_width=viewport.image_width,
-            image_height=viewport.image_height,
-            scaling=f"{viewport.scaling:.1f}",
-        )
-
-        return image_data_url, viewport_info
-    except Exception as e:
-        logging.getLogger(__name__).warning(
-            f"Failed to render vision image: {e}", exc_info=True
-        )
-        return None, None
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -146,58 +73,6 @@ class StepResult(StoreModel):
     execution_time: float = Field(default=0.0)
     program_content: str = Field(default="")
     program_output: str = Field(default="")
-
-
-class TrajectoryData(StoreModel):
-    """Store model for trajectory tracking data"""
-
-    production_score: float = Field(default=0.0)
-    automated_production_score: float = Field(
-        default=0.0
-    )  # Score excluding harvested/crafted
-    total_steps: int = Field(default=0)
-    current_score: float = Field(default=0.0)
-    final_score: float = Field(default=0.0)
-    final_automated_score: float = Field(default=0.0)  # Final automated score
-    scores: List[float] = Field(default_factory=list)
-    automated_scores: List[float] = Field(
-        default_factory=list
-    )  # Automated scores per step
-    steps: List[dict] = Field(default_factory=list)  # Using dict for step data
-    error: str = Field(default="")
-    ticks: List[int] = Field(default_factory=list)  # Game ticks at each step
-
-    # Achievement tracking - unique item types produced
-    produced_item_types: List[str] = Field(
-        default_factory=list
-    )  # List of unique item type names produced during trajectory
-
-    # Research tracking - technologies researched during trajectory
-    researched_technologies: List[str] = Field(
-        default_factory=list
-    )  # List of technology names that have been researched
-
-    # Latency tracking fields
-    inference_latencies: List[float] = Field(
-        default_factory=list
-    )  # Time for model generation (seconds)
-    env_execution_latencies: List[float] = Field(
-        default_factory=list
-    )  # Time for gym_env.step() (seconds)
-    policy_execution_latencies: List[float] = Field(
-        default_factory=list
-    )  # Time for Python code execution (seconds)
-    sleep_durations: List[float] = Field(
-        default_factory=list
-    )  # Accumulated sleep time per step (seconds)
-    total_step_latencies: List[float] = Field(
-        default_factory=list
-    )  # Total wall-clock time per step (seconds)
-
-    # Full program codes for static analysis
-    program_codes: List[str] = Field(
-        default_factory=list
-    )  # Full program code for each step
 
 
 @solver

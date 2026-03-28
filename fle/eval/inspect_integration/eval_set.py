@@ -566,6 +566,75 @@ def print_task_summary():
     print("  All tasks: fle inspect-eval --eval-set --pass-n 8 --max-tasks 8")
 
 
+# =============================================================================
+# Vendor-Eval-Kit Export
+# =============================================================================
+
+
+def export_for_vendor_eval(
+    eval_log_dir: str,
+    output_dir: str,
+    task_names: list[str] | None = None,
+) -> list[str]:
+    """Export Inspect eval results to vendor-eval-kit format.
+
+    This function converts FLE's Inspect AI evaluation results into a format
+    compatible with Harbor's vendor-eval-kit for result collection and analysis.
+
+    Args:
+        eval_log_dir: Path to Inspect logs directory (e.g., .fle/inspect_logs/20260327_123456)
+        output_dir: Path to output directory for vendor-eval format
+        task_names: Optional list of specific tasks to export (default: all)
+
+    Returns:
+        List of created trial directory paths
+
+    Output Structure:
+        output_dir/
+          eval_results/vendor-eval/
+            trial-<task>-<timestamp>-<attempt>/
+              result.json          # Harbor-compatible result format
+              agent/
+                trajectory.json    # ATIF trajectory format
+
+    Example Usage:
+        # Export latest eval results
+        export_for_vendor_eval(
+            eval_log_dir=".fle/inspect_logs/latest",
+            output_dir="./vendor_eval_export"
+        )
+
+        # Export specific tasks only
+        export_for_vendor_eval(
+            eval_log_dir=".fle/inspect_logs/20260327_123456",
+            output_dir="./vendor_eval_export",
+            task_names=["iron_ore_throughput", "steel_plate_throughput"]
+        )
+
+    Vendor-Eval-Kit Collection:
+        After exporting, use vendor-eval-kit to collect and analyze:
+
+        cd /path/to/vendor-eval-kit
+        vendor-eval collect /path/to/output_dir/eval_results/vendor-eval \\
+          -o ./output_csvs \\
+          -t 0.8  # 80% threshold for throughput tasks
+
+    Result Format:
+        Each trial directory contains:
+        - result.json: Harbor-compatible result with reward (0-1), tokens, cost, errors
+        - agent/trajectory.json: ATIF trajectory with steps, actions, observations
+
+        The reward field is computed from FLE scores:
+        - Throughput tasks: throughput_proportion (achieved/quota)
+        - Unbounded tasks: Normalized production score
+        - Binary tasks: 1.0 for success, 0.0 for failure
+    """
+    from fle.eval.inspect_integration.vendor_eval_adapter import export_inspect_results
+
+    trial_dirs = export_inspect_results(eval_log_dir, output_dir, task_names)
+    return [str(d) for d in trial_dirs]
+
+
 # Only print summary when run as main script
 if __name__ == "__main__":
     print_task_summary()

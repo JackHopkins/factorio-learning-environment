@@ -40,6 +40,7 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
 from fle.eval.inspect_integration.simple_server_pool import (
     get_simple_server_pool,
 )
+from fle.eval.inspect_integration.atif_exporter import serialize_trajectory_to_metadata
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
@@ -358,8 +359,12 @@ Analyze the current state and write a Python program using the FLE API to progre
                         combined_content = (
                             f"{previous_feedback_content}\n\n---\n\n{step_content}"
                         )
-                        if previous_feedback_image is not None:
-                            # Include image from previous feedback with combined text
+                        if (
+                            previous_feedback_image is not None
+                            and isinstance(previous_feedback_image, str)
+                            and previous_feedback_image.startswith("data:")
+                        ):
+                            # Include image from previous feedback with combined text - only if valid data URL
                             step_message = ChatMessageUser(
                                 content=[
                                     ContentImage(image=previous_feedback_image),
@@ -367,6 +372,11 @@ Analyze the current state and write a Python program using the FLE API to progre
                                 ]
                             )
                         else:
+                            # Skip image if invalid - just use text
+                            if previous_feedback_image is not None:
+                                logger.warning(
+                                    f"Skipping invalid image in message (not a data URL): {str(previous_feedback_image)[:100]}"
+                                )
                             step_message = ChatMessageUser(content=combined_content)
                         # Reset for next iteration
                         previous_feedback_content = None
@@ -508,17 +518,16 @@ Continue to step {step + 2}."""
                         )
                         if viewport_info:
                             feedback_content += f"\n\n{viewport_info}"
+                        # Validate image is a proper data URL to avoid Inspect trying to load it as a file
+                        if updated_image_data_url and not str(
+                            updated_image_data_url
+                        ).startswith("data:"):
+                            logger.warning(
+                                f"Invalid map_image format (expected data URL), skipping: {str(updated_image_data_url)[:100]}"
+                            )
+                            updated_image_data_url = None
                     else:
-                        # Fall back to simple render from observation
-                        updated_image_data_url = obs.get("map_image")
-
-                    # Validate image is a proper data URL to avoid Inspect trying to load it as a file
-                    if updated_image_data_url and not str(
-                        updated_image_data_url
-                    ).startswith("data:"):
-                        logger.warning(
-                            f"Invalid map_image format (expected data URL), skipping: {str(updated_image_data_url)[:100]}"
-                        )
+                        # Vision disabled - don't use images at all
                         updated_image_data_url = None
 
                     # Store feedback for combining with next step's prompt
@@ -637,6 +646,13 @@ Continue to step {step + 2}."""
             trajectory_data.scores = production_scores
             trajectory_data.ticks = game_ticks
 
+            # Save trajectory data to sample metadata for ATIF export
+            if not hasattr(state, "metadata"):
+                state.metadata = {}
+            state.metadata["trajectory_data"] = serialize_trajectory_to_metadata(
+                trajectory_data
+            )
+
             # Set final model output with summary
             state.output = ModelOutput(
                 completion=f"Completed {len(step_results)}-step trajectory with final score: {final_score:.1f}",
@@ -659,6 +675,13 @@ Continue to step {step + 2}."""
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
             trajectory_data.final_score = 0.0
+
+            # Save trajectory data to sample metadata for ATIF export
+            if not hasattr(state, "metadata"):
+                state.metadata = {}
+            state.metadata["trajectory_data"] = serialize_trajectory_to_metadata(
+                trajectory_data
+            )
 
             state.output = ModelOutput(
                 completion=f"Error in controlled trajectory: {error_msg}",
@@ -1101,9 +1124,17 @@ def factorio_unbounded_solver():
                             )
                             if viewport_info:
                                 feedback_content += f"\n\n{viewport_info}"
+                            # Validate image is a proper data URL to avoid Inspect trying to load it as a file
+                            if updated_image_data_url and not str(
+                                updated_image_data_url
+                            ).startswith("data:"):
+                                logger.warning(
+                                    f"Invalid map_image format (expected data URL), skipping: {str(updated_image_data_url)[:100]}"
+                                )
+                                updated_image_data_url = None
                         else:
-                            # Fall back to simple render from observation
-                            updated_image_data_url = obs.get("map_image")
+                            # Vision disabled - don't use images at all
+                            updated_image_data_url = None
                     except Exception as e:
                         raise Exception(f"Vision rendering error: {e}") from e
 
@@ -1238,6 +1269,13 @@ def factorio_unbounded_solver():
             # Store program codes for static analysis
             trajectory_data.program_codes = program_codes
 
+            # Save trajectory data to sample metadata for ATIF export
+            if not hasattr(state, "metadata"):
+                state.metadata = {}
+            state.metadata["trajectory_data"] = serialize_trajectory_to_metadata(
+                trajectory_data
+            )
+
             # Log latency summary
             if total_step_latencies:
                 avg_total = sum(total_step_latencies) / len(total_step_latencies)
@@ -1284,6 +1322,13 @@ def factorio_unbounded_solver():
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
             trajectory_data.final_score = 0.0
+
+            # Save trajectory data to sample metadata for ATIF export
+            if not hasattr(state, "metadata"):
+                state.metadata = {}
+            state.metadata["trajectory_data"] = serialize_trajectory_to_metadata(
+                trajectory_data
+            )
 
             state.output = ModelOutput(
                 completion=f"Error in unbounded trajectory: {error_msg}",

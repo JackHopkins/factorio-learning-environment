@@ -311,7 +311,7 @@ class FactorioGymEnv(gym.Env):
             logger.warning(f"Error getting entities: {e}")
             raise Exception("Error getting entities while getting observation") from e
 
-        entity_obs = [str(e) for e in entities]
+        entity_obs = [e.__dict__ for e in entities]
 
         # Get inventory observations
         inventory_obs = namespace.inspect_inventory()
@@ -395,7 +395,7 @@ class FactorioGymEnv(gym.Env):
         observation = Observation(
             raw_text=response.response if response else "",
             map_image=map_image,  # Base64 encoded PNG or empty string
-            entities=entity_obs,  # Convert entities to strings
+            entities=entity_obs,
             inventory=inventory_obs,
             research=research_obs,
             game_info=game_info,

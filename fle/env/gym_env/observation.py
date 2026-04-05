@@ -68,7 +68,6 @@ class Observation:
     @classmethod
     def from_dict(cls, obs_dict: Dict[str, Any]) -> "Observation":
         """Create an Observation from a dictionary matching the gym observation space"""
-        # Entities are already strings, no need to parse
         entities = obs_dict.get("entities", [])
 
         # Convert inventory
@@ -233,7 +232,7 @@ class Observation:
         return {
             "raw_text": self.raw_text,
             "map_image": self.map_image,
-            "entities": self.entities,  # Use string representation of entities
+            "entities": self.entities,
             "inventory": [
                 {"quantity": np.int32(v), "type": k}
                 for k, v in self.inventory.items()

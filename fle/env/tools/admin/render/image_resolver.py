@@ -23,23 +23,9 @@ class ImageResolver:
         self.cache: Dict[str, Optional[Image.Image]] = {}
         self._warned_missing_sprites = False
 
-        # Check if sprites directory exists and has content
-        if not self.images_dir.exists():
-            logger.warning(
-                f"Sprites directory does not exist: {self.images_dir}. "
-                f"Vision rendering will produce empty images. "
-                f"Run 'fle sprites' to download sprites."
-            )
-        else:
-            # Check if directory has any PNG files
+        if self.images_dir.exists():
             png_files = list(self.images_dir.glob("*.png"))
-            if not png_files:
-                logger.warning(
-                    f"Sprites directory exists but contains no PNG files: {self.images_dir}. "
-                    f"Vision rendering will produce empty images. "
-                    f"Run 'fle sprites' to download sprites."
-                )
-            else:
+            if png_files:
                 logger.debug(
                     f"ImageResolver initialized with {len(png_files)} sprites from {self.images_dir}"
                 )

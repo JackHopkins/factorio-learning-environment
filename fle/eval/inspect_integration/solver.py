@@ -358,7 +358,7 @@ Analyze the current state and write a Python program using the FLE API to progre
                         combined_content = (
                             f"{previous_feedback_content}\n\n---\n\n{step_content}"
                         )
-                        if previous_feedback_image is not None:
+                        if previous_feedback_image and isinstance(previous_feedback_image, str) and previous_feedback_image.startswith("data:"):
                             # Include image from previous feedback with combined text
                             step_message = ChatMessageUser(
                                 content=[

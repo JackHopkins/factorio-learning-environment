@@ -206,10 +206,13 @@ class BasicObservationFormatter:
         return "### Inventory\n" + "\n".join(item_strs)
 
     @staticmethod
-    def format_entities(entities: List[str]) -> str:
+    def format_entities(entities: List[Any]) -> str:
         """Format entity information"""
         if not entities:
             return "### Entities\nNone found"
+
+        # Convert dicts to string representations for legacy parsing
+        entities = [str(e) if isinstance(e, dict) else e for e in entities]
 
         def clean_entity_string(entity_str: str) -> str:
             """Clean and format an entity string for better readability"""

@@ -252,16 +252,10 @@ def find_fle_sprites_dir() -> Path:
     start_cwd = current
 
     while current != current.parent:
-        fle_dir = current / ".fle"
-        if fle_dir.exists() and fle_dir.is_dir():
-            sprites_dir = fle_dir / "sprites"
-            if sprites_dir.exists():
-                logger.debug(f"Found sprites directory at {sprites_dir}")
-                return sprites_dir
-            else:
-                logger.warning(
-                    f"Found .fle directory at {fle_dir} but no sprites subdirectory"
-                )
+        sprites_dir = current / ".fle" / "sprites"
+        if sprites_dir.exists():
+            logger.debug(f"Found sprites directory at {sprites_dir}")
+            return sprites_dir
         current = current.parent
 
     # Try common fallback locations
@@ -282,12 +276,10 @@ def find_fle_sprites_dir() -> Path:
             logger.info(f"Using fallback sprites directory: {fallback}")
             return fallback
 
-    # Log warning about missing sprites
     logger.warning(
-        f"Could not find .fle/sprites directory. "
-        f"Searched from cwd={start_cwd} up to root. "
+        f"Sprites not found (searched from {start_cwd} to root and fallback locations). "
         f"Vision rendering will produce empty images. "
-        f"Run 'fle sprites' to download sprites, or set FLE_SPRITES_DIR environment variable."
+        f"Run 'fle sprites' to download, or set FLE_SPRITES_DIR."
     )
 
     # Fallback - return the path even if it doesn't exist

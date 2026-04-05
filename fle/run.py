@@ -64,7 +64,7 @@ def fle_inspect_eval(args):
     try:
         # Start inspect view first if requested (in background)
         if args.view:
-            print(f"🔍 Starting Inspect view on port {args.view_port}...")
+            print(f"Starting Inspect view on port {args.view_port}...")
             view_cmd = ["inspect", "view", "--port", str(args.view_port)]
             if args.log_dir:
                 view_cmd.extend(["--log-dir", args.log_dir])
@@ -72,7 +72,7 @@ def fle_inspect_eval(args):
                 view_cmd.extend(["--log-dir", ".fle/inspect_logs"])
 
             print(f"View command: {' '.join(view_cmd)}")
-            print(f"📊 View will be available at: http://localhost:{args.view_port}")
+            print(f"View will be available at: http://localhost:{args.view_port}")
 
             # Start view in background
             view_process = subprocess.Popen(
@@ -82,7 +82,7 @@ def fle_inspect_eval(args):
             import time
 
             time.sleep(2)  # Give view server time to start
-            print("🌐 Inspect view server started in background")
+            print("Inspect view server started in background")
 
         # Determine task type and build appropriate command
         task_type = getattr(args, "task_type", None) or "throughput"
@@ -91,13 +91,13 @@ def fle_inspect_eval(args):
         task_names = []
         if hasattr(args, "tasks") and args.tasks:
             task_names = [t.strip() for t in args.tasks.split(",")]
-            print(f"🎯 Running {len(task_names)} tasks: {task_names}")
+            print(f"Tasks ({len(task_names)}): {task_names}")
 
         # Handle --solver parameter
         solver_name = getattr(args, "solver", None)
         if solver_name:
             os.environ["FLE_SOLVER"] = solver_name
-            print(f"🔧 Using solver variant: {solver_name}")
+            print(f"Solver: {solver_name}")
 
         # Build evaluation command
         if task_names:
@@ -120,7 +120,7 @@ def fle_inspect_eval(args):
                 "eval-set",
                 args.eval_set_file,
             ]
-            print(f"📦 Running custom eval-set: {args.eval_set_file}")
+            print(f"Custom eval-set: {args.eval_set_file}")
         elif args.eval_set:
             # Use eval-set for multiple tasks
             cmd = [
@@ -136,7 +136,7 @@ def fle_inspect_eval(args):
                 "eval",
                 f"{_eval_set_path}@{task_name}",
             ]
-            print(f"🏭 Running unbounded production task: {task_name}")
+            print(f"Unbounded production task: {task_name}")
         elif args.env_id:
             # Use specific task from eval set
             cmd = [
@@ -224,7 +224,7 @@ def fle_inspect_eval(args):
         # Set environment variables for dynamic task configuration
         if args.env_id:
             os.environ["FLE_ENV_ID"] = args.env_id
-            print(f"🎯 Targeting specific task: {args.env_id}")
+            print(f"Task: {args.env_id}")
 
         if args.model:
             os.environ["FLE_MODEL"] = args.model
@@ -238,18 +238,19 @@ def fle_inspect_eval(args):
             os.environ["FLE_TRAJECTORY_LENGTH"] = str(args.trajectory_length)
         elif task_type == "unbounded":
             os.environ["FLE_TRAJECTORY_LENGTH"] = "5000"  # Unbounded default
-            print("📏 Using default trajectory length of 5000 for unbounded task")
+            print("Trajectory length: 5000 (unbounded default)")
         else:
             os.environ["FLE_TRAJECTORY_LENGTH"] = "64"  # Throughput default
 
         # Set vision mode from CLI argument
         if hasattr(args, "vision") and args.vision:
             os.environ["FLE_VISION"] = "true"
-            print("👁️  Vision mode enabled: rendering images after each step")
+            print("Vision mode enabled")
 
         # Check if Factorio servers are reachable before starting evaluation
-        print("🔍 Checking Factorio server availability...")
+        print("Checking Factorio server availability...")
         import socket
+        import time as _time
 
         def check_port(host, port, timeout=2):
             try:
@@ -261,44 +262,95 @@ def fle_inspect_eval(args):
             except Exception:
                 return False
 
-        # Check first few Factorio server ports
-        reachable_servers = []
-        for i in range(32):  # Check first 32 servers
-            port = 27000 + i
-            if check_port("localhost", port, timeout=1):
-                reachable_servers.append(f"factorio_{i}")
+        def _count_reachable(n):
+            found = []
+            for i in range(n):
+                if check_port("localhost", 27000 + i, timeout=1):
+                    found.append(f"factorio_{i}")
+            return found
 
-        if reachable_servers:
+        # Determine how many servers we need
+        needed = min(
+            args.limit or args.max_connections or 8,
+            32,
+        )
+        needed = max(needed, 1)
+
+        reachable_servers = _count_reachable(32)
+
+        if len(reachable_servers) >= needed:
             print(
-                f"✅ Found {len(reachable_servers)} reachable Factorio servers: {reachable_servers}"
+                f"Found {len(reachable_servers)} reachable Factorio server(s): {reachable_servers}"
             )
         else:
-            print(
-                "⚠️  No Factorio servers reachable. Starting evaluation anyway (will use mock mode)"
-            )
-            print(
-                "💡 To use real Factorio: run 'fle cluster start -n 8' and wait 30-60 seconds"
-            )
+            if reachable_servers:
+                print(
+                    f"WARNING: Only {len(reachable_servers)} server(s) reachable, but {needed} needed."
+                )
+            else:
+                print("WARNING: No Factorio servers reachable.")
+
+            print(f"Auto-starting cluster with {needed} instance(s)...")
+            try:
+                from fle.cluster.run_envs import ClusterManager
+
+                manager = ClusterManager()
+                manager.start(
+                    num_instances=needed,
+                    scenario="default_lab_scenario",
+                )
+
+                # Wait for servers to become reachable
+                print(f"Waiting for {needed} server(s) to become reachable...")
+                deadline = _time.time() + 120  # 2-minute timeout
+                while _time.time() < deadline:
+                    reachable_servers = _count_reachable(needed)
+                    if len(reachable_servers) >= needed:
+                        break
+                    remaining = int(deadline - _time.time())
+                    print(
+                        f"   {len(reachable_servers)}/{needed} servers ready "
+                        f"({remaining}s remaining)...",
+                    )
+                    _time.sleep(5)
+
+                if len(reachable_servers) >= needed:
+                    print(
+                        f"Cluster ready: {len(reachable_servers)} server(s) reachable"
+                    )
+                else:
+                    print(
+                        f"WARNING: Timeout waiting for servers. Only {len(reachable_servers)}/{needed} reachable. "
+                        f"Proceeding - some samples may fail.",
+                        file=sys.stderr,
+                    )
+            except Exception as e:
+                print(f"WARNING: Failed to auto-start cluster: {e}", file=sys.stderr)
+                print(
+                    "Start manually with: fle cluster start -n "
+                    f"{needed}",
+                    file=sys.stderr,
+                )
 
         if args.config:
             print(
                 f"Note: Config {args.config} provided but using default dataset generation"
             )
 
-        print(f"\n🚀 Running evaluation: {' '.join(cmd)}")
+        print(f"\nRunning: {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True)
         print(result)
 
         if args.view:
             print(
-                f"\n✅ Evaluation complete! View available at: http://localhost:{args.view_port}"
+                f"\nEvaluation complete. View available at: http://localhost:{args.view_port}"
             )
-            print("🌐 Press Ctrl+C to stop the view server when done")
+            print("Press Ctrl+C to stop the view server when done")
             # Keep view running - wait for user to stop it
             try:
                 view_process.wait()
             except KeyboardInterrupt:
-                print("\n👋 Stopping view server...")
+                print("\nStopping view server...")
                 view_process.terminate()
                 view_process.wait()
 
@@ -314,7 +366,7 @@ def fle_inspect_eval(args):
     finally:
         # Clean up view process if it was started
         if view_process and view_process.poll() is None:
-            print("🧹 Cleaning up view server...")
+            print("Cleaning up view server...")
             view_process.terminate()
             try:
                 view_process.wait(timeout=5)

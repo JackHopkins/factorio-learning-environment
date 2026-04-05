@@ -148,4 +148,5 @@ publish-url = "https://test.pypi.org/legacy/"
 [dependency-groups]
 dev = [
     "pytest-asyncio>=1.2.0",
+    "pytest-xdist>=3.8.0",
 ]

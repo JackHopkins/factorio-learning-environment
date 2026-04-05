@@ -341,13 +341,14 @@ Now begin working toward this objective step by step."""
 
                     # Create step message with current game state
                     current_score = production_scores[-1] if production_scores else 0
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Current production score: {current_score:.1f}/{quota}
 Progress: {(step / trajectory_length) * 100:.1f}% complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
+{game_state_str}
 
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to progress toward the production goal."""
@@ -358,7 +359,11 @@ Analyze the current state and write a Python program using the FLE API to progre
                         combined_content = (
                             f"{previous_feedback_content}\n\n---\n\n{step_content}"
                         )
-                        if previous_feedback_image and isinstance(previous_feedback_image, str) and previous_feedback_image.startswith("data:"):
+                        if (
+                            previous_feedback_image
+                            and isinstance(previous_feedback_image, str)
+                            and previous_feedback_image.startswith("data:")
+                        ):
                             # Include image from previous feedback with combined text
                             step_message = ChatMessageUser(
                                 content=[

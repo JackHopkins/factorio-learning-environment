@@ -327,8 +327,7 @@ def fle_inspect_eval(args):
             except Exception as e:
                 print(f"WARNING: Failed to auto-start cluster: {e}", file=sys.stderr)
                 print(
-                    "Start manually with: fle cluster start -n "
-                    f"{needed}",
+                    f"Start manually with: fle cluster start -n {needed}",
                     file=sys.stderr,
                 )
 

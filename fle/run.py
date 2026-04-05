@@ -55,6 +55,10 @@ def fle_eval(args):
 
 def fle_inspect_eval(args):
     """New command: fle inspect-eval using Inspect framework"""
+    _eval_integration_dir = Path(__file__).parent / "eval" / "inspect_integration"
+    _eval_set_path = str(_eval_integration_dir / "eval_set.py")
+    _agent_task_path = str(_eval_integration_dir / "agent_task.py")
+
     view_process = None
 
     try:
@@ -103,18 +107,12 @@ def fle_inspect_eval(args):
                 cmd = [
                     "inspect",
                     "eval",
-                    f"eval/inspect_integration/eval_set.py@{task_names[0]}",
+                    f"{_eval_set_path}@{task_names[0]}",
                 ]
             else:
-                # Multiple tasks - use eval with multiple task specs
-                task_specs = " ".join(
-                    [f"eval/inspect_integration/eval_set.py@{t}" for t in task_names]
-                )
-                cmd = [
-                    "inspect",
-                    "eval",
-                    task_specs,
-                ]
+                # Multiple tasks - pass each as a separate argument
+                task_specs = [f"{_eval_set_path}@{t}" for t in task_names]
+                cmd = ["inspect", "eval"] + task_specs
         elif args.eval_set_file:
             # Use custom eval-set file
             cmd = [
@@ -128,7 +126,7 @@ def fle_inspect_eval(args):
             cmd = [
                 "inspect",
                 "eval-set",
-                "eval/inspect_integration/eval_set.py",
+                _eval_set_path,
             ]
         elif task_type == "unbounded":
             # Use unbounded production task
@@ -136,7 +134,7 @@ def fle_inspect_eval(args):
             cmd = [
                 "inspect",
                 "eval",
-                f"eval/inspect_integration/eval_set.py@{task_name}",
+                f"{_eval_set_path}@{task_name}",
             ]
             print(f"🏭 Running unbounded production task: {task_name}")
         elif args.env_id:
@@ -144,14 +142,14 @@ def fle_inspect_eval(args):
             cmd = [
                 "inspect",
                 "eval",
-                f"eval/inspect_integration/eval_set.py@{args.env_id}",
+                f"{_eval_set_path}@{args.env_id}",
             ]
         else:
             # Use the working controlled solver via agent_task.py
             cmd = [
                 "inspect",
                 "eval",
-                "eval/inspect_integration/agent_task.py@factorio_agent_evaluation",
+                f"{_agent_task_path}@factorio_agent_evaluation",
             ]
 
         # Add optional arguments with custom log subdir for eval-sets
@@ -372,7 +370,7 @@ Examples:
   fle inspect-eval --eval-set --max-tasks 4
 
   # Run custom eval-set file (e.g., solver experiments)
-  fle inspect-eval --eval-set-file eval/inspect_integration/solver_experiments.py \\
+  fle inspect-eval --eval-set-file ./solver_experiments.py \\
       --log-dir s3://bucket/logs/ --max-tasks 8
 
   # Other commands
@@ -483,7 +481,7 @@ Examples:
     )
     parser_inspect.add_argument(
         "--eval-set-file",
-        help="Path to custom eval-set file (e.g., eval/inspect_integration/solver_experiments.py)",
+        help="Path to custom eval-set file (e.g., ./solver_experiments.py)",
     )
     parser_inspect.add_argument(
         "--pass-n",

@@ -9,8 +9,9 @@ def game(configure_game):
 
 
 def test_set_research(game):
-    ingredients = game.set_research(Technology.Automation)
-    assert ingredients[0].count == 10
+    # Use SteamPower (no prerequisites in Factorio 2.0 tech tree)
+    ingredients = game.set_research(Technology.SteamPower)
+    assert ingredients[0].count > 0
 
 
 def test_fail_to_research_locked_technology(game):

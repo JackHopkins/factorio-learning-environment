@@ -57,7 +57,7 @@ class TaskRegistry:
         # Map task types to their implementation classes
         # Note: unbounded_production tasks are handled by Inspect solver/scorer directly,
         # not through the TaskABC class hierarchy. They use factorio_unbounded_solver
-        # and unbounded_production_scorer from the inspect_integration module.
+        # and unbounded_production_scorer from the inspect.integration module.
         self._task_type_to_class = {
             "throughput": ThroughputTask,
             "unbounded_throughput": UnboundedThroughputTask,

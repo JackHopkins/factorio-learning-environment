@@ -44,10 +44,10 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
 
-from fle.eval.inspect_integration.simple_server_pool import (
+from fle.eval.inspect.integration.simple_server_pool import (
     get_simple_server_pool,
 )
-from fle.eval.inspect_integration.solver_utils import (
+from fle.eval.inspect.integration.solver_utils import (
     TrajectoryData,
     render_vision_image,
     render_multi_zoom_images,
@@ -2491,7 +2491,7 @@ def factorio_condensed_prompt_latest_image_solver():
     - Images stripped from history, only latest shown
     - Standard message trimming (25 -> 16 messages)
     """
-    from fle.eval.inspect_integration.condensed_prompts import (
+    from fle.eval.inspect.integration.condensed_prompts import (
         get_condensed_system_prompt,
     )
 
@@ -2938,7 +2938,7 @@ def factorio_condensed_prompt_solver():
     - Fewer examples in documentation
     - Model must infer from concise descriptions
     """
-    from fle.eval.inspect_integration.condensed_prompts import (
+    from fle.eval.inspect.integration.condensed_prompts import (
         get_condensed_system_prompt,
     )
 

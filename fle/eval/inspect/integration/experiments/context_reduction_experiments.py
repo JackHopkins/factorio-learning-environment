@@ -33,7 +33,7 @@ import os
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 
-from fle.eval.inspect_integration.solver_variants import (
+from fle.eval.inspect.integration.solver_variants import (
     factorio_text_only_solver,
     factorio_no_image_history_solver,
     factorio_reasoning_only_solver,
@@ -41,7 +41,7 @@ from fle.eval.inspect_integration.solver_variants import (
     factorio_pruned_gamestate_solver,
     factorio_condensed_prompt_solver,
 )
-from fle.eval.inspect_integration.scorers import production_score, technologies
+from fle.eval.inspect.integration.scorers import production_score, technologies
 from fle.eval.tasks.task_definitions.unbounded.unbounded_tasks import (
     UNBOUNDED_PRODUCTION_TASKS,
     OPEN_PLAY_PRODUCTION,

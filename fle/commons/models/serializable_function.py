@@ -135,19 +135,24 @@ class SerializableFunction:
         """Reconstruct a function with proper globals from the instance"""
         globals_dict = {}
 
-        # Add instance attributes
-        for name in dir(instance):
-            if not name.startswith("_"):
-                globals_dict[name] = getattr(instance, name)
-
-        # Add builtins
+        # Add builtins first (so instance attributes can override them)
         for name in dir(builtins):
             if not name.startswith("_"):
                 globals_dict[name] = getattr(builtins, name)
 
+        # Add instance attributes (includes tools, log, etc.)
+        for name in dir(instance):
+            if not name.startswith("_"):
+                globals_dict[name] = getattr(instance, name)
+
         # Add persistent variables to ensure global statements work correctly
         if hasattr(instance, "persistent_vars"):
             globals_dict.update(instance.persistent_vars)
+
+        # Route print() inside agent-defined functions to the namespace log,
+        # so output is captured and returned to the agent as STDOUT.
+        if hasattr(instance, "log"):
+            globals_dict["print"] = instance.log
 
         code = marshal.loads(func_data.code_bytes)
 

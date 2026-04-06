@@ -1326,7 +1326,7 @@ class TreeObservationFormatter(BasicObservationFormatter):
         cls,
         trie: dict,
         indent_level: int = 1,
-        indent: str = "\t",
+        indent: str = "  ",
         parent_shared_keys: Optional[set] = None,
     ) -> List[str]:
         """Format a nested trie structure as lines of text.
@@ -1605,7 +1605,7 @@ class TreeObservationFormatter(BasicObservationFormatter):
                 shared_str = ", ".join(
                     f"{k}={v}" for k, v in sorted(top_shared.items())
                 )
-                lines.append(f"\t[{shared_str}]")
+                lines.append(f"  [{shared_str}]")
                 # Children start at indent level 2 (nested under the shared attributes)
                 child_start_level = 2
             else:
@@ -1617,13 +1617,13 @@ class TreeObservationFormatter(BasicObservationFormatter):
                 child_lines = cls.format_nested_trie_output(
                     child,
                     indent_level=child_start_level,
-                    indent="\t",
+                    indent="  ",
                     parent_shared_keys=top_shared_keys,
                 )
                 lines.extend(child_lines)
 
             # Format leaves (individual entities at top level) - exclude top-level shared keys
-            leaf_indent = "\t" * child_start_level
+            leaf_indent = "  " * child_start_level
             for leaf in trie.get("leaves", []):
                 if leaf:
                     filtered_leaf = {

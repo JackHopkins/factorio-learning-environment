@@ -5,7 +5,7 @@ generated using Claude Opus 4.5 to reduce token count while preserving
 semantic information.
 
 To regenerate the condensed prompt:
-    python -m fle.eval.inspect_integration.condensed_prompts --regenerate
+    python -m fle.eval.inspect.integration.condensed_prompts --regenerate
 
 The condensed prompt targets ~10k tokens (down from ~28k) by:
 - Removing redundant explanations
@@ -33,7 +33,7 @@ def get_full_system_prompt(trajectory_length: int = 5000) -> str:
     from fle.env.utils.controller_loader.system_prompt_generator import (
         SystemPromptGenerator,
     )
-    from fle.eval.inspect_integration.solver_utils import get_base_system_prompt
+    from fle.eval.inspect.integration.solver_utils import get_base_system_prompt
 
     generator = SystemPromptGenerator(str(importlib.resources.files("fle") / "env"))
     base_prompt = generator.generate_for_agent(agent_idx=0, num_agents=1)

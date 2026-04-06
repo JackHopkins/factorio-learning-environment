@@ -221,6 +221,10 @@ class FactorioInstance:
         self.lua_script_manager.load_init_into_game("initialise")
         self.lua_script_manager.setup_tools(self)
 
+        # Freeze namespace names so agent code cannot shadow tools/builtins
+        for ns in self.namespaces:
+            ns._freeze_protected_names()
+
         if inventory is None:
             inventory = {}
         self.initial_inventory = inventory
@@ -239,6 +243,8 @@ class FactorioInstance:
                 **self.lua_script_manager.tool_scripts,
             }
             self.lua_script_manager.setup_tools(self)
+            for ns in self.namespaces:
+                ns._freeze_protected_names()
             self.initialise(fast, all_technologies_researched, clear_entities)
 
         self.initial_score, _ = self.first_namespace.score()

@@ -41,13 +41,13 @@ import os
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 
-from fle.eval.inspect_integration.solver_variants import (
+from fle.eval.inspect.integration.solver_variants import (
     factorio_full_prompt_solver,
     factorio_full_prompt_latest_image_solver,
     factorio_condensed_prompt_solver,
     factorio_condensed_prompt_latest_image_solver,
 )
-from fle.eval.inspect_integration.scorers import (
+from fle.eval.inspect.integration.scorers import (
     production_score,
     achievements,
     technologies,

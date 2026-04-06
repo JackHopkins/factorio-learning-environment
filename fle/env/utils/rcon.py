@@ -34,13 +34,17 @@ def _load_scripts(scripts):
 
 
 def _get_mods_dir():
-    # get local execution path
+    override = os.environ.get("FLE_MODS_DIR")
+    if override:
+        return override
     path = os.path.dirname(Path(os.path.dirname(os.path.realpath(__file__))))
     return path + "/mods"
 
 
 def _get_dir(name="tools"):
-    # get local execution path
+    override = os.environ.get(f"FLE_{name.upper()}_DIR")
+    if override:
+        return override
     path = os.path.dirname(Path(os.path.dirname(os.path.realpath(__file__))))
     return path + f"/{name}"
 

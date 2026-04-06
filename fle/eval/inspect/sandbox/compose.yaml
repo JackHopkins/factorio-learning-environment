@@ -1,0 +1,13 @@
+services:
+  default:
+    image: fle-sandbox:latest
+    init: true
+    cpus: 1.5
+    mem_limit: 2048m
+    environment:
+      - FLE_SCENARIO=${FLE_SCENARIO:-default_lab_scenario}
+      - FLE_ENV_ID=${FLE_ENV_ID:-iron_ore_throughput}
+      - FLE_MODS_DIR=/opt/fle/mods
+      - FLE_TOOLS_DIR=/opt/fle/tools
+      - FLE_NUM_AGENTS=${FLE_NUM_AGENTS:-1}
+    x-local: true

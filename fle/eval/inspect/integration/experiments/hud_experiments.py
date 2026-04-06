@@ -30,12 +30,12 @@ import os
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
 
-from fle.eval.inspect_integration.solver_variants import (
+from fle.eval.inspect.integration.solver_variants import (
     factorio_hud_solver,
     factorio_hud_text_only_solver,
     factorio_fat_hud_solver,
 )
-from fle.eval.inspect_integration.scorers import production_score, technologies
+from fle.eval.inspect.integration.scorers import production_score, technologies
 from fle.eval.tasks.task_definitions.unbounded.unbounded_tasks import (
     UNBOUNDED_PRODUCTION_TASKS,
     OPEN_PLAY_PRODUCTION,

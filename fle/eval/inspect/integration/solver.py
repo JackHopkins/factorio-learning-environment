@@ -37,7 +37,7 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
     SystemPromptGenerator,
 )
 
-from fle.eval.inspect_integration.simple_server_pool import (
+from fle.eval.inspect.integration.simple_server_pool import (
     get_simple_server_pool,
 )
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
@@ -591,7 +591,7 @@ Continue to step {step + 2}."""
 
                     # Apply intermediate scoring for real-time metrics tracking
                     try:
-                        from fle.eval.inspect_integration.scorers import (
+                        from fle.eval.inspect.integration.scorers import (
                             apply_intermediate_scoring,
                         )
 

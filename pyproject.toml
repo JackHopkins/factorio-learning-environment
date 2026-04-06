@@ -82,6 +82,7 @@ cluster = [
 eval = [
     "scikit-image>=0.25.2",
     "psycopg2>=2.9.10",
+    "wandb>=0.16.0",
 ]
 all = [
     "docker>=6.0.0",
@@ -108,6 +109,9 @@ inspect = [
     "inspect-ai>=0.3.139",
     "fastapi>=0.68.0",
 ]
+
+[project.entry-points.inspect_ai]
+fle_wandb_hook = "fle.eval.inspect.hooks.wandb_hook"
 
 [project.scripts]
 fle = "fle.run:main"

@@ -49,30 +49,56 @@ def _load_prompt_template(filename: str) -> Template:
     return Template(prompt_path.read_text())
 
 
-async def _bridge_exec(command: str, body: dict = None, timeout: int = 300) -> dict:
+async def _bridge_exec(
+    command: str,
+    body: dict = None,
+    timeout: int = 300,
+    max_retries: int = 5,
+    base_delay: float = 2.0,
+) -> dict:
     """Execute a bridge client command inside the sandbox container.
 
-    Returns parsed JSON response. Raises on failure.
+    Returns parsed JSON response. Retries with exponential backoff on
+    "busy" errors (the bridge is single-threaded and rejects concurrent
+    requests). Raises on non-retryable failures.
     """
     args = list(BRIDGE_CMD) + [command]
     if body is not None:
         args.append(json.dumps(body))
 
-    result = await sandbox().exec(args, timeout=timeout)
+    last_error = None
+    for attempt in range(max_retries + 1):
+        result = await sandbox().exec(args, timeout=timeout)
 
-    if not result.success:
-        raise RuntimeError(
-            f"Bridge command '{command}' failed (rc={result.returncode}): "
-            f"stdout={result.stdout[:500]}, stderr={result.stderr[:500]}"
-        )
+        if result.success:
+            try:
+                return json.loads(result.stdout)
+            except json.JSONDecodeError as e:
+                raise RuntimeError(
+                    f"Bridge command '{command}' returned invalid JSON: {e}\n"
+                    f"stdout={result.stdout[:500]}"
+                )
 
-    try:
-        return json.loads(result.stdout)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(
-            f"Bridge command '{command}' returned invalid JSON: {e}\n"
-            f"stdout={result.stdout[:500]}"
+        # Check if the failure is a "busy" error that's worth retrying
+        stdout_lower = (result.stdout or "").lower()
+        is_busy = "already busy" in stdout_lower or "busy with another" in stdout_lower
+
+        if not is_busy or attempt == max_retries:
+            raise RuntimeError(
+                f"Bridge command '{command}' failed (rc={result.returncode}): "
+                f"stdout={result.stdout[:500]}, stderr={result.stderr[:500]}"
+            )
+
+        delay = base_delay * (2 ** attempt)
+        logger.warning(
+            "Bridge busy on '%s' (attempt %d/%d), retrying in %.1fs...",
+            command,
+            attempt + 1,
+            max_retries,
+            delay,
         )
+        last_error = result.stdout[:200]
+        await _async_sleep(delay)
 
 
 async def _wait_for_bridge(timeout: int = 180):

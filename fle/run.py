@@ -257,6 +257,17 @@ def fle_inspect_eval(args):
             os.environ["FLE_SCENARIO"] = args.scenario
             print(f"Scenario: {args.scenario}")
 
+        # Set WandB environment variables from CLI flags
+        if getattr(args, "wandb", False):
+            os.environ["ENABLE_WANDB"] = "true"
+            print("WandB logging enabled")
+        if getattr(args, "wandb_project", None):
+            os.environ["WANDB_PROJECT"] = args.wandb_project
+            print(f"WandB project: {args.wandb_project}")
+        if getattr(args, "wandb_entity", None):
+            os.environ["WANDB_ENTITY"] = args.wandb_entity
+            print(f"WandB entity: {args.wandb_entity}")
+
         # For sandbox mode: ensure the Docker image is built
         if getattr(args, "sandbox", False):
             if not _sandbox_image_exists():
@@ -708,6 +719,21 @@ Examples:
         type=str,
         default="default_lab_scenario",
         help="Factorio scenario to load (default: default_lab_scenario)",
+    )
+    parser_inspect.add_argument(
+        "--wandb",
+        action="store_true",
+        help="Enable Weights & Biases logging (sets ENABLE_WANDB=true)",
+    )
+    parser_inspect.add_argument(
+        "--wandb-project",
+        type=str,
+        help="WandB project name (default: fle-inspect-eval)",
+    )
+    parser_inspect.add_argument(
+        "--wandb-entity",
+        type=str,
+        help="WandB entity (team/user)",
     )
 
     parser_sprites = subparsers.add_parser(

@@ -383,6 +383,11 @@ def production_score() -> Scorer:
 
             explanation = ", ".join(explanation_parts)
 
+            # Sample ~100 milestone points for trajectory visualization
+            milestone_scores = (
+                scores[:: max(1, len(scores) // 100)] if scores else []
+            )
+
             return Score(
                 value=production_score,  # Raw production score - higher is better
                 answer=f"{production_score:.2f}",
@@ -401,6 +406,7 @@ def production_score() -> Scorer:
                     "scores_count": len(scores),
                     "final_10_scores": scores[-10:] if len(scores) > 10 else scores,
                     "first_10_scores": scores[:10] if len(scores) > 10 else scores,
+                    "milestone_scores": milestone_scores,
                     # Error tracking
                     "has_error": bool(error),
                     "error": error or "",
@@ -497,6 +503,13 @@ def automated_production_score() -> Scorer:
 
             explanation = ", ".join(explanation_parts)
 
+            # Sample ~100 milestone points for trajectory visualization
+            milestone_scores = (
+                automated_scores[:: max(1, len(automated_scores) // 100)]
+                if automated_scores
+                else []
+            )
+
             return Score(
                 value=automated_score,  # Automated production score - higher is better
                 answer=f"{automated_score:.2f}",
@@ -521,6 +534,7 @@ def automated_production_score() -> Scorer:
                     "first_10_automated_scores": automated_scores[:10]
                     if len(automated_scores) > 10
                     else automated_scores,
+                    "milestone_scores": milestone_scores,
                     # Error tracking
                     "has_error": bool(error),
                     "error": error or "",

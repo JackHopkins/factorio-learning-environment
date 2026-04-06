@@ -532,7 +532,7 @@ def fle_sandbox(args):
             print(f"Sandbox image '{SANDBOX_IMAGE}' is available.")
         else:
             print(f"Sandbox image '{SANDBOX_IMAGE}' is not built.")
-            print(f"Run 'fle sandbox build' to build it.")
+            print("Run 'fle sandbox build' to build it.")
     else:
         print(f"Unknown sandbox command: {cmd}", file=sys.stderr)
         sys.exit(1)

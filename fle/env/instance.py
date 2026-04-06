@@ -297,17 +297,6 @@ class FactorioInstance:
             self.first_namespace._reset(
                 inventories, reset_position, all_technologies_researched, clear_entities
             )
-            # Reset the technologies
-            if not all_technologies_researched:
-                self.first_namespace._load_research_state(
-                    ResearchState(
-                        technologies={},
-                        research_progress=0,
-                        current_research=None,
-                        research_queue=[],
-                        progress={},
-                    )
-                )
         else:
             # Reset the game instance with the correct player's inventory and messages if multiagent
             self.first_namespace._reset(

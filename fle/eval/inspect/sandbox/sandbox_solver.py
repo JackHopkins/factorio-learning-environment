@@ -13,10 +13,8 @@ import os
 import time
 import traceback
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from inspect_ai.scorer import score
-from inspect_ai.log import transcript
 from inspect_ai.solver import solver
 from inspect_ai.agent import AgentState
 from inspect_ai.model import (
@@ -28,13 +26,11 @@ from inspect_ai.model import (
     ContentText,
     CachePolicy,
 )
-from inspect_ai.util import StoreModel, store_as, sandbox
-from pydantic import Field
+from inspect_ai.util import store_as, sandbox
 
 from jinja2 import Template
 
 from fle.eval.inspect.integration.solver import (
-    StepResult,
     TrajectoryData,
 )
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
@@ -282,7 +278,6 @@ Analyze the current state and write a Python program using the FLE API to progre
                     reward = exec_result.get("reward", 0)
                     terminated = exec_result.get("terminated", False)
                     truncated = exec_result.get("truncated", False)
-                    flow = exec_result.get("flows", {})
                     flows_formatted = exec_result.get("flows_formatted", "")
                     current_ticks = exec_result.get("ticks", 0)
 
@@ -685,7 +680,6 @@ def factorio_sandbox_unbounded_solver():
                     flow = exec_result.get("flows", {})
                     flows_formatted = exec_result.get("flows_formatted", "")
                     current_ticks = exec_result.get("ticks", 0)
-                    reward = exec_result.get("reward", 0)
                     terminated = exec_result.get("terminated", False)
                     truncated = exec_result.get("truncated", False)
 

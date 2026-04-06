@@ -508,7 +508,7 @@ def sandbox_build(force: bool = False) -> bool:
         str(build_context),
     ]
     try:
-        result = subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True)
         print(f"Sandbox image '{SANDBOX_IMAGE}' built successfully.")
         return True
     except subprocess.CalledProcessError as e:

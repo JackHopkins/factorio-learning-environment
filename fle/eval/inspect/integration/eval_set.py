@@ -33,7 +33,6 @@ from fle.eval.inspect.integration.solver_variants import (
     factorio_pruned_gamestate_solver,
 )
 from fle.eval.inspect.integration.scorers import (
-    comprehensive_factorio_scorer,
     throughput_proportion_scorer,
     production_score_tracker,
     step_change_tracker,

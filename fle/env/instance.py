@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 from fle.env.lua_manager import LuaScriptManager
 from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python
-from fle.commons.models.research_state import ResearchState
 from factorio_rcon import RCONClient
 from fle.commons.models.game_state import GameState
 from fle.env.utils.controller_loader.system_prompt_generator import (
@@ -290,9 +289,9 @@ class FactorioInstance:
         self.ensure_connected()
 
         # Reset the namespace (clear variables, functions etc)
-        assert (
-            not game_state or len(game_state.inventories) == self.num_agents
-        ), "Game state must have the same number of inventories as num_agents"
+        assert not game_state or len(game_state.inventories) == self.num_agents, (
+            "Game state must have the same number of inventories as num_agents"
+        )
 
         for namespace in self.namespaces:
             namespace.reset()

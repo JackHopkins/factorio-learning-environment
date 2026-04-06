@@ -8,7 +8,6 @@ Usage:
     inspect eval fle/eval/inspect/sandbox/sandbox_eval_set.py@open_play_production
 """
 
-import os
 from pathlib import Path
 
 from inspect_ai import Task, task
@@ -16,7 +15,6 @@ from inspect_ai import Task, task
 from fle.eval.inspect.eval_set import (
     create_throughput_task,
     create_unbounded_production_task,
-    THROUGHPUT_TASKS,
     OPEN_PLAY_PRODUCTION,
 )
 from fle.eval.inspect.sandbox.sandbox_solver import (

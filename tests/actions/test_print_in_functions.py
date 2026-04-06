@@ -4,8 +4,6 @@ These tests verify that when an agent defines a function and calls it, any print
 calls within that function appear in the result output returned by instance.eval().
 """
 
-import pytest
-
 
 class TestPrintInTopLevelFunction:
     """Print inside a simple function defined and called at top level."""

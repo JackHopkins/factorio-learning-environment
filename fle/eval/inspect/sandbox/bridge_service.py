@@ -16,7 +16,6 @@ import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import numpy as np
-import gym
 
 
 class _NumpyEncoder(json.JSONEncoder):
@@ -266,7 +265,6 @@ class BridgeHandler(BaseHTTPRequestHandler):
         agent_idx = body.get("agent_idx", 0)
 
         from fle.env.gym_env.action import Action
-        from fle.commons.models.game_state import GameState
         from fle.env.gym_env.observation_formatter import TreeObservationFormatter
 
         action = Action(agent_idx=agent_idx, code=code)

@@ -6,7 +6,7 @@ configuration are injected by the caller, keeping task definitions DRY.
 """
 
 import os
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from inspect_ai import Task
 from inspect_ai.dataset import Sample

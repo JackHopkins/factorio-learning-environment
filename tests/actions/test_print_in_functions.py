@@ -12,9 +12,7 @@ class TestPrintInTopLevelFunction:
 
     def test_print_in_simple_function(self, instance):
         """Basic case: def foo(): print('hello') then foo()"""
-        _, _, result = instance.eval(
-            'def foo():\n    print("hello from foo")\n\nfoo()'
-        )
+        _, _, result = instance.eval('def foo():\n    print("hello from foo")\n\nfoo()')
         assert "hello from foo" in result
 
     def test_print_in_function_with_loop(self, instance):
@@ -49,13 +47,13 @@ class TestPrintInNestedFunctions:
     def test_print_in_inner_function(self, instance):
         """Inner function with print, called by outer function."""
         code = (
-            'def outer():\n'
-            '    def inner():\n'
+            "def outer():\n"
+            "    def inner():\n"
             '        print("from inner")\n'
-            '    inner()\n'
+            "    inner()\n"
             '    print("from outer")\n'
-            '\n'
-            'outer()'
+            "\n"
+            "outer()"
         )
         _, _, result = instance.eval(code)
         assert "from inner" in result
@@ -64,13 +62,13 @@ class TestPrintInNestedFunctions:
     def test_print_in_helper_wrapper(self, instance):
         """Pattern commonly used by agents: define a log/safe wrapper with print."""
         code = (
-            'def my_task():\n'
-            '    def log(msg):\n'
-            '        print(str(msg))\n'
+            "def my_task():\n"
+            "    def log(msg):\n"
+            "        print(str(msg))\n"
             '    log("starting task")\n'
             '    log("task complete")\n'
-            '\n'
-            'my_task()'
+            "\n"
+            "my_task()"
         )
         _, _, result = instance.eval(code)
         assert "starting task" in result
@@ -83,13 +81,13 @@ class TestPrintInTryExcept:
     def test_print_in_try_block(self, instance):
         """Print inside a try block inside a function."""
         code = (
-            'def safe_op():\n'
-            '    try:\n'
+            "def safe_op():\n"
+            "    try:\n"
             '        print("in try")\n'
-            '    except Exception as e:\n'
+            "    except Exception as e:\n"
             '        print(f"error: {e}")\n'
-            '\n'
-            'safe_op()'
+            "\n"
+            "safe_op()"
         )
         _, _, result = instance.eval(code)
         assert "in try" in result
@@ -97,13 +95,13 @@ class TestPrintInTryExcept:
     def test_print_in_except_block(self, instance):
         """Print inside an except block inside a function."""
         code = (
-            'def safe_op():\n'
-            '    try:\n'
-            '        x = 1 / 0\n'
-            '    except Exception as e:\n'
+            "def safe_op():\n"
+            "    try:\n"
+            "        x = 1 / 0\n"
+            "    except Exception as e:\n"
             '        print(f"caught: {e}")\n'
-            '\n'
-            'safe_op()'
+            "\n"
+            "safe_op()"
         )
         _, _, result = instance.eval(code)
         assert "caught:" in result
@@ -115,23 +113,23 @@ class TestPrintInSafeWrapper:
     def test_agent_safe_pattern(self, instance):
         """Real-world pattern: agent defines safe() and log() wrappers, calls tools."""
         code = (
-            'def do_work():\n'
-            '    def log(msg):\n'
-            '        print(str(msg))\n'
-            '\n'
-            '    def safe(fn, *args, name=None, default=None, **kwargs):\n'
-            '        try:\n'
-            '            return fn(*args, **kwargs)\n'
-            '        except Exception as e:\n'
+            "def do_work():\n"
+            "    def log(msg):\n"
+            "        print(str(msg))\n"
+            "\n"
+            "    def safe(fn, *args, name=None, default=None, **kwargs):\n"
+            "        try:\n"
+            "            return fn(*args, **kwargs)\n"
+            "        except Exception as e:\n"
             '            log(f"ERROR {name}: {e}")\n'
-            '            return default\n'
-            '\n'
+            "            return default\n"
+            "\n"
             '    log("=== START ===")\n'
             '    inv = safe(inspect_inventory, name="inspect_inventory", default={})\n'
             '    log(f"Inventory: {inv}")\n'
             '    log("=== DONE ===")\n'
-            '\n'
-            'do_work()'
+            "\n"
+            "do_work()"
         )
         _, _, result = instance.eval(code)
         assert "=== START ===" in result
@@ -141,22 +139,22 @@ class TestPrintInSafeWrapper:
     def test_agent_safe_pattern_with_error(self, instance):
         """Agent's safe() wrapper catches error and prints it."""
         code = (
-            'def do_work():\n'
-            '    def log(msg):\n'
-            '        print(str(msg))\n'
-            '\n'
-            '    def safe(fn, *args, name=None, default=None, **kwargs):\n'
-            '        try:\n'
-            '            return fn(*args, **kwargs)\n'
-            '        except Exception as e:\n'
+            "def do_work():\n"
+            "    def log(msg):\n"
+            "        print(str(msg))\n"
+            "\n"
+            "    def safe(fn, *args, name=None, default=None, **kwargs):\n"
+            "        try:\n"
+            "            return fn(*args, **kwargs)\n"
+            "        except Exception as e:\n"
             '            log(f"ERROR calling {name}: {e}")\n'
-            '            return default\n'
-            '\n'
+            "            return default\n"
+            "\n"
             '    log("start")\n'
             '    result = safe(lambda: 1/0, name="divide", default=None)\n'
             '    log(f"result={result}")\n'
-            '\n'
-            'do_work()'
+            "\n"
+            "do_work()"
         )
         _, _, result = instance.eval(code)
         assert "start" in result
@@ -170,9 +168,9 @@ class TestPrintInFunctionCalledMultipleTimes:
     def test_function_called_twice(self, instance):
         """Prints from both invocations should appear."""
         code = (
-            'def greet(name):\n'
+            "def greet(name):\n"
             '    print(f"hello {name}")\n'
-            '\n'
+            "\n"
             'greet("alice")\n'
             'greet("bob")'
         )

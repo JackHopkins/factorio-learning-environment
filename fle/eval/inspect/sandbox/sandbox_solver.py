@@ -42,7 +42,6 @@ from fle.agents.llm.parsing import parse_response
 from fle.env.gym_env.observation import Observation
 from fle.env.gym_env.observation_formatter import TreeObservationFormatter
 
-
 logger = logging.getLogger(__name__)
 
 BRIDGE_CMD = ["python3", "/opt/fle/bridge_client.py"]
@@ -99,6 +98,7 @@ async def _wait_for_bridge(timeout: int = 180):
 async def _async_sleep(seconds):
     """Async sleep helper."""
     import asyncio
+
     await asyncio.sleep(seconds)
 
 
@@ -114,12 +114,18 @@ def factorio_sandbox_controlled_solver():
     async def solve(state: AgentState, *args, **kwargs) -> AgentState:
         try:
             # Get configuration from metadata
-            metadata = getattr(state, "metadata", {}) if hasattr(state, "metadata") else {}
+            metadata = (
+                getattr(state, "metadata", {}) if hasattr(state, "metadata") else {}
+            )
             env_id = metadata.get("env_id", "iron_ore_throughput")
             model_name = metadata.get("model", "openai/gpt-4o-mini")
             trajectory_length = metadata.get("trajectory_length", 64)
 
-            logger.info("Starting sandbox controlled solver for %s (%d steps)", env_id, trajectory_length)
+            logger.info(
+                "Starting sandbox controlled solver for %s (%d steps)",
+                env_id,
+                trajectory_length,
+            )
 
             # Wait for bridge to be ready
             await _wait_for_bridge()
@@ -152,7 +158,9 @@ def factorio_sandbox_controlled_solver():
 - Then build the specific production chain required
 """
             else:
-                goal_description = f"Create an automatic {env_id.replace('_', '-')} factory"
+                goal_description = (
+                    f"Create an automatic {env_id.replace('_', '-')} factory"
+                )
                 quota = 16
                 task_instructions = f"## TASK OBJECTIVE\n{goal_description}"
 
@@ -164,7 +172,8 @@ Now begin working toward this objective step by step."""
 
             # Initialize conversation
             original_user_message = (
-                state.messages[0].content if state.messages
+                state.messages[0].content
+                if state.messages
                 else f"Begin task: {goal_description}"
             )
             state.messages = [ChatMessageSystem(content=full_system_prompt)]
@@ -210,16 +219,20 @@ Analyze the current state and write a Python program using the FLE API to progre
 
                     # Combine previous feedback with current step content
                     if previous_feedback_content is not None:
-                        combined_content = f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                        combined_content = (
+                            f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                        )
                         if (
                             previous_feedback_image
                             and isinstance(previous_feedback_image, str)
                             and previous_feedback_image.startswith("data:")
                         ):
-                            step_message = ChatMessageUser(content=[
-                                ContentImage(image=previous_feedback_image),
-                                ContentText(text=combined_content),
-                            ])
+                            step_message = ChatMessageUser(
+                                content=[
+                                    ContentImage(image=previous_feedback_image),
+                                    ContentText(text=combined_content),
+                                ]
+                            )
                         else:
                             step_message = ChatMessageUser(content=combined_content)
                         previous_feedback_content = None
@@ -249,7 +262,11 @@ Analyze the current state and write a Python program using the FLE API to progre
                             "Be sure to wrap your code in ``` blocks."
                         )
 
-                    logger.info("Step %d: Generated %d char program", step + 1, len(program.code))
+                    logger.info(
+                        "Step %d: Generated %d char program",
+                        step + 1,
+                        len(program.code),
+                    )
 
                     # Execute program INSIDE container
                     exec_result = await _bridge_exec(
@@ -282,7 +299,11 @@ Analyze the current state and write a Python program using the FLE API to progre
                     elapsed_time_str = f"{hours}:{minutes:02d}:{seconds:02d}"
 
                     if not program_output:
-                        program_output = "No code was submitted. Write code in ``` blocks." if not program.code else "None"
+                        program_output = (
+                            "No code was submitted. Write code in ``` blocks."
+                            if not program.code
+                            else "None"
+                        )
 
                     # Build feedback message
                     feedback_content = f"""## Step {step + 1} Execution Results
@@ -311,7 +332,9 @@ Continue to step {step + 2}."""
                     updated_image_data_url = None
                     if vision_enabled:
                         try:
-                            screenshot_resp = await _bridge_exec("screenshot", timeout=30)
+                            screenshot_resp = await _bridge_exec(
+                                "screenshot", timeout=30
+                            )
                             updated_image_data_url = screenshot_resp.get("base64")
                         except Exception as img_err:
                             logger.warning("Screenshot failed: %s", img_err)
@@ -324,7 +347,10 @@ Continue to step {step + 2}."""
                         if state.messages and state.messages[0].role == "system":
                             system_message = state.messages[0]
                             state.messages = [system_message] + state.messages[-24:]
-                            logger.info("Trimmed conversation to %d messages", len(state.messages))
+                            logger.info(
+                                "Trimmed conversation to %d messages",
+                                len(state.messages),
+                            )
 
                     step_time = time.time() - step_start
                     step_result = {
@@ -332,13 +358,26 @@ Continue to step {step + 2}."""
                         "production_score": production_score,
                         "program_length": len(program.code),
                         "execution_time": step_time,
-                        "program_content": program.code[:200] + "..." if len(program.code) > 200 else program.code,
-                        "program_output": str(program_output)[:200] + "..." if len(str(program_output)) > 200 else str(program_output),
+                        "program_content": (
+                            program.code[:200] + "..."
+                            if len(program.code) > 200
+                            else program.code
+                        ),
+                        "program_output": (
+                            str(program_output)[:200] + "..."
+                            if len(str(program_output)) > 200
+                            else str(program_output)
+                        ),
                     }
                     step_results.append(step_result)
 
-                    logger.info("Step %d/%d: Score=%.1f, Time=%.1fs",
-                                step + 1, trajectory_length, production_score, step_time)
+                    logger.info(
+                        "Step %d/%d: Score=%.1f, Time=%.1fs",
+                        step + 1,
+                        trajectory_length,
+                        production_score,
+                        step_time,
+                    )
 
                     # Store intermediate progress
                     trajectory_data = store_as(TrajectoryData)
@@ -351,7 +390,10 @@ Continue to step {step + 2}."""
 
                     # Apply intermediate scoring
                     try:
-                        from fle.eval.inspect.integration.scorers import apply_intermediate_scoring
+                        from fle.eval.inspect.integration.scorers import (
+                            apply_intermediate_scoring,
+                        )
+
                         await apply_intermediate_scoring(
                             state=state,
                             step_num=step + 1,
@@ -388,11 +430,16 @@ Continue to step {step + 2}."""
                 model=model_name,
             )
 
-            logger.info("Controlled trajectory complete: %.1f score after %d steps",
-                        final_score, len(step_results))
+            logger.info(
+                "Controlled trajectory complete: %.1f score after %d steps",
+                final_score,
+                len(step_results),
+            )
 
         except Exception as e:
-            error_msg = f"Sandbox controlled solver error: {str(e)}\n{traceback.format_exc()}"
+            error_msg = (
+                f"Sandbox controlled solver error: {str(e)}\n{traceback.format_exc()}"
+            )
             logger.error(error_msg)
 
             trajectory_data = store_as(TrajectoryData)
@@ -428,7 +475,9 @@ def factorio_sandbox_unbounded_solver():
 
     async def solve(state: AgentState, *args, **kwargs) -> AgentState:
         try:
-            metadata = getattr(state, "metadata", {}) if hasattr(state, "metadata") else {}
+            metadata = (
+                getattr(state, "metadata", {}) if hasattr(state, "metadata") else {}
+            )
             env_id = metadata.get("env_id", "open_play_production")
             model_name = metadata.get("model", "openai/gpt-4o-mini")
             trajectory_length = metadata.get("trajectory_length", 5000)
@@ -438,7 +487,11 @@ def factorio_sandbox_unbounded_solver():
             )
             vision_enabled = os.environ.get("FLE_VISION", "").lower() == "true"
 
-            logger.info("Starting sandbox unbounded solver for %s (%d steps)", env_id, trajectory_length)
+            logger.info(
+                "Starting sandbox unbounded solver for %s (%d steps)",
+                env_id,
+                trajectory_length,
+            )
 
             # Wait for bridge
             await _wait_for_bridge()
@@ -451,10 +504,13 @@ def factorio_sandbox_unbounded_solver():
             base_system_prompt = prompt_resp["system_prompt"]
 
             system_template = _load_prompt_template("unbounded_system.jinja2.md")
-            full_system_prompt = system_template.render(base_system_prompt=base_system_prompt)
+            full_system_prompt = system_template.render(
+                base_system_prompt=base_system_prompt
+            )
 
             original_user_message = (
-                state.messages[0].content if state.messages
+                state.messages[0].content
+                if state.messages
                 else f"Begin task: {goal_description}"
             )
             state.messages = [ChatMessageSystem(content=full_system_prompt)]
@@ -506,15 +562,23 @@ def factorio_sandbox_unbounded_solver():
                     # Combine previous feedback
                     try:
                         if previous_feedback_content is not None:
-                            combined_content = f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                            combined_content = (
+                                f"{previous_feedback_content}\n\n---\n\n{step_content}"
+                            )
                             if previous_feedback_image is not None:
-                                if not isinstance(previous_feedback_image, str) or not previous_feedback_image.startswith("data:"):
-                                    step_message = ChatMessageUser(content=combined_content)
+                                if not isinstance(
+                                    previous_feedback_image, str
+                                ) or not previous_feedback_image.startswith("data:"):
+                                    step_message = ChatMessageUser(
+                                        content=combined_content
+                                    )
                                 else:
-                                    step_message = ChatMessageUser(content=[
-                                        ContentImage(image=previous_feedback_image),
-                                        ContentText(text=combined_content),
-                                    ])
+                                    step_message = ChatMessageUser(
+                                        content=[
+                                            ContentImage(image=previous_feedback_image),
+                                            ContentText(text=combined_content),
+                                        ]
+                                    )
                             else:
                                 step_message = ChatMessageUser(content=combined_content)
                             previous_feedback_content = None
@@ -535,7 +599,9 @@ def factorio_sandbox_unbounded_solver():
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    model_name_str = getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    model_name_str = (
+                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    )
                     if model_name_str and "openrouter" in model_name_str:
                         generation_config["transforms"] = ["middle-out"]
 
@@ -561,7 +627,11 @@ def factorio_sandbox_unbounded_solver():
                             "Be sure to wrap your code in ``` blocks."
                         )
 
-                    logger.info("Step %d: Generated %d char program", step + 1, len(program.code))
+                    logger.info(
+                        "Step %d: Generated %d char program",
+                        step + 1,
+                        len(program.code),
+                    )
                     program_codes.append(program.code)
 
                     # Execute program INSIDE container
@@ -579,8 +649,12 @@ def factorio_sandbox_unbounded_solver():
                         # Attempt recovery from last game state
                         if game_state_raws:
                             try:
-                                await _bridge_exec("reset", {"game_state": game_state_raws[-1]})
-                                logger.warning("Reset to previous game state after error")
+                                await _bridge_exec(
+                                    "reset", {"game_state": game_state_raws[-1]}
+                                )
+                                logger.warning(
+                                    "Reset to previous game state after error"
+                                )
                             except Exception:
                                 pass
                         continue
@@ -596,7 +670,9 @@ def factorio_sandbox_unbounded_solver():
 
                     policy_time = exec_result.get("policy_execution_time", 0.0)
                     policy_execution_latencies.append(float(policy_time))
-                    sleep_durations.append(0.0)  # Sleep tracking not available through bridge
+                    sleep_durations.append(
+                        0.0
+                    )  # Sleep tracking not available through bridge
 
                     # Process results
                     program_output = exec_result.get("result", "No output captured")
@@ -625,7 +701,10 @@ def factorio_sandbox_unbounded_solver():
 
                     # Extract researched technologies
                     try:
-                        for tech_name, tech_state in observation.research.technologies.items():
+                        for (
+                            tech_name,
+                            tech_state,
+                        ) in observation.research.technologies.items():
                             if tech_state.researched:
                                 researched_technologies_set.add(tech_name)
                     except Exception:
@@ -643,10 +722,16 @@ def factorio_sandbox_unbounded_solver():
                     elapsed_time_str = f"{hours}:{minutes:02d}:{seconds:02d}"
 
                     if not program_output:
-                        program_output = "No code was submitted. Write code in ``` blocks." if not program.code else "None"
+                        program_output = (
+                            "No code was submitted. Write code in ``` blocks."
+                            if not program.code
+                            else "None"
+                        )
 
                     # Build feedback
-                    feedback_template = _load_prompt_template("unbounded_feedback.jinja2.md")
+                    feedback_template = _load_prompt_template(
+                        "unbounded_feedback.jinja2.md"
+                    )
                     feedback_content = feedback_template.render(
                         program_output=program_output,
                         production_score=f"{production_score:.1f}",
@@ -663,7 +748,9 @@ def factorio_sandbox_unbounded_solver():
                     updated_image_data_url = None
                     if vision_enabled:
                         try:
-                            screenshot_resp = await _bridge_exec("screenshot", timeout=30)
+                            screenshot_resp = await _bridge_exec(
+                                "screenshot", timeout=30
+                            )
                             updated_image_data_url = screenshot_resp.get("base64")
                         except Exception as img_err:
                             logger.warning("Screenshot failed: %s", img_err)
@@ -676,7 +763,10 @@ def factorio_sandbox_unbounded_solver():
                         if state.messages and state.messages[0].role == "system":
                             system_message = state.messages[0]
                             state.messages = [system_message] + state.messages[-16:]
-                            logger.info("Trimmed conversation to %d messages", len(state.messages))
+                            logger.info(
+                                "Trimmed conversation to %d messages",
+                                len(state.messages),
+                            )
 
                     step_time = time.time() - step_start
                     total_step_latencies.append(step_time)
@@ -686,8 +776,16 @@ def factorio_sandbox_unbounded_solver():
                         "production_score": production_score,
                         "program_length": len(program.code),
                         "execution_time": step_time,
-                        "program_content": program.code[:200] + "..." if len(program.code) > 200 else program.code,
-                        "program_output": str(program_output)[:200] + "..." if len(str(program_output)) > 200 else str(program_output),
+                        "program_content": (
+                            program.code[:200] + "..."
+                            if len(program.code) > 200
+                            else program.code
+                        ),
+                        "program_output": (
+                            str(program_output)[:200] + "..."
+                            if len(str(program_output)) > 200
+                            else str(program_output)
+                        ),
                         "inference_latency": inference_time,
                         "env_execution_latency": env_time,
                         "policy_execution_latency": policy_time,
@@ -695,8 +793,13 @@ def factorio_sandbox_unbounded_solver():
                     }
                     step_results.append(step_result)
 
-                    logger.info("Step %d/%d: Score=%.1f, Time=%.1fs",
-                                step + 1, trajectory_length, production_score, step_time)
+                    logger.info(
+                        "Step %d/%d: Score=%.1f, Time=%.1fs",
+                        step + 1,
+                        trajectory_length,
+                        production_score,
+                        step_time,
+                    )
 
                     # Store intermediate progress
                     trajectory_data = store_as(TrajectoryData)
@@ -709,10 +812,14 @@ def factorio_sandbox_unbounded_solver():
                     trajectory_data.automated_scores = automated_production_scores
                     trajectory_data.ticks = game_ticks
                     trajectory_data.produced_item_types = list(produced_item_types_set)
-                    trajectory_data.researched_technologies = list(researched_technologies_set)
+                    trajectory_data.researched_technologies = list(
+                        researched_technologies_set
+                    )
                     trajectory_data.inference_latencies = inference_latencies
                     trajectory_data.env_execution_latencies = env_execution_latencies
-                    trajectory_data.policy_execution_latencies = policy_execution_latencies
+                    trajectory_data.policy_execution_latencies = (
+                        policy_execution_latencies
+                    )
                     trajectory_data.sleep_durations = sleep_durations
                     trajectory_data.total_step_latencies = total_step_latencies
                     trajectory_data.program_codes = program_codes
@@ -732,7 +839,9 @@ def factorio_sandbox_unbounded_solver():
 
             # Final results
             final_score = production_scores[-1] if production_scores else 0.0
-            final_automated_score = automated_production_scores[-1] if automated_production_scores else 0.0
+            final_automated_score = (
+                automated_production_scores[-1] if automated_production_scores else 0.0
+            )
 
             trajectory_data = store_as(TrajectoryData)
             trajectory_data.production_score = final_score
@@ -756,11 +865,21 @@ def factorio_sandbox_unbounded_solver():
             # Log latency summary
             if total_step_latencies:
                 avg_total = sum(total_step_latencies) / len(total_step_latencies)
-                avg_inference = sum(inference_latencies) / len(inference_latencies) if inference_latencies else 0
-                avg_env = sum(env_execution_latencies) / len(env_execution_latencies) if env_execution_latencies else 0
+                avg_inference = (
+                    sum(inference_latencies) / len(inference_latencies)
+                    if inference_latencies
+                    else 0
+                )
+                avg_env = (
+                    sum(env_execution_latencies) / len(env_execution_latencies)
+                    if env_execution_latencies
+                    else 0
+                )
                 logger.info(
                     "Latency summary: avg_total=%.2fs, avg_inference=%.2fs, avg_env=%.2fs",
-                    avg_total, avg_inference, avg_env,
+                    avg_total,
+                    avg_inference,
+                    avg_env,
                 )
 
             state.output = ModelOutput(
@@ -768,11 +887,16 @@ def factorio_sandbox_unbounded_solver():
                 model=model_name,
             )
 
-            logger.info("Unbounded trajectory complete: %.1f production score after %d steps",
-                        final_score, len(step_results))
+            logger.info(
+                "Unbounded trajectory complete: %.1f production score after %d steps",
+                final_score,
+                len(step_results),
+            )
 
         except Exception as e:
-            error_msg = f"Sandbox unbounded solver error: {str(e)}\n{traceback.format_exc()}"
+            error_msg = (
+                f"Sandbox unbounded solver error: {str(e)}\n{traceback.format_exc()}"
+            )
             logger.error(error_msg)
 
             trajectory_data = store_as(TrajectoryData)

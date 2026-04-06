@@ -210,8 +210,7 @@ class FactorioNamespace:
         of these names will raise an error instead of silently overwriting.
         """
         self._protected_names = {
-            attr for attr in dir(self)
-            if not attr.startswith("__")
+            attr for attr in dir(self) if not attr.startswith("__")
         }
 
     def _check_protected(self, name: str):

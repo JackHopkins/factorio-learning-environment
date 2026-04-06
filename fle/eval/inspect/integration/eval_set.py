@@ -44,7 +44,6 @@ from fle.eval.inspect.integration.scorers import (
     code,
 )
 
-
 # Solver mapping for dynamic selection via FLE_SOLVER env var
 SOLVER_MAP = {
     "unbounded": factorio_unbounded_solver,
@@ -76,8 +75,11 @@ def get_solver_for_task(task_type: str = "throughput"):
 # Throughput tasks
 # =============================================================================
 
+
 def _throughput(env_id: str, target: int = 16) -> Task:
-    return create_throughput_task(env_id, target=target, solver=get_solver_for_task("throughput"))
+    return create_throughput_task(
+        env_id, target=target, solver=get_solver_for_task("throughput")
+    )
 
 
 @task
@@ -85,80 +87,96 @@ def iron_ore_throughput():
     """Iron ore throughput task"""
     return _throughput("iron_ore_throughput", 16)
 
+
 @task
 def iron_plate_throughput():
     """Iron plate throughput task"""
     return _throughput("iron_plate_throughput", 16)
+
 
 @task
 def steel_plate_throughput():
     """Steel plate throughput task"""
     return _throughput("steel_plate_throughput", 16)
 
+
 @task
 def electronic_circuit_throughput():
     """Electronic circuit throughput task"""
     return _throughput("electronic_circuit_throughput", 16)
+
 
 @task
 def automation_science_pack_throughput():
     """Automation science pack throughput task"""
     return _throughput("automation_science_pack_throughput", 16)
 
+
 @task
 def inserter_throughput():
     """Inserter throughput task"""
     return _throughput("inserter_throughput", 16)
+
 
 @task
 def iron_gear_wheel_throughput():
     """Iron gear wheel throughput task"""
     return _throughput("iron_gear_wheel_throughput", 16)
 
+
 @task
 def crude_oil_throughput():
     """Crude oil throughput task"""
     return _throughput("crude_oil_throughput", 250)
+
 
 @task
 def petroleum_gas_throughput():
     """Petroleum gas throughput task"""
     return _throughput("petroleum_gas_throughput", 250)
 
+
 @task
 def sufuric_acid_throughput():
     """Sulfuric acid throughput task"""
     return _throughput("sufuric_acid_throughput", 16)
+
 
 @task
 def sulfur_throughput():
     """Sulfur throughput task"""
     return _throughput("sulfur_throughput", 16)
 
+
 @task
 def piercing_round_throughput():
     """Piercing round throughput task"""
     return _throughput("piercing_round_throughput", 16)
+
 
 @task
 def stone_wall_throughput():
     """Stone wall throughput task"""
     return _throughput("stone_wall_throughput", 16)
 
+
 @task
 def plastic_bar_throughput():
     """Plastic bar throughput task"""
     return _throughput("plastic_bar_throughput", 16)
+
 
 @task
 def advanced_circuit_throughput():
     """Advanced circuit throughput task"""
     return _throughput("advanced_circuit_throughput", 16)
 
+
 @task
 def processing_unit_throughput():
     """Processing unit throughput task"""
     return _throughput("processing_unit_throughput", 16)
+
 
 @task
 def logistics_science_pack_throughput():
@@ -169,6 +187,7 @@ def logistics_science_pack_throughput():
 # =============================================================================
 # Specialized scoring variants
 # =============================================================================
+
 
 def _create_proportion_task(env_id: str) -> Task:
     task_config = THROUGHPUT_TASKS[env_id]
@@ -238,10 +257,12 @@ def iron_ore_throughput_proportion():
     """Iron ore throughput with proportion metric"""
     return _create_proportion_task("iron_ore_throughput")
 
+
 @task
 def iron_ore_throughput_production():
     """Iron ore throughput with production score tracking"""
     return _create_production_tracking_task("iron_ore_throughput")
+
 
 @task
 def iron_ore_throughput_step_change():
@@ -252,6 +273,7 @@ def iron_ore_throughput_step_change():
 # =============================================================================
 # Unbounded Production Tasks
 # =============================================================================
+
 
 @task
 def open_play_production():
@@ -265,6 +287,7 @@ def open_play_production():
 # =============================================================================
 # Solver Variant Tasks (for parallel comparison)
 # =============================================================================
+
 
 def _create_solver_variant_task(solver_name: str) -> Task:
     """Create an open_play task with a specific solver variant."""
@@ -311,45 +334,54 @@ def open_play_unbounded():
     """Open play with unbounded solver (baseline)."""
     return _create_solver_variant_task("unbounded")
 
+
 @task
 def open_play_reasoning_only():
     """Open play with reasoning-only solver."""
     return _create_solver_variant_task("reasoning_only")
+
 
 @task
 def open_play_text_only():
     """Open play with text-only solver (no images)."""
     return _create_solver_variant_task("text_only")
 
+
 @task
 def open_play_hud():
     """Open play with HUD solver."""
     return _create_solver_variant_task("hud")
+
 
 @task
 def open_play_hud_text_only():
     """Open play with HUD solver, text only (no images)."""
     return _create_solver_variant_task("hud_text_only")
 
+
 @task
 def open_play_balanced():
     """Open play with balanced solver."""
     return _create_solver_variant_task("balanced")
+
 
 @task
 def open_play_minimal_context():
     """Open play with minimal context solver."""
     return _create_solver_variant_task("minimal_context")
 
+
 @task
 def open_play_no_image_history():
     """Open play with no-image-history solver."""
     return _create_solver_variant_task("no_image_history")
 
+
 @task
 def open_play_fat_hud():
     """Open play with fat HUD solver (3 images at zoom levels 16, 32, 64)."""
     return _create_solver_variant_task("fat_hud")
+
 
 @task
 def open_play_pruned_gamestate():

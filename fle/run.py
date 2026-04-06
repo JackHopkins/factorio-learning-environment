@@ -260,9 +260,14 @@ def fle_inspect_eval(args):
         # For sandbox mode: ensure the Docker image is built
         if getattr(args, "sandbox", False):
             if not _sandbox_image_exists():
-                print(f"Sandbox image '{SANDBOX_IMAGE}' not found. Building automatically...")
+                print(
+                    f"Sandbox image '{SANDBOX_IMAGE}' not found. Building automatically..."
+                )
                 if not sandbox_build():
-                    print("Error: Failed to build sandbox image. Run 'fle sandbox build' for details.", file=sys.stderr)
+                    print(
+                        "Error: Failed to build sandbox image. Run 'fle sandbox build' for details.",
+                        file=sys.stderr,
+                    )
                     sys.exit(1)
 
         # Check if Factorio servers are reachable before starting evaluation
@@ -345,7 +350,9 @@ def fle_inspect_eval(args):
                             file=sys.stderr,
                         )
                 except Exception as e:
-                    print(f"WARNING: Failed to auto-start cluster: {e}", file=sys.stderr)
+                    print(
+                        f"WARNING: Failed to auto-start cluster: {e}", file=sys.stderr
+                    )
                     print(
                         f"Start manually with: fle cluster start -n {needed}",
                         file=sys.stderr,
@@ -475,7 +482,9 @@ def sandbox_build(force: bool = False) -> bool:
     Returns True if the image is ready (already existed or built successfully).
     """
     if not force and _sandbox_image_exists():
-        print(f"Sandbox image '{SANDBOX_IMAGE}' already exists. Use --force to rebuild.")
+        print(
+            f"Sandbox image '{SANDBOX_IMAGE}' already exists. Use --force to rebuild."
+        )
         return True
 
     try:
@@ -490,9 +499,12 @@ def sandbox_build(force: bool = False) -> bool:
     print(f"  Dockerfile:    {dockerfile}")
 
     cmd = [
-        "docker", "build",
-        "-f", str(dockerfile),
-        "-t", SANDBOX_IMAGE,
+        "docker",
+        "build",
+        "-f",
+        str(dockerfile),
+        "-t",
+        SANDBOX_IMAGE,
         str(build_context),
     ]
     try:

@@ -19,7 +19,6 @@ import json
 import socket
 import sys
 
-
 SOCK_PATH = "/tmp/fle_bridge.sock"
 
 
@@ -51,10 +50,18 @@ def request(method, path, body=None, timeout=300):
         conn.close()
     except (ConnectionRefusedError, FileNotFoundError, OSError) as e:
         # Bridge socket not available yet (service still starting)
-        print(json.dumps({"error": f"Bridge not available: {e}", "status": "unavailable"}), flush=True)
+        print(
+            json.dumps(
+                {"error": f"Bridge not available: {e}", "status": "unavailable"}
+            ),
+            flush=True,
+        )
         sys.exit(1)
     except Exception as e:
-        print(json.dumps({"error": f"Connection error: {e}", "status": "error"}), flush=True)
+        print(
+            json.dumps({"error": f"Connection error: {e}", "status": "error"}),
+            flush=True,
+        )
         sys.exit(1)
 
     if resp.status >= 400:
@@ -65,22 +72,24 @@ def request(method, path, body=None, timeout=300):
 
 # Map command names to (method, path)
 COMMANDS = {
-    "health":        ("GET",  "/health"),
-    "observe":       ("GET",  "/observe"),
-    "score":         ("GET",  "/score"),
-    "system-prompt": ("GET",  "/system-prompt"),
-    "game-state":    ("GET",  "/game-state"),
-    "execute":       ("POST", "/execute"),
-    "reset":         ("POST", "/reset"),
-    "screenshot":    ("POST", "/screenshot"),
+    "health": ("GET", "/health"),
+    "observe": ("GET", "/observe"),
+    "score": ("GET", "/score"),
+    "system-prompt": ("GET", "/system-prompt"),
+    "game-state": ("GET", "/game-state"),
+    "execute": ("POST", "/execute"),
+    "reset": ("POST", "/reset"),
+    "screenshot": ("POST", "/screenshot"),
 }
 
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
         cmds = ", ".join(sorted(COMMANDS))
-        print(json.dumps({"error": f"Usage: bridge_client.py <{cmds}> [json_body]"}),
-              flush=True)
+        print(
+            json.dumps({"error": f"Usage: bridge_client.py <{cmds}> [json_body]"}),
+            flush=True,
+        )
         sys.exit(1)
 
     cmd = sys.argv[1]

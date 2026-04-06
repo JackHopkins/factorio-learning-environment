@@ -24,7 +24,6 @@ from fle.eval.inspect.sandbox.sandbox_solver import (
     factorio_sandbox_unbounded_solver,
 )
 
-
 COMPOSE_PATH = str(Path(__file__).parent / "compose.yaml")
 
 SANDBOX_CONFIG = ("docker", COMPOSE_PATH)
@@ -49,69 +48,86 @@ def _sandbox_unbounded(env_id: str) -> Task:
 
 # ---- Throughput tasks ----
 
+
 @task
 def iron_ore_throughput():
     return _sandbox_throughput("iron_ore_throughput", 16)
+
 
 @task
 def iron_plate_throughput():
     return _sandbox_throughput("iron_plate_throughput", 16)
 
+
 @task
 def steel_plate_throughput():
     return _sandbox_throughput("steel_plate_throughput", 16)
+
 
 @task
 def electronic_circuit_throughput():
     return _sandbox_throughput("electronic_circuit_throughput", 16)
 
+
 @task
 def automation_science_pack_throughput():
     return _sandbox_throughput("automation_science_pack_throughput", 16)
+
 
 @task
 def inserter_throughput():
     return _sandbox_throughput("inserter_throughput", 16)
 
+
 @task
 def iron_gear_wheel_throughput():
     return _sandbox_throughput("iron_gear_wheel_throughput", 16)
+
 
 @task
 def crude_oil_throughput():
     return _sandbox_throughput("crude_oil_throughput", 250)
 
+
 @task
 def petroleum_gas_throughput():
     return _sandbox_throughput("petroleum_gas_throughput", 250)
+
 
 @task
 def sufuric_acid_throughput():
     return _sandbox_throughput("sufuric_acid_throughput", 16)
 
+
 @task
 def sulfur_throughput():
     return _sandbox_throughput("sulfur_throughput", 16)
+
 
 @task
 def piercing_round_throughput():
     return _sandbox_throughput("piercing_round_throughput", 16)
 
+
 @task
 def stone_wall_throughput():
     return _sandbox_throughput("stone_wall_throughput", 16)
+
 
 @task
 def plastic_bar_throughput():
     return _sandbox_throughput("plastic_bar_throughput", 16)
 
+
 @task
 def advanced_circuit_throughput():
     return _sandbox_throughput("advanced_circuit_throughput", 16)
 
+
 @task
 def processing_unit_throughput():
     return _sandbox_throughput("processing_unit_throughput", 16)
+
 
 @task
 def logistics_science_pack_throughput():
@@ -119,6 +135,7 @@ def logistics_science_pack_throughput():
 
 
 # ---- Unbounded tasks ----
+
 
 @task
 def open_play_production():

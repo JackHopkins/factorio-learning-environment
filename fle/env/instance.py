@@ -290,9 +290,9 @@ class FactorioInstance:
         self.ensure_connected()
 
         # Reset the namespace (clear variables, functions etc)
-        assert not game_state or len(game_state.inventories) == self.num_agents, (
-            "Game state must have the same number of inventories as num_agents"
-        )
+        assert (
+            not game_state or len(game_state.inventories) == self.num_agents
+        ), "Game state must have the same number of inventories as num_agents"
 
         for namespace in self.namespaces:
             namespace.reset()

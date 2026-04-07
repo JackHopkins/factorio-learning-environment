@@ -602,10 +602,10 @@ def test_connect_belt_groups_into_a_square_waypoints(game):
         Position(x=0, y=0),
         Prototype.TransportBelt,
     )
-    # This should result in a single contiguous group
+    # This should result in a single contiguous closed loop
     assert belt_group
-    assert len(belt_group.inputs) == 1
-    assert len(belt_group.outputs) == 1
+    assert len(belt_group.inputs) == 0
+    assert len(belt_group.outputs) == 0
 
 
 def test_connect_belt_groups_into_an_octagon(game):

@@ -974,6 +974,15 @@ class EntityGroup(BaseModel):
     status: EntityStatus = EntityStatus.NORMAL
     position: Position
     name: str = "entity-group"
+    waypoints: Optional[List[Position]] = None
+
+    def _format_waypoints(self) -> str:
+        if not self.waypoints:
+            return ""
+        positions = [f"(x={p.x},y={p.y})" for p in self.waypoints]
+        if len(positions) > 6:
+            positions = positions[:3] + ["..."] + positions[-3:]
+        return f", waypoints=[{','.join(positions)}]"
 
 
 class WallGroup(EntityGroup):
@@ -981,6 +990,13 @@ class WallGroup(EntityGroup):
 
     name: str = "wall-group"
     entities: List[Entity]
+
+    def __repr__(self) -> str:
+        wall_summary = f"[{len(self.entities)} walls]"
+        return f"\n\tWallGroup(id={self.id}, position={self.position}, status={self.status}, walls={wall_summary}{self._format_waypoints()})"
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class BeltGroup(EntityGroup):
@@ -994,7 +1010,7 @@ class BeltGroup(EntityGroup):
 
     def __repr__(self) -> str:
         belt_summary = f"[{len(self.belts)} belts]"
-        return f"\n\tBeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary})"
+        return f"\n\tBeltGroup(inputs={self.inputs}, outputs={self.outputs}, inventory={self.inventory}, status={self.status}, belts={belt_summary}{self._format_waypoints()})"
 
     def __str__(self):
         return self.__repr__()
@@ -1016,7 +1032,7 @@ class PipeGroup(EntityGroup):
             positions = positions[:3] + ["..."] + positions[-3:]
         pipe_summary = f"[{','.join(positions)}]"
 
-        return f"\n\tPipeGroup(fluid_system={self.id}, {fluid_suffix}position={self.position}, status={self.status}, pipes={pipe_summary})"
+        return f"\n\tPipeGroup(fluid_system={self.id}, {fluid_suffix}position={self.position}, status={self.status}, pipes={pipe_summary}{self._format_waypoints()})"
 
     def __str__(self):
         return self.__repr__()
@@ -1034,7 +1050,7 @@ class ElectricityGroup(EntityGroup):
         if len(positions) > 6:
             positions = positions[:3] + ["..."] + positions[-3:]
         pole_summary = f"[{','.join(positions)}]"
-        return f"\tElectricityGroup(id={self.id}, poles={pole_summary}, voltage={max_flow_rate})"
+        return f"\tElectricityGroup(id={self.id}, poles={pole_summary}, voltage={max_flow_rate}{self._format_waypoints()})"
 
     def __hash__(self):
         return self.name + str(self.id)

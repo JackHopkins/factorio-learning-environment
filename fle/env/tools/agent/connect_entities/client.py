@@ -17,7 +17,7 @@ from fle.env import (
     OilRefinery,
     MultiFluidHandler,
 )
-from fle.env import DirectionInternal
+from fle.env import Direction, DirectionInternal
 from fle.env.game_types import Prototype
 from fle.env.tools.admin.clear_collision_boxes.client import ClearCollisionBoxes
 from fle.env.tools.admin.extend_collision_boxes.client import ExtendCollisionBoxes
@@ -42,6 +42,7 @@ from fle.env.tools.agent.get_entities.client import GetEntities
 from fle.env.tools.agent.get_entity.client import GetEntity
 from fle.env.tools.agent.inspect_inventory.client import InspectInventory
 from fle.env.tools.agent.pickup_entity.client import PickupEntity
+from fle.env.tools.agent.place_entity.client import PlaceObject
 from fle.env.tools.agent.rotate_entity.client import RotateEntity
 from fle.env.tools import Tool
 from collections.abc import Set as AbstractSet
@@ -68,6 +69,7 @@ class ConnectEntities(Tool):
         self._clear_collision_boxes = ClearCollisionBoxes(
             self.connection, self.game_state
         )
+        self.place_entity = PlaceObject(self.connection, self.game_state)
 
     def _setup_resolvers(self):
         self.resolvers = {
@@ -171,13 +173,19 @@ class ConnectEntities(Tool):
         # right now the type of the connection output changes if its a dry run
         if dry_run:
             total_required_entities = 0
-        for _, target in zip(waypoints[:-1], waypoints[1:]):
-            connection = self._connect_pair_of_waypoints(
-                connection, target, connection_types=connection_types, dry_run=dry_run
-            )
+        for s, target in zip(waypoints[:-1], waypoints[1:]):
+
             if dry_run:
+                connection = self._connect_pair_of_waypoints(
+                    s, target, connection_types=connection_types, dry_run=dry_run
+                )
                 total_required_entities += connection["number_of_entities_required"]
                 entities_available = connection["number_of_entities_available"]
+                connection = s
+            else:
+                connection = self._connect_pair_of_waypoints(
+                    connection, target, connection_types=connection_types, dry_run=dry_run
+                )
             # sleep(0.01) # Sleep for 250ms to ensure that the game updates
 
         # Sleep for the appropriate real-world time based on elapsed ticks (only for non-dry runs)
@@ -196,6 +204,93 @@ class ConnectEntities(Tool):
                 "number_of_entities_required": total_required_entities,
                 "number_of_entities_available": entities_available,
             }
+
+        # If the first and last waypoints refer to the same position, the
+        # pathfinder may have left a single-tile gap because it treats
+        # existing entities as obstacles.  Detect the gap and fill it with
+        # one entity placed directly, then re-fetch the merged group.
+        if len(waypoints) >= 3 and not dry_run:
+            first_pos = (
+                waypoints[0] if isinstance(waypoints[0], Position)
+                else getattr(waypoints[0], "position", None)
+            )
+            last_pos = (
+                waypoints[-1] if isinstance(waypoints[-1], Position)
+                else getattr(waypoints[-1], "position", None)
+            )
+            if first_pos is not None and last_pos is not None and first_pos.is_close(last_pos, tolerance=1.0):
+                connection = self._close_loop_gap(connection, connection_types)
+
+        # Attach waypoint metadata when 3+ waypoints were used
+        if len(waypoints) >= 3 and isinstance(connection, EntityGroup):
+            waypoint_positions = []
+            for wp in waypoints:
+                if isinstance(wp, Position):
+                    waypoint_positions.append(wp)
+                elif hasattr(wp, "position"):
+                    waypoint_positions.append(wp.position)
+            connection.waypoints = waypoint_positions
+
+        return connection
+
+    @staticmethod
+    def _direction_from_delta(dx: float, dy: float) -> Direction:
+        """Return a cardinal Direction for a unit-step delta."""
+        if abs(dx) >= abs(dy):
+            return Direction.RIGHT if dx > 0 else Direction.LEFT
+        return Direction.DOWN if dy > 0 else Direction.UP
+
+    def _close_loop_gap(
+        self,
+        connection: EntityGroup,
+        connection_types: Set[Prototype],
+    ) -> EntityGroup:
+        """
+        If a BeltGroup/PipeGroup has a single-tile gap between its terminus
+        and source, place one entity to bridge them and re-fetch the group.
+        """
+        if isinstance(connection, BeltGroup) and connection.outputs and connection.inputs:
+            terminus = connection.outputs[0]   # last belt
+            source = connection.inputs[0]      # first belt
+            gap_pos = terminus.output_position
+            target_pos = source.input_position
+            # Only bridge if the gap is exactly one tile
+            if gap_pos.is_close(target_pos, tolerance=0.01):
+                # The gap tile IS the target_pos / output_position — place
+                # a belt facing from gap toward the source belt.
+                dx = source.position.x - gap_pos.x
+                dy = source.position.y - gap_pos.y
+                direction = self._direction_from_delta(dx, dy)
+                prototype = list(connection_types)[0]
+                try:
+                    self.place_entity(prototype, direction=direction, position=gap_pos, exact=True)
+                    # Re-fetch the now-closed group
+                    groups = self.get_entities(connection_types, terminus.position)
+                    if groups:
+                        return groups[0]
+                except Exception:
+                    pass  # If placement fails, return the original connection
+        elif isinstance(connection, PipeGroup) and connection.pipes:
+            # For pipes, check if the last and first pipe are one tile apart
+            last_pipe = connection.pipes[-1]
+            first_pipe = connection.pipes[0]
+            dx = first_pipe.position.x - last_pipe.position.x
+            dy = first_pipe.position.y - last_pipe.position.y
+            dist = abs(dx) + abs(dy)
+            if 1.5 < dist <= 2.5:
+                # There's a 1-tile gap between them
+                gap_pos = Position(
+                    x=last_pipe.position.x + numpy.sign(dx),
+                    y=last_pipe.position.y + numpy.sign(dy),
+                )
+                prototype = list(connection_types)[0]
+                try:
+                    self.place_entity(prototype, position=gap_pos, exact=True)
+                    groups = self.get_entities(connection_types, last_pipe.position)
+                    if groups:
+                        return groups[0]
+                except Exception:
+                    pass
         return connection
 
     def _validate_connection_types(self, connection_types: Set[Prototype]):

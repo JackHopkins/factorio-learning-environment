@@ -188,6 +188,18 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
         return { pending = true }
     end
 
+    -- Helper function to clear item-on-ground entities at a position
+    local function clear_items_on_ground(pos, radius)
+        local items = player.surface.find_entities_filtered{
+            position = pos,
+            radius = radius or 0.5,
+            name = "item-on-ground"
+        }
+        for _, item in ipairs(items) do
+            item.destroy()
+        end
+    end
+
     -- Fast placement implementation (existing logic)
     local function fast_place()
         local entity_prototype = prototypes.entity[entity]
@@ -224,6 +236,8 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
             end
         end
         storage.utils.avoid_entity(player_index, entity, position, direction)
+        -- Clear any item-on-ground entities at the target position before collision check
+        clear_items_on_ground(position)
         -- Use surface based validation equivalent to LuaPlayer.can_place_entity
         local can_build = storage.utils.can_place_entity(player, entity, position, entity_direction)
 
@@ -251,6 +265,7 @@ storage.actions.place_entity = function(player_index, entity, direction, x, y, e
                             for dy = -radius, radius do
                                 if dx == -radius or dx == radius or dy == -radius or dy == radius then
                                     new_position = {x = position.x + dx, y = position.y + dy}
+                                    clear_items_on_ground(new_position)
                                     storage.utils.avoid_entity(player_index, entity, position, direction)
                                     can_build = storage.utils.can_place_entity(player, entity, new_position, entity_direction)
                                     if can_build then

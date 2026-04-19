@@ -1,8 +1,16 @@
+import os
 from time import sleep
 from typing import List
 
 from fle.env.entities import Position
 from fle.env.tools import Tool
+
+# Default budget: 120 backoff polls (~115s wall-clock) instead of 10 (~6.5s).
+# Long-distance move_to on fresh worlds has to wait for Factorio's
+# chunk-generation before A* can start; 10 polls is not enough, and
+# empirically 30 and 60 still miss occasionally. Override at runtime with
+# `FLE_GETPATH_MAX_ATTEMPTS`.
+_DEFAULT_MAX_ATTEMPTS = int(os.environ.get("FLE_GETPATH_MAX_ATTEMPTS", "120"))
 
 
 class GetPath(Tool):
@@ -11,9 +19,21 @@ class GetPath(Tool):
         # self.connection = connection
         # self.game_state = game_state
 
-    def __call__(self, path_handle: int, max_attempts: int = 10) -> List[Position]:
-        """
-        Retrieve a path requested from the game, using backoff polling.
+    def __call__(
+        self,
+        path_handle: int,
+        max_attempts: int = _DEFAULT_MAX_ATTEMPTS,
+    ) -> List[Position]:
+        """Retrieve a path requested from the game, using backoff polling.
+
+        The path is computed asynchronously on the Factorio side; this
+        method polls `get_path(path_handle)` with exponential backoff
+        (50ms → 1s cap) for up to ``max_attempts`` rounds before
+        giving up with a timeout exception.
+
+        The default can also be overridden via the
+        ``FLE_GETPATH_MAX_ATTEMPTS`` environment variable, which is read
+        at module import time.
         """
 
         try:
@@ -55,7 +75,11 @@ class GetPath(Tool):
                 sleep(wait_time)
                 wait_time = min(wait_time * 2, 1.0)
 
-            raise Exception(f"Path request timed out after {max_attempts} attempts")
+            raise Exception(
+                f"Path request timed out after {max_attempts} attempts "
+                "(set FLE_GETPATH_MAX_ATTEMPTS higher if your world is slow "
+                "to chunk-generate)"
+            )
 
         except Exception as e:
             # raise ConnectionError(

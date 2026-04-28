@@ -1,4 +1,5 @@
 import os
+import time
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
 
@@ -94,66 +95,96 @@ _registry = FactorioGymRegistry()
 
 
 def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
-    """Factory function to create a Factorio gym environment"""
+    """Factory function to create a Factorio gym environment.
+
+    The instance-creation block (FactorioInstance build + task.setup +
+    FactorioGymEnv wrap) is retried up to ``FLE_INIT_RETRIES`` times
+    (default 3) with backoff. Transient failures like
+    ``"Could not save research state"`` happen when a Factorio container
+    is recycled across samples and its RCON server returns malformed
+    data on the first reset; a short wait + fresh attempt clears it.
+
+    Configuration errors (no containers available, invalid run_idx) are
+    raised without retry — they won't fix themselves.
+    """
     # Create task from the task definition
     task = TaskFactory.create_task(spec.task_config_path)
 
-    # Create Factorio instance
-    try:
-        # Check for external server configuration via environment variables
-        address = os.getenv("FACTORIO_SERVER_ADDRESS")
-        tcp_port = os.getenv("FACTORIO_SERVER_PORT")
+    # Resolve server address (no retry — pure config)
+    address = os.getenv("FACTORIO_SERVER_ADDRESS")
+    tcp_port = os.getenv("FACTORIO_SERVER_PORT")
 
-        if not address and not tcp_port:
-            try:
-                ips, udp_ports, tcp_ports = get_local_container_ips()
-            except ValueError:
-                raise RuntimeError("No Factorio containers available")
+    if not address and not tcp_port:
+        try:
+            ips, udp_ports, tcp_ports = get_local_container_ips()
+        except ValueError:
+            raise RuntimeError("No Factorio containers available")
 
-            if len(tcp_ports) == 0:
-                raise RuntimeError("No Factorio containers available")
+        if len(tcp_ports) == 0:
+            raise RuntimeError("No Factorio containers available")
 
-            # Apply port offset for multiple terminal sessions
-            container_idx = PORT_OFFSET + run_idx
-            if container_idx >= len(tcp_ports):
-                raise RuntimeError(
-                    f"Container index {container_idx} (PORT_OFFSET={PORT_OFFSET} + run_idx={run_idx}) exceeds available containers ({len(tcp_ports)})"
-                )
+        # Apply port offset for multiple terminal sessions
+        container_idx = PORT_OFFSET + run_idx
+        if container_idx >= len(tcp_ports):
+            raise RuntimeError(
+                f"Container index {container_idx} (PORT_OFFSET={PORT_OFFSET} + run_idx={run_idx}) exceeds available containers ({len(tcp_ports)})"
+            )
 
-            address = ips[container_idx]
-            tcp_port = tcp_ports[container_idx]
+        address = ips[container_idx]
+        tcp_port = tcp_ports[container_idx]
 
-        common_kwargs = {
-            "address": address,
-            "tcp_port": int(tcp_port),
-            "num_agents": spec.num_agents,
-            "fast": True,
-            "cache_scripts": True,
-            "inventory": {},
-            "all_technologies_researched": False,
-        }
+    common_kwargs = {
+        "address": address,
+        "tcp_port": int(tcp_port),
+        "num_agents": spec.num_agents,
+        "fast": True,
+        "cache_scripts": True,
+        "inventory": {},
+        "all_technologies_researched": False,
+    }
 
-        print(f"Using local Factorio container at {address}:{tcp_port}")
-        if spec.num_agents > 1:
-            instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
-        else:
-            instance = FactorioInstance(**common_kwargs)
+    print(f"Using local Factorio container at {address}:{tcp_port}")
 
-        # Set initial speed and unpause
-        instance.set_speed_and_unpause(10)
+    # Retry the FactorioInstance build + task.setup block. These hit
+    # RCON and occasionally race on container recycle.
+    max_attempts = int(os.getenv("FLE_INIT_RETRIES", "3"))
+    last_err: Optional[Exception] = None
+    for attempt in range(1, max_attempts + 1):
+        instance = None
+        try:
+            if spec.num_agents > 1:
+                instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
+            else:
+                instance = FactorioInstance(**common_kwargs)
 
-        # Setup the task
-        task.setup(instance)
+            # Set initial speed and unpause
+            instance.set_speed_and_unpause(10)
 
-        # Create and return the gym environment
-        env = FactorioGymEnv(
-            instance=instance, task=task, enable_vision=spec.enable_vision
-        )
+            # Setup the task
+            task.setup(instance)
 
-        return env
+            # Create and return the gym environment
+            return FactorioGymEnv(
+                instance=instance, task=task, enable_vision=spec.enable_vision
+            )
 
-    except Exception as e:
-        raise RuntimeError(f"Failed to create Factorio environment: {e}")
+        except Exception as e:
+            last_err = e
+            print(
+                f"[make_factorio_env] attempt {attempt}/{max_attempts} failed "
+                f"on container {address}:{tcp_port}: {e!r}"
+            )
+            # Best-effort cleanup of partially-built instance so the next
+            # attempt sees a clean RCON connection.
+            if instance is not None:
+                try:
+                    instance.cleanup()
+                except Exception:  # noqa: BLE001
+                    pass
+            if attempt < max_attempts:
+                time.sleep(2 * attempt)
+
+    raise RuntimeError(f"Failed to create Factorio environment: {last_err}")
 
 
 def register_all_environments() -> None:

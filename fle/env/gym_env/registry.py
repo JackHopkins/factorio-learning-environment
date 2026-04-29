@@ -145,17 +145,35 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
 
     print(f"Using local Factorio container at {address}:{tcp_port}")
 
-    # Retry the FactorioInstance build + task.setup block. These hit
-    # RCON and occasionally race on container recycle.
-    max_attempts = int(os.getenv("FLE_INIT_RETRIES", "3"))
+    # Retry the FactorioInstance build + task.setup block. The "Could
+    # not save research state" failure mode happens when a Factorio
+    # container is recycled across samples and its Lua script registry
+    # holds stale state from the previous instance. ``FactorioInstance``
+    # with ``cache_scripts=True`` (the default) compares checksums and
+    # skips re-uploading scripts that already match — but the Lua VM
+    # state behind those scripts can be corrupt. ``cleanup()`` only
+    # closes the RCON connection, it does not reset the server.
+    #
+    # Fix: on every retry attempt after the first, force
+    # ``cache_scripts=False`` so all scripts are freshly re-uploaded
+    # (re-initializing their global Lua state). Plus longer backoff
+    # so containers have time to settle.
+    max_attempts = int(os.getenv("FLE_INIT_RETRIES", "5"))
+    backoff = [int(x) for x in os.getenv("FLE_INIT_BACKOFF", "2,5,10,20,30").split(",")]
     last_err: Optional[Exception] = None
     for attempt in range(1, max_attempts + 1):
         instance = None
         try:
+            attempt_kwargs = dict(common_kwargs)
+            if attempt > 1:
+                # Force fresh Lua script upload on retry — clears stale
+                # server-side state that survived ``cleanup()``.
+                attempt_kwargs["cache_scripts"] = False
+
             if spec.num_agents > 1:
-                instance = run_async_safely(A2AFactorioInstance.create(**common_kwargs))
+                instance = run_async_safely(A2AFactorioInstance.create(**attempt_kwargs))
             else:
-                instance = FactorioInstance(**common_kwargs)
+                instance = FactorioInstance(**attempt_kwargs)
 
             # Set initial speed and unpause
             instance.set_speed_and_unpause(10)
@@ -172,17 +190,19 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
             last_err = e
             print(
                 f"[make_factorio_env] attempt {attempt}/{max_attempts} failed "
-                f"on container {address}:{tcp_port}: {e!r}"
+                f"on container {address}:{tcp_port} "
+                f"(cache_scripts={attempt_kwargs.get('cache_scripts')}): {e!r}"
             )
-            # Best-effort cleanup of partially-built instance so the next
-            # attempt sees a clean RCON connection.
+            # Best-effort cleanup of partially-built instance.
             if instance is not None:
                 try:
                     instance.cleanup()
                 except Exception:  # noqa: BLE001
                     pass
             if attempt < max_attempts:
-                time.sleep(2 * attempt)
+                wait = backoff[min(attempt - 1, len(backoff) - 1)]
+                print(f"[make_factorio_env] sleeping {wait}s before retry")
+                time.sleep(wait)
 
     raise RuntimeError(f"Failed to create Factorio environment: {last_err}")
 

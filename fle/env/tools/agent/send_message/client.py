@@ -4,7 +4,12 @@ from fle.env.tools import Tool
 from fle.env.tools.admin.render_message.client import RenderMessage
 import logging
 import uuid
-from a2a.types import Message, Part, TextPart
+from a2a.types import Message, Part
+
+try:
+    from a2a.types import TextPart  # a2a-sdk 0.x
+except ImportError:
+    from a2a.compat.v0_3.types import TextPart  # a2a-sdk 1.x
 
 
 class SendMessage(Tool):

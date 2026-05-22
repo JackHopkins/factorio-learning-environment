@@ -38,7 +38,7 @@ dependencies = [
     "tomli",
     "numpy>=2.2.3",
     "gym",
-    "a2a-sdk",
+    "a2a-sdk>=0.2,<2",
     "tenacity>=9.0.0",
     "aiohttp>=3.8.0",
     "uvicorn>=0.15.0",

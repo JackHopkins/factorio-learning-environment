@@ -5,7 +5,12 @@ import aiohttp
 import asyncio
 from pydantic import BaseModel
 import requests
-from a2a.types import Message, Part, TextPart, AgentCard, Role
+from a2a.types import Message, Part, AgentCard, Role
+
+try:
+    from a2a.types import TextPart  # a2a-sdk 0.x
+except ImportError:
+    from a2a.compat.v0_3.types import TextPart  # a2a-sdk 1.x
 
 
 class A2AMessage(BaseModel):

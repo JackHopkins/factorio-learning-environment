@@ -1,9 +1,13 @@
 import logging
 from typing import Dict, List, Optional
 
-from a2a.types import AgentCard, Message, Part, TextPart
-from fle.agents.agent_abc import create_default_agent_card
+from a2a.types import AgentCard, Message, Part
 
+try:
+    from a2a.types import TextPart  # a2a-sdk 0.x
+except ImportError:
+    from a2a.compat.v0_3.types import TextPart  # a2a-sdk 1.x
+from fle.agents.agent_abc import create_default_agent_card
 from fle.env.namespace import FactorioNamespace
 from fle.env.protocols.a2a.handler import A2AProtocolHandler
 

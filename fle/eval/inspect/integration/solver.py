@@ -317,6 +317,7 @@ Now begin working toward this objective step by step."""
 
             # Controlled trajectory execution - WE control the 64 steps
             production_scores = []
+            automated_production_scores = []  # Excludes harvested/crafted (matches unbounded_solver)
             step_results = []
             game_ticks = []  # Track game ticks at each step
 
@@ -451,6 +452,13 @@ Analyze the current state and write a Python program using the FLE API to progre
                     # Calculate production score
                     production_score = obs["score"] if obs["score"] else 0
                     production_scores.append(production_score)
+                    # Track automated-only production score (mirrors
+                    # unbounded_solver:1023). Without this, throughput-task
+                    # logs always report automated_production_score=0.
+                    automated_score = (
+                        info.get("automated_production_score", 0) if info else 0
+                    )
+                    automated_production_scores.append(automated_score)
 
                     # Record game ticks and calculate cost
                     try:
@@ -583,10 +591,12 @@ Continue to step {step + 2}."""
                     # Store intermediate progress using typed store
                     trajectory_data = store_as(TrajectoryData)
                     trajectory_data.production_score = production_score
+                    trajectory_data.automated_production_score = automated_score
                     trajectory_data.current_score = production_score
                     trajectory_data.total_steps = step + 1
                     trajectory_data.steps = step_results
                     trajectory_data.scores = production_scores
+                    trajectory_data.automated_scores = automated_production_scores
                     trajectory_data.ticks = game_ticks
 
                     # Apply intermediate scoring for real-time metrics tracking
@@ -631,15 +641,21 @@ Continue to step {step + 2}."""
 
             # Final results
             final_score = production_scores[-1] if production_scores else 0.0
+            final_automated_score = (
+                automated_production_scores[-1] if automated_production_scores else 0.0
+            )
             # achievements = gym_env.get_achievements() if hasattr(gym_env, "get_achievements") else {}
 
             # Store final results using typed store
             trajectory_data = store_as(TrajectoryData)
             trajectory_data.production_score = final_score
+            trajectory_data.automated_production_score = final_automated_score
             trajectory_data.final_score = final_score
+            trajectory_data.final_automated_score = final_automated_score
             trajectory_data.total_steps = len(step_results)
             trajectory_data.steps = step_results
             trajectory_data.scores = production_scores
+            trajectory_data.automated_scores = automated_production_scores
             trajectory_data.ticks = game_ticks
 
             # Set final model output with summary
@@ -663,7 +679,9 @@ Continue to step {step + 2}."""
             trajectory_data = store_as(TrajectoryData)
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
+            trajectory_data.automated_production_score = 0.0
             trajectory_data.final_score = 0.0
+            trajectory_data.final_automated_score = 0.0
 
             state.output = ModelOutput(
                 completion=f"Error in controlled trajectory: {error_msg}",
@@ -1288,7 +1306,9 @@ def factorio_unbounded_solver():
             trajectory_data = store_as(TrajectoryData)
             trajectory_data.error = error_msg
             trajectory_data.production_score = 0.0
+            trajectory_data.automated_production_score = 0.0
             trajectory_data.final_score = 0.0
+            trajectory_data.final_automated_score = 0.0
 
             state.output = ModelOutput(
                 completion=f"Error in unbounded trajectory: {error_msg}",

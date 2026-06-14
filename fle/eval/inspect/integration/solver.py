@@ -761,7 +761,9 @@ def factorio_unbounded_solver():
 
             # Create gym environment - always use open_play for unbounded tasks
             # open_play uses DefaultTask which has no throughput requirements
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")

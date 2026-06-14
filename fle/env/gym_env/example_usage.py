@@ -104,7 +104,7 @@ def run_interactive_examples():
 
         try:
             # Create the environment using gym.make()
-            env = gym.make(example_env_id)
+            env = gym.make(example_env_id, disable_env_checker=True)
 
             # Reset the environment with required options parameter
             print("   Resetting environment...")

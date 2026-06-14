@@ -48,12 +48,12 @@ class FactorioMCPState:
             for id in env_ids:
                 if "open" in id:
                     print(f"DEBUG: Using open environment: {id}")
-                    self.gym_env = gym.make(id, run_idx=0)
+                    self.gym_env = gym.make(id, disable_env_checker=True, run_idx=0)
                     self.gym_env.reset()
                     return
 
             # print(f"DEBUG: No open environment found, using first available: {env_ids[0]}")
-            self.gym_env = gym.make(env_ids[0], run_idx=0)
+            self.gym_env = gym.make(env_ids[0], disable_env_checker=True, run_idx=0)
 
             # program = await self.create_program_from_policy(
             #     policy=policy,
@@ -70,12 +70,16 @@ class FactorioMCPState:
                 f"env_ids length: {len(env_ids) if 'env_ids' in locals() else 'Not available'}"
             )
             print("Falling back to steel_plate_throughput environment")
-            self.gym_env = gym.make("steel_plate_throughput", run_idx=0)
+            self.gym_env = gym.make(
+                "steel_plate_throughput", disable_env_checker=True, run_idx=0
+            )
         except Exception as e:
             print(f"Error in __init__: {e}")
             print(f"Error type: {type(e)}")
             print("Falling back to steel_plate_throughput environment")
-            self.gym_env = gym.make("steel_plate_throughput", run_idx=0)
+            self.gym_env = gym.make(
+                "steel_plate_throughput", disable_env_checker=True, run_idx=0
+            )
 
         self.gym_env.reset()
 

@@ -48,7 +48,7 @@ from fle.env.tools.agent.sleep.client import Sleep
 import importlib.resources
 from pathlib import Path
 from jinja2 import Template
-import gym
+import gymnasium as gym
 
 
 def _load_prompt_template(filename: str) -> Template:
@@ -237,7 +237,9 @@ def factorio_controlled_solver():
                 logger.info(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("🎮 Connected to Factorio server")

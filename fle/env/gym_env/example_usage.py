@@ -16,7 +16,7 @@ Usage:
     python example_usage.py --gym-format      # Output in gym.make() format
 """
 
-import gym
+import gymnasium as gym
 import argparse
 import sys
 import os
@@ -144,7 +144,7 @@ def run_interactive_examples():
     print("   env_ids = list_available_environments()")
     print()
     print("   # Create an environment")
-    print("   import gym")
+    print("   import gymnasium as gym")
     print("   env = gym.make('Factorio-iron_ore_throughput_16-v0')")
     print()
     print("   # Use the environment")
@@ -231,7 +231,7 @@ Examples:
         example_env = env_ids[0]
         print("Example usage:")
         print("```python")
-        print("import gym")
+        print("import gymnasium as gym")
         print(f"env = gym.make('{example_env}')")
         print("obs, info = env.reset(options={'game_state': None})")
         print(

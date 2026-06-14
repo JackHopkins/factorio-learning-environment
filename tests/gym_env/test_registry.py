@@ -9,7 +9,7 @@ This script demonstrates the complete workflow of:
 4. Basic interaction with the environment
 """
 
-import gym
+import gymnasium as gym
 import sys
 import os
 
@@ -160,7 +160,7 @@ def main():
     print("Test suite completed!")
     print("\nTo use the registry in your code:")
     print("```python")
-    print("import gym")
+    print("import gymnasium as gym")
     print("from gym_env.registry import list_available_environments")
     print()
     print("# List available environments")

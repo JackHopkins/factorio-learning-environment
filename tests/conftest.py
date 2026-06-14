@@ -24,7 +24,7 @@ project_root = Path(__file__).parent.parent.parent
 
 @pytest.fixture(scope="session")
 def instance(pytestconfig, worker_id):
-    # from gym import FactorioInstance
+    # from gymnasium import FactorioInstance
     ips, udp_ports, tcp_ports = get_local_container_ips()
     # --- Parallel mapping (pytest-xdist) ---
     # Docs-backed approach:

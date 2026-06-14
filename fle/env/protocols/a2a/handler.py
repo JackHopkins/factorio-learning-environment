@@ -5,7 +5,7 @@ import aiohttp
 import asyncio
 from pydantic import BaseModel
 import requests
-from a2a.types import Message, Part, TextPart, AgentCard, Role
+from a2a.types import Message, Part, AgentCard, Role
 
 
 class A2AMessage(BaseModel):
@@ -190,7 +190,7 @@ class A2AProtocolHandler:
             Message(
                 messageId=msg.get("messageId", str(uuid.uuid4())),
                 role=Role.agent,  # Default to "agent" if not specified
-                parts=[Part(root=TextPart(text=msg.get("content", "")))],
+                parts=[Part(text=msg.get("content", ""))],
                 metadata=msg.get("metadata", {}),
             )
             for msg in messages

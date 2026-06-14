@@ -387,15 +387,13 @@ Analyze the current state and write a Python program using the FLE API to progre
                     # Generate response using Inspect's model with reasoning support
                     generation_config = {
                         "max_tokens": 4096,  # More tokens for complex programs
-                        "transforms": ["middle-out"],
                         "reasoning_effort": "minimal",
                         # "temperature": 0.1
                     }
 
-                    state.output = await get_model().generate(
+                    state.output = await get_model(transforms=["middle-out"]).generate(
                         input=state.messages,
                         config=generation_config,
-                        # transforms = ['middle-out']
                     )
 
                     # Log reasoning usage if available

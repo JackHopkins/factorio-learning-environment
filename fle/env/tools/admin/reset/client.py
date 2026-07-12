@@ -27,10 +27,18 @@ class Reset(Tool):
 
         dict_inventories = []
         for inv in inventories:
-            if not isinstance(inv, dict):
-                dict_inventories.append(inv.__dict__)
-            else:
+            if isinstance(inv, dict):
                 dict_inventories.append(inv)
+            elif hasattr(inv, "model_dump"):
+                # Inventory is a pydantic extra="allow" model: item counts
+                # live in __pydantic_extra__ and inv.__dict__ is {}, so the
+                # previous inv.__dict__ serialization reset agents to EMPTY
+                # inventories whenever a GameState was restored.
+                dict_inventories.append(inv.model_dump())
+            elif hasattr(inv, "items"):
+                dict_inventories.append(dict(inv.items()))
+            else:
+                dict_inventories.append(inv.__dict__)
 
         # Encode to JSON string for Lua
         inventories_json = json.dumps(dict_inventories)

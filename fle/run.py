@@ -24,24 +24,28 @@ def fle_init():
 
 
 def fle_cluster(args):
-    cluster_path = Path(__file__).parent / "cluster"
-    script = cluster_path / "run-envs.sh"
-    if not script.exists():
-        print(f"Cluster script not found: {script}", file=sys.stderr)
-        sys.exit(1)
-    cmd = [str(script)]
-    if args:
-        if args.cluster_command:
-            cmd.append(args.cluster_command)
-        if args.n:
-            cmd.extend(["-n", str(args.n)])
-        if args.s:
-            cmd.extend(["-s", args.s])
-    try:
-        subprocess.run(cmd, cwd=str(cluster_path), check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running cluster script: {e}", file=sys.stderr)
-        sys.exit(e.returncode)
+    """Manage the local cluster using the cross-platform Python implementation."""
+    from fle.cluster.run_envs import ClusterManager
+
+    command = getattr(args, "cluster_command", None) or "start"
+    manager = ClusterManager()
+
+    if command == "start":
+        manager.start(
+            num_instances=getattr(args, "n", None) or 1,
+            scenario=getattr(args, "s", None) or "default_lab_scenario",
+        )
+    elif command == "stop":
+        manager.stop()
+    elif command == "restart":
+        manager.restart()
+    elif command == "logs":
+        manager.logs(getattr(args, "cluster_service", None) or "factorio_0")
+    elif command == "help":
+        print(
+            "Usage: fle cluster [start|stop|restart|logs|help] "
+            "[SERVICE] [-n N] [-s SCENARIO]"
+        )
 
 
 def fle_eval(args):
@@ -573,13 +577,18 @@ Examples:
     )
     subparsers = parser.add_subparsers(dest="command")
     parser_cluster = subparsers.add_parser(
-        "cluster", help="Setup Docker containers (run run-envs.sh)"
+        "cluster", help="Manage local Factorio Docker containers"
     )
     parser_cluster.add_argument(
         "cluster_command",
         nargs="?",
-        choices=["start", "stop", "restart", "help"],
-        help="Cluster command (start/stop/restart/help)",
+        choices=["start", "stop", "restart", "logs", "help"],
+        help="Cluster command (start/stop/restart/logs/help)",
+    )
+    parser_cluster.add_argument(
+        "cluster_service",
+        nargs="?",
+        help="Service name for the logs command (default: factorio_0)",
     )
     parser_cluster.add_argument("-n", type=int, help="Number of Factorio instances")
     parser_cluster.add_argument(

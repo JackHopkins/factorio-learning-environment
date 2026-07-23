@@ -16,6 +16,10 @@ AUTOMATION_SCIENCE_PACK_THROUGHPUT = "automation_science_pack_throughput"
 BATTERY_THROUGHPUT = "battery_throughput"
 CHEMICAL_SCIENCE_PACK_THROUGHPUT = "chemical_science_pack_throughput"
 CRUDE_OIL_THROUGHPUT = "crude_oil_throughput"
+COAL_THROUGHPUT = "coal_throughput"
+COPPER_CABLE_THROUGHPUT = "copper_cable_throughput"
+COPPER_ORE_THROUGHPUT = "copper_ore_throughput"
+COPPER_PLATE_THROUGHPUT = "copper_plate_throughput"
 ELECTRONIC_CIRCUIT_THROUGHPUT = "electronic_circuit_throughput"
 ENGINE_UNIT_THROUGHPUT = "engine_unit_throughput"
 INSERTER_THROUGHPUT = "inserter_throughput"
@@ -31,6 +35,8 @@ PLASTIC_BAR_THROUGHPUT = "plastic_bar_throughput"
 PROCESSING_UNIT_THROUGHPUT = "processing_unit_throughput"
 PRODUCTION_SCIENCE_PACK_THROUGHPUT = "production_science_pack_throughput"
 STEEL_PLATE_THROUGHPUT = "steel_plate_throughput"
+STONE_BRICK_THROUGHPUT = "stone_brick_throughput"
+STONE_THROUGHPUT = "stone_throughput"
 STONE_WALL_THROUGHPUT = "stone_wall_throughput"
 SUFURIC_ACID_THROUGHPUT = "sufuric_acid_throughput"
 SULFUR_THROUGHPUT = "sulfur_throughput"
@@ -59,7 +65,7 @@ class ThroughputTaskConfig(BaseModel):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        data = self.dict()
+        data = self.model_dump()
         # Convert Prototype to string if necessary
         if isinstance(self.throughput_entity, Prototype):
             data["throughput_entity"] = self.throughput_entity.value
@@ -172,6 +178,34 @@ low_density_structure_throughput = ThroughputTaskConfig(
 )
 
 # Raw materials and plates
+coal_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic coal mine that produces 16 coal per 60 ingame seconds.",
+    throughput_entity=Prototype.Coal,
+    quota=16,
+    task_key=COAL_THROUGHPUT,
+)
+
+copper_ore_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic copper-ore mine that produces 16 copper-ore per 60 ingame seconds.",
+    throughput_entity=Prototype.CopperOre,
+    quota=16,
+    task_key=COPPER_ORE_THROUGHPUT,
+)
+
+copper_plate_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic copper smelter that produces 16 copper-plate per 60 ingame seconds.",
+    throughput_entity=Prototype.CopperPlate,
+    quota=16,
+    task_key=COPPER_PLATE_THROUGHPUT,
+)
+
+copper_cable_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic copper-cable factory that produces 16 copper-cable per 60 ingame seconds.",
+    throughput_entity=Prototype.CopperCable,
+    quota=16,
+    task_key=COPPER_CABLE_THROUGHPUT,
+)
+
 iron_ore_throughput = ThroughputTaskConfig(
     goal_description="Create an automatic iron-ore factory that produces 16 iron-ore per 60 ingame seconds.",
     throughput_entity=Prototype.IronOre,
@@ -191,6 +225,20 @@ steel_plate_throughput = ThroughputTaskConfig(
     throughput_entity=Prototype.SteelPlate,
     quota=16,
     task_key=STEEL_PLATE_THROUGHPUT,
+)
+
+stone_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic stone mine that produces 16 stone per 60 ingame seconds.",
+    throughput_entity=Prototype.Stone,
+    quota=16,
+    task_key=STONE_THROUGHPUT,
+)
+
+stone_brick_throughput = ThroughputTaskConfig(
+    goal_description="Create an automatic stone-brick smelter that produces 16 stone-brick per 60 ingame seconds.",
+    throughput_entity=Prototype.StoneBrick,
+    quota=16,
+    task_key=STONE_BRICK_THROUGHPUT,
 )
 
 plastic_bar_throughput = ThroughputTaskConfig(
@@ -250,8 +298,12 @@ THROUGHPUT_TASKS = {
     ADVANCED_CIRCUIT_THROUGHPUT: advanced_circuit_throughput,
     AUTOMATION_SCIENCE_PACK_THROUGHPUT: automation_science_pack_throughput,
     BATTERY_THROUGHPUT: battery_throughput,
+    COAL_THROUGHPUT: coal_throughput,
     CHEMICAL_SCIENCE_PACK_THROUGHPUT: chemical_science_pack_throughput,
     CRUDE_OIL_THROUGHPUT: crude_oil_throughput,
+    COPPER_CABLE_THROUGHPUT: copper_cable_throughput,
+    COPPER_ORE_THROUGHPUT: copper_ore_throughput,
+    COPPER_PLATE_THROUGHPUT: copper_plate_throughput,
     ELECTRONIC_CIRCUIT_THROUGHPUT: electronic_circuit_throughput,
     ENGINE_UNIT_THROUGHPUT: engine_unit_throughput,
     INSERTER_THROUGHPUT: inserter_throughput,
@@ -267,6 +319,8 @@ THROUGHPUT_TASKS = {
     PROCESSING_UNIT_THROUGHPUT: processing_unit_throughput,
     PRODUCTION_SCIENCE_PACK_THROUGHPUT: production_science_pack_throughput,
     STEEL_PLATE_THROUGHPUT: steel_plate_throughput,
+    STONE_BRICK_THROUGHPUT: stone_brick_throughput,
+    STONE_THROUGHPUT: stone_throughput,
     STONE_WALL_THROUGHPUT: stone_wall_throughput,
     SUFURIC_ACID_THROUGHPUT: sufuric_acid_throughput,
     SULFUR_THROUGHPUT: sulfur_throughput,

@@ -2,15 +2,50 @@ name: Factorio Server Tests
 on:
   pull_request:
     paths:
+      - 'fle/run.py'
       - 'fle/env/**'
       - 'fle/cluster/**'
+      - 'fle/envd/**'
+      - 'fle/integrations/**'
+      - 'factorio_v1/**'
+      - 'integrations/prime/**'
+      - 'pyproject.toml'
+      - 'tests/test_run.py'
+      - 'tests/test_cluster.py'
+      - 'tests/test_game_control.py'
+      - 'tests/envd/**'
+      - 'tests/prime/**'
       - 'tests/actions/**'
       - 'tests/connect/**'
       - '.github/workflows/factorio-test.yml'
   workflow_dispatch:
 
 jobs:
+  test-cluster-command:
+    name: Cluster command (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Install Python dependencies
+        run: uv sync --dev --extra prime
+
+      - name: Test cross-platform cluster command
+        run: uv run pytest -q tests/test_run.py tests/test_cluster.py tests/test_game_control.py tests/envd tests/prime
+
   test-factorio:
+    name: Ubuntu Factorio integration
+    needs: test-cluster-command
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +73,7 @@ jobs:
 
       - name: Start 4 Factorio servers
         run: |
-          uv run python fle/run.py cluster start -n 4
+          uv run fle cluster start -n 4
 
       - name: Run Python tests (4 workers)
         run: |
@@ -51,12 +86,12 @@ jobs:
         if: failure()
         run: |
           echo "=== Factorio container logs ==="
-          uv run python fle/run.py cluster logs factorio_0 | tail -n 100
-          uv run python fle/run.py cluster logs factorio_1 | tail -n 100
-          uv run python fle/run.py cluster logs factorio_2 | tail -n 100
-          uv run python fle/run.py cluster logs factorio_3 | tail -n 100
+          uv run fle cluster logs factorio_0 | tail -n 100
+          uv run fle cluster logs factorio_1 | tail -n 100
+          uv run fle cluster logs factorio_2 | tail -n 100
+          uv run fle cluster logs factorio_3 | tail -n 100
 
       - name: Stop server
         if: always()
         run: |
-          uv run python fle/run.py cluster stop
+          uv run fle cluster stop

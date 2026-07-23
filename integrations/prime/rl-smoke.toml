@@ -1,0 +1,33 @@
+# Two-step plumbing run. Copy this into the pinned Prime-RL checkout and edit
+# envd_url so the Linux orchestrator can reach the Factorio CPU fleet.
+max_steps = 2
+seq_len = 8192
+
+[model]
+name = "PrimeIntellect/Qwen3-1.7B"
+
+[wandb]
+project = "factorio-rlvr"
+name = "factorio-envd-smoke"
+
+[orchestrator]
+batch_size = 8
+group_size = 4
+
+[orchestrator.train.sampling]
+max_completion_tokens = 2048
+
+[[orchestrator.train.env]]
+name = "factorio-iron-plate"
+taskset = { id = "factorio_v1", task_ids = ["iron_plate_throughput"], max_interventions = 4, holdout_seconds = 15, task = { tools = { envd_url = "http://127.0.0.1:8172" } } }
+harness = { id = "null", runtime = { type = "subprocess" } }
+
+[trainer.optim]
+lr = 3e-6
+
+[ckpt]
+
+[inference]
+
+[orchestrator.renderer]
+name = "prime-qwen3"

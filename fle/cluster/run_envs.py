@@ -175,13 +175,22 @@ class ComposeGenerator:
         }
 
     def _bundled_mods_volume(self):
-        """Returns bundled mod-list config (disables DLC mods for client sync)."""
+        """Stage bundled mod config in writable runtime state and mount that copy."""
         pkg_root = ir.files("fle.cluster")
-        mods_dir = Path(pkg_root / "mods")
-        if not mods_dir.exists():
-            raise ValueError(f"Bundled mods directory '{mods_dir}' does not exist.")
+        bundled_mods_dir = Path(pkg_root / "mods")
+        if not bundled_mods_dir.exists():
+            raise ValueError(
+                f"Bundled mods directory '{bundled_mods_dir}' does not exist."
+            )
+
+        runtime_mods_dir = self.state_dir / "mods"
+        runtime_mods_dir.mkdir(parents=True, exist_ok=True)
+        for source in bundled_mods_dir.iterdir():
+            if source.is_file():
+                shutil.copy2(source, runtime_mods_dir / source.name)
+
         return {
-            "source": str(mods_dir.resolve()),
+            "source": str(runtime_mods_dir.resolve()),
             "target": "/opt/factorio/mods",
             "type": "bind",
         }

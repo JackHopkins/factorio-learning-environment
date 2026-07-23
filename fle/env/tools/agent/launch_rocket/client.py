@@ -25,6 +25,12 @@ class LaunchRocket(Tool):
 
         try:
             response, _ = self.execute(self.player_index, position.x, position.y)
+            if response is not True:
+                raise RuntimeError("Factorio did not confirm a successful launch")
+            instance = self.game_state.instance
+            instance._verified_rocket_launches = (
+                getattr(instance, "_verified_rocket_launches", 0) + 1
+            )
             return cast(
                 Prototype.RocketSilo, self.get_entity(Prototype.RocketSilo, position)
             )

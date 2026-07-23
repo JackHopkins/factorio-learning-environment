@@ -85,10 +85,16 @@ class GameControl:
 
     def unpause(self):
         """Unpause the game (restores previous speed)"""
-        if self._is_paused:
-            self._is_paused = False
-            self.rcon_client.send_command("/sc game.tick_paused = false")
-            self.rcon_client.send_command(f"/sc game.speed = {self._speed}")
+        # The Factorio server can outlive this Python client. Its actual pause state
+        # may therefore differ from our new GameControl object's local cache (for
+        # example, the previous envd process released a lease and paused the world).
+        # Always assert the desired server state instead of treating unpause as a
+        # cache-guarded transition.
+        was_paused = self._is_paused
+        self._is_paused = False
+        self.rcon_client.send_command("/sc game.tick_paused = false")
+        self.rcon_client.send_command(f"/sc game.speed = {self._speed}")
+        if was_paused:
             timestamp = datetime.datetime.now().strftime("%H:%M:%S")
             self._render_pause_message(
                 f"[{timestamp}] Game unpaused (speed: {self._speed}x)"
@@ -289,9 +295,9 @@ class FactorioInstance:
         self.ensure_connected()
 
         # Reset the namespace (clear variables, functions etc)
-        assert not game_state or len(game_state.inventories) == self.num_agents, (
-            "Game state must have the same number of inventories as num_agents"
-        )
+        assert (
+            not game_state or len(game_state.inventories) == self.num_agents
+        ), "Game state must have the same number of inventories as num_agents"
 
         for namespace in self.namespaces:
             namespace.reset()
@@ -505,6 +511,7 @@ class FactorioInstance:
             "lualib_util",
             "utils",
             "alerts",
+            "objective_telemetry",
             "connection_points",
             "recipe_fluid_connection_mappings",
             "serialize",

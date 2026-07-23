@@ -1,0 +1,396 @@
+from types import SimpleNamespace
+from datetime import datetime, timezone
+
+import pytest
+
+from fle.commons.models.achievements import ProductionFlows
+from fle.commons.models.research_state import ResearchState
+from fle.commons.models.technology_state import TechnologyState
+from fle.env.entities import EntityStatus
+from fle.envd.models import (
+    ActionEvent,
+    ConstraintSpec,
+    CurriculumSpec,
+    FactorioTaskSpec,
+    ObjectiveSpec,
+    VerifierSpec,
+)
+from fle.envd.objective_engine import (
+    TelemetryFrame,
+    capture_telemetry,
+    evaluate_constraint,
+    evaluate_objective,
+    verify_native,
+)
+
+pytestmark = pytest.mark.no_factorio
+
+
+def technology(name: str, researched: bool) -> TechnologyState:
+    return TechnologyState(
+        name=name,
+        researched=researched,
+        enabled=True,
+        level=1,
+        research_unit_count=10,
+        research_unit_energy=30,
+        prerequisites=[],
+        ingredients=[],
+    )
+
+
+def frame(**updates) -> TelemetryFrame:
+    values = {
+        "tick": 0,
+        "inventory": {},
+        "flows": ProductionFlows(input={}, output={}, crafted=[], harvested={}),
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "researched": {"automation": False},
+        "technologies": {
+            "automation": {
+                "name": "automation",
+                "researched": False,
+                "prerequisites": [],
+            }
+        },
+        "current_research": None,
+        "research_progress": 0.0,
+        "entity_counts": {},
+        "entity_status_counts": {},
+        "entity_status_by_name": {},
+        "rocket_launches": 0,
+        "target_recipes": {},
+    }
+    values.update(updates)
+    return TelemetryFrame(**values)
+
+
+def test_research_and_entity_objectives_are_engine_state_predicates():
+    initial = frame(entity_counts={"assembling-machine-1": 0})
+    final = frame(
+        researched={"automation": True},
+        entity_counts={"assembling-machine-1": 2},
+        entity_status_by_name={"assembling-machine-1": {"working": 2}},
+    )
+    research = ObjectiveSpec(
+        objective_id="research",
+        kind="research",
+        description="Research automation.",
+        target="automation",
+        comparator="eq",
+        threshold=1,
+    )
+    entity = ObjectiveSpec(
+        objective_id="assemblers",
+        kind="entity_exists",
+        description="Build two assemblers.",
+        target="assembling-machine-1",
+        comparator="gte",
+        threshold=2,
+    )
+
+    assert evaluate_objective(research, initial, final).satisfied
+    entity_result = evaluate_objective(entity, initial, final)
+    assert entity_result.satisfied
+    assert entity_result.evidence["status_counts"] == {"working": 2}
+
+
+def test_pollution_constraint_uses_engine_emissions():
+    task = FactorioTaskSpec(
+        task_id="pollution",
+        goal="Stay below a pollution limit.",
+        task_family="robustness",
+    )
+    constraint = ConstraintSpec(
+        constraint_id="pollution",
+        kind="max_pollution",
+        description="Limit pollution.",
+        limit=100,
+    )
+    result = evaluate_constraint(
+        task,
+        constraint,
+        frame(pollution_emitted=10),
+        frame(pollution_emitted=125, pollution_total=50),
+        [],
+    )
+
+    assert result.supported is True
+    assert result.satisfied is False
+    assert result.value == 115
+    assert result.evidence["pollution_total"] == 50
+
+
+def test_resource_and_forbidden_action_constraints_are_auditable():
+    task = FactorioTaskSpec(
+        task_id="accounting",
+        goal="Stay within resource and action limits.",
+        task_family="robustness",
+    )
+    resource = ConstraintSpec(
+        constraint_id="ore",
+        kind="max_resource_cost",
+        description="Extract at most ten raw resources.",
+        limit=10,
+    )
+    forbidden = ConstraintSpec(
+        constraint_id="manual",
+        kind="forbidden_action",
+        description="Do not craft manually.",
+        limit="craft_item",
+    )
+    event = ActionEvent(
+        sequence=1,
+        code_sha256="a" * 64,
+        started_at=datetime.now(timezone.utc),
+        duration_seconds=0.1,
+        executed_tools=["inspect_inventory", "craft_item"],
+        policy_violations=["craft_item"],
+    )
+
+    resource_result = evaluate_constraint(
+        task,
+        resource,
+        frame(produced={"iron-ore": 2}),
+        frame(produced={"iron-ore": 14}),
+        [event],
+    )
+    action_result = evaluate_constraint(
+        task, forbidden, frame(), frame(), [event]
+    )
+
+    assert resource_result.supported is True
+    assert resource_result.satisfied is False
+    assert resource_result.value == 12
+    assert action_result.supported is True
+    assert action_result.satisfied is False
+    assert action_result.evidence["observed_violations"] == ["craft_item"]
+
+
+def test_survival_fails_on_engine_recorded_train_death():
+    objective = ObjectiveSpec(
+        objective_id="survive",
+        kind="survival",
+        description="Remain alive for sixty ticks.",
+        comparator="gte",
+        threshold=60,
+    )
+    initial = frame(tick=0)
+    final = frame(
+        tick=60,
+        character_alive=False,
+        death_count=1,
+        deaths=[
+            {
+                "tick": 42,
+                "player_index": 1,
+                "cause": {"name": "locomotive", "type": "locomotive"},
+                "train": {"id": 7, "speed": 0.8},
+            }
+        ],
+    )
+
+    result = evaluate_objective(objective, initial, final)
+
+    assert result.satisfied is False
+    assert result.normalized_score == 0
+    assert result.evidence["death_count"] == 1
+
+
+class FakeNamespace:
+    def __init__(self, instance):
+        self.instance = instance
+
+    def _get_production_stats(self):
+        produced = 20 if self.instance.tick >= 60 else 0
+        return {
+            "input": {},
+            "output": {"iron-plate": produced},
+            "crafted": [],
+            "harvested": {},
+        }
+
+    def score(self):
+        return (20, 20) if self.instance.tick >= 60 else (0, 0)
+
+    def _save_research_state(self):
+        researched = self.instance.tick >= 60
+        return ResearchState(
+            technologies={"automation": technology("automation", researched)},
+            current_research=None,
+            research_progress=0.0,
+            research_queue=[],
+            progress={},
+        )
+
+    def get_entities(self):
+        if self.instance.tick < 60:
+            return []
+        return [
+            SimpleNamespace(
+                name="assembling-machine-1",
+                status=EntityStatus.NO_INGREDIENTS,
+            ),
+            SimpleNamespace(name="electric-mining-drill", status=EntityStatus.NO_POWER),
+        ]
+
+    def inspect_inventory(self):
+        return {"iron-plate": 20 if self.instance.tick >= 60 else 0}
+
+    def get_prototype_recipe(self, target):
+        return {"name": target, "ingredients": [{"name": "iron-ore", "count": 1}]}
+
+    def sleep(self, seconds):
+        self.instance.tick += seconds * 60
+
+
+class FakeInstance:
+    def __init__(self):
+        self.tick = 0
+        self._verified_rocket_launches = 0
+        self.first_namespace = FakeNamespace(self)
+
+    def get_elapsed_ticks(self):
+        return self.tick
+
+
+def test_native_verifier_combines_objectives_constraints_and_teacher_packet():
+    instance = FakeInstance()
+    initial = capture_telemetry(instance, ["iron-plate", "automation"])
+    task = FactorioTaskSpec(
+        task_id="early-progression",
+        backend_task_id="open_play",
+        goal="Research automation and sustain iron production.",
+        task_family="progression",
+        objectives=[
+            ObjectiveSpec(
+                objective_id="iron-throughput",
+                kind="throughput",
+                description="Produce iron automatically.",
+                target="iron-plate",
+                comparator="gte",
+                threshold=16,
+                window_seconds=1,
+            ),
+            ObjectiveSpec(
+                objective_id="research-automation",
+                kind="research",
+                description="Research automation.",
+                target="automation",
+                comparator="eq",
+                threshold=1,
+            ),
+        ],
+        constraints=[
+            ConstraintSpec(
+                constraint_id="ticks",
+                kind="max_ticks",
+                description="Finish within the tick budget.",
+                limit=120,
+            )
+        ],
+        verifier=VerifierSpec(
+            implementation="objective_engine_v1",
+            scalarization="weighted_sum",
+        ),
+        curriculum=CurriculumSpec(
+            stage="early-game",
+            suggested_strategies=["actor_critic"],
+            episode_mode="persistent",
+        ),
+    )
+
+    result = verify_native(instance, task, [], initial)
+
+    assert result.success
+    assert result.scalar_reward == 1.0
+    assert result.rewards.throughput == 20
+    assert result.rewards.automation == 20
+    assert result.rewards.milestone == 1
+    assert result.diagnostics.objective_evaluations[0].satisfied
+    assert result.diagnostics.research["relevant"]["automation"]["researched"]
+    assert result.diagnostics.target_recipes["iron-plate"]["name"] == "iron-plate"
+    assert {signal.category for signal in result.diagnostics.bottlenecks} == {
+        "input_starvation",
+        "power_shortage",
+    }
+    assert result.events[-1].kind == "verification_completed"
+
+
+def test_automation_reward_does_not_penalize_consuming_provisioned_inputs():
+    instance = FakeInstance()
+    initial = capture_telemetry(instance, ["automation"])
+    instance.tick = 60
+    instance.first_namespace.score = lambda: (-479, -479)
+    task = FactorioTaskSpec(
+        task_id="provisioned-research",
+        backend_task_id="open_play",
+        goal="Research Automation from provisioned science packs.",
+        task_family="milestone",
+        objectives=[
+            ObjectiveSpec(
+                objective_id="research-automation",
+                kind="research",
+                description="Research Automation.",
+                target="automation",
+                comparator="eq",
+                threshold=1,
+            )
+        ],
+        verifier=VerifierSpec(
+            implementation="objective_engine_v1",
+            scalarization="binary",
+        ),
+    )
+
+    result = verify_native(instance, task, [], initial)
+
+    assert result.success
+    assert result.rewards.task == 1
+    assert result.rewards.automation == 0
+    assert result.metrics["automated_production_score_delta"] == -479
+    assert result.metrics["automation_reward"] == 0
+    assert (
+        result.metrics["automation_reward_basis"]
+        == "nonnegative_legacy_net_value_delta"
+    )
+
+
+def test_hard_constraint_failure_gates_native_scalar_reward():
+    instance = FakeInstance()
+    initial = capture_telemetry(instance)
+    task = FactorioTaskSpec(
+        task_id="constraint-gate",
+        goal="Operate, but remain inside an impossible tick budget.",
+        task_family="milestone",
+        objectives=[
+            ObjectiveSpec(
+                objective_id="operate",
+                kind="survival",
+                description="Operate for 60 ticks.",
+                comparator="gte",
+                threshold=60,
+            )
+        ],
+        constraints=[
+            ConstraintSpec(
+                constraint_id="ticks",
+                kind="max_ticks",
+                description="Stay below one tick.",
+                limit=1,
+            )
+        ],
+        verifier=VerifierSpec(
+            implementation="objective_engine_v1",
+            scalarization="weighted_sum",
+        ),
+    )
+    instance.tick = 60
+
+    result = verify_native(instance, task, [], initial)
+
+    assert result.diagnostics.objective_evaluations[0].satisfied
+    assert result.diagnostics.constraint_evaluations[0].satisfied is False
+    assert result.success is False
+    assert result.scalar_reward == 0.0

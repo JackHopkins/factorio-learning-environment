@@ -24,10 +24,10 @@ jobs:
         with:
           python-version: '3.12'
           enable-cache: true
-          cache-dependency-glob: 'uv.lock'
+          cache-dependency-glob: 'pyproject.toml'
 
       - name: Install environment
-        run: uv sync --frozen
+        run: uv sync
 
       - name: Validate submitted run records
         shell: bash

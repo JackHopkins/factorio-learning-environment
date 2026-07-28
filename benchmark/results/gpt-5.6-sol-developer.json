@@ -32,7 +32,8 @@
     "attempts_per_task": 1,
     "student_visible_information_only_during_execution": true,
     "non_blind_repository_familiarity": true,
-    "historical_note": "The Logistics static-policy rejection occurred immediately before policy rejections became recorded ActionEvents. Its trajectory contains the rejected call, while this run's aggregate reports zero invalid interventions for that attempt."
+    "historical_note": "The Logistics static-policy rejection occurred immediately before policy rejections became recorded ActionEvents. Its trajectory contains the rejected call, while this run's aggregate reports zero invalid interventions for that attempt.",
+    "repository_worktree_dirty_at_run": true
   },
   "attempts": [
     {

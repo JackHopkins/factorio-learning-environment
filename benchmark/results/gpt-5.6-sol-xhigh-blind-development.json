@@ -37,7 +37,8 @@
     "parent_tool_trace_available": false,
     "interventions_requested_per_task": 1,
     "tool_error_retries": 0,
-    "attempts_per_task": 1
+    "attempts_per_task": 1,
+    "repository_worktree_dirty_at_run": true
   },
   "attempts": [
     {

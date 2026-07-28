@@ -88,6 +88,12 @@ does not receive an independently auditable child tool-call trace. The result
 metadata records that limitation explicitly. Do not relabel them as
 filesystem-sandboxed results.
 
+The initial developer and context-blind runs were collected while the
+benchmark implementation was still an uncommitted worktree on top of
+`1d20388`. Their records retain that historical HEAD and explicitly set
+`repository_worktree_dirty_at_run=true`. They are development calibration
+artifacts, not clean-checkout reproducibility claims.
+
 ## Submission policy
 
 A pull request adding results should contain:

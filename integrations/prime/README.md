@@ -14,9 +14,11 @@ uv run fle cluster start -n 4
 uv run fle-envd --factorio-address 127.0.0.1 --rcon-ports 27000,27001,27002,27003
 ```
 
-On an Ubuntu CPU worker, use the same commands. The cluster launcher selects
-the host-appropriate Docker Compose invocation. Expose only `factorio-envd` to
-the training network; keep Factorio RCON ports private.
+On an Ubuntu training cluster, prefer the AgentENV deployment in
+`integrations/agentenv/README.md`. Prime-RL and Verifiers still use the same
+`envd_url`; they do not call AgentENV directly. The commands above remain the
+portable fallback. Expose only `factorio-envd` to the training network and keep
+Factorio RCON ports private.
 
 ## 2. Create the pinned Prime-RL checkout on Ubuntu
 
@@ -70,7 +72,27 @@ benchmark_statuses = ["ready"]
 ```
 
 The development catalog and readiness policy are documented in
-`docs/benchmark-v0.1.md`.
+`docs/benchmark-v0.2.md`. The short API benchmark can be selected with:
+
+```toml
+benchmark_suites = ["api_microtasks_v1"]
+benchmark_statuses = ["ready"]
+```
+
+Use `fle-benchmark` before training to collect comparable inference-only
+baselines from any OpenAI-compatible model endpoint. Its result schema,
+catalog-fingerprint validation, and GitHub submission policy are documented in
+`benchmark/README.md`.
+
+Every task prompt includes a compact public FLE action and lookup reference.
+`factorio-envd` rejects ordinary host access, reflection, and direct
+`FactorioInstance`/RCON use before executing a model program. This is a
+fairness and defense-in-depth guard, not a complete Python sandbox. The health
+manifest always reports `program_policy_guard=true`. The local Docker/RCON
+runtime reports `process_isolation=false`; the AgentENV production gateway
+reports `process_isolation=true` because each lease runs in a disposable
+Firecracker microVM. Generated programs still receive only the restricted FLE
+namespace rather than arbitrary guest shell access.
 
 ## 4. Run the smoke configuration
 

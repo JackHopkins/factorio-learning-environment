@@ -36,6 +36,7 @@ CLAUDE.md
 # API
 api_keys.json
 /log/
+/runtime/
 *.log
 *.trace
 *.jsonl

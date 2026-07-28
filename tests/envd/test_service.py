@@ -52,6 +52,28 @@ def test_capacity_and_intervention_limits(task_spec):
         service.execute(lease.lease_id, "three()")
 
 
+def test_engine_error_retry_does_not_consume_scored_intervention_budget(task_spec):
+    class ErrorWorker(FakeWorker):
+        def execute(self, lease_id, code, sequence):
+            result = super().execute(lease_id, code, sequence)
+            result.event.error = code == "bad()"
+            return result
+
+    service = EnvironmentService([ErrorWorker()])
+    lease = service.lease(task_spec, tool_error_retry_budget=1)
+
+    rejected = service.execute(lease.lease_id, "bad()")
+    first = service.execute(lease.lease_id, "one()")
+    second = service.execute(lease.lease_id, "two()")
+
+    assert rejected.event.evaluation_retry is True
+    assert first.event.evaluation_retry is False
+    assert second.event.sequence == 3
+    assert lease.tool_error_retries_used == 1
+    with pytest.raises(InterventionLimitReached):
+        service.execute(lease.lease_id, "three()")
+
+
 def test_terminal_environment_state_blocks_more_actions_but_can_finalize(task_spec):
     class TerminalWorker(FakeWorker):
         def execute(self, lease_id, code, sequence):
@@ -69,3 +91,60 @@ def test_terminal_environment_state_blocks_more_actions_but_can_finalize(task_sp
         service.execute(lease.lease_id, "keep_building()")
     snapshot = service.finalize(lease.lease_id)
     assert len(snapshot.action_events) == 1
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        "import os",
+        "open('host-file.txt', 'w')",
+        "instance.rcon_client.send_command('/sc game.speed=1000')",
+        "print((1).__class__)",
+        "print('{0.__class__}'.format(1))",
+        "globals()['escaped'] = True",
+    ],
+)
+def test_program_policy_rejects_host_and_namespace_escape(code, task_spec):
+    service = EnvironmentService([FakeWorker()])
+    lease = service.lease(task_spec)
+
+    result = service.execute(lease.lease_id, code)
+
+    assert result.event.error is True
+    assert result.event.sequence == 1
+    assert result.event.policy_violations
+    assert result.events[0].kind == "invalid_action"
+    assert result.events[0].reward_channels == {"invalid_action": -1.0}
+    assert service.observe(lease.lease_id).production_score == 0.0
+    snapshot = service.finalize(lease.lease_id)
+    assert snapshot.action_events[0].policy_violations
+
+
+def test_program_policy_rejection_uses_tool_retry_budget(task_spec):
+    service = EnvironmentService([FakeWorker()])
+    lease = service.lease(task_spec, tool_error_retry_budget=1)
+
+    rejected = service.execute(lease.lease_id, "for _ in range(2): pass")
+    first = service.execute(lease.lease_id, "one()")
+    second = service.execute(lease.lease_id, "two()")
+
+    assert rejected.event.error is True
+    assert rejected.event.evaluation_retry is True
+    assert first.event.sequence == 2
+    assert second.event.sequence == 3
+    with pytest.raises(InterventionLimitReached):
+        service.execute(lease.lease_id, "three()")
+
+
+def test_program_policy_allows_normal_factorio_programs(task_spec):
+    service = EnvironmentService([FakeWorker()])
+    lease = service.lease(task_spec)
+
+    result = service.execute(
+        lease.lease_id,
+        "from math import ceil\n"
+        "for quantity in range(2):\n"
+        "    print(ceil(quantity / 2))",
+    )
+
+    assert result.event.sequence == 1

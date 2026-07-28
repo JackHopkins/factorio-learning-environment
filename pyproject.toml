@@ -116,6 +116,8 @@ inspect = [
 [project.scripts]
 fle = "fle.run:main"
 fle-envd = "fle.envd.__main__:main"
+fle-benchmark = "fle.eval.benchmark_agent:main"
+fle-benchmark-results = "fle.envd.benchmark_results:main"
 
 [tool.hatch.version]
 path = "fle/__init__.py"

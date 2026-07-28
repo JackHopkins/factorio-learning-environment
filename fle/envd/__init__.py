@@ -13,10 +13,13 @@ from fle.envd.models import (
     FactorioTaskSpec,
     HealthStatus,
     Lease,
+    LeaseForkResult,
     Observation,
     RewardVector,
+    RuntimeCheckpoint,
     VerificationSnapshot,
 )
+from fle.envd.microtasks import MICROTASKS, get_microtask
 from fle.envd.service import EnvironmentService
 
 __all__ = [
@@ -28,10 +31,14 @@ __all__ = [
     "FactorioTaskSpec",
     "HealthStatus",
     "Lease",
+    "LeaseForkResult",
+    "MICROTASKS",
     "Observation",
     "RewardVector",
+    "RuntimeCheckpoint",
     "VerificationSnapshot",
     "benchmark_catalog",
     "benchmark_summary",
     "get_benchmark_task",
+    "get_microtask",
 ]

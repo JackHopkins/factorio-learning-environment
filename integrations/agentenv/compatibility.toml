@@ -1,0 +1,23 @@
+[agentenv]
+repository = "https://github.com/kvcache-ai/AgentENV"
+reviewed_commit = "22a386e1f5e4cdb758ae96e0ff084b8cca9f705c"
+reviewed_at = "2026-07-27"
+openapi_sha256 = "b46aaac656108360059f2596190754b663c7b37779fd93b5c6f39db4ef91215e"
+status = "contract-tested; Ubuntu/KVM smoke pending"
+
+[agentenv.required_contract]
+create = "POST /sandboxes"
+delete = "DELETE /sandboxes/{sandboxID}"
+fork = "POST /sandboxes/{sandboxID}/fork"
+pause = "POST /sandboxes/{sandboxID}/pause"
+resume = "POST /sandboxes/{sandboxID}/resume"
+timeout = "POST /sandboxes/{sandboxID}/timeout"
+snapshot = "POST /sandboxes/{sandboxID}/snapshots"
+proxy = "ANY /proxy/{path}"
+
+[guest]
+factorio_version = "2.0.73"
+envd_protocol = "0.3.0"
+port = 8172
+start_command = "/usr/local/bin/factorio-agentenv-entrypoint"
+readiness_probe_port = 8172

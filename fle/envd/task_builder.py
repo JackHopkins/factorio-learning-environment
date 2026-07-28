@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from fle.envd.action_reference import ACTION_PROFILE_REFERENCE
 from fle.envd.models import (
     ConstraintSpec,
     CurriculumSpec,
@@ -18,7 +19,6 @@ from fle.envd.models import (
     VerifierSpec,
 )
 from fle.eval.tasks.task_definitions.task_registry import get_task_config
-
 
 DEFAULT_KNOWLEDGE_SOURCES = [
     KnowledgeSourceSpec(
@@ -198,5 +198,5 @@ def render_task_prompt(task: FactorioTaskSpec) -> str:
         f"\n\nConstraints:\n{constraint_lines or '- None'}\n\n"
         "Use factorio_observe_factory to inspect the simulation and "
         "factorio_execute_program for one short intervention at a time. "
-        f"{verification}"
+        f"{verification}\n\nAction profile reference:\n{ACTION_PROFILE_REFERENCE}"
     )

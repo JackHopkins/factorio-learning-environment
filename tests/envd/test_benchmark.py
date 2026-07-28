@@ -7,6 +7,7 @@ from fle.envd.benchmark import (
     get_benchmark_task,
 )
 from fle.envd.curriculum import BUILTIN_TASKS
+from fle.envd.microtasks import MICROTASKS
 from fle.eval.tasks.task_definitions.task_registry import (
     create_task,
     list_tasks_by_category,
@@ -44,9 +45,7 @@ def test_all_ready_tasks_have_executable_verifiers_and_real_objectives():
 
 def test_every_builtin_task_is_classified_in_the_benchmark():
     classified = {
-        task.task_id
-        for task in benchmark_catalog()
-        if task.task_id in BUILTIN_TASKS
+        task.task_id for task in benchmark_catalog() if task.task_id in BUILTIN_TASKS
     }
 
     assert classified == set(BUILTIN_TASKS)
@@ -96,3 +95,29 @@ def test_summary_distinguishes_ready_from_uncalibrated_tasks():
     assert summary["task_count"] >= 36
     assert summary["ready_count"] > summary["calibration_required_count"]
     assert "lab_throughput_v1" in summary["suites"]
+
+
+def test_api_microtasks_are_real_catalog_tasks_with_frozen_splits():
+    tasks = [task for task in benchmark_catalog() if task.suite == "api_microtasks_v1"]
+
+    assert {task.task_id for task in tasks} == set(MICROTASKS)
+    assert {task.benchmark_split for task in tasks} == {
+        "development",
+        "validation",
+        "test",
+    }
+    assert sum(task.status == "ready" for task in tasks) == 21
+    assert sum(task.status == "calibration_required" for task in tasks) == 3
+    assert all(
+        task.task_spec.verifier.implementation == "objective_engine_v1"
+        for task in tasks
+    )
+    assert {
+        objective.kind for task in tasks for objective in task.task_spec.objectives
+    } >= {
+        "inventory",
+        "entity_exists",
+        "entity_status",
+        "entity_recipe",
+        "entity_inventory",
+    }

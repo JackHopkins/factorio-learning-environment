@@ -99,9 +99,7 @@ def test_progression_task_contract_is_not_coupled_to_throughput():
 
 
 def test_registered_open_play_task_gets_persistent_strategy_metadata():
-    spec = build_task_spec(
-        "iron_gear_wheel_throughput_unbounded_steps_show_steps_true"
-    )
+    spec = build_task_spec("iron_gear_wheel_throughput_unbounded_steps_show_steps_true")
 
     assert spec.task_family == "throughput"
     assert spec.objectives[0].comparator == "maximize"
@@ -159,9 +157,20 @@ def test_protocol_02_verifier_events_round_trip_with_named_channels():
     )
 
     restored = VerificationSnapshot.model_validate_json(snapshot.model_dump_json())
-    assert restored.protocol_version == "0.2.1"
+    assert restored.protocol_version == "0.3.0"
     assert restored.events[0].kind == "technology_researched"
     assert restored.events[0].reward_channels == {"milestone": 1.0}
+
+
+def test_rendered_prompt_includes_public_action_and_lookup_reference():
+    prompt = render_task_prompt(automation_research_milestone_task())
+
+    assert "get_prototype_recipe" in prompt
+    assert "place_entity" in prompt
+    assert "Technology.Automation" in prompt
+    assert "no host/file/network access" in prompt
+    assert "Call move_to(target)" in prompt
+    assert "do not build production chains" in prompt
 
 
 def test_builtin_early_progression_task_uses_native_verifier_and_real_bootstrap():

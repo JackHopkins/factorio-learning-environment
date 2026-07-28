@@ -101,6 +101,8 @@ def test_taskset_loads_reproducible_throughput_task():
     assert spec.task_family == "throughput"
     assert spec.objectives[0].kind == "throughput"
     assert "engine and task verifier determine success" in task.data.prompt_text
+    assert "get_prototype_recipe" in task.data.prompt_text
+    assert "no host/file/network access" in task.data.prompt_text
     assert task.config.tools.envd_url == "http://127.0.0.1:8172"
 
 
@@ -161,6 +163,22 @@ def test_taskset_selects_ready_benchmark_suite_without_manual_id_list():
         "robustness_circuit_no_manual_v1",
         "robustness_productive_survival_v1",
     }
+
+
+def test_taskset_selects_microtask_calibration_suite():
+    tasks = prime_taskset.FactorioTaskset(
+        prime_taskset.FactorioTasksetConfig(
+            benchmark_suites=["api_microtasks_v1"],
+            benchmark_statuses=["calibration_required"],
+        )
+    ).select()
+
+    assert len(tasks) == 3
+    assert all(task.data.max_interventions <= 6 for task in tasks)
+    assert all(
+        task.data.task_spec.verifier.implementation == "objective_engine_v1"
+        for task in tasks
+    )
 
 
 def test_unknown_benchmark_suite_fails_instead_of_loading_default_task():

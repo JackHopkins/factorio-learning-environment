@@ -10,7 +10,9 @@ from fle.envd.models import (
     FactorioTaskSpec,
     HealthStatus,
     Lease,
+    LeaseForkResult,
     Observation,
+    RuntimeCheckpoint,
     VerificationSnapshot,
 )
 
@@ -63,11 +65,19 @@ class HTTPEnvironmentClient:
     async def health(self) -> HealthStatus:
         return HealthStatus.model_validate(await self._request("GET", "/v1/health"))
 
-    async def lease(self, task: FactorioTaskSpec) -> Lease:
+    async def lease(
+        self,
+        task: FactorioTaskSpec,
+        *,
+        tool_error_retry_budget: int = 0,
+    ) -> Lease:
         data = await self._request(
             "POST",
             "/v1/leases",
-            json={"task": task.model_dump(mode="json", exclude_computed_fields=True)},
+            json={
+                "task": task.model_dump(mode="json", exclude_computed_fields=True),
+                "tool_error_retry_budget": tool_error_retry_budget,
+            },
         )
         return Lease.model_validate(data)
 
@@ -87,6 +97,29 @@ class HTTPEnvironmentClient:
 
     async def release(self, lease_id: str) -> None:
         await self._request("DELETE", f"/v1/leases/{lease_id}")
+
+    async def fork(self, lease_id: str, count: int = 1) -> LeaseForkResult:
+        data = await self._request(
+            "POST", f"/v1/leases/{lease_id}/fork", json={"count": count}
+        )
+        return LeaseForkResult.model_validate(data)
+
+    async def pause(self, lease_id: str) -> None:
+        await self._request("POST", f"/v1/leases/{lease_id}/pause")
+
+    async def resume(self, lease_id: str) -> Lease:
+        data = await self._request("POST", f"/v1/leases/{lease_id}/resume")
+        return Lease.model_validate(data)
+
+    async def checkpoint(
+        self, lease_id: str, name: str | None = None
+    ) -> RuntimeCheckpoint:
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/checkpoints",
+            json={"name": name},
+        )
+        return RuntimeCheckpoint.model_validate(data)
 
     async def close(self) -> None:
         if self._session is not None:

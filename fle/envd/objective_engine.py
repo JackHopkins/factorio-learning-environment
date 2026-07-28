@@ -61,18 +61,14 @@ def _sequence(value: Any) -> list[Any]:
         try:
             return [
                 item
-                for _, item in sorted(
-                    raw.items(), key=lambda pair: int(str(pair[0]))
-                )
+                for _, item in sorted(raw.items(), key=lambda pair: int(str(pair[0])))
             ]
         except (TypeError, ValueError):
             return []
     return []
 
 
-def _flow_delta(
-    before: dict[str, float], after: dict[str, float]
-) -> dict[str, float]:
+def _flow_delta(before: dict[str, float], after: dict[str, float]) -> dict[str, float]:
     return {
         key: value - before.get(key, 0.0)
         for key, value in after.items()
@@ -89,9 +85,7 @@ def _manual_outputs(flows: ProductionFlows) -> dict[str, float]:
 
 
 def _manual_craft_count(flows: ProductionFlows) -> float:
-    return float(
-        sum(float(craft.get("crafted_count", 0)) for craft in flows.crafted)
-    )
+    return float(sum(float(craft.get("crafted_count", 0)) for craft in flows.crafted))
 
 
 _GROUP_MEMBERS = ("belts", "pipes", "poles", "walls", "entities")
@@ -125,6 +119,7 @@ class TelemetryFrame:
     entity_counts: dict[str, int]
     entity_status_counts: dict[str, int]
     entity_status_by_name: dict[str, dict[str, int]]
+    entity_details: list[dict[str, Any]]
     rocket_launches: int
     target_recipes: dict[str, Any]
     character_alive: bool = True
@@ -163,6 +158,7 @@ def capture_telemetry(instance: Any, targets: Iterable[str] = ()) -> TelemetryFr
     entity_counts: dict[str, int] = {}
     status_counts: dict[str, int] = {}
     status_by_name: dict[str, dict[str, int]] = {}
+    entity_details: list[dict[str, Any]] = []
     for entity in entities:
         prototype = getattr(entity, "prototype", None)
         name = getattr(entity, "name", None)
@@ -177,6 +173,11 @@ def capture_telemetry(instance: Any, targets: Iterable[str] = ()) -> TelemetryFr
         status_counts[status] = status_counts.get(status, 0) + 1
         per_name = status_by_name.setdefault(name, {})
         per_name[status] = per_name.get(status, 0) + 1
+        detail = _jsonable(entity)
+        if isinstance(detail, dict):
+            detail["name"] = name
+            detail["status"] = status
+            entity_details.append(detail)
 
     technologies: dict[str, dict[str, Any]] = {}
     researched: dict[str, bool] = {}
@@ -201,12 +202,15 @@ def capture_telemetry(instance: Any, targets: Iterable[str] = ()) -> TelemetryFr
         researched=researched,
         technologies=technologies,
         current_research=(
-            str(research.current_research) if research and research.current_research else None
+            str(research.current_research)
+            if research and research.current_research
+            else None
         ),
         research_progress=float(research.research_progress if research else 0),
         entity_counts=entity_counts,
         entity_status_counts=status_counts,
         entity_status_by_name=status_by_name,
+        entity_details=entity_details,
         rocket_launches=int(
             engine.get(
                 "rockets_launched",
@@ -242,7 +246,9 @@ def _compare(
 ) -> tuple[bool, float]:
     threshold = float(objective.threshold or 0)
     if objective.comparator == "gte":
-        return value >= threshold, min(max(value / threshold, 0.0), 1.0) if threshold else 1.0
+        return value >= threshold, (
+            min(max(value / threshold, 0.0), 1.0) if threshold else 1.0
+        )
     if objective.comparator == "lte":
         satisfied = value <= threshold
         score = 1.0 if satisfied else max(threshold / value, 0.0) if value else 1.0
@@ -276,6 +282,66 @@ def _unsupported_objective(
     )
 
 
+def _matching_entities(frame: TelemetryFrame, target: str) -> list[dict[str, Any]]:
+    return [
+        entity
+        for entity in frame.entity_details
+        if str(entity.get("name", "")) == target
+    ]
+
+
+def _recipe_name(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        name = value.get("name")
+        if name is not None:
+            return str(name)
+    return str(value)
+
+
+_ENTITY_INVENTORY_FIELDS = {
+    "assembling_machine_input",
+    "assembling_machine_output",
+    "assembling_machine_modules",
+    "fuel",
+    "furnace_source",
+    "furnace_result",
+    "inventory",
+    "lab_input",
+    "lab_modules",
+    "rocket_inventory",
+    "turret_ammo",
+}
+
+
+def _inventory_amount(entity: dict[str, Any], item: str) -> float:
+    total = 0.0
+    for field_name in _ENTITY_INVENTORY_FIELDS:
+        inventory = entity.get(field_name)
+        if not isinstance(inventory, dict):
+            continue
+        amount = inventory.get(item, 0)
+        if isinstance(amount, (int, float)):
+            total += float(amount)
+    return total
+
+
+def _position_matches(
+    entity: dict[str, Any], x: float, y: float, tolerance: float
+) -> bool:
+    position = entity.get("position")
+    if not isinstance(position, dict):
+        return False
+    actual_x = position.get("x")
+    actual_y = position.get("y")
+    if not isinstance(actual_x, (int, float)) or not isinstance(actual_y, (int, float)):
+        return False
+    return math.dist((float(actual_x), float(actual_y)), (x, y)) <= tolerance
+
+
 def evaluate_objective(
     objective: ObjectiveSpec,
     initial: TelemetryFrame,
@@ -304,8 +370,7 @@ def evaluate_objective(
             evidence["source"] = "dynamic_achievements"
         else:
             value = float(
-                final.flows.output.get(target, 0)
-                - initial.flows.output.get(target, 0)
+                final.flows.output.get(target, 0) - initial.flows.output.get(target, 0)
             )
             evidence["source"] = "production_statistics"
     elif objective.kind == "research":
@@ -326,6 +391,115 @@ def evaluate_objective(
         baseline = float(initial.entity_counts.get(target, 0))
         value = float(final.entity_counts.get(target, 0))
         evidence["status_counts"] = final.entity_status_by_name.get(target, {})
+    elif objective.kind == "entity_status":
+        if target is None:
+            return _unsupported_objective(objective, "entity target missing")
+        statuses = {str(status) for status in objective.parameters.get("statuses", [])}
+        if not statuses:
+            return _unsupported_objective(
+                objective, "entity_status requires parameters.statuses"
+            )
+        baseline = float(
+            sum(
+                initial.entity_status_by_name.get(target, {}).get(status, 0)
+                for status in statuses
+            )
+        )
+        value = float(
+            sum(
+                final.entity_status_by_name.get(target, {}).get(status, 0)
+                for status in statuses
+            )
+        )
+        evidence.update(
+            {
+                "accepted_statuses": sorted(statuses),
+                "observed_statuses": final.entity_status_by_name.get(target, {}),
+            }
+        )
+    elif objective.kind == "entity_recipe":
+        if target is None:
+            return _unsupported_objective(objective, "entity target missing")
+        recipe = objective.parameters.get("recipe")
+        if not recipe:
+            return _unsupported_objective(
+                objective, "entity_recipe requires parameters.recipe"
+            )
+        baseline = float(
+            sum(
+                _recipe_name(entity.get("recipe")) == str(recipe)
+                for entity in _matching_entities(initial, target)
+            )
+        )
+        final_entities = _matching_entities(final, target)
+        value = float(
+            sum(
+                _recipe_name(entity.get("recipe")) == str(recipe)
+                for entity in final_entities
+            )
+        )
+        evidence.update(
+            {
+                "required_recipe": str(recipe),
+                "observed_recipes": [
+                    _recipe_name(entity.get("recipe")) for entity in final_entities
+                ],
+            }
+        )
+    elif objective.kind == "entity_inventory":
+        if target is None:
+            return _unsupported_objective(objective, "entity target missing")
+        item = objective.parameters.get("item")
+        if not item:
+            return _unsupported_objective(
+                objective, "entity_inventory requires parameters.item"
+            )
+        baseline = sum(
+            _inventory_amount(entity, str(item))
+            for entity in _matching_entities(initial, target)
+        )
+        value = sum(
+            _inventory_amount(entity, str(item))
+            for entity in _matching_entities(final, target)
+        )
+        evidence.update(
+            {
+                "item": str(item),
+                "inventory_fields": sorted(_ENTITY_INVENTORY_FIELDS),
+            }
+        )
+    elif objective.kind == "entity_position":
+        if target is None:
+            return _unsupported_objective(objective, "entity target missing")
+        x = objective.parameters.get("x")
+        y = objective.parameters.get("y")
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            return _unsupported_objective(
+                objective, "entity_position requires numeric parameters.x and y"
+            )
+        tolerance = float(objective.parameters.get("tolerance", 0.25))
+        baseline = float(
+            sum(
+                _position_matches(entity, float(x), float(y), tolerance)
+                for entity in _matching_entities(initial, target)
+            )
+        )
+        final_entities = _matching_entities(final, target)
+        value = float(
+            sum(
+                _position_matches(entity, float(x), float(y), tolerance)
+                for entity in final_entities
+            )
+        )
+        evidence.update(
+            {
+                "target_position": {"x": float(x), "y": float(y)},
+                "tolerance": tolerance,
+                "observed_positions": [
+                    entity.get("position") for entity in final_entities
+                ],
+            }
+        )
     elif objective.kind == "rocket_launch":
         baseline = float(initial.rocket_launches)
         value = float(final.rocket_launches)
@@ -377,8 +551,14 @@ def evaluate_constraint(
         value = float(final.tick - initial.tick)
         satisfied = value <= float(constraint.limit)
     elif constraint.kind == "max_interventions":
-        value = float(len(events))
+        value = float(sum(not event.evaluation_retry for event in events))
         satisfied = value <= float(constraint.limit)
+        evidence.update(
+            {
+                "total_interventions": len(events),
+                "evaluation_retries": sum(event.evaluation_retry for event in events),
+            }
+        )
     elif constraint.kind == "max_manual_crafts":
         value = _manual_craft_count(final.flows) - _manual_craft_count(initial.flows)
         satisfied = value <= float(constraint.limit)
@@ -411,8 +591,7 @@ def evaluate_constraint(
             for name in raw_resources
         }
         value = sum(
-            amount * float(weights.get(name, 1.0))
-            for name, amount in deltas.items()
+            amount * float(weights.get(name, 1.0)) for name, amount in deltas.items()
         )
         satisfied = value <= float(constraint.limit)
         evidence.update({"basis": basis, "resources": deltas, "weights": weights})
@@ -452,6 +631,33 @@ def evaluate_constraint(
             {
                 "forbidden_actions": sorted(forbidden),
                 "observed_violations": invoked,
+                "source": "executed_tool_hooks",
+            }
+        )
+    elif constraint.kind == "required_action":
+        required = {
+            str(action)
+            for action in constraint.parameters.get(
+                "actions",
+                [constraint.limit] if constraint.limit is not None else [],
+            )
+        }
+        counts = {
+            action: sum(
+                tool == action for event in events for tool in event.executed_tools
+            )
+            for action in required
+        }
+        minimum_calls = int(constraint.parameters.get("minimum_calls", 1))
+        missing = [action for action, count in counts.items() if count < minimum_calls]
+        value = float(sum(counts.values()))
+        satisfied = bool(required) and not missing
+        evidence.update(
+            {
+                "required_actions": sorted(required),
+                "minimum_calls_each": minimum_calls,
+                "observed_calls": counts,
+                "missing_actions": missing,
                 "source": "executed_tool_hooks",
             }
         )
@@ -561,7 +767,8 @@ def _termination_reason(
         if "forbidden_action" in kinds:
             return "action_policy_violation"
         return "constraint_violation"
-    if len(action_events) >= task.max_interventions:
+    scored_interventions = sum(not event.evaluation_retry for event in action_events)
+    if scored_interventions >= task.max_interventions:
         return "intervention_limit"
     if action_events and action_events[-1].error:
         return "invalid_action"
@@ -576,11 +783,11 @@ def _success(
     constraints: list[ConstraintEvaluation],
 ) -> bool:
     required = [
-        result
-        for spec, result in zip(task.objectives, objectives)
-        if spec.required
+        result for spec, result in zip(task.objectives, objectives) if spec.required
     ]
-    constraints_pass = all(result.supported and result.satisfied for result in constraints)
+    constraints_pass = all(
+        result.supported and result.satisfied for result in constraints
+    )
     if not constraints_pass:
         return False
     if not required:
@@ -590,9 +797,10 @@ def _success(
     if task.verifier.mode == "any_required":
         return any(result.supported and result.satisfied for result in required)
     total_weight = sum(result.weight for result in required) or 1.0
-    score = sum(
-        result.normalized_score * result.weight for result in required
-    ) / total_weight
+    score = (
+        sum(result.normalized_score * result.weight for result in required)
+        / total_weight
+    )
     return score >= float(task.verifier.success_threshold or 1.0)
 
 
@@ -607,9 +815,10 @@ def _scalarize(
     if task.verifier.scalarization == "binary":
         return float(success)
     total_weight = sum(result.weight for result in objectives) or 1.0
-    quality = sum(
-        result.normalized_score * result.weight for result in objectives
-    ) / total_weight
+    quality = (
+        sum(result.normalized_score * result.weight for result in objectives)
+        / total_weight
+    )
     if task.verifier.scalarization == "lexicographic":
         return float(success) + 0.1 * quality
     return quality
@@ -683,12 +892,8 @@ def verify_native(
         CharacterDeath.model_validate(death)
         for death in final.deaths[len(initial.deaths) :]
     ]
-    resource_depletions = final.resource_depletions[
-        len(initial.resource_depletions) :
-    ]
-    executed_tools = [
-        tool for event in action_events for tool in event.executed_tools
-    ]
+    resource_depletions = final.resource_depletions[len(initial.resource_depletions) :]
+    executed_tools = [tool for event in action_events for tool in event.executed_tools]
     policy_violations = [
         violation for event in action_events for violation in event.policy_violations
     ]
@@ -873,9 +1078,7 @@ def verify_native(
     )
 
     throughput = sum(
-        float(result.value or 0)
-        for result in objectives
-        if result.kind == "throughput"
+        float(result.value or 0) for result in objectives if result.kind == "throughput"
     )
     milestone = float(
         sum(
@@ -923,6 +1126,12 @@ def verify_native(
             "automation_reward": automation_reward,
             "automation_reward_basis": "nonnegative_legacy_net_value_delta",
             "interventions": len(action_events),
+            "scored_interventions": sum(
+                not event.evaluation_retry for event in action_events
+            ),
+            "evaluation_retries": sum(
+                event.evaluation_retry for event in action_events
+            ),
             "elapsed_ticks": max(final.tick - initial.tick, 0),
         },
         events=verifier_events,

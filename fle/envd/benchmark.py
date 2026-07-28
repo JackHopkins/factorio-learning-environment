@@ -13,11 +13,12 @@ from typing import Literal
 from pydantic import Field
 
 from fle.envd.curriculum import BUILTIN_TASKS, get_builtin_task
+from fle.envd.microtasks import MICROTASKS, get_microtask
 from fle.envd.models import FactorioTaskSpec, WireModel
 from fle.envd.task_builder import build_task_spec
 from fle.eval.tasks.task_definitions.task_registry import list_tasks_by_category
 
-BENCHMARK_VERSION = "0.1.0-dev"
+BENCHMARK_VERSION = "0.2.0-dev"
 
 BenchmarkStatus = Literal["ready", "calibration_required", "spec_only", "planned"]
 BenchmarkHorizon = Literal["short", "medium", "long", "persistent"]
@@ -118,9 +119,7 @@ def _throughput_catalog() -> list[BenchmarkTask]:
                 horizon="short" if tier <= 2 else "medium",
                 mechanics=_throughput_mechanics(target),
                 primary_metric=f"{target}_per_60_seconds",
-                notes=[
-                    "Existing FLE lab task with holdout-based engine verification."
-                ],
+                notes=["Existing FLE lab task with holdout-based engine verification."],
                 task_spec=spec,
             )
         )
@@ -212,10 +211,249 @@ def _builtin_catalog() -> list[BenchmarkTask]:
     return tasks
 
 
+_MICROTASK_METADATA: dict[str, dict] = {
+    "micro_harvest_coal_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["resource_discovery", "movement", "manual_mining"],
+        "benchmark_split": "development",
+    },
+    "micro_craft_iron_gear_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["inventory", "manual_crafting"],
+        "benchmark_split": "development",
+    },
+    "micro_place_lab_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_footprints"],
+        "benchmark_split": "development",
+    },
+    "micro_place_entity_next_to_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_footprints", "placement_helper"],
+        "benchmark_split": "development",
+    },
+    "micro_configure_assembler_recipe_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "recipe_configuration"],
+        "benchmark_split": "development",
+    },
+    "micro_fuel_furnace_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_inventory", "fuel"],
+        "benchmark_split": "development",
+    },
+    "micro_load_lab_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_inventory", "laboratory"],
+        "benchmark_split": "development",
+    },
+    "micro_start_furnace_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_inventory", "smelting", "status"],
+        "benchmark_split": "validation",
+    },
+    "micro_connect_belt_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": ["placement", "belt_routing", "connection_helper"],
+        "benchmark_split": "validation",
+    },
+    "micro_transfer_to_chest_v1": {
+        "tier": 0,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_inventory", "item_transfer"],
+        "benchmark_split": "test",
+    },
+    "micro_connect_offshore_pump_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": ["water_placement", "fluids", "connection_helper", "status"],
+        "benchmark_split": "test",
+    },
+    "micro_power_assembler_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": [
+            "placement",
+            "electricity",
+            "recipe_configuration",
+            "entity_inventory",
+            "status",
+        ],
+        "benchmark_split": "test",
+    },
+    "micro_automate_electronic_circuit_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": [
+            "electricity",
+            "recipe_configuration",
+            "entity_inventory",
+            "automatic_production",
+            "circuits",
+        ],
+        "benchmark_split": "test",
+    },
+    "micro_automate_iron_gear_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": [
+            "electricity",
+            "recipe_configuration",
+            "entity_inventory",
+            "automatic_production",
+        ],
+        "benchmark_split": "development",
+    },
+    "micro_automate_red_science_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": [
+            "electricity",
+            "recipe_configuration",
+            "entity_inventory",
+            "automatic_production",
+            "science_production",
+        ],
+        "benchmark_split": "validation",
+    },
+    "micro_automate_steel_plate_v1": {
+        "tier": 1,
+        "horizon": "short",
+        "mechanics": [
+            "fuel",
+            "entity_inventory",
+            "automatic_production",
+            "smelting",
+        ],
+        "benchmark_split": "development",
+    },
+    "micro_configure_centrifuge_v1": {
+        "tier": 3,
+        "horizon": "short",
+        "mechanics": ["placement", "recipe_configuration", "uranium_processing"],
+        "benchmark_split": "test",
+    },
+    "micro_configure_chemical_plant_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": ["placement", "recipe_configuration", "chemistry"],
+        "benchmark_split": "validation",
+    },
+    "micro_configure_oil_refinery_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": ["placement", "recipe_configuration", "oil_processing"],
+        "benchmark_split": "validation",
+    },
+    "micro_install_speed_module_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": [
+            "placement",
+            "recipe_configuration",
+            "entity_inventory",
+            "modules",
+        ],
+        "benchmark_split": "development",
+    },
+    "micro_place_pumpjack_v1": {
+        "tier": 2,
+        "horizon": "short",
+        "mechanics": ["resource_discovery", "movement", "oil_extraction"],
+        "benchmark_split": "development",
+    },
+    "micro_place_roboport_v1": {
+        "tier": 3,
+        "horizon": "short",
+        "mechanics": ["placement", "electricity", "logistic_network"],
+        "benchmark_split": "test",
+    },
+    "micro_place_rocket_silo_v1": {
+        "tier": 4,
+        "horizon": "short",
+        "mechanics": ["placement", "entity_footprints", "rocket_silo"],
+        "benchmark_split": "test",
+    },
+    "micro_research_logistics_v1": {
+        "tier": 2,
+        "horizon": "medium",
+        "mechanics": [
+            "electricity",
+            "laboratory",
+            "research",
+            "science_consumption",
+        ],
+        "benchmark_split": "validation",
+    },
+}
+
+_LIVE_VALIDATED_MICROTASKS = {
+    "micro_automate_electronic_circuit_v1",
+    "micro_automate_iron_gear_v1",
+    "micro_automate_red_science_v1",
+    "micro_automate_steel_plate_v1",
+    "micro_configure_assembler_recipe_v1",
+    "micro_configure_centrifuge_v1",
+    "micro_configure_chemical_plant_v1",
+    "micro_configure_oil_refinery_v1",
+    "micro_craft_iron_gear_v1",
+    "micro_fuel_furnace_v1",
+    "micro_harvest_coal_v1",
+    "micro_install_speed_module_v1",
+    "micro_load_lab_v1",
+    "micro_place_entity_next_to_v1",
+    "micro_place_lab_v1",
+    "micro_place_pumpjack_v1",
+    "micro_place_roboport_v1",
+    "micro_place_rocket_silo_v1",
+    "micro_start_furnace_v1",
+    "micro_transfer_to_chest_v1",
+    "micro_research_logistics_v1",
+}
+
+
+def _microtask_catalog() -> list[BenchmarkTask]:
+    tasks: list[BenchmarkTask] = []
+    for task_id, metadata in sorted(_MICROTASK_METADATA.items()):
+        tasks.append(
+            BenchmarkTask(
+                task_id=task_id,
+                suite="api_microtasks_v1",
+                status=(
+                    "ready"
+                    if task_id in _LIVE_VALIDATED_MICROTASKS
+                    else "calibration_required"
+                ),
+                primary_metric="engine_verified_success",
+                notes=[
+                    "Runs against the real Factorio engine.",
+                    (
+                        "Solved manually against the pinned live engine."
+                        if task_id in _LIVE_VALIDATED_MICROTASKS
+                        else "Intervention budget awaits empirical calibration."
+                    ),
+                    "No prompt-only or model-judged success signal is used.",
+                ],
+                task_spec=get_microtask(task_id),
+                **metadata,
+            )
+        )
+    return tasks
+
+
 def benchmark_catalog() -> list[BenchmarkTask]:
     """Return the deterministic development benchmark manifest."""
 
-    tasks = [*_throughput_catalog(), *_builtin_catalog()]
+    tasks = [*_throughput_catalog(), *_builtin_catalog(), *_microtask_catalog()]
     return sorted(tasks, key=lambda task: (task.suite, task.tier, task.task_id))
 
 
@@ -241,3 +479,4 @@ def benchmark_summary() -> dict[str, object]:
 
 
 assert set(_BUILTIN_METADATA) == set(BUILTIN_TASKS)
+assert set(_MICROTASK_METADATA) == set(MICROTASKS)

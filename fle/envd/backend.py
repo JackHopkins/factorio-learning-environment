@@ -92,6 +92,7 @@ class FLEWorker(FactorioWorker):
         self._executed_tools_current: list[str] = []
         self._capture_tool_calls = False
         for tool_name in getattr(self.instance, "controllers", {}):
+
             def record_tool(_tool, *_args, _name=tool_name, **_kwargs):
                 if self._capture_tool_calls:
                     self._executed_tools_current.append(_name)
@@ -145,24 +146,24 @@ class FLEWorker(FactorioWorker):
         if hasattr(fle_task, "holdout_wait_period"):
             fle_task.holdout_wait_period = task.holdout_seconds
         provisioning = task.provisioning
-        if (
-            provisioning.starting_inventory is None
-            and provisioning.all_technologies_researched is None
-        ):
-            fle_task.setup(self.instance)
-        else:
-            self.instance.initial_inventory = (
-                provisioning.starting_inventory
-                if provisioning.starting_inventory is not None
-                else fle_task.starting_inventory
-            )
-            all_research = (
-                provisioning.all_technologies_researched
-                if provisioning.all_technologies_researched is not None
-                else fle_task.all_technology_reserached
-            )
-            self.instance.reset(all_technologies_researched=all_research)
-            fle_task.setup_instance(self.instance)
+        self.instance.initial_inventory = (
+            provisioning.starting_inventory
+            if provisioning.starting_inventory is not None
+            else fle_task.starting_inventory
+        )
+        all_research = (
+            provisioning.all_technologies_researched
+            if provisioning.all_technologies_researched is not None
+            else fle_task.all_technology_reserached
+        )
+        # Independent benchmark leases must not inherit the previous agent's
+        # location.  Reach-limited actions otherwise become task-order
+        # dependent after any rollout that moves the character.
+        self.instance.reset(
+            reset_position=True,
+            all_technologies_researched=all_research,
+        )
+        fle_task.setup_instance(self.instance)
         self.instance.rcon_client.send_command(
             "/sc game.forces.player.character_inventory_slots_bonus = "
             f"{provisioning.character_inventory_slots_bonus}"
@@ -421,6 +422,10 @@ class FLEWorker(FactorioWorker):
                 "automation_reward": max(automated, 0.0),
                 "automation_reward_basis": "nonnegative_legacy_net_value_delta",
                 "interventions": len(events),
+                "scored_interventions": sum(
+                    not event.evaluation_retry for event in events
+                ),
+                "evaluation_retries": sum(event.evaluation_retry for event in events),
             },
             evidence={
                 "verifier": type(self.task).__name__,
@@ -438,15 +443,14 @@ class FLEWorker(FactorioWorker):
                     VerifierEvent(
                         event_id=f"action:{event.sequence}",
                         kind=(
-                            "invalid_action"
-                            if event.error
-                            else "intervention_executed"
+                            "invalid_action" if event.error else "intervention_executed"
                         ),
                         tick=event.ticks,
                         source="environment",
                         payload={
                             "sequence": event.sequence,
                             "code_sha256": event.code_sha256,
+                            "evaluation_retry": event.evaluation_retry,
                         },
                         reward_channels=(
                             {"invalid_action": -1.0} if event.error else {}

@@ -59,6 +59,7 @@ def frame(**updates) -> TelemetryFrame:
         "entity_counts": {},
         "entity_status_counts": {},
         "entity_status_by_name": {},
+        "entity_details": [],
         "rocket_launches": 0,
         "target_recipes": {},
     }
@@ -94,6 +95,118 @@ def test_research_and_entity_objectives_are_engine_state_predicates():
     entity_result = evaluate_objective(entity, initial, final)
     assert entity_result.satisfied
     assert entity_result.evidence["status_counts"] == {"working": 2}
+
+
+def test_entity_configuration_objectives_read_engine_entity_details():
+    initial = frame()
+    final = frame(
+        entity_details=[
+            {
+                "name": "assembling-machine-1",
+                "status": "working",
+                "position": {"x": 4.0, "y": -2.0},
+                "recipe": {"name": "iron-gear-wheel"},
+                "assembling_machine_input": {"iron-plate": 6},
+            }
+        ],
+        entity_status_by_name={"assembling-machine-1": {"working": 1}},
+    )
+    objectives = [
+        ObjectiveSpec(
+            objective_id="status",
+            kind="entity_status",
+            description="Assembler works.",
+            target="assembling-machine-1",
+            comparator="gte",
+            threshold=1,
+            parameters={"statuses": ["working"]},
+        ),
+        ObjectiveSpec(
+            objective_id="recipe",
+            kind="entity_recipe",
+            description="Assembler has a recipe.",
+            target="assembling-machine-1",
+            comparator="gte",
+            threshold=1,
+            parameters={"recipe": "iron-gear-wheel"},
+        ),
+        ObjectiveSpec(
+            objective_id="inventory",
+            kind="entity_inventory",
+            description="Assembler has plates.",
+            target="assembling-machine-1",
+            comparator="gte",
+            threshold=5,
+            parameters={"item": "iron-plate"},
+        ),
+        ObjectiveSpec(
+            objective_id="position",
+            kind="entity_position",
+            description="Assembler is at the target coordinate.",
+            target="assembling-machine-1",
+            comparator="gte",
+            threshold=1,
+            parameters={"x": 4, "y": -2, "tolerance": 0.1},
+        ),
+    ]
+
+    assert all(
+        evaluate_objective(objective, initial, final).satisfied
+        for objective in objectives
+    )
+
+
+def test_required_action_constraint_uses_audited_tool_events():
+    task = FactorioTaskSpec(task_id="tools", goal="Use a helper.")
+    constraint = ConstraintSpec(
+        constraint_id="required",
+        kind="required_action",
+        description="Use connect_entities.",
+        limit="connect_entities",
+    )
+    event = ActionEvent(
+        sequence=1,
+        code_sha256="a" * 64,
+        started_at=datetime.now(timezone.utc),
+        duration_seconds=0.1,
+        executed_tools=["get_entities", "connect_entities"],
+    )
+
+    result = evaluate_constraint(task, constraint, frame(), frame(), [event])
+
+    assert result.supported
+    assert result.satisfied
+    assert result.evidence["observed_calls"] == {"connect_entities": 1}
+
+
+def test_retry_event_is_exempt_from_intervention_constraint_but_still_audited():
+    task = FactorioTaskSpec(task_id="retry", goal="Recover from an error.")
+    constraint = ConstraintSpec(
+        constraint_id="budget",
+        kind="max_interventions",
+        description="Use one scored intervention.",
+        limit=1,
+    )
+    retry = ActionEvent(
+        sequence=1,
+        code_sha256="a" * 64,
+        started_at=datetime.now(timezone.utc),
+        duration_seconds=0.1,
+        error=True,
+        evaluation_retry=True,
+    )
+    success = retry.model_copy(
+        update={"sequence": 2, "error": False, "evaluation_retry": False}
+    )
+
+    result = evaluate_constraint(task, constraint, frame(), frame(), [retry, success])
+
+    assert result.satisfied
+    assert result.value == 1
+    assert result.evidence == {
+        "total_interventions": 2,
+        "evaluation_retries": 1,
+    }
 
 
 def test_pollution_constraint_uses_engine_emissions():
@@ -156,9 +269,7 @@ def test_resource_and_forbidden_action_constraints_are_auditable():
         frame(produced={"iron-ore": 14}),
         [event],
     )
-    action_result = evaluate_constraint(
-        task, forbidden, frame(), frame(), [event]
-    )
+    action_result = evaluate_constraint(task, forbidden, frame(), frame(), [event])
 
     assert resource_result.supported is True
     assert resource_result.satisfied is False

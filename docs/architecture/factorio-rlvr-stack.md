@@ -11,12 +11,16 @@ Verifiers commit it expects as a submodule.
 
 Keep the three systems separated:
 
-1. FLE owns Factorio state, actions, measurements, checkpoints, verification,
-   and the environment fleet.
+1. FLE owns Factorio state, actions, measurements, native saves, and
+   verification.
 2. A `factorio_v1` adapter maps those capabilities onto Verifiers v1 tasks,
    state, MCP tools, traces, rewards, and metrics.
 3. Prime-RL owns sampling, inference, tokenization, optimization, weight
    synchronization, and ordinary GRPO credit assignment.
+4. AgentENV is the preferred Ubuntu training runtime. It owns isolated
+   Factorio processes, elastic capacity, pause/resume, live memory snapshots,
+   and sandbox forks. The fixed Docker/RCON pool remains the Windows and
+   portable-development backend.
 
 The tested compatibility pins are recorded in
 `integrations/prime/compatibility.toml`. Training uses Python 3.12 in a separate
@@ -47,8 +51,14 @@ implemented cleanly in the Factorio adapter and is not accepted upstream.
 Prime-RL orchestrator
     -> Verifiers v1 EnvClient
     -> factorio_v1 taskset + task + MCP toolset
-    -> factorio-envd lease API
-    -> warm Factorio server pool
+    -> public factorio-envd lease API
+    -> AgentENV runtime gateway (Ubuntu training)
+    -> Firecracker sandbox per lease
+    -> inner factorio-envd + RCON/Lua/FLE + Factorio
+
+Windows/local alternative:
+    public factorio-envd
+    -> fixed Docker Factorio server pool
     -> RCON/Lua/FLE
 
 Factorio verifier snapshot
@@ -194,6 +204,27 @@ The packet is written to `trace.info["factorio_privileged_teacher"]`; it is not
 returned by the student observation tool. This makes it usable for OPD/OPSD
 dataset construction without leaking privileged state into ordinary rollouts.
 
+## Generated-program security boundary
+
+`factorio-envd` applies the versioned `fle-program-v1` static guard before a
+submitted program reaches FLE. The guard rejects host/file/network imports,
+reflection, private attributes, direct `FactorioInstance`/RCON access, and
+pathological program sizes while retaining ordinary control flow and a small
+safe standard-library allowlist. The capability manifest advertises this as
+`program_policy_guard=true`.
+
+A static-policy rejection is recorded as a state-preserving `invalid_action`
+event rather than escaping as an untracked HTTP error. It carries the rejected
+code hash and policy evidence, participates in the configured tool-error retry
+budget, and remains visible to reward analysis and published trajectories.
+
+This guard is not a Python security sandbox. AgentENV production workers run
+Factorio and the inner evaluator inside one disposable Firecracker microVM with
+private RCON networking. The public AgentENV gateway therefore advertises
+`process_isolation=true`; the local Docker/RCON backend continues to advertise
+`false`. Isolation protects the host and sibling rollouts. It does not grant
+generated programs arbitrary shell access inside the verifier VM.
+
 ## Required FLE extensions
 
 The FLE fork must add a trainer-independent `factorio-envd` service with:
@@ -211,6 +242,23 @@ The FLE fork must add a trainer-independent `factorio-envd` service with:
 The service, rather than Verifiers rollout state, is the authority for live
 game state. Lease TTLs are mandatory because Verifiers cannot guarantee that a
 task hook runs after every process or machine failure.
+
+Protocol 0.3 adds a runtime split. The local service leases from a fixed worker
+pool. The AgentENV service creates one sandbox per lease and proxies the same
+contract to an inner envd. It additionally exposes:
+
+- `POST /v1/leases/{id}/fork` for full live-state branches;
+- `POST /v1/leases/{id}/pause` and `/resume`;
+- `POST /v1/leases/{id}/checkpoints` for durable AgentENV snapshots.
+
+Forked sandboxes inherit the inner envd lease and intervention history while
+receiving distinct public lease IDs. This keeps Verifiers and Prime-RL
+independent of AgentENV routing and Firecracker identifiers.
+
+Native Factorio saves remain the canonical, portable task representation.
+Firecracker snapshots are runtime accelerators: they are suitable for group
+sampling, counterfactual evaluation, and long-idle episodes, but must not be the
+only artifact needed to reproduce a benchmark.
 
 The first adapter should use Verifiers' built-in default harness with MCP and a
 restricted runtime. We should add a custom Factorio harness only if the default
@@ -249,7 +297,7 @@ implemented in this fork:
 3. **Partial:** expose auditable program execution and structured observation.
    Dedicated lookup and measurement probes remain to be separated from the
    existing FLE program namespace.
-4. **Complete:** produce a protocol-0.2 verifier snapshot
+4. **Complete:** produce a protocol-0.3.0 verifier snapshot
    with typed objectives, constraints, events, named reward channels, action
    hashes, terminal state hashes, lifecycle causes, pollution/resource
    accounting, actual tool-call audits, and terminal classification.
@@ -257,9 +305,14 @@ implemented in this fork:
    Verifiers v1 on Ubuntu/Python 3.12. A real model evaluation is next.
 6. **Complete:** implement the first persistent progression task and privileged
    diagnostic packet.
-7. **Pending:** run base-model evaluation across at least one short repair task
+7. **Complete:** inject a compact, public action/lookup reference into every
+   model-facing task prompt and guard submitted programs from host authority.
+8. **Complete at contract level:** implement the AgentENV runtime gateway,
+   isolated guest image, live fork/pause/resume/checkpoint endpoints, and a
+   backend-neutral smoke test. Live Ubuntu/KVM density calibration remains.
+9. **Pending:** run base-model evaluation across at least one short repair task
    and one persistent progression chunk.
-8. **Pending:** connect the appropriate Prime-RL path per task family; reserve
+10. **Pending:** connect the appropriate Prime-RL path per task family; reserve
    GRPO for shared-checkpoint local decisions.
 
 Only after this slice is reliable should the environment become a distributed

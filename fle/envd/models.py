@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
-PROTOCOL_VERSION = "0.2.1"
+PROTOCOL_VERSION = "0.3.0"
 
 
 class WireModel(BaseModel):
@@ -29,6 +29,10 @@ ObjectiveKind = Literal[
     "research",
     "inventory",
     "entity_exists",
+    "entity_status",
+    "entity_recipe",
+    "entity_inventory",
+    "entity_position",
     "rocket_launch",
     "survival",
     "custom",
@@ -83,6 +87,7 @@ class ConstraintSpec(WireModel):
         "max_resource_cost",
         "max_pollution",
         "forbidden_action",
+        "required_action",
         "required_action_profile",
         "custom",
     ]
@@ -106,9 +111,7 @@ class VerifierSpec(WireModel):
     implementation: Literal["legacy_fle_task", "objective_engine_v1"] = (
         "legacy_fle_task"
     )
-    mode: Literal["all_required", "any_required", "weighted_threshold"] = (
-        "all_required"
-    )
+    mode: Literal["all_required", "any_required", "weighted_threshold"] = "all_required"
     scalarization: Literal[
         "backend_override", "binary", "weighted_sum", "lexicographic"
     ] = "backend_override"
@@ -195,6 +198,25 @@ class Lease(WireModel):
     initial_state_hash: str
     created_at: datetime
     expires_at: datetime
+    tool_error_retry_budget: int = Field(default=0, ge=0)
+    tool_error_retries_used: int = Field(default=0, ge=0)
+
+
+class LeaseForkResult(WireModel):
+    """Independent live branches created from one active lease."""
+
+    source_lease_id: str
+    branches: list[Lease] = Field(default_factory=list)
+    failures: list[str] = Field(default_factory=list)
+
+
+class RuntimeCheckpoint(WireModel):
+    """Durable runtime checkpoint metadata returned by the infrastructure layer."""
+
+    lease_id: str
+    checkpoint_id: str
+    runtime_backend: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ActionEvent(WireModel):
@@ -204,6 +226,7 @@ class ActionEvent(WireModel):
     duration_seconds: float
     reward_delta: float = 0.0
     error: bool = False
+    evaluation_retry: bool = False
     result: str = ""
     ticks: int = 0
     executed_tools: list[str] = Field(default_factory=list)
@@ -401,9 +424,12 @@ class CapabilityManifest(WireModel):
             "pollution_telemetry": True,
             "resource_accounting": True,
             "action_policy_audit": True,
+            "program_policy_guard": True,
+            "process_isolation": False,
             "terminal_reasons": True,
             "checkpoints": False,
             "clone": False,
+            "pause_resume": False,
         }
     )
 

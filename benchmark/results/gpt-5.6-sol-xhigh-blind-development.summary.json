@@ -1,0 +1,51 @@
+{
+  "run_id": "gpt-5.6-sol-xhigh-blind-development-20260728T010439Z",
+  "model": {
+    "name": "gpt-5.6-sol",
+    "provider": "openai-codex/brokered-subagent",
+    "revision": "Codex desktop 2026-07-27; effort=xhigh",
+    "quantization": null,
+    "endpoint": null
+  },
+  "suite": "api_microtasks_v1",
+  "benchmark_split": "development",
+  "attempt_count": 11,
+  "success_count": 11,
+  "success_rate": 1.0,
+  "invalid_intervention_rate": 0.0,
+  "retry_intervention_rate": 0.0,
+  "retry_assisted_success_rate": 0.0,
+  "mean_interventions": 1.0,
+  "per_task_success_rate": {
+    "micro_automate_iron_gear_v1": 1.0,
+    "micro_automate_steel_plate_v1": 1.0,
+    "micro_configure_assembler_recipe_v1": 1.0,
+    "micro_craft_iron_gear_v1": 1.0,
+    "micro_fuel_furnace_v1": 1.0,
+    "micro_harvest_coal_v1": 1.0,
+    "micro_install_speed_module_v1": 1.0,
+    "micro_load_lab_v1": 1.0,
+    "micro_place_entity_next_to_v1": 1.0,
+    "micro_place_lab_v1": 1.0,
+    "micro_place_pumpjack_v1": 1.0
+  },
+  "per_mechanic_success_rate": {
+    "automatic_production": 1.0,
+    "electricity": 1.0,
+    "entity_footprints": 1.0,
+    "entity_inventory": 1.0,
+    "fuel": 1.0,
+    "inventory": 1.0,
+    "laboratory": 1.0,
+    "manual_crafting": 1.0,
+    "manual_mining": 1.0,
+    "modules": 1.0,
+    "movement": 1.0,
+    "oil_extraction": 1.0,
+    "placement": 1.0,
+    "placement_helper": 1.0,
+    "recipe_configuration": 1.0,
+    "resource_discovery": 1.0,
+    "smelting": 1.0
+  }
+}

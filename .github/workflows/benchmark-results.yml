@@ -1,0 +1,45 @@
+name: Validate benchmark results
+
+on:
+  pull_request:
+    paths:
+      - 'benchmark/**'
+      - 'fle/envd/benchmark.py'
+      - 'fle/envd/benchmark_results.py'
+      - 'fle/envd/microtasks.py'
+      - 'fle/eval/benchmark_agent.py'
+      - 'fle/eval/remote_agent.py'
+      - 'integrations/deepseek/**'
+      - '.github/workflows/benchmark-results.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.12'
+          enable-cache: true
+          cache-dependency-glob: 'uv.lock'
+
+      - name: Install environment
+        run: uv sync --frozen
+
+      - name: Validate submitted run records
+        shell: bash
+        run: |
+          shopt -s nullglob
+          results=(benchmark/results/*.json)
+          validated=0
+          for result in "${results[@]}"; do
+            if [[ "$result" == *.summary.json ]]; then
+              continue
+            fi
+            uv run fle-benchmark-results validate "$result"
+            validated=$((validated + 1))
+          done
+          echo "Validated $validated benchmark run record(s)."

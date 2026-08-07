@@ -241,10 +241,15 @@ Analyze the current state and write a Python program using the FLE API to progre
                     # Generate LLM response (host-side)
                     generation_config = {
                         "max_tokens": 4096,
-                        "transforms": ["middle-out"],
                         "reasoning_effort": "minimal",
                     }
-                    state.output = await get_model().generate(
+                    _model = get_model()
+                    # str(model) is "<provider>/<name>"; _model.name omits the
+                    # provider, so it can never match "openrouter".
+                    if "openrouter" in str(_model):
+                        generation_config["transforms"] = ["middle-out"]
+
+                    state.output = await _model.generate(
                         input=state.messages,
                         config=generation_config,
                     )

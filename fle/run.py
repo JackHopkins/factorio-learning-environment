@@ -64,13 +64,26 @@ def fle_inspect_eval(args):
         _eval_set_path = str(_eval_integration_dir / "eval_set.py")
     _agent_task_path = str(_eval_integration_dir / "agent_task.py")
 
+    # Resolve the `inspect` CLI from the interpreter running `fle`, so the
+    # subprocess works even when the venv's bin dir is not on PATH.
+    _venv_inspect = Path(sys.executable).parent / "inspect"
+    _inspect_bin = (
+        str(_venv_inspect) if _venv_inspect.exists() else shutil.which("inspect")
+    )
+    if not _inspect_bin:
+        print(
+            "Error: could not find the `inspect` CLI. Is inspect-ai installed?",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     view_process = None
 
     try:
         # Start inspect view first if requested (in background)
         if args.view:
             print(f"Starting Inspect view on port {args.view_port}...")
-            view_cmd = ["inspect", "view", "--port", str(args.view_port)]
+            view_cmd = [_inspect_bin, "view", "--port", str(args.view_port)]
             if args.log_dir:
                 view_cmd.extend(["--log-dir", args.log_dir])
             else:
@@ -110,18 +123,18 @@ def fle_inspect_eval(args):
             if len(task_names) == 1:
                 # Single task
                 cmd = [
-                    "inspect",
+                    _inspect_bin,
                     "eval",
                     f"{_eval_set_path}@{task_names[0]}",
                 ]
             else:
                 # Multiple tasks - pass each as a separate argument
                 task_specs = [f"{_eval_set_path}@{t}" for t in task_names]
-                cmd = ["inspect", "eval"] + task_specs
+                cmd = [_inspect_bin, "eval"] + task_specs
         elif args.eval_set_file:
             # Use custom eval-set file
             cmd = [
-                "inspect",
+                _inspect_bin,
                 "eval-set",
                 args.eval_set_file,
             ]
@@ -129,7 +142,7 @@ def fle_inspect_eval(args):
         elif args.eval_set:
             # Use eval-set for multiple tasks
             cmd = [
-                "inspect",
+                _inspect_bin,
                 "eval-set",
                 _eval_set_path,
             ]
@@ -137,7 +150,7 @@ def fle_inspect_eval(args):
             # Use unbounded production task
             task_name = args.env_id if args.env_id else "open_play_production"
             cmd = [
-                "inspect",
+                _inspect_bin,
                 "eval",
                 f"{_eval_set_path}@{task_name}",
             ]
@@ -145,14 +158,14 @@ def fle_inspect_eval(args):
         elif args.env_id:
             # Use specific task from eval set
             cmd = [
-                "inspect",
+                _inspect_bin,
                 "eval",
                 f"{_eval_set_path}@{args.env_id}",
             ]
         else:
             # Use the working controlled solver via agent_task.py
             cmd = [
-                "inspect",
+                _inspect_bin,
                 "eval",
                 f"{_agent_task_path}@factorio_agent_evaluation",
             ]

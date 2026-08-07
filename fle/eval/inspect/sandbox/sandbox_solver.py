@@ -243,13 +243,12 @@ Analyze the current state and write a Python program using the FLE API to progre
                         "max_tokens": 4096,
                         "reasoning_effort": "minimal",
                     }
-                    _model = get_model()
-                    # str(model) is "<provider>/<name>"; _model.name omits the
-                    # provider, so it can never match "openrouter".
-                    if "openrouter" in str(_model):
-                        generation_config["transforms"] = ["middle-out"]
-
-                    state.output = await _model.generate(
+                    _model_name = str(get_model())
+                    if "openrouter" in _model_name:
+                        generation_config["extra_body"] = {
+                            "transforms": ["middle-out"]
+                        }
+                    state.output = await get_model().generate(
                         input=state.messages,
                         config=generation_config,
                     )
@@ -599,11 +598,11 @@ def factorio_sandbox_unbounded_solver():
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    model_name_str = (
-                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
-                    )
+                    model_name_str = str(_model)
                     if model_name_str and "openrouter" in model_name_str:
-                        generation_config["transforms"] = ["middle-out"]
+                        generation_config["extra_body"] = {
+                            "transforms": ["middle-out"]
+                        }
 
                     inference_start = time.time()
                     try:

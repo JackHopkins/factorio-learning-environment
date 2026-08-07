@@ -90,10 +90,20 @@ def fle_codex(args):
                 print(f"Removed {FLE_CREDENTIALS_FILE}")
             else:
                 print("No FLE ChatGPT credentials stored.")
-            if CODEX_CLI_AUTH_FILE.exists():
+            # Credentials borrowed from another tool (official Codex CLI or
+            # codex-proxy) are not ours to delete, but logout must not look
+            # successful while the provider would still authenticate.
+            remaining = load_credentials()
+            if remaining is not None:
+                removal_hint = (
+                    "Run 'codex logout' to remove it."
+                    if remaining.source == "codex-cli"
+                    else f"Delete {remaining.origin} to remove it."
+                )
                 print(
-                    f"Note: {CODEX_CLI_AUTH_FILE} still exists and will continue to "
-                    "be used. Run 'codex logout' to remove it."
+                    f"Warning: still logged in via {remaining.origin} "
+                    f"({remaining.source}); the codex/<model> provider will "
+                    f"continue to use it. {removal_hint}"
                 )
     except CodexAuthError as e:
         print(f"Error: {e}", file=sys.stderr)

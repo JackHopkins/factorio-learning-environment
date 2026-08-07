@@ -82,7 +82,13 @@ def _jwt_expiry(token: str) -> Optional[float]:
 
 
 def extract_account_id(access_token: str) -> str:
-    payload = _decode_jwt_payload(access_token)
+    try:
+        payload = _decode_jwt_payload(access_token)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise CodexAuthError(
+            "Access token is not a decodable JWT, so the ChatGPT account id "
+            "cannot be determined. Run 'fle codex login' to re-authenticate."
+        ) from exc
     account_id = payload.get(JWT_CLAIM_PATH, {}).get("chatgpt_account_id")
     if not account_id:
         raise CodexAuthError("No chatgpt_account_id claim in access token")
@@ -103,8 +109,8 @@ class CodexCredentials:
     def is_expired(self, margin: float = 60.0) -> bool:
         return time.time() >= self.expires_at - margin
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, include_provenance: bool = False) -> dict[str, Any]:
+        payload = {
             "access_token": self.access_token,
             "refresh_token": self.refresh_token,
             "id_token": self.id_token,
@@ -112,6 +118,13 @@ class CodexCredentials:
             "email": self.email,
             "expires_at": self.expires_at,
         }
+        if include_provenance:
+            # Only FLE's own file records provenance; without it a reload
+            # would forget the true origin after the first refresh and stop
+            # writing rotated tokens back (logging the owning tool out).
+            payload["source"] = self.source
+            payload["origin"] = str(self.origin) if self.origin else None
+        return payload
 
 
 def _from_token_response(
@@ -161,7 +174,7 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
 def save_credentials(
     credentials: CodexCredentials, path: Path = FLE_CREDENTIALS_FILE
 ) -> None:
-    _atomic_write_json(path, credentials.to_dict())
+    _atomic_write_json(path, credentials.to_dict(include_provenance=True))
 
 
 def _write_back_to_origin(credentials: CodexCredentials) -> None:
@@ -212,55 +225,76 @@ def _load_json(path: Path) -> Optional[dict[str, Any]]:
 
 
 def load_credentials() -> Optional[CodexCredentials]:
-    """Load credentials from the first available source."""
+    """Load credentials from the first usable source."""
     data = _load_json(FLE_CREDENTIALS_FILE)
     if data and data.get("access_token"):
-        return CodexCredentials(
-            access_token=data["access_token"],
-            refresh_token=data.get("refresh_token"),
-            account_id=data.get("account_id")
-            or extract_account_id(data["access_token"]),
-            id_token=data.get("id_token"),
-            email=data.get("email"),
-            expires_at=float(
-                data.get("expires_at") or _jwt_expiry(data["access_token"]) or 0.0
-            ),
-            source="fle",
-            origin=FLE_CREDENTIALS_FILE,
-        )
+        try:
+            # Restore the provenance recorded by save_credentials() so tokens
+            # borrowed from another tool keep being written back to that
+            # tool's file across refreshes, not just the first one.
+            origin_str = data.get("origin")
+            return CodexCredentials(
+                access_token=data["access_token"],
+                refresh_token=data.get("refresh_token"),
+                account_id=data.get("account_id")
+                or extract_account_id(data["access_token"]),
+                id_token=data.get("id_token"),
+                email=data.get("email"),
+                expires_at=float(
+                    data.get("expires_at") or _jwt_expiry(data["access_token"]) or 0.0
+                ),
+                source=data.get("source") or "fle",
+                origin=Path(origin_str) if origin_str else FLE_CREDENTIALS_FILE,
+            )
+        except CodexAuthError as exc:
+            log.warning(
+                "Ignoring unusable credentials in %s: %s", FLE_CREDENTIALS_FILE, exc
+            )
 
     # Official Codex CLI: {"tokens": {"access_token", "refresh_token", ...}}
     data = _load_json(CODEX_CLI_AUTH_FILE)
     tokens = (data or {}).get("tokens") or {}
     if tokens.get("access_token"):
-        return CodexCredentials(
-            access_token=tokens["access_token"],
-            refresh_token=tokens.get("refresh_token"),
-            account_id=tokens.get("account_id")
-            or extract_account_id(tokens["access_token"]),
-            id_token=tokens.get("id_token"),
-            email=_jwt_claim(tokens.get("id_token"), "email"),
-            expires_at=_jwt_expiry(tokens["access_token"]) or 0.0,
-            source="codex-cli",
-            origin=CODEX_CLI_AUTH_FILE,
-        )
+        try:
+            return CodexCredentials(
+                access_token=tokens["access_token"],
+                refresh_token=tokens.get("refresh_token"),
+                account_id=tokens.get("account_id")
+                or extract_account_id(tokens["access_token"]),
+                id_token=tokens.get("id_token"),
+                email=_jwt_claim(tokens.get("id_token"), "email"),
+                expires_at=_jwt_expiry(tokens["access_token"]) or 0.0,
+                source="codex-cli",
+                origin=CODEX_CLI_AUTH_FILE,
+            )
+        except CodexAuthError as exc:
+            log.warning(
+                "Ignoring unusable credentials in %s: %s", CODEX_CLI_AUTH_FILE, exc
+            )
 
     # codex-proxy: same schema as FLE's own file
     data = _load_json(CODEX_PROXY_CREDENTIALS_FILE)
     if data and data.get("access_token"):
-        return CodexCredentials(
-            access_token=data["access_token"],
-            refresh_token=data.get("refresh_token"),
-            account_id=data.get("account_id")
-            or extract_account_id(data["access_token"]),
-            id_token=data.get("id_token"),
-            email=data.get("email"),
-            expires_at=float(
-                data.get("expires_at") or _jwt_expiry(data["access_token"]) or 0.0
-            ),
-            source="codex-proxy",
-            origin=CODEX_PROXY_CREDENTIALS_FILE,
-        )
+        try:
+            return CodexCredentials(
+                access_token=data["access_token"],
+                refresh_token=data.get("refresh_token"),
+                account_id=data.get("account_id")
+                or extract_account_id(data["access_token"]),
+                id_token=data.get("id_token"),
+                email=data.get("email"),
+                expires_at=float(
+                    data.get("expires_at") or _jwt_expiry(data["access_token"]) or 0.0
+                ),
+                source="codex-proxy",
+                origin=CODEX_PROXY_CREDENTIALS_FILE,
+            )
+        except CodexAuthError as exc:
+            log.warning(
+                "Ignoring unusable credentials in %s: %s",
+                CODEX_PROXY_CREDENTIALS_FILE,
+                exc,
+            )
 
     return None
 

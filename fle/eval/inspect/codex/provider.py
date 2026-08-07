@@ -106,11 +106,17 @@ class _CredentialCache:
             return self._credentials
 
 
+# One cache for the whole process: every _CodexOAuth (one per model instance)
+# must share the same lock, or two model instances could race a refresh with
+# the same soon-to-be-rotated refresh token.
+_CREDENTIAL_CACHE = _CredentialCache()
+
+
 class _CodexOAuth(httpx.Auth):
     """Attaches (and transparently refreshes) ChatGPT OAuth credentials."""
 
     def __init__(self) -> None:
-        self._cache = _CredentialCache()
+        self._cache = _CREDENTIAL_CACHE
 
     async def async_auth_flow(
         self, request: httpx.Request
@@ -178,6 +184,17 @@ class CodexAPI(OpenAIAPI):
             responses_store=False,
             **model_args,
         )
+
+    @override
+    def initialize(self) -> None:
+        # Inspect's auth-failure recovery calls aclose() + initialize(), and
+        # OpenAIAPI.initialize() replaces a closed http_client with a bare
+        # OpenAIAsyncHttpxClient -- which would silently drop the OAuth hook
+        # and leave every subsequent request with the placeholder API key.
+        # Recreate the authenticated client first so the base class keeps it.
+        if self.http_client.is_closed:
+            self.http_client = OpenAIAsyncHttpxClient(auth=_CodexOAuth())
+        super().initialize()
 
     @override
     def connection_key(self) -> str:

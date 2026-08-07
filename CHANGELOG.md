@@ -23,12 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The Inspect solvers no longer send the OpenRouter-only `transforms`
-  parameter to every provider. It was hardcoded in the throughput generation
-  path, which made `GenerateConfig` raise `Unknown GenerateConfig field(s):
-  transforms` for any non-OpenRouter model. The gate now tests the qualified
-  model name (`str(model)`), since `Model.name` omits the provider prefix and
-  could never match.
+- `solver.py` and `sandbox_solver.py` no longer pass the OpenRouter-only
+  `transforms` parameter as a top-level `GenerateConfig` key, which current
+  inspect-ai rejects with `Unknown GenerateConfig field(s): transforms`. It
+  is now sent via `extra_body`, and only for OpenRouter models: the gate
+  tests the qualified model name (`str(model)`), since `Model.name` omits
+  the provider prefix and could never match. (The same fix for the
+  `solver_variants.py` call sites lands separately in the
+  `fix/inspect-eval-openai-compatible` PR.)
 
 ---
 

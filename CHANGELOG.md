@@ -5,6 +5,33 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+**ChatGPT subscription (Codex OAuth) support**
+
+- New `codex/<model>` Inspect model provider: run evals against the ChatGPT
+  Codex backend using a ChatGPT Plus/Pro subscription instead of an
+  `OPENAI_API_KEY` (e.g. `fle inspect-eval --model codex/gpt-5.6-sol`).
+- New `fle codex login|status|logout` command implementing the OAuth PKCE flow.
+  Credentials are stored in `~/.fle/codex_auth.json`; an existing
+  `~/.codex/auth.json` from the official Codex CLI is reused automatically.
+- Access tokens are refreshed transparently. Because OpenAI rotates refresh
+  tokens on use, rotated tokens are written back to the file they were loaded
+  from, so borrowing the Codex CLI's credentials no longer logs it out.
+
+### Fixed
+
+- The Inspect solvers no longer send the OpenRouter-only `transforms`
+  parameter to every provider. It was hardcoded in the throughput generation
+  path, which made `GenerateConfig` raise `Unknown GenerateConfig field(s):
+  transforms` for any non-OpenRouter model. The gate now tests the qualified
+  model name (`str(model)`), since `Model.name` omits the provider prefix and
+  could never match.
+
+---
+
 ## [0.4.2] - 2026-03-27
 
 ### Added

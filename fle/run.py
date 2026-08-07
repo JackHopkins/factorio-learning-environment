@@ -53,6 +53,53 @@ def fle_eval(args):
         sys.exit(1)
 
 
+def fle_codex(args):
+    """Manage the ChatGPT credentials used by `--model codex/<model>`."""
+    import asyncio
+    from datetime import datetime, timezone
+
+    from fle.eval.inspect.codex.auth import (
+        CODEX_CLI_AUTH_FILE,
+        FLE_CREDENTIALS_FILE,
+        CodexAuthError,
+        load_credentials,
+        login,
+    )
+
+    command = getattr(args, "codex_command", None) or "status"
+    try:
+        if command == "login":
+            asyncio.run(login())
+        elif command == "status":
+            credentials = load_credentials()
+            if credentials is None:
+                print(
+                    "Not logged in to ChatGPT. Run 'fle codex login' "
+                    f"(or 'codex login' to reuse {CODEX_CLI_AUTH_FILE})."
+                )
+                sys.exit(1)
+            expires = datetime.fromtimestamp(credentials.expires_at, timezone.utc)
+            state = "expired" if credentials.is_expired() else "valid"
+            print(f"Logged in as {credentials.email or 'unknown account'}")
+            print(f"  source:     {credentials.source} ({credentials.origin})")
+            print(f"  account id: {credentials.account_id}")
+            print(f"  token:      {state}, expires {expires:%Y-%m-%d %H:%M:%S} UTC")
+        elif command == "logout":
+            if FLE_CREDENTIALS_FILE.exists():
+                FLE_CREDENTIALS_FILE.unlink()
+                print(f"Removed {FLE_CREDENTIALS_FILE}")
+            else:
+                print("No FLE ChatGPT credentials stored.")
+            if CODEX_CLI_AUTH_FILE.exists():
+                print(
+                    f"Note: {CODEX_CLI_AUTH_FILE} still exists and will continue to "
+                    "be used. Run 'codex logout' to remove it."
+                )
+    except CodexAuthError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def fle_inspect_eval(args):
     """New command: fle inspect-eval using Inspect framework"""
     _eval_integration_dir = Path(__file__).parent / "eval" / "inspect" / "integration"
@@ -565,6 +612,10 @@ Examples:
   fle inspect-eval --sandbox --env-id iron_ore_throughput --model openai/gpt-4o
   fle sandbox build --force  # Rebuild the sandbox Docker image
 
+  # Use a ChatGPT Plus/Pro subscription instead of an OpenAI API key
+  fle codex login
+  fle inspect-eval --env-id iron_ore_throughput --model codex/gpt-5.6-sol
+
   # Other commands
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
@@ -748,6 +799,18 @@ Examples:
         "--force", action="store_true", help="Force rebuild even if image exists"
     )
 
+    parser_codex = subparsers.add_parser(
+        "codex",
+        help="Manage ChatGPT credentials for the codex/<model> provider",
+    )
+    parser_codex.add_argument(
+        "codex_command",
+        nargs="?",
+        default="status",
+        choices=["login", "status", "logout"],
+        help="Codex auth command (default: status)",
+    )
+
     args = parser.parse_args()
     if args.command:
         fle_init()
@@ -761,6 +824,8 @@ Examples:
         fle_sprites(args)
     elif args.command == "sandbox":
         fle_sandbox(args)
+    elif args.command == "codex":
+        fle_codex(args)
     else:
         parser.print_help()
         sys.exit(1)

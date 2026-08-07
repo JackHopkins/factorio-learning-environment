@@ -112,6 +112,11 @@ inspect = [
 [project.scripts]
 fle = "fle.run:main"
 
+# Registers the `codex/<model>` provider so `inspect eval --model codex/...`
+# authenticates with a ChatGPT subscription instead of an OPENAI_API_KEY.
+[project.entry-points.inspect_ai]
+fle = "fle.eval.inspect.codex.provider"
+
 [tool.hatch.version]
 path = "fle/__init__.py"
 

@@ -56,6 +56,20 @@ fle cluster start
 fle eval --config configs/gym_run_config.json
 ```
 
+#### Using a ChatGPT subscription instead of an API key
+
+Authenticate once with a ChatGPT Plus/Pro account and run evals against the
+Codex backend with no `OPENAI_API_KEY`:
+
+```bash
+fle codex login                    # opens a browser (PKCE OAuth); `fle codex status` to check
+fle inspect-eval --env-id iron_ore_throughput --model codex/gpt-5.6-sol
+```
+
+Credentials are stored in `~/.fle/codex_auth.json`, and an existing
+`codex login` from the official Codex CLI is picked up automatically. Model
+availability depends on your subscription, not on FLE.
+
 ## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, is_dataclass
 from enum import Enum
-from typing import Any, Iterable
+from typing import Any
 
 from fle.commons.models.achievements import ProductionFlows
 from fle.env.utils.achievements import calculate_achievements
@@ -15,11 +16,15 @@ from fle.envd.models import (
     CharacterDeath,
     ConstraintEvaluation,
     FactorioTaskSpec,
+    FutureProbeResult,
+    LifecycleStatus,
     ObjectiveEvaluation,
     ObjectiveSpec,
     PrivilegedDiagnosticPacket,
-    LifecycleStatus,
     RewardVector,
+    StateDimensionDelta,
+    StateQualityComparison,
+    StateQualitySnapshot,
     VerifierEvent,
 )
 
@@ -733,6 +738,366 @@ def _bottlenecks(frame: TelemetryFrame) -> list[BottleneckSignal]:
     return sorted(signals, key=lambda signal: signal.severity, reverse=True)
 
 
+_MILESTONE_OBJECTIVE_KINDS = {
+    "research",
+    "entity_exists",
+    "entity_recipe",
+    "rocket_launch",
+}
+
+
+def _weighted_progress(results: list[ObjectiveEvaluation]) -> float:
+    supported = [result for result in results if result.supported]
+    total_weight = sum(max(result.weight, 0.0) for result in supported)
+    if total_weight <= 0:
+        return 0.0
+    return min(
+        max(
+            sum(result.normalized_score * max(result.weight, 0.0) for result in supported)
+            / total_weight,
+            0.0,
+        ),
+        1.0,
+    )
+
+
+def build_state_quality_snapshot(
+    task: FactorioTaskSpec,
+    initial: TelemetryFrame,
+    current: TelemetryFrame,
+    *,
+    state_hash: str,
+    action_events: list[ActionEvent] | None = None,
+    throughput_measurements: dict[str, list[float]] | None = None,
+    horizon_ticks: int = 0,
+    future_probes: list[FutureProbeResult] | None = None,
+) -> StateQualitySnapshot:
+    """Build a typed, task-conditioned summary without inventing missing signal."""
+
+    events = action_events or []
+    measurements = throughput_measurements or {}
+    objective_results = [
+        evaluate_objective(
+            objective,
+            initial,
+            current,
+            measurements.get(objective.objective_id),
+        )
+        for objective in task.objectives
+    ]
+    constraint_results = [
+        evaluate_constraint(task, constraint, initial, current, events)
+        for constraint in task.constraints
+    ]
+    milestone_results = [
+        result
+        for result in objective_results
+        if result.kind in _MILESTONE_OBJECTIVE_KINDS and result.supported
+    ]
+    throughput_results = [
+        result
+        for result in objective_results
+        if result.kind == "throughput" and result.supported
+    ]
+
+    automatic = calculate_achievements(initial.flows, current.flows)["dynamic"]
+    manual = _flow_delta(_manual_outputs(initial.flows), _manual_outputs(current.flows))
+    automatic_total = sum(max(float(value), 0.0) for value in automatic.values())
+    manual_total = sum(max(float(value), 0.0) for value in manual.values())
+    automation_quality = (
+        automatic_total / (automatic_total + manual_total)
+        if automatic_total + manual_total > 0
+        else None
+    )
+    bottlenecks = _bottlenecks(current)
+    operational_health = None
+    if current.entity_status_counts:
+        operational_health = max(
+            1.0 - min(sum(signal.severity for signal in bottlenecks), 1.0),
+            0.0,
+        )
+
+    probes = future_probes or []
+    future_option_value = (
+        sum(probe.normalized_score for probe in probes) / len(probes)
+        if probes
+        else None
+    )
+    invariant_violations = [
+        f"constraint:{result.constraint_id}"
+        for result in constraint_results
+        if result.supported and not result.satisfied
+    ]
+    if current.death_count > initial.death_count or not current.character_alive:
+        invariant_violations.append("character_survival")
+
+    produced = (
+        _flow_delta(initial.produced, current.produced)
+        if current.produced
+        else _flow_delta(initial.flows.output, current.flows.output)
+    )
+    consumed = (
+        _flow_delta(initial.consumed, current.consumed)
+        if current.consumed
+        else _flow_delta(initial.flows.input, current.flows.input)
+    )
+    raw_names = {
+        "iron-ore",
+        "copper-ore",
+        "coal",
+        "stone",
+        "crude-oil",
+        "uranium-ore",
+        "wood",
+    }
+    deaths = [
+        CharacterDeath.model_validate(death)
+        for death in current.deaths[len(initial.deaths) :]
+    ]
+    return StateQualitySnapshot(
+        task_id=task.task_id,
+        state_hash=state_hash,
+        tick=current.tick,
+        horizon_ticks=max(horizon_ticks, 0),
+        objective_progress=_weighted_progress(objective_results),
+        milestone_progress=(
+            _weighted_progress(milestone_results) if milestone_results else None
+        ),
+        sustained_capability=(
+            _weighted_progress(throughput_results) if throughput_results else None
+        ),
+        automation_quality=automation_quality,
+        operational_health=operational_health,
+        future_option_value=future_option_value,
+        safety=(
+            1.0
+            if current.character_alive and current.death_count == initial.death_count
+            else 0.0
+        ),
+        production_score=current.production_score,
+        automated_production_score=current.automated_production_score,
+        objective_evaluations=objective_results,
+        constraint_evaluations=constraint_results,
+        automated_production={
+            str(key): float(value) for key, value in automatic.items()
+        },
+        manual_production=manual,
+        bottlenecks=bottlenecks,
+        researched_technologies=sorted(
+            name for name, researched in current.researched.items() if researched
+        ),
+        entity_counts=current.entity_counts,
+        lifecycle=LifecycleStatus(
+            character_alive=current.character_alive,
+            character_health=current.character_health,
+            death_count=max(current.death_count - initial.death_count, 0),
+            deaths=deaths,
+            respawn_count=max(current.respawn_count - initial.respawn_count, 0),
+            last_respawn_tick=current.last_respawn_tick,
+            character_recreated_after_death=bool(deaths and current.character_alive),
+        ),
+        resource_accounting={
+            "raw_extracted": {
+                name: amount for name, amount in produced.items() if name in raw_names
+            },
+            "raw_consumed": {
+                name: amount for name, amount in consumed.items() if name in raw_names
+            },
+            "all_produced": produced,
+            "all_consumed": consumed,
+        },
+        pollution={
+            "total": current.pollution_total,
+            "emitted_delta": max(
+                current.pollution_emitted - initial.pollution_emitted, 0.0
+            ),
+        },
+        future_probes=probes,
+        invariant_violations=sorted(set(invariant_violations)),
+        caveats=[
+            (
+                "This is a task-conditioned partial-order summary, not a universal "
+                "scalar measure of factory quality."
+            ),
+            (
+                "Sustained capability is omitted unless an autonomous holdout was "
+                "measured for a throughput objective."
+            ),
+            "Future option value is omitted unless identical branch probes were run.",
+        ],
+    )
+
+
+def compare_state_quality(
+    previous: StateQualitySnapshot,
+    current: StateQualitySnapshot,
+    *,
+    tolerance: float = 1e-6,
+) -> StateQualityComparison:
+    """Compare states conservatively: mixed trade-offs remain incomparable."""
+
+    if previous.task_id != current.task_id:
+        raise ValueError("State quality snapshots must belong to the same task")
+    dimensions = (
+        "objective_progress",
+        "milestone_progress",
+        "sustained_capability",
+        "automation_quality",
+        "operational_health",
+        "future_option_value",
+        "safety",
+    )
+    deltas: list[StateDimensionDelta] = []
+    improvements: list[str] = []
+    regressions: list[str] = []
+    for dimension in dimensions:
+        before = getattr(previous, dimension)
+        after = getattr(current, dimension)
+        if before is None or after is None:
+            continue
+        delta = float(after) - float(before)
+        if delta > tolerance:
+            classification = "improved"
+            improvements.append(dimension)
+        elif delta < -tolerance:
+            classification = "regressed"
+            regressions.append(dimension)
+        else:
+            classification = "preserved"
+        deltas.append(
+            StateDimensionDelta(
+                dimension=dimension,
+                previous=float(before),
+                current=float(after),
+                delta=delta,
+                classification=classification,
+            )
+        )
+
+    previous_violations = set(previous.invariant_violations)
+    current_violations = set(current.invariant_violations)
+    new_violations = sorted(current_violations - previous_violations)
+    resolved_violations = sorted(previous_violations - current_violations)
+    previous_research = set(previous.researched_technologies)
+    current_research = set(current.researched_technologies)
+    lost_research = sorted(previous_research - current_research)
+    if lost_research:
+        new_violations.extend(f"research_lost:{name}" for name in lost_research)
+
+    previous_probes = {
+        probe.probe_id: probe.normalized_score for probe in previous.future_probes
+    }
+    current_probes = {
+        probe.probe_id: probe.normalized_score for probe in current.future_probes
+    }
+    for probe_id in sorted(previous_probes.keys() & current_probes.keys()):
+        delta = current_probes[probe_id] - previous_probes[probe_id]
+        name = f"future_probe:{probe_id}"
+        if delta > tolerance:
+            improvements.append(name)
+        elif delta < -tolerance:
+            regressions.append(name)
+        deltas.append(
+            StateDimensionDelta(
+                dimension=name,
+                previous=previous_probes[probe_id],
+                current=current_probes[probe_id],
+                delta=delta,
+                classification=(
+                    "improved"
+                    if delta > tolerance
+                    else "regressed"
+                    if delta < -tolerance
+                    else "preserved"
+                ),
+            )
+        )
+
+    improvements.extend(f"invariant_resolved:{name}" for name in resolved_violations)
+    regressions.extend(f"invariant_violated:{name}" for name in new_violations)
+    material_change = bool(improvements or regressions)
+    if new_violations:
+        verdict = "regresses"
+        explanation = "A hard invariant was newly violated."
+    elif improvements and not regressions:
+        verdict = "dominates"
+        explanation = "At least one comparable quality dimension improved and none regressed."
+    elif regressions and not improvements:
+        verdict = "regresses"
+        explanation = "At least one comparable quality dimension regressed and none improved."
+    else:
+        verdict = "incomparable"
+        explanation = (
+            "The states contain material trade-offs."
+            if material_change
+            else "No material change was established on comparable dimensions."
+        )
+
+    previous_top = previous.bottlenecks[0] if previous.bottlenecks else None
+    current_top = current.bottlenecks[0] if current.bottlenecks else None
+    bottleneck_shift = None
+    if (
+        previous_top is not None
+        and current_top is not None
+        and (
+            previous_top.category != current_top.category
+            or not math.isclose(previous_top.severity, current_top.severity)
+        )
+    ):
+        bottleneck_shift = {
+            "from": previous_top.model_dump(mode="json"),
+            "to": current_top.model_dump(mode="json"),
+        }
+    return StateQualityComparison(
+        task_id=current.task_id,
+        previous_state_hash=previous.state_hash,
+        current_state_hash=current.state_hash,
+        verdict=verdict,
+        material_change=material_change,
+        dimension_deltas=deltas,
+        improvements=sorted(set(improvements)),
+        regressions=sorted(set(regressions)),
+        preserved_invariants=sorted(
+            current_research
+            | {
+                name
+                for name in previous_violations
+                if name in current_violations
+            }
+        ),
+        new_invariant_violations=sorted(set(new_violations)),
+        resolved_invariant_violations=resolved_violations,
+        bottleneck_shift=bottleneck_shift,
+        explanation=explanation,
+    )
+
+
+def measure_autonomous_holdout(
+    instance: Any,
+    task: FactorioTaskSpec,
+    seconds: int,
+) -> tuple[TelemetryFrame, dict[str, list[float]], int]:
+    """Advance the untouched factory and measure target output over one window."""
+
+    targets = [objective.target for objective in task.objectives if objective.target]
+    before = capture_telemetry(instance, targets)
+    instance.first_namespace.sleep(seconds)
+    after = capture_telemetry(instance, targets)
+    measurements: dict[str, list[float]] = {}
+    achievements = calculate_achievements(before.flows, after.flows)["dynamic"]
+    for objective in task.objectives:
+        if objective.kind == "throughput" and objective.target:
+            observed = float(achievements.get(str(objective.target), 0.0))
+            declared_window = int(objective.window_seconds or seconds)
+            projected_to_declared_window = (
+                observed * declared_window / seconds if seconds else observed
+            )
+            measurements[objective.objective_id] = [
+                projected_to_declared_window
+            ]
+    return after, measurements, max(after.tick - before.tick, 0)
+
+
 @dataclass
 class NativeVerificationResult:
     success: bool
@@ -969,10 +1334,14 @@ def verify_native(
         knowledge_sources=task.knowledge_sources,
         caveats=[
             "Bottlenecks are status-derived signals, not a complete causal graph.",
-            "Raw-resource cost is derived from engine production-flow counters; "
-            "task specifications must choose extracted or consumed semantics.",
-            "Tool-policy auditing records actual FLE controller calls, but cannot "
-            "classify arbitrary computation inside a submitted Python program.",
+            (
+                "Raw-resource cost is derived from engine production-flow counters; "
+                "task specifications must choose extracted or consumed semantics."
+            ),
+            (
+                "Tool-policy auditing records actual FLE controller calls, but cannot "
+                "classify arbitrary computation inside a submitted Python program."
+            ),
         ],
     )
 

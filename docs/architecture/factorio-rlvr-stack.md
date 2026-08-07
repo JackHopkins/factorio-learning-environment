@@ -260,6 +260,49 @@ Firecracker snapshots are runtime accelerators: they are suitable for group
 sampling, counterfactual evaluation, and long-idle episodes, but must not be the
 only artifact needed to reproduce a benchmark.
 
+## Persistent-state quality and privileged transition data
+
+The native verifier now emits a typed `StateQualitySnapshot` for every
+intervention in objective-engine tasks. It retains both normalized dimensions
+and the underlying engine evidence:
+
+- objective and milestone progress;
+- sustained production capability when an autonomous holdout was measured;
+- automatic-versus-manual production;
+- entity-status-derived operational health and bottlenecks;
+- research, lifecycle, pollution, and resource accounting;
+- hard invariant violations; and
+- optional results from identical future-goal branch probes.
+
+`compare_state_quality(previous, current)` is intentionally a partial order,
+not a universal reward scalar. It returns:
+
+- `dominates` when at least one comparable dimension improves and none regress;
+- `regresses` when quality falls without compensation, or whenever a new hard
+  invariant violation appears; or
+- `incomparable` when the transition contains a real trade-off or no material
+  improvement can be established.
+
+This prevents a larger factory, a higher cumulative production counter, or an
+instantaneous inventory spike from being mislabeled as unequivocal progress.
+Research loss, constraint violations, and character death are explicit hard
+regressions. Identically named counterfactual branch probes become comparable
+future-option evidence, but the schema does not pretend that unexecuted probes
+were measured.
+
+The acting policy never receives these packets. `factorio-envd` accumulates
+`PrivilegedTransitionPacket` records internally and returns them only in the
+final verifier snapshot. The Verifiers v1 adapter places them in
+`trace.info["factorio_privileged_transitions"]` for OPSD/OPD dataset creation,
+process-credit experiments, and offline analysis.
+
+`VerifierSpec.transition_holdout_seconds` optionally advances the untouched
+factory after an intervention and measures target production during that
+window. It defaults to zero because a holdout changes persistent game time and
+can affect resource consumption. The early persistent automation curriculum
+enables a five-second probe; terminal throughput verification remains
+independent and authoritative.
+
 The first adapter should use Verifiers' built-in default harness with MCP and a
 restricted runtime. We should add a custom Factorio harness only if the default
 harness cannot provide the desired short-program action boundary or introduces
@@ -305,14 +348,17 @@ implemented in this fork:
    Verifiers v1 on Ubuntu/Python 3.12. A real model evaluation is next.
 6. **Complete:** implement the first persistent progression task and privileged
    diagnostic packet.
-7. **Complete:** inject a compact, public action/lookup reference into every
+7. **Complete:** emit private per-intervention state-quality snapshots, a
+   conservative dominance comparison, optional autonomous transition holdouts,
+   and an extensible counterfactual probe schema.
+8. **Complete:** inject a compact, public action/lookup reference into every
    model-facing task prompt and guard submitted programs from host authority.
-8. **Complete at contract level:** implement the AgentENV runtime gateway,
+9. **Complete at contract level:** implement the AgentENV runtime gateway,
    isolated guest image, live fork/pause/resume/checkpoint endpoints, and a
    backend-neutral smoke test. Live Ubuntu/KVM density calibration remains.
-9. **Pending:** run base-model evaluation across at least one short repair task
+10. **Pending:** run base-model evaluation across at least one short repair task
    and one persistent progression chunk.
-10. **Pending:** connect the appropriate Prime-RL path per task family; reserve
+11. **Pending:** connect the appropriate Prime-RL path per task family; reserve
    GRPO for shared-checkpoint local decisions.
 
 Only after this slice is reliable should the environment become a distributed

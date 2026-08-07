@@ -83,6 +83,7 @@ def early_automation_progression_task() -> FactorioTaskSpec:
             mode="all_required",
             scalarization="weighted_sum",
             holdout_windows=3,
+            transition_holdout_seconds=5,
         ),
         curriculum=CurriculumSpec(
             stage="early-game",

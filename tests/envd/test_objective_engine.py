@@ -1,5 +1,5 @@
-from types import SimpleNamespace
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 
@@ -12,14 +12,19 @@ from fle.envd.models import (
     ConstraintSpec,
     CurriculumSpec,
     FactorioTaskSpec,
+    FutureProbeResult,
     ObjectiveSpec,
+    StateQualitySnapshot,
     VerifierSpec,
 )
 from fle.envd.objective_engine import (
     TelemetryFrame,
+    build_state_quality_snapshot,
     capture_telemetry,
+    compare_state_quality,
     evaluate_constraint,
     evaluate_objective,
+    measure_autonomous_holdout,
     verify_native,
 )
 
@@ -154,6 +159,123 @@ def test_entity_configuration_objectives_read_engine_entity_details():
         evaluate_objective(objective, initial, final).satisfied
         for objective in objectives
     )
+
+
+def quality(**updates) -> StateQualitySnapshot:
+    values = {
+        "task_id": "quality-task",
+        "state_hash": "state-a",
+        "tick": 0,
+        "objective_progress": 0.2,
+        "milestone_progress": 0.0,
+        "sustained_capability": 0.2,
+        "automation_quality": 0.5,
+        "operational_health": 0.8,
+        "safety": 1.0,
+        "researched_technologies": ["automation"],
+    }
+    values.update(updates)
+    return StateQualitySnapshot(**values)
+
+
+def test_state_quality_dominance_requires_non_regression_on_all_dimensions():
+    previous = quality()
+    current = quality(
+        state_hash="state-b",
+        tick=60,
+        objective_progress=0.7,
+        sustained_capability=0.8,
+        automation_quality=0.6,
+    )
+
+    comparison = compare_state_quality(previous, current)
+
+    assert comparison.verdict == "dominates"
+    assert comparison.improvements == [
+        "automation_quality",
+        "objective_progress",
+        "sustained_capability",
+    ]
+    assert comparison.regressions == []
+
+
+def test_state_quality_marks_real_tradeoffs_incomparable():
+    comparison = compare_state_quality(
+        quality(),
+        quality(
+            state_hash="state-b",
+            objective_progress=0.7,
+            operational_health=0.3,
+        ),
+    )
+
+    assert comparison.verdict == "incomparable"
+    assert "objective_progress" in comparison.improvements
+    assert "operational_health" in comparison.regressions
+
+
+def test_state_quality_new_hard_violation_forces_regression():
+    comparison = compare_state_quality(
+        quality(),
+        quality(
+            state_hash="state-b",
+            objective_progress=0.9,
+            invariant_violations=["character_survival"],
+            safety=0.0,
+        ),
+    )
+
+    assert comparison.verdict == "regresses"
+    assert comparison.new_invariant_violations == ["character_survival"]
+
+
+def test_future_branch_probes_are_comparable_when_probe_ids_match():
+    previous = quality(
+        future_probes=[
+            FutureProbeResult(probe_id="double-output", normalized_score=0.2)
+        ]
+    )
+    current = quality(
+        state_hash="state-b",
+        future_probes=[
+            FutureProbeResult(probe_id="double-output", normalized_score=0.8)
+        ],
+    )
+
+    comparison = compare_state_quality(previous, current)
+
+    assert comparison.verdict == "dominates"
+    assert "future_probe:double-output" in comparison.improvements
+
+
+def test_quality_snapshot_uses_holdout_for_sustained_capability():
+    task = FactorioTaskSpec(
+        task_id="quality-task",
+        goal="Produce gears autonomously.",
+        objectives=[
+            ObjectiveSpec(
+                objective_id="gear-rate",
+                kind="throughput",
+                description="Produce ten gears during the holdout.",
+                target="iron-gear-wheel",
+                comparator="gte",
+                threshold=10,
+                window_seconds=60,
+            )
+        ],
+    )
+    snapshot = build_state_quality_snapshot(
+        task,
+        frame(),
+        frame(tick=3600),
+        state_hash="holdout-state",
+        throughput_measurements={"gear-rate": [10.0]},
+        horizon_ticks=3600,
+    )
+
+    assert snapshot.sustained_capability == 1.0
+    assert snapshot.objective_progress == 1.0
+    assert snapshot.horizon_ticks == 3600
 
 
 def test_required_action_constraint_uses_audited_tool_events():
@@ -364,6 +486,35 @@ class FakeInstance:
 
     def get_elapsed_ticks(self):
         return self.tick
+
+
+def test_short_transition_holdout_projects_to_declared_objective_window():
+    instance = FakeInstance()
+    task = FactorioTaskSpec(
+        task_id="projected-throughput",
+        goal="Measure a stable per-minute rate.",
+        objectives=[
+            ObjectiveSpec(
+                objective_id="iron-throughput",
+                kind="throughput",
+                description="Produce iron automatically.",
+                target="iron-plate",
+                comparator="gte",
+                threshold=120,
+                window_seconds=60,
+            )
+        ],
+    )
+
+    final, measurements, elapsed_ticks = measure_autonomous_holdout(
+        instance,
+        task,
+        seconds=5,
+    )
+
+    assert final.tick == 300
+    assert elapsed_ticks == 300
+    assert measurements == {"iron-throughput": [240.0]}
 
 
 def test_native_verifier_combines_objectives_constraints_and_teacher_packet():

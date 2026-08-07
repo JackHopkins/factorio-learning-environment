@@ -15,11 +15,14 @@ if sys.platform == "win32":
 from fle.envd.models import (  # noqa: E402
     ActionEvent,
     ExecutionResult,
+    FactorioTaskSpec,
     Lease,
     ObjectiveSpec,
-    FactorioTaskSpec,
     PrivilegedDiagnosticPacket,
+    PrivilegedTransitionPacket,
     RewardVector,
+    StateQualityComparison,
+    StateQualitySnapshot,
     VerificationSnapshot,
 )
 from fle.integrations.prime_v1 import taskset as prime_taskset  # noqa: E402
@@ -82,6 +85,30 @@ class FakeClient:
                 tick=60,
                 elapsed_ticks=60,
             ),
+            privileged_transitions=[
+                PrivilegedTransitionPacket(
+                    task_id="iron_plate_throughput",
+                    sequence=1,
+                    previous=StateQualitySnapshot(
+                        task_id="iron_plate_throughput",
+                        state_hash="initial-hash",
+                        tick=0,
+                    ),
+                    current=StateQualitySnapshot(
+                        task_id="iron_plate_throughput",
+                        state_hash="terminal-hash",
+                        tick=60,
+                        objective_progress=1.0,
+                    ),
+                    comparison=StateQualityComparison(
+                        task_id="iron_plate_throughput",
+                        previous_state_hash="initial-hash",
+                        current_state_hash="terminal-hash",
+                        verdict="dominates",
+                        material_change=True,
+                    ),
+                )
+            ],
         )
 
     async def release(self, lease_id: str):
@@ -230,6 +257,9 @@ async def test_task_lifecycle_persists_verification_and_releases(monkeypatch):
     assert trace.info["factorio_privileged_teacher"]["task_id"] == (
         "iron_plate_throughput"
     )
+    assert trace.info["factorio_privileged_transitions"][0]["comparison"][
+        "verdict"
+    ] == "dominates"
     assert await task.factorio_reward(trace) == 1.25
     metrics = await task.factorio_metrics(trace)
     assert metrics["factorio_success"] == 1.0

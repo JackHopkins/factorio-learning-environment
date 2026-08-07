@@ -13,8 +13,8 @@ from typing import Any, Literal
 import verifiers.v1 as vf
 from pydantic import Field
 
-from fle.envd.client import HTTPEnvironmentClient
 from fle.envd.benchmark import benchmark_catalog
+from fle.envd.client import HTTPEnvironmentClient
 from fle.envd.curriculum import get_builtin_task
 from fle.envd.models import FactorioTaskSpec, VerificationSnapshot
 from fle.envd.task_builder import build_task_spec, render_task_prompt
@@ -135,6 +135,11 @@ class FactorioTask(vf.Task[FactorioTaskData, FactorioState, FactorioTaskConfig])
                     trace.info["factorio_privileged_teacher"] = (
                         snapshot.privileged_diagnostics.model_dump(mode="json")
                     )
+                if snapshot.privileged_transitions:
+                    trace.info["factorio_privileged_transitions"] = [
+                        packet.model_dump(mode="json")
+                        for packet in snapshot.privileged_transitions
+                    ]
                 trace.state.last_state_hash = snapshot.terminal_state_hash
                 trace.state.terminal_reason = snapshot.termination_reason
                 trace.state.finalized = True

@@ -14,16 +14,20 @@ from fle.envd.models import (
     ExecutionResult,
     FactorioTaskSpec,
     Observation,
+    PrivilegedTransitionPacket,
     RewardVector,
-    VerifierEvent,
+    StateQualitySnapshot,
     VerificationSnapshot,
+    VerifierEvent,
     canonical_hash,
 )
 from fle.envd.objective_engine import (
     TelemetryFrame,
     _objective_telemetry,
-    _sequence,
+    build_state_quality_snapshot,
     capture_telemetry,
+    compare_state_quality,
+    measure_autonomous_holdout,
     verify_native,
 )
 from fle.eval.tasks import TaskFactory
@@ -89,6 +93,9 @@ class FLEWorker(FactorioWorker):
         self.task = None
         self.task_spec: FactorioTaskSpec | None = None
         self.initial_telemetry: TelemetryFrame | None = None
+        self.current_quality: StateQualitySnapshot | None = None
+        self.privileged_transitions: list[PrivilegedTransitionPacket] = []
+        self._action_events: list[ActionEvent] = []
         self._executed_tools_current: list[str] = []
         self._capture_tool_calls = False
         for tool_name in getattr(self.instance, "controllers", {}):
@@ -189,7 +196,16 @@ class FLEWorker(FactorioWorker):
             objective.target for objective in task.objectives if objective.target
         ]
         self.initial_telemetry = capture_telemetry(self.instance, targets)
-        return _instance_state_hash(self.instance)
+        initial_state_hash = _instance_state_hash(self.instance)
+        self.current_quality = build_state_quality_snapshot(
+            task,
+            self.initial_telemetry,
+            self.initial_telemetry,
+            state_hash=initial_state_hash,
+        )
+        self.privileged_transitions = []
+        self._action_events = []
+        return initial_state_hash
 
     def _scores(self) -> tuple[float, float]:
         production, automated = self.instance.first_namespace.score()
@@ -207,7 +223,6 @@ class FLEWorker(FactorioWorker):
             self._capture_tool_calls = False
             # Model generation and network latency must not advance simulation time.
             self.instance.pause()
-        after, automated = self._scores()
         result_text = str(result)
         error = "error" in result_text.lower() or "exception:" in result_text.lower()
         forbidden_actions = {
@@ -227,8 +242,42 @@ class FLEWorker(FactorioWorker):
         policy_violations = [
             tool for tool in executed_tools if tool in forbidden_actions
         ]
-        lifecycle = _objective_telemetry(self.instance.first_namespace)
-        character_died = int(lifecycle.get("death_count", 0) or 0) > 0
+        targets = [
+            objective.target
+            for objective in (self.task_spec.objectives if self.task_spec else [])
+            if objective.target
+        ]
+        throughput_measurements: dict[str, list[float]] = {}
+        holdout_ticks = 0
+        transition_holdout = (
+            self.task_spec.verifier.transition_holdout_seconds
+            if self.task_spec
+            and self.task_spec.verifier.implementation == "objective_engine_v1"
+            and self.task_spec.verifier.emit_transition_comparisons
+            else 0
+        )
+        if transition_holdout and self.task_spec is not None:
+            self.instance.set_speed_and_unpause(10)
+            try:
+                current_frame, throughput_measurements, holdout_ticks = (
+                    measure_autonomous_holdout(
+                        self.instance,
+                        self.task_spec,
+                        transition_holdout,
+                    )
+                )
+            finally:
+                self.instance.pause()
+        else:
+            current_frame = capture_telemetry(self.instance, targets)
+
+        after = current_frame.production_score
+        automated = current_frame.automated_production_score
+        state_hash = _instance_state_hash(self.instance)
+        character_died = bool(
+            self.initial_telemetry
+            and current_frame.death_count > self.initial_telemetry.death_count
+        )
         terminal_reason = "character_died" if character_died else None
         event = ActionEvent(
             sequence=sequence,
@@ -238,10 +287,41 @@ class FLEWorker(FactorioWorker):
             reward_delta=after - before,
             error=error,
             result=result_text,
-            ticks=self.instance.get_elapsed_ticks(),
+            ticks=current_frame.tick,
             executed_tools=executed_tools,
             policy_violations=policy_violations,
         )
+        self._action_events.append(event)
+        if (
+            self.task_spec is not None
+            and self.initial_telemetry is not None
+            and self.task_spec.verifier.implementation == "objective_engine_v1"
+            and self.task_spec.verifier.emit_transition_comparisons
+        ):
+            current_quality = build_state_quality_snapshot(
+                self.task_spec,
+                self.initial_telemetry,
+                current_frame,
+                state_hash=state_hash,
+                action_events=self._action_events,
+                throughput_measurements=throughput_measurements,
+                horizon_ticks=holdout_ticks,
+            )
+            previous_quality = self.current_quality
+            if previous_quality is not None:
+                self.privileged_transitions.append(
+                    PrivilegedTransitionPacket(
+                        task_id=self.task_spec.task_id,
+                        sequence=sequence,
+                        previous=previous_quality,
+                        current=current_quality,
+                        comparison=compare_state_quality(
+                            previous_quality,
+                            current_quality,
+                        ),
+                    )
+                )
+            self.current_quality = current_quality
         verifier_event = VerifierEvent(
             event_id=f"action:{sequence}",
             kind="invalid_action" if error else "intervention_executed",
@@ -259,7 +339,7 @@ class FLEWorker(FactorioWorker):
         )
         emitted_events = [verifier_event]
         if character_died:
-            deaths = _sequence(lifecycle.get("deaths"))
+            deaths = current_frame.deaths
             latest_death = deaths[-1] if deaths else {}
             emitted_events.append(
                 VerifierEvent(
@@ -279,7 +359,7 @@ class FLEWorker(FactorioWorker):
             event=event,
             production_score=after,
             automated_production_score=automated,
-            state_hash=_instance_state_hash(self.instance),
+            state_hash=state_hash,
             events=emitted_events,
             terminal_reason=terminal_reason,
         )
@@ -364,6 +444,7 @@ class FLEWorker(FactorioWorker):
                 ],
                 termination_reason=native.termination_reason,
                 privileged_diagnostics=native.diagnostics,
+                privileged_transitions=self.privileged_transitions,
             )
 
         self.instance.set_speed_and_unpause(10)
@@ -488,3 +569,6 @@ class FLEWorker(FactorioWorker):
         self.task = None
         self.task_spec = None
         self.initial_telemetry = None
+        self.current_quality = None
+        self.privileged_transitions = []
+        self._action_events = []

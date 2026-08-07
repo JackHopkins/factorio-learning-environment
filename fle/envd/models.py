@@ -117,6 +117,8 @@ class VerifierSpec(WireModel):
     ] = "backend_override"
     success_threshold: float | None = None
     holdout_windows: int = Field(default=1, ge=1)
+    emit_transition_comparisons: bool = True
+    transition_holdout_seconds: int = Field(default=0, ge=0)
 
 
 class CurriculumSpec(WireModel):
@@ -328,6 +330,95 @@ class LifecycleStatus(WireModel):
     termination_reason: str | None = None
 
 
+class FutureProbeResult(WireModel):
+    """Counterfactual continuation result produced by an external branch runner."""
+
+    probe_id: str
+    description: str = ""
+    normalized_score: float = Field(ge=0.0, le=1.0)
+    success: bool = False
+    interventions: int = Field(default=0, ge=0)
+    elapsed_ticks: int = Field(default=0, ge=0)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class StateQualitySnapshot(WireModel):
+    """Task-conditioned quality evidence for one persistent Factorio state.
+
+    Dimension values are normalized to ``[0, 1]``. Optional dimensions are
+    absent when the engine did not collect enough evidence to compare them.
+    Raw evidence is retained so a teacher does not have to infer the meaning
+    of an aggregate score.
+    """
+
+    schema_version: str = "0.1.0"
+    task_id: str
+    state_hash: str
+    tick: int = Field(ge=0)
+    horizon_ticks: int = Field(default=0, ge=0)
+    objective_progress: float = Field(default=0.0, ge=0.0, le=1.0)
+    milestone_progress: float | None = Field(default=None, ge=0.0, le=1.0)
+    sustained_capability: float | None = Field(default=None, ge=0.0, le=1.0)
+    automation_quality: float | None = Field(default=None, ge=0.0, le=1.0)
+    operational_health: float | None = Field(default=None, ge=0.0, le=1.0)
+    future_option_value: float | None = Field(default=None, ge=0.0, le=1.0)
+    safety: float = Field(default=1.0, ge=0.0, le=1.0)
+    production_score: float = 0.0
+    automated_production_score: float = 0.0
+    objective_evaluations: list[ObjectiveEvaluation] = Field(default_factory=list)
+    constraint_evaluations: list[ConstraintEvaluation] = Field(default_factory=list)
+    automated_production: dict[str, float] = Field(default_factory=dict)
+    manual_production: dict[str, float] = Field(default_factory=dict)
+    bottlenecks: list[BottleneckSignal] = Field(default_factory=list)
+    researched_technologies: list[str] = Field(default_factory=list)
+    entity_counts: dict[str, int] = Field(default_factory=dict)
+    lifecycle: LifecycleStatus = Field(default_factory=LifecycleStatus)
+    resource_accounting: dict[str, Any] = Field(default_factory=dict)
+    pollution: dict[str, float] = Field(default_factory=dict)
+    future_probes: list[FutureProbeResult] = Field(default_factory=list)
+    invariant_violations: list[str] = Field(default_factory=list)
+    caveats: list[str] = Field(default_factory=list)
+
+
+class StateDimensionDelta(WireModel):
+    dimension: str
+    previous: float
+    current: float
+    delta: float
+    direction: Literal["maximize", "minimize"] = "maximize"
+    classification: Literal["improved", "preserved", "regressed"]
+
+
+class StateQualityComparison(WireModel):
+    """Conservative partial-order comparison between two persistent states."""
+
+    schema_version: str = "0.1.0"
+    task_id: str
+    previous_state_hash: str
+    current_state_hash: str
+    verdict: Literal["dominates", "incomparable", "regresses"]
+    material_change: bool = False
+    dimension_deltas: list[StateDimensionDelta] = Field(default_factory=list)
+    improvements: list[str] = Field(default_factory=list)
+    regressions: list[str] = Field(default_factory=list)
+    preserved_invariants: list[str] = Field(default_factory=list)
+    new_invariant_violations: list[str] = Field(default_factory=list)
+    resolved_invariant_violations: list[str] = Field(default_factory=list)
+    bottleneck_shift: dict[str, Any] | None = None
+    explanation: str = ""
+
+
+class PrivilegedTransitionPacket(WireModel):
+    """Per-intervention state comparison retained outside student context."""
+
+    schema_version: str = "0.1.0"
+    task_id: str
+    sequence: int = Field(ge=1)
+    previous: StateQualitySnapshot
+    current: StateQualitySnapshot
+    comparison: StateQualityComparison
+
+
 class PrivilegedDiagnosticPacket(WireModel):
     """Engine-derived context stored for teachers and offline analysis only."""
 
@@ -404,6 +495,9 @@ class VerificationSnapshot(WireModel):
     events: list[VerifierEvent] = Field(default_factory=list)
     termination_reason: str = "finalized"
     privileged_diagnostics: PrivilegedDiagnosticPacket | None = None
+    privileged_transitions: list[PrivilegedTransitionPacket] = Field(
+        default_factory=list
+    )
 
 
 class CapabilityManifest(WireModel):
@@ -420,6 +514,11 @@ class CapabilityManifest(WireModel):
             "typed_verifier_events": True,
             "objective_engine_v1": True,
             "privileged_diagnostics": True,
+            "state_quality_snapshots": True,
+            "state_dominance_comparator": True,
+            "privileged_transition_packets": True,
+            "transition_holdouts": True,
+            "future_probe_schema": True,
             "lifecycle_telemetry": True,
             "pollution_telemetry": True,
             "resource_accounting": True,

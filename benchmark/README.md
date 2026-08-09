@@ -94,6 +94,19 @@ benchmark implementation was still an uncommitted worktree on top of
 `repository_worktree_dirty_at_run=true`. They are development calibration
 artifacts, not clean-checkout reproducibility claims.
 
+## DeepSeek V4 Flash strict API baseline
+
+`results/deepseek-v4-flash-full-strict-1x.json` is the first complete hosted
+API baseline collected through the minimal OpenAI-compatible tool harness. It
+uses `deepseek-v4-flash`, one attempt per ready task, temperature 0.1, no tool
+error retries, and the API's default thinking mode. It completed 3 of 21 tasks
+(14.29%) with 32 invalid interventions out of 68 total interventions.
+
+This is a valid but provisional one-sample baseline. A preceding development
+run produced different outcomes on several tasks, so capability comparisons
+should use the planned three-attempt condition. The full technical report is
+in `docs/evaluations/2026-08-09-deepseek-v4-flash.md`.
+
 ## Submission policy
 
 A pull request adding results should contain:

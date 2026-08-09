@@ -1,0 +1,1621 @@
+{
+  "mode": "rollout",
+  "run_at": "2026-08-09T12:56:19.291285+00:00",
+  "model": "deepseek-v4-flash",
+  "model_base_url": "https://api.deepseek.com",
+  "envd_url": "http://127.0.0.1:8172",
+  "task": {
+    "task_id": "micro_configure_assembler_recipe_v1",
+    "backend_task_id": "open_play",
+    "goal": "Place the supplied assembling machine 1 and configure its recipe to iron gear wheels.",
+    "task_family": "construction",
+    "objectives": [
+      {
+        "objective_id": "gear-recipe-set",
+        "kind": "entity_recipe",
+        "description": "An assembling machine 1 has the iron gear wheel recipe.",
+        "target": "assembling-machine-1",
+        "comparator": "gte",
+        "threshold": 1.0,
+        "window_seconds": null,
+        "required": true,
+        "weight": 1.0,
+        "parameters": {
+          "recipe": "iron-gear-wheel"
+        }
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_id": "intervention-budget",
+        "kind": "max_interventions",
+        "description": "Use no more than 3 intervention programs.",
+        "limit": 3.0,
+        "parameters": {}
+      }
+    ],
+    "verifier": {
+      "implementation": "objective_engine_v1",
+      "mode": "all_required",
+      "scalarization": "binary",
+      "success_threshold": null,
+      "holdout_windows": 1,
+      "emit_transition_comparisons": true,
+      "transition_holdout_seconds": 0
+    },
+    "curriculum": {
+      "stage": "api-microtasks",
+      "suggested_strategies": [
+        "sft",
+        "opd",
+        "opsd",
+        "grpo",
+        "evaluation"
+      ],
+      "prerequisite_task_ids": [],
+      "episode_mode": "independent"
+    },
+    "knowledge_sources": [
+      {
+        "source_id": "factorio-wiki-quick-start",
+        "title": "Factorio Wiki: Quick start guide",
+        "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+        "topics": [
+          "resource_extraction",
+          "smelting",
+          "electricity",
+          "automation",
+          "research"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "voidgrazer-high-level-strategy",
+        "title": "High-Level Strategy for New Players",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+        "topics": [
+          "progression_phases",
+          "expandability",
+          "automation",
+          "oil_processing",
+          "logistics"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "earlyguides-walkthrough",
+        "title": "Factorio Walkthrough: Start to Endgame",
+        "url": "https://earlyguides.com/factorio/walkthrough",
+        "topics": [
+          "progression_phases",
+          "oil_processing",
+          "trains",
+          "defense",
+          "endgame"
+        ],
+        "access": "dataset_builder"
+      }
+    ],
+    "provisioning": {
+      "starting_inventory": {
+        "assembling-machine-1": 1
+      },
+      "all_technologies_researched": true,
+      "researched_technologies": [],
+      "character_inventory_slots_bonus": 0
+    },
+    "seed": 0,
+    "scenario": "default_lab_scenario",
+    "factorio_version": "2.0.73",
+    "checkpoint_id": "scenario:default_lab_scenario",
+    "action_profile": "fle-program-v1",
+    "max_interventions": 3,
+    "holdout_seconds": 0,
+    "fingerprint": "5a098eb43423a25119c663a37229524c1316fa9313b99358ef0634b761a143ea"
+  },
+  "stop_reason": "max_turns",
+  "tool_error_retry_budget": 0,
+  "rollout_error": null,
+  "elapsed_seconds": 8.201,
+  "turns": [
+    {
+      "turn": 1,
+      "elapsed_seconds": 2.066,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_sLd6H33UamAC14qEC9Ka9527",
+            "function": {
+              "arguments": "{}",
+              "name": "factorio_observe_factory"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "Let me inspect the factory state first."
+      },
+      "request_context_chars": 3018,
+      "usage": {
+        "completion_tokens": 41,
+        "prompt_tokens": 1072,
+        "total_tokens": 1113,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 8,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 48
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_sLd6H33UamAC14qEC9Ka9527",
+          "name": "factorio_observe_factory",
+          "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"task_id\": \"micro_configure_assembler_recipe_v1\", \"ticks\": 0, \"inventory\": {\"assembling-machine-1\": 1}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\"}",
+          "raw": {
+            "lease_id": "6e98908d-2170-4ba9-a602-af4fda056085",
+            "task_id": "micro_configure_assembler_recipe_v1",
+            "ticks": 0,
+            "inventory": {
+              "assembling-machine-1": 1
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "production": {
+              "output": {},
+              "input": {},
+              "harvested": {},
+              "crafted": {}
+            },
+            "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091"
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "elapsed_seconds": 2.144,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_Oqsjq80YlEQqC3g7KxI88985",
+            "function": {
+              "arguments": "{\"code\": \"from fle import *\\nimport fle\\nents = get_entities(set(), position=None, radius=1000)\\nprint(\\\"entities:\\\", [(e.name, e.position.x, e.position.y) for e in ents])\\nprint(\\\"inv:\\\", inspect_inventory())\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "I have one assembling machine 1 in inventory. I need to place it and set its recipe to iron gear wheels. Let me find a good location. First let me check entities around to find where to place. Let me get entities and check for character position.\n\nLet me use a program to inspect entities and character position."
+      },
+      "request_context_chars": 4098,
+      "usage": {
+        "completion_tokens": 163,
+        "prompt_tokens": 1378,
+        "total_tokens": 1541,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 65,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152
+        },
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 226
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_Oqsjq80YlEQqC3g7KxI88985",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"event\": {\"sequence\": 1, \"code_sha256\": \"959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b\", \"started_at\": \"2026-08-09T12:56:16.067850Z\", \"duration_seconds\": 0.2043656000168994, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "6e98908d-2170-4ba9-a602-af4fda056085",
+            "event": {
+              "sequence": 1,
+              "code_sha256": "959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b",
+              "started_at": "2026-08-09T12:56:16.067850Z",
+              "duration_seconds": 0.2043656000168994,
+              "reward_delta": 0.0,
+              "error": true,
+              "evaluation_retry": false,
+              "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+              "ticks": 0,
+              "executed_tools": [],
+              "policy_violations": [
+                "imports are restricted by fle-program-v1; rejected: fle"
+              ]
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+            "events": [
+              {
+                "event_id": "action:1",
+                "kind": "invalid_action",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 1,
+                  "code_sha256": "959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b",
+                  "policy_violations": [
+                    "imports are restricted by fle-program-v1; rejected: fle"
+                  ]
+                },
+                "evidence": {},
+                "reward_channels": {
+                  "invalid_action": -1.0
+                }
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "elapsed_seconds": 1.869,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_WSCTzawllrYNcVUq9OLh8637",
+            "function": {
+              "arguments": "{\"code\": \"ents = get_entities(set(), position=None, radius=1000)\\nprint(\\\"entities:\\\", [(e.name, e.position.x, e.position.y) for e in ents])\\nprint(\\\"inv:\\\", inspect_inventory())\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "The imports are restricted. The API functions are presumably available without import, or the import statement should not be used. Let me just use the functions directly without importing."
+      },
+      "request_context_chars": 6408,
+      "usage": {
+        "completion_tokens": 124,
+        "prompt_tokens": 2036,
+        "total_tokens": 2160,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 33,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152
+        },
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 884
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_WSCTzawllrYNcVUq9OLh8637",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"event\": {\"sequence\": 2, \"code_sha256\": \"75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c\", \"started_at\": \"2026-08-09T12:56:18.157735Z\", \"duration_seconds\": 0.12627840042114258, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"2: ('entities:', [])\\n3: ('inv:', Inventory(assembling-machine-1=1))\", \"ticks\": 0, \"executed_tools\": [\"get_entities\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\", \"events\": [{\"event_id\": \"action:2\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 2, \"code_sha256\": \"75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c\", \"duration_seconds\": 0.12627840042114258, \"executed_tools\": [\"get_entities\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "6e98908d-2170-4ba9-a602-af4fda056085",
+            "event": {
+              "sequence": 2,
+              "code_sha256": "75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c",
+              "started_at": "2026-08-09T12:56:18.157735Z",
+              "duration_seconds": 0.12627840042114258,
+              "reward_delta": 0.0,
+              "error": false,
+              "evaluation_retry": false,
+              "result": "2: ('entities:', [])\n3: ('inv:', Inventory(assembling-machine-1=1))",
+              "ticks": 0,
+              "executed_tools": [
+                "get_entities",
+                "inspect_inventory"
+              ],
+              "policy_violations": []
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+            "events": [
+              {
+                "event_id": "action:2",
+                "kind": "intervention_executed",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 2,
+                  "code_sha256": "75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c",
+                  "duration_seconds": 0.12627840042114258,
+                  "executed_tools": [
+                    "get_entities",
+                    "inspect_inventory"
+                  ],
+                  "policy_violations": []
+                },
+                "evidence": {},
+                "reward_channels": {}
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are operating a real Factorio simulation. Use the supplied tools to inspect, intervene, measure, and debug. Never invent a tool result. Solve only the stated objective, prefer supplied inventory over unnecessary gathering, and minimize interventions. When the goal is complete or no useful action remains, answer briefly without another tool call. An engine-rejected program may be corrected up to 0 extra time(s); a retry does not roll back any earlier side effects."
+    },
+    {
+      "role": "user",
+      "content": "Goal: Place the supplied assembling machine 1 and configure its recipe to iron gear wheels.\n\nObjectives:\n- An assembling machine 1 has the iron gear wheel recipe.\n\nConstraints:\n- Use no more than 3 intervention programs.\n\nUse factorio_observe_factory to inspect the simulation and factorio_execute_program for one short intervention at a time. The Factorio engine and task verifier determine success. Do not claim completion without measuring the resulting factory.\n\nAction profile reference:\nInside factorio_execute_program, write ordinary short Python using only the\npublic FLE API (no host/file/network access). Useful operations:\n- inspect_inventory(entity=None), get_entities(set(), position=None, radius=1000)\n- nearest(Prototype.X or Resource.X), move_to(Position), harvest_resource(Position, quantity)\n- get_prototype_recipe(Prototype.X), craft_item(Prototype.X, quantity)\n- place_entity(Prototype.X, direction=Direction.UP, position=Position(x, y))\n- place_entity_next_to(Prototype.X, reference_position, direction, spacing=0)\n- can_place_entity(...), get_entity(...), pickup_entity(...), rotate_entity(...)\n- insert_item(Prototype.X, target, quantity), extract_item(Prototype.X, source, quantity)\n- set_entity_recipe(entity, Prototype.X or RecipeName.X)\n- connect_entities(source, target, Prototype.TransportBelt/Pipe/SmallElectricPole)\n- get_resource_patch(Resource.X, position, radius), nearest_buildable(...)\n- set_research(Technology.X), get_research_progress(Technology.X)\n- sleep(seconds) (at most 15 seconds per call), print(...) for measured feedback\n\nNames use enums such as Prototype.IronPlate, Resource.IronOre, Technology.Automation,\nDirection.UP, and Position(x, y). Inspect recipes, inventories, entities, status,\nand production before assuming a plan worked. Re-fetch entities after the world\nchanges because returned entity objects can become stale. Entity values use\nattributes such as entity.name and entity.position, not dictionary indexing.\n\nThe character can normally act only within about 10 tiles. Call move_to(target)\nbefore harvesting or placing at a distant target. Use the supplied starting\ninventory before mining or crafting, and do not build production chains that\nthe stated objective does not require.\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_sLd6H33UamAC14qEC9Ka9527",
+          "function": {
+            "arguments": "{}",
+            "name": "factorio_observe_factory"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "Let me inspect the factory state first."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_sLd6H33UamAC14qEC9Ka9527",
+      "name": "factorio_observe_factory",
+      "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"task_id\": \"micro_configure_assembler_recipe_v1\", \"ticks\": 0, \"inventory\": {\"assembling-machine-1\": 1}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\"}"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_Oqsjq80YlEQqC3g7KxI88985",
+          "function": {
+            "arguments": "{\"code\": \"from fle import *\\nimport fle\\nents = get_entities(set(), position=None, radius=1000)\\nprint(\\\"entities:\\\", [(e.name, e.position.x, e.position.y) for e in ents])\\nprint(\\\"inv:\\\", inspect_inventory())\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "I have one assembling machine 1 in inventory. I need to place it and set its recipe to iron gear wheels. Let me find a good location. First let me check entities around to find where to place. Let me get entities and check for character position.\n\nLet me use a program to inspect entities and character position."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_Oqsjq80YlEQqC3g7KxI88985",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"event\": {\"sequence\": 1, \"code_sha256\": \"959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b\", \"started_at\": \"2026-08-09T12:56:16.067850Z\", \"duration_seconds\": 0.2043656000168994, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_WSCTzawllrYNcVUq9OLh8637",
+          "function": {
+            "arguments": "{\"code\": \"ents = get_entities(set(), position=None, radius=1000)\\nprint(\\\"entities:\\\", [(e.name, e.position.x, e.position.y) for e in ents])\\nprint(\\\"inv:\\\", inspect_inventory())\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "The imports are restricted. The API functions are presumably available without import, or the import statement should not be used. Let me just use the functions directly without importing."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_WSCTzawllrYNcVUq9OLh8637",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"6e98908d-2170-4ba9-a602-af4fda056085\", \"event\": {\"sequence\": 2, \"code_sha256\": \"75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c\", \"started_at\": \"2026-08-09T12:56:18.157735Z\", \"duration_seconds\": 0.12627840042114258, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"2: ('entities:', [])\\n3: ('inv:', Inventory(assembling-machine-1=1))\", \"ticks\": 0, \"executed_tools\": [\"get_entities\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091\", \"events\": [{\"event_id\": \"action:2\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 2, \"code_sha256\": \"75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c\", \"duration_seconds\": 0.12627840042114258, \"executed_tools\": [\"get_entities\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}"
+    }
+  ],
+  "compact_memory": {
+    "latest_observation": {
+      "ticks": 0,
+      "inventory": {
+        "assembling-machine-1": 1
+      },
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "production": {
+        "output": {},
+        "input": {},
+        "harvested": {},
+        "crafted": {}
+      },
+      "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091"
+    },
+    "recent_actions": [
+      {
+        "sequence": 1,
+        "error": true,
+        "evaluation_retry": false,
+        "executed_tools": [],
+        "result_tail": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      },
+      {
+        "sequence": 2,
+        "error": false,
+        "evaluation_retry": false,
+        "executed_tools": [
+          "get_entities",
+          "inspect_inventory"
+        ],
+        "result_tail": "2: ('entities:', [])\n3: ('inv:', Inventory(assembling-machine-1=1))",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      }
+    ]
+  },
+  "verification": {
+    "protocol_version": "0.3.0",
+    "lease_id": "6e98908d-2170-4ba9-a602-af4fda056085",
+    "task_id": "micro_configure_assembler_recipe_v1",
+    "task_fingerprint": "5a098eb43423a25119c663a37229524c1316fa9313b99358ef0634b761a143ea",
+    "verified_at": "2026-08-09T12:56:19.285389Z",
+    "success": false,
+    "scalar_reward": 0.0,
+    "rewards": {
+      "task": 0.0,
+      "throughput": 0.0,
+      "automation": 0.0,
+      "progress": 0.0,
+      "invalid_action": -1.0,
+      "resource_cost": -0.0,
+      "milestone": 0.0,
+      "robustness": 0.0,
+      "time_efficiency": -0.0,
+      "manual_intervention": -0.0
+    },
+    "metrics": {
+      "objective_evaluations": [
+        {
+          "objective_id": "gear-recipe-set",
+          "kind": "entity_recipe",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "required_recipe": "iron-gear-wheel",
+            "observed_recipes": []
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 2.0,
+          "limit": 3.0,
+          "evidence": {
+            "total_interventions": 2,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "automated_production_score_delta": 0.0,
+      "automation_reward": 0.0,
+      "automation_reward_basis": "nonnegative_legacy_net_value_delta",
+      "interventions": 2,
+      "scored_interventions": 2,
+      "evaluation_retries": 0,
+      "elapsed_ticks": 0
+    },
+    "evidence": {
+      "verifier": "objective_engine_v1",
+      "task_family": "construction",
+      "backend_task_id": "open_play",
+      "objective_ids": [
+        "gear-recipe-set"
+      ],
+      "scalarization": "binary"
+    },
+    "terminal_state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+    "action_events": [
+      {
+        "sequence": 1,
+        "code_sha256": "959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b",
+        "started_at": "2026-08-09T12:56:16.067850Z",
+        "duration_seconds": 0.2043656000168994,
+        "reward_delta": 0.0,
+        "error": true,
+        "evaluation_retry": false,
+        "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "ticks": 0,
+        "executed_tools": [],
+        "policy_violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      {
+        "sequence": 2,
+        "code_sha256": "75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c",
+        "started_at": "2026-08-09T12:56:18.157735Z",
+        "duration_seconds": 0.12627840042114258,
+        "reward_delta": 0.0,
+        "error": false,
+        "evaluation_retry": false,
+        "result": "2: ('entities:', [])\n3: ('inv:', Inventory(assembling-machine-1=1))",
+        "ticks": 0,
+        "executed_tools": [
+          "get_entities",
+          "inspect_inventory"
+        ],
+        "policy_violations": []
+      }
+    ],
+    "events": [
+      {
+        "event_id": "action:1",
+        "kind": "invalid_action",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 1,
+          "code_sha256": "959cd123d08e10107e270f5823dbe4a08a08e0c4cf702b9cf90e88bfe18ad74b"
+        },
+        "evidence": {},
+        "reward_channels": {
+          "invalid_action": -1.0
+        }
+      },
+      {
+        "event_id": "action:2",
+        "kind": "intervention_executed",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 2,
+          "code_sha256": "75397f0a49e25ef5fcc6620e7455d2aee361911b3218640277377102dc9d6b2c"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "objective:gear-recipe-set",
+        "kind": "objective_failed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": "gear-recipe-set",
+        "payload": {
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0
+        },
+        "evidence": {
+          "required_recipe": "iron-gear-wheel",
+          "observed_recipes": []
+        },
+        "reward_channels": {
+          "progress": 0.0
+        }
+      },
+      {
+        "event_id": "constraint:intervention-budget",
+        "kind": "constraint_satisfied",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "supported": true,
+          "satisfied": true,
+          "value": 2.0,
+          "limit": 3.0
+        },
+        "evidence": {
+          "total_interventions": 2,
+          "evaluation_retries": 0
+        },
+        "reward_channels": {}
+      },
+      {
+        "event_id": "termination:classified",
+        "kind": "termination_classified",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "reason": "no_progress",
+          "success": false
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "verification:completed",
+        "kind": "verification_completed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "success": false,
+          "scalar_reward": 0.0,
+          "termination_reason": "no_progress"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      }
+    ],
+    "termination_reason": "no_progress",
+    "privileged_diagnostics": {
+      "schema_version": "0.1.0",
+      "task_id": "micro_configure_assembler_recipe_v1",
+      "tick": 0,
+      "elapsed_ticks": 0,
+      "objective_evaluations": [
+        {
+          "objective_id": "gear-recipe-set",
+          "kind": "entity_recipe",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "required_recipe": "iron-gear-wheel",
+            "observed_recipes": []
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 2.0,
+          "limit": 3.0,
+          "evidence": {
+            "total_interventions": 2,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "inventory": {
+        "assembling-machine-1": 1.0
+      },
+      "inventory_delta": {},
+      "production": {},
+      "consumption": {},
+      "automated_production": {},
+      "manual_crafts": {},
+      "research": {
+        "researched_count": 187,
+        "technology_count": 196,
+        "current": null,
+        "progress": 0.0,
+        "relevant": {}
+      },
+      "entity_counts": {},
+      "entity_status_counts": {},
+      "bottlenecks": [],
+      "lifecycle": {
+        "character_alive": true,
+        "character_health": 250.0,
+        "death_count": 0,
+        "deaths": [],
+        "respawn_count": 0,
+        "last_respawn_tick": null,
+        "character_recreated_after_death": false,
+        "termination_reason": "no_progress"
+      },
+      "pollution": {
+        "total": 0.33363210503489,
+        "emitted_delta": 0.0
+      },
+      "resource_accounting": {
+        "raw_extracted": {},
+        "raw_consumed": {},
+        "all_produced": {},
+        "all_consumed": {}
+      },
+      "action_policy": {
+        "executed_tools": [
+          "get_entities",
+          "inspect_inventory"
+        ],
+        "violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      "resource_depletions": [],
+      "target_recipes": {
+        "assembling-machine-1": {
+          "name": "assembling-machine-1",
+          "ingredients": [
+            {
+              "name": "iron-plate",
+              "count": 9,
+              "type": "item"
+            },
+            {
+              "name": "iron-gear-wheel",
+              "count": 5,
+              "type": "item"
+            },
+            {
+              "name": "electronic-circuit",
+              "count": 3,
+              "type": "item"
+            }
+          ],
+          "products": [
+            {
+              "name": "assembling-machine-1",
+              "count": 1,
+              "type": "item",
+              "probability": 1.0
+            }
+          ],
+          "energy": 0,
+          "category": null,
+          "enabled": false
+        }
+      },
+      "knowledge_sources": [
+        {
+          "source_id": "factorio-wiki-quick-start",
+          "title": "Factorio Wiki: Quick start guide",
+          "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+          "topics": [
+            "resource_extraction",
+            "smelting",
+            "electricity",
+            "automation",
+            "research"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "voidgrazer-high-level-strategy",
+          "title": "High-Level Strategy for New Players",
+          "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+          "topics": [
+            "progression_phases",
+            "expandability",
+            "automation",
+            "oil_processing",
+            "logistics"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "earlyguides-walkthrough",
+          "title": "Factorio Walkthrough: Start to Endgame",
+          "url": "https://earlyguides.com/factorio/walkthrough",
+          "topics": [
+            "progression_phases",
+            "oil_processing",
+            "trains",
+            "defense",
+            "endgame"
+          ],
+          "access": "dataset_builder"
+        }
+      ],
+      "caveats": [
+        "Bottlenecks are status-derived signals, not a complete causal graph.",
+        "Raw-resource cost is derived from engine production-flow counters; task specifications must choose extracted or consumed semantics.",
+        "Tool-policy auditing records actual FLE controller calls, but cannot classify arbitrary computation inside a submitted Python program."
+      ]
+    },
+    "privileged_transitions": [
+      {
+        "schema_version": "0.1.0",
+        "task_id": "micro_configure_assembler_recipe_v1",
+        "sequence": 2,
+        "previous": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_configure_assembler_recipe_v1",
+          "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": 0.0,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "gear-recipe-set",
+              "kind": "entity_recipe",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "required_recipe": "iron-gear-wheel",
+                "observed_recipes": []
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 0.0,
+              "limit": 3.0,
+              "evidence": {
+                "total_interventions": 0,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "current": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_configure_assembler_recipe_v1",
+          "state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": 0.0,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "gear-recipe-set",
+              "kind": "entity_recipe",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "required_recipe": "iron-gear-wheel",
+                "observed_recipes": []
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 1.0,
+              "limit": 3.0,
+              "evidence": {
+                "total_interventions": 1,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "comparison": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_configure_assembler_recipe_v1",
+          "previous_state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+          "current_state_hash": "341c72a7cdeba8a070f454d6efc578215dde32d835c76bbb420d3864896c0091",
+          "verdict": "incomparable",
+          "material_change": false,
+          "dimension_deltas": [
+            {
+              "dimension": "objective_progress",
+              "previous": 0.0,
+              "current": 0.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            },
+            {
+              "dimension": "milestone_progress",
+              "previous": 0.0,
+              "current": 0.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            },
+            {
+              "dimension": "safety",
+              "previous": 1.0,
+              "current": 1.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            }
+          ],
+          "improvements": [],
+          "regressions": [],
+          "preserved_invariants": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "new_invariant_violations": [],
+          "resolved_invariant_violations": [],
+          "bottleneck_shift": null,
+          "explanation": "No material change was established on comparable dimensions."
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,689 @@
+{
+  "mode": "rollout",
+  "run_at": "2026-08-09T12:57:06.359647+00:00",
+  "model": "deepseek-v4-flash",
+  "model_base_url": "https://api.deepseek.com",
+  "envd_url": "http://127.0.0.1:8172",
+  "task": {
+    "task_id": "micro_place_lab_v1",
+    "backend_task_id": "open_play",
+    "goal": "Place the supplied laboratory on valid ground.",
+    "task_family": "construction",
+    "objectives": [
+      {
+        "objective_id": "lab-exists",
+        "kind": "entity_exists",
+        "description": "At least one laboratory exists in the world.",
+        "target": "lab",
+        "comparator": "gte",
+        "threshold": 1.0,
+        "window_seconds": null,
+        "required": true,
+        "weight": 1.0,
+        "parameters": {}
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_id": "intervention-budget",
+        "kind": "max_interventions",
+        "description": "Use no more than 2 intervention programs.",
+        "limit": 2.0,
+        "parameters": {}
+      }
+    ],
+    "verifier": {
+      "implementation": "objective_engine_v1",
+      "mode": "all_required",
+      "scalarization": "binary",
+      "success_threshold": null,
+      "holdout_windows": 1,
+      "emit_transition_comparisons": true,
+      "transition_holdout_seconds": 0
+    },
+    "curriculum": {
+      "stage": "api-microtasks",
+      "suggested_strategies": [
+        "sft",
+        "opd",
+        "opsd",
+        "grpo",
+        "evaluation"
+      ],
+      "prerequisite_task_ids": [],
+      "episode_mode": "independent"
+    },
+    "knowledge_sources": [
+      {
+        "source_id": "factorio-wiki-quick-start",
+        "title": "Factorio Wiki: Quick start guide",
+        "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+        "topics": [
+          "resource_extraction",
+          "smelting",
+          "electricity",
+          "automation",
+          "research"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "voidgrazer-high-level-strategy",
+        "title": "High-Level Strategy for New Players",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+        "topics": [
+          "progression_phases",
+          "expandability",
+          "automation",
+          "oil_processing",
+          "logistics"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "earlyguides-walkthrough",
+        "title": "Factorio Walkthrough: Start to Endgame",
+        "url": "https://earlyguides.com/factorio/walkthrough",
+        "topics": [
+          "progression_phases",
+          "oil_processing",
+          "trains",
+          "defense",
+          "endgame"
+        ],
+        "access": "dataset_builder"
+      }
+    ],
+    "provisioning": {
+      "starting_inventory": {
+        "lab": 1
+      },
+      "all_technologies_researched": true,
+      "researched_technologies": [],
+      "character_inventory_slots_bonus": 0
+    },
+    "seed": 0,
+    "scenario": "default_lab_scenario",
+    "factorio_version": "2.0.73",
+    "checkpoint_id": "scenario:default_lab_scenario",
+    "action_profile": "fle-program-v1",
+    "max_interventions": 2,
+    "holdout_seconds": 0,
+    "fingerprint": "8cf55e901f86102cfb5f3cac385e167eb099ce249a0f01e128f1a93f24a8b058"
+  },
+  "stop_reason": "max_turns",
+  "tool_error_retry_budget": 0,
+  "rollout_error": null,
+  "elapsed_seconds": 4.426,
+  "turns": [
+    {
+      "turn": 1,
+      "elapsed_seconds": 1.072,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_VhAFSKyiImTZ3HIGB6m46592",
+            "function": {
+              "arguments": "{}",
+              "name": "factorio_observe_factory"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "Let me start by inspecting the factory to understand the current state."
+      },
+      "request_context_chars": 2968,
+      "usage": {
+        "completion_tokens": 46,
+        "prompt_tokens": 1061,
+        "total_tokens": 1107,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 13,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 37
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_VhAFSKyiImTZ3HIGB6m46592",
+          "name": "factorio_observe_factory",
+          "content": "{\"lease_id\": \"c5facecd-9a2d-4f66-ab12-83d7233df880\", \"task_id\": \"micro_place_lab_v1\", \"ticks\": 0, \"inventory\": {\"lab\": 1}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16\"}",
+          "raw": {
+            "lease_id": "c5facecd-9a2d-4f66-ab12-83d7233df880",
+            "task_id": "micro_place_lab_v1",
+            "ticks": 0,
+            "inventory": {
+              "lab": 1
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "production": {
+              "output": {},
+              "input": {},
+              "harvested": {},
+              "crafted": {}
+            },
+            "state_hash": "d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16"
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "elapsed_seconds": 1.876,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_uhb75SKbN0zBI8VVowvv4200",
+            "function": {
+              "arguments": "{\"code\": \"from fle import *\\nprint(get_entities(set(), position=None, radius=1000))\\nprint(inspect_inventory())\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "I have a lab in inventory. I need to place it on valid ground. Let me find my position and place the lab. Let me inspect entities to understand the world."
+      },
+      "request_context_chars": 4029,
+      "usage": {
+        "completion_tokens": 106,
+        "prompt_tokens": 1354,
+        "total_tokens": 1460,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 35,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 330
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_uhb75SKbN0zBI8VVowvv4200",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"c5facecd-9a2d-4f66-ab12-83d7233df880\", \"event\": {\"sequence\": 1, \"code_sha256\": \"6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4\", \"started_at\": \"2026-08-09T12:57:05.632845Z\", \"duration_seconds\": 0.2007717000087723, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "c5facecd-9a2d-4f66-ab12-83d7233df880",
+            "event": {
+              "sequence": 1,
+              "code_sha256": "6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4",
+              "started_at": "2026-08-09T12:57:05.632845Z",
+              "duration_seconds": 0.2007717000087723,
+              "reward_delta": 0.0,
+              "error": true,
+              "evaluation_retry": false,
+              "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+              "ticks": 0,
+              "executed_tools": [],
+              "policy_violations": [
+                "imports are restricted by fle-program-v1; rejected: fle"
+              ]
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16",
+            "events": [
+              {
+                "event_id": "action:1",
+                "kind": "invalid_action",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 1,
+                  "code_sha256": "6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4",
+                  "policy_violations": [
+                    "imports are restricted by fle-program-v1; rejected: fle"
+                  ]
+                },
+                "evidence": {},
+                "reward_channels": {
+                  "invalid_action": -1.0
+                }
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are operating a real Factorio simulation. Use the supplied tools to inspect, intervene, measure, and debug. Never invent a tool result. Solve only the stated objective, prefer supplied inventory over unnecessary gathering, and minimize interventions. When the goal is complete or no useful action remains, answer briefly without another tool call. An engine-rejected program may be corrected up to 0 extra time(s); a retry does not roll back any earlier side effects."
+    },
+    {
+      "role": "user",
+      "content": "Goal: Place the supplied laboratory on valid ground.\n\nObjectives:\n- At least one laboratory exists in the world.\n\nConstraints:\n- Use no more than 2 intervention programs.\n\nUse factorio_observe_factory to inspect the simulation and factorio_execute_program for one short intervention at a time. The Factorio engine and task verifier determine success. Do not claim completion without measuring the resulting factory.\n\nAction profile reference:\nInside factorio_execute_program, write ordinary short Python using only the\npublic FLE API (no host/file/network access). Useful operations:\n- inspect_inventory(entity=None), get_entities(set(), position=None, radius=1000)\n- nearest(Prototype.X or Resource.X), move_to(Position), harvest_resource(Position, quantity)\n- get_prototype_recipe(Prototype.X), craft_item(Prototype.X, quantity)\n- place_entity(Prototype.X, direction=Direction.UP, position=Position(x, y))\n- place_entity_next_to(Prototype.X, reference_position, direction, spacing=0)\n- can_place_entity(...), get_entity(...), pickup_entity(...), rotate_entity(...)\n- insert_item(Prototype.X, target, quantity), extract_item(Prototype.X, source, quantity)\n- set_entity_recipe(entity, Prototype.X or RecipeName.X)\n- connect_entities(source, target, Prototype.TransportBelt/Pipe/SmallElectricPole)\n- get_resource_patch(Resource.X, position, radius), nearest_buildable(...)\n- set_research(Technology.X), get_research_progress(Technology.X)\n- sleep(seconds) (at most 15 seconds per call), print(...) for measured feedback\n\nNames use enums such as Prototype.IronPlate, Resource.IronOre, Technology.Automation,\nDirection.UP, and Position(x, y). Inspect recipes, inventories, entities, status,\nand production before assuming a plan worked. Re-fetch entities after the world\nchanges because returned entity objects can become stale. Entity values use\nattributes such as entity.name and entity.position, not dictionary indexing.\n\nThe character can normally act only within about 10 tiles. Call move_to(target)\nbefore harvesting or placing at a distant target. Use the supplied starting\ninventory before mining or crafting, and do not build production chains that\nthe stated objective does not require.\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_VhAFSKyiImTZ3HIGB6m46592",
+          "function": {
+            "arguments": "{}",
+            "name": "factorio_observe_factory"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "Let me start by inspecting the factory to understand the current state."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_VhAFSKyiImTZ3HIGB6m46592",
+      "name": "factorio_observe_factory",
+      "content": "{\"lease_id\": \"c5facecd-9a2d-4f66-ab12-83d7233df880\", \"task_id\": \"micro_place_lab_v1\", \"ticks\": 0, \"inventory\": {\"lab\": 1}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16\"}"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_uhb75SKbN0zBI8VVowvv4200",
+          "function": {
+            "arguments": "{\"code\": \"from fle import *\\nprint(get_entities(set(), position=None, radius=1000))\\nprint(inspect_inventory())\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "I have a lab in inventory. I need to place it on valid ground. Let me find my position and place the lab. Let me inspect entities to understand the world."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_uhb75SKbN0zBI8VVowvv4200",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"c5facecd-9a2d-4f66-ab12-83d7233df880\", \"event\": {\"sequence\": 1, \"code_sha256\": \"6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4\", \"started_at\": \"2026-08-09T12:57:05.632845Z\", \"duration_seconds\": 0.2007717000087723, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}"
+    }
+  ],
+  "compact_memory": {
+    "latest_observation": {
+      "ticks": 0,
+      "inventory": {
+        "lab": 1
+      },
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "production": {
+        "output": {},
+        "input": {},
+        "harvested": {},
+        "crafted": {}
+      },
+      "state_hash": "d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16"
+    },
+    "recent_actions": [
+      {
+        "sequence": 1,
+        "error": true,
+        "evaluation_retry": false,
+        "executed_tools": [],
+        "result_tail": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      }
+    ]
+  },
+  "verification": {
+    "protocol_version": "0.3.0",
+    "lease_id": "c5facecd-9a2d-4f66-ab12-83d7233df880",
+    "task_id": "micro_place_lab_v1",
+    "task_fingerprint": "8cf55e901f86102cfb5f3cac385e167eb099ce249a0f01e128f1a93f24a8b058",
+    "verified_at": "2026-08-09T12:57:06.355053Z",
+    "success": false,
+    "scalar_reward": 0.0,
+    "rewards": {
+      "task": 0.0,
+      "throughput": 0.0,
+      "automation": 0.0,
+      "progress": 0.0,
+      "invalid_action": -1.0,
+      "resource_cost": -0.0,
+      "milestone": 0.0,
+      "robustness": 0.0,
+      "time_efficiency": -0.0,
+      "manual_intervention": -0.0
+    },
+    "metrics": {
+      "objective_evaluations": [
+        {
+          "objective_id": "lab-exists",
+          "kind": "entity_exists",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "status_counts": {}
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0,
+          "evidence": {
+            "total_interventions": 1,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "automated_production_score_delta": 0.0,
+      "automation_reward": 0.0,
+      "automation_reward_basis": "nonnegative_legacy_net_value_delta",
+      "interventions": 1,
+      "scored_interventions": 1,
+      "evaluation_retries": 0,
+      "elapsed_ticks": 0
+    },
+    "evidence": {
+      "verifier": "objective_engine_v1",
+      "task_family": "construction",
+      "backend_task_id": "open_play",
+      "objective_ids": [
+        "lab-exists"
+      ],
+      "scalarization": "binary"
+    },
+    "terminal_state_hash": "d422069e193950ec80f7db3734787c22facfb10a00212238527e2dad74816c16",
+    "action_events": [
+      {
+        "sequence": 1,
+        "code_sha256": "6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4",
+        "started_at": "2026-08-09T12:57:05.632845Z",
+        "duration_seconds": 0.2007717000087723,
+        "reward_delta": 0.0,
+        "error": true,
+        "evaluation_retry": false,
+        "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "ticks": 0,
+        "executed_tools": [],
+        "policy_violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "event_id": "action:1",
+        "kind": "invalid_action",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 1,
+          "code_sha256": "6c7aa6eeee871452d6f4d300a5a4f00d40383f0ca22532599947b86496e4e6b4"
+        },
+        "evidence": {},
+        "reward_channels": {
+          "invalid_action": -1.0
+        }
+      },
+      {
+        "event_id": "objective:lab-exists",
+        "kind": "objective_failed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": "lab-exists",
+        "payload": {
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0
+        },
+        "evidence": {
+          "status_counts": {}
+        },
+        "reward_channels": {
+          "progress": 0.0
+        }
+      },
+      {
+        "event_id": "constraint:intervention-budget",
+        "kind": "constraint_satisfied",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0
+        },
+        "evidence": {
+          "total_interventions": 1,
+          "evaluation_retries": 0
+        },
+        "reward_channels": {}
+      },
+      {
+        "event_id": "termination:classified",
+        "kind": "termination_classified",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "reason": "invalid_action",
+          "success": false
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "verification:completed",
+        "kind": "verification_completed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "success": false,
+          "scalar_reward": 0.0,
+          "termination_reason": "invalid_action"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      }
+    ],
+    "termination_reason": "invalid_action",
+    "privileged_diagnostics": {
+      "schema_version": "0.1.0",
+      "task_id": "micro_place_lab_v1",
+      "tick": 0,
+      "elapsed_ticks": 0,
+      "objective_evaluations": [
+        {
+          "objective_id": "lab-exists",
+          "kind": "entity_exists",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "status_counts": {}
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0,
+          "evidence": {
+            "total_interventions": 1,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "inventory": {
+        "lab": 1.0
+      },
+      "inventory_delta": {},
+      "production": {},
+      "consumption": {},
+      "automated_production": {},
+      "manual_crafts": {},
+      "research": {
+        "researched_count": 187,
+        "technology_count": 196,
+        "current": null,
+        "progress": 0.0,
+        "relevant": {}
+      },
+      "entity_counts": {},
+      "entity_status_counts": {},
+      "bottlenecks": [],
+      "lifecycle": {
+        "character_alive": true,
+        "character_health": 250.0,
+        "death_count": 0,
+        "deaths": [],
+        "respawn_count": 0,
+        "last_respawn_tick": null,
+        "character_recreated_after_death": false,
+        "termination_reason": "invalid_action"
+      },
+      "pollution": {
+        "total": 0.33363210503489,
+        "emitted_delta": 0.0
+      },
+      "resource_accounting": {
+        "raw_extracted": {},
+        "raw_consumed": {},
+        "all_produced": {},
+        "all_consumed": {}
+      },
+      "action_policy": {
+        "executed_tools": [],
+        "violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      "resource_depletions": [],
+      "target_recipes": {
+        "lab": {
+          "name": "lab",
+          "ingredients": [
+            {
+              "name": "iron-gear-wheel",
+              "count": 10,
+              "type": "item"
+            },
+            {
+              "name": "electronic-circuit",
+              "count": 10,
+              "type": "item"
+            },
+            {
+              "name": "transport-belt",
+              "count": 4,
+              "type": "item"
+            }
+          ],
+          "products": [
+            {
+              "name": "lab",
+              "count": 1,
+              "type": "item",
+              "probability": 1.0
+            }
+          ],
+          "energy": 0,
+          "category": null,
+          "enabled": false
+        }
+      },
+      "knowledge_sources": [
+        {
+          "source_id": "factorio-wiki-quick-start",
+          "title": "Factorio Wiki: Quick start guide",
+          "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+          "topics": [
+            "resource_extraction",
+            "smelting",
+            "electricity",
+            "automation",
+            "research"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "voidgrazer-high-level-strategy",
+          "title": "High-Level Strategy for New Players",
+          "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+          "topics": [
+            "progression_phases",
+            "expandability",
+            "automation",
+            "oil_processing",
+            "logistics"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "earlyguides-walkthrough",
+          "title": "Factorio Walkthrough: Start to Endgame",
+          "url": "https://earlyguides.com/factorio/walkthrough",
+          "topics": [
+            "progression_phases",
+            "oil_processing",
+            "trains",
+            "defense",
+            "endgame"
+          ],
+          "access": "dataset_builder"
+        }
+      ],
+      "caveats": [
+        "Bottlenecks are status-derived signals, not a complete causal graph.",
+        "Raw-resource cost is derived from engine production-flow counters; task specifications must choose extracted or consumed semantics.",
+        "Tool-policy auditing records actual FLE controller calls, but cannot classify arbitrary computation inside a submitted Python program."
+      ]
+    },
+    "privileged_transitions": []
+  }
+}

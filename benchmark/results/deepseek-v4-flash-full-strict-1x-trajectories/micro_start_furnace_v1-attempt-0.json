@@ -1,0 +1,2654 @@
+{
+  "mode": "rollout",
+  "run_at": "2026-08-09T12:58:54.946071+00:00",
+  "model": "deepseek-v4-flash",
+  "model_base_url": "https://api.deepseek.com",
+  "envd_url": "http://127.0.0.1:8172",
+  "task": {
+    "task_id": "micro_start_furnace_v1",
+    "backend_task_id": "open_play",
+    "goal": "Place and load the supplied stone furnace so that it begins smelting iron ore.",
+    "task_family": "construction",
+    "objectives": [
+      {
+        "objective_id": "furnace-operates",
+        "kind": "entity_status",
+        "description": "A stone furnace is working or has completed into a full output.",
+        "target": "stone-furnace",
+        "comparator": "gte",
+        "threshold": 1.0,
+        "window_seconds": null,
+        "required": true,
+        "weight": 1.0,
+        "parameters": {
+          "statuses": [
+            "working",
+            "full_output"
+          ]
+        }
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_id": "intervention-budget",
+        "kind": "max_interventions",
+        "description": "Use no more than 4 intervention programs.",
+        "limit": 4.0,
+        "parameters": {}
+      }
+    ],
+    "verifier": {
+      "implementation": "objective_engine_v1",
+      "mode": "all_required",
+      "scalarization": "binary",
+      "success_threshold": null,
+      "holdout_windows": 1,
+      "emit_transition_comparisons": true,
+      "transition_holdout_seconds": 0
+    },
+    "curriculum": {
+      "stage": "api-microtasks",
+      "suggested_strategies": [
+        "sft",
+        "opd",
+        "opsd",
+        "grpo",
+        "evaluation"
+      ],
+      "prerequisite_task_ids": [],
+      "episode_mode": "independent"
+    },
+    "knowledge_sources": [
+      {
+        "source_id": "factorio-wiki-quick-start",
+        "title": "Factorio Wiki: Quick start guide",
+        "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+        "topics": [
+          "resource_extraction",
+          "smelting",
+          "electricity",
+          "automation",
+          "research"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "voidgrazer-high-level-strategy",
+        "title": "High-Level Strategy for New Players",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+        "topics": [
+          "progression_phases",
+          "expandability",
+          "automation",
+          "oil_processing",
+          "logistics"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "earlyguides-walkthrough",
+        "title": "Factorio Walkthrough: Start to Endgame",
+        "url": "https://earlyguides.com/factorio/walkthrough",
+        "topics": [
+          "progression_phases",
+          "oil_processing",
+          "trains",
+          "defense",
+          "endgame"
+        ],
+        "access": "dataset_builder"
+      }
+    ],
+    "provisioning": {
+      "starting_inventory": {
+        "stone-furnace": 1,
+        "coal": 5,
+        "iron-ore": 5
+      },
+      "all_technologies_researched": true,
+      "researched_technologies": [],
+      "character_inventory_slots_bonus": 0
+    },
+    "seed": 0,
+    "scenario": "default_lab_scenario",
+    "factorio_version": "2.0.73",
+    "checkpoint_id": "scenario:default_lab_scenario",
+    "action_profile": "fle-program-v1",
+    "max_interventions": 4,
+    "holdout_seconds": 0,
+    "fingerprint": "4e34c256233457e9afc95dfbd9df37bfb51453f3f4a517a0d85f87860d117b73"
+  },
+  "stop_reason": "model_stopped",
+  "tool_error_retry_budget": 0,
+  "rollout_error": null,
+  "elapsed_seconds": 27.971,
+  "turns": [
+    {
+      "turn": 1,
+      "elapsed_seconds": 1.442,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_Q4JruoXIvnhvBzbNFFgi3168",
+            "function": {
+              "arguments": "{}",
+              "name": "factorio_observe_factory"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning_content": "Let me start by observing the factory to understand the current state."
+      },
+      "request_context_chars": 3019,
+      "usage": {
+        "completion_tokens": 46,
+        "prompt_tokens": 1073,
+        "total_tokens": 1119,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 13,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 512
+        },
+        "prompt_cache_hit_tokens": 512,
+        "prompt_cache_miss_tokens": 561
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_Q4JruoXIvnhvBzbNFFgi3168",
+          "name": "factorio_observe_factory",
+          "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"task_id\": \"micro_start_furnace_v1\", \"ticks\": 0, \"inventory\": {\"stone-furnace\": 1, \"coal\": 5, \"iron-ore\": 5}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\"}",
+          "raw": {
+            "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+            "task_id": "micro_start_furnace_v1",
+            "ticks": 0,
+            "inventory": {
+              "stone-furnace": 1,
+              "coal": 5,
+              "iron-ore": 5
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "production": {
+              "output": {},
+              "input": {},
+              "harvested": {},
+              "crafted": {}
+            },
+            "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e"
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "elapsed_seconds": 2.162,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_dR3lp9N4CuhGeHoxCWZw5858",
+            "function": {
+              "arguments": "{\"code\": \"\\nfrom fle import *\\nentities = get_entities(set(), position=Position(0,0), radius=1000)\\nfor e in entities[:50]:\\n    print(e.name, e.position)\\nprint(\\\"count\\\", len(entities))\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          },
+          {
+            "id": "call_01_7vgQluZOQzkSMeLhgsJt8661",
+            "function": {
+              "arguments": "{\"code\": \"\\nfrom fle import *\\nr = get_prototype_recipe(Prototype.StoneFurnace)\\nprint(r)\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 1
+          }
+        ],
+        "reasoning_content": "I need to place the stone furnace, load it with coal and iron ore so it smelts. Let me inspect the entities around me to find a good location, and check what recipes are available.\n\nLet me look at the nearby entities first."
+      },
+      "request_context_chars": 4163,
+      "usage": {
+        "completion_tokens": 201,
+        "prompt_tokens": 1424,
+        "total_tokens": 1625,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 50,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 400
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_dR3lp9N4CuhGeHoxCWZw5858",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 1, \"code_sha256\": \"f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7\", \"started_at\": \"2026-08-09T12:58:31.336817Z\", \"duration_seconds\": 0.2020956000778824, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+            "event": {
+              "sequence": 1,
+              "code_sha256": "f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7",
+              "started_at": "2026-08-09T12:58:31.336817Z",
+              "duration_seconds": 0.2020956000778824,
+              "reward_delta": 0.0,
+              "error": true,
+              "evaluation_retry": false,
+              "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+              "ticks": 0,
+              "executed_tools": [],
+              "policy_violations": [
+                "imports are restricted by fle-program-v1; rejected: fle"
+              ]
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+            "events": [
+              {
+                "event_id": "action:1",
+                "kind": "invalid_action",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 1,
+                  "code_sha256": "f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7",
+                  "policy_violations": [
+                    "imports are restricted by fle-program-v1; rejected: fle"
+                  ]
+                },
+                "evidence": {},
+                "reward_channels": {
+                  "invalid_action": -1.0
+                }
+              }
+            ],
+            "terminal_reason": null
+          }
+        },
+        {
+          "tool_call_id": "call_01_7vgQluZOQzkSMeLhgsJt8661",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 2, \"code_sha256\": \"a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd\", \"started_at\": \"2026-08-09T12:58:31.541421Z\", \"duration_seconds\": 0.20089149998966604, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:2\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 2, \"code_sha256\": \"a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+            "event": {
+              "sequence": 2,
+              "code_sha256": "a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd",
+              "started_at": "2026-08-09T12:58:31.541421Z",
+              "duration_seconds": 0.20089149998966604,
+              "reward_delta": 0.0,
+              "error": true,
+              "evaluation_retry": false,
+              "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+              "ticks": 0,
+              "executed_tools": [],
+              "policy_violations": [
+                "imports are restricted by fle-program-v1; rejected: fle"
+              ]
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+            "events": [
+              {
+                "event_id": "action:2",
+                "kind": "invalid_action",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 2,
+                  "code_sha256": "a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd",
+                  "policy_violations": [
+                    "imports are restricted by fle-program-v1; rejected: fle"
+                  ]
+                },
+                "evidence": {},
+                "reward_channels": {
+                  "invalid_action": -1.0
+                }
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "elapsed_seconds": 2.694,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "The import is restricted; the API functions must be available without importing. Let me use them directly.",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "call_00_eaBUhqL3JQ9xxo6w6ssL6637",
+            "function": {
+              "arguments": "{\"code\": \"\\nentities = get_entities(set(), position=Position(0,0), radius=1000)\\nfor e in entities[:50]:\\n    print(e.name, e.position)\\nprint(\\\"count\\\", len(entities))\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          },
+          {
+            "id": "call_01_cB7mSCaiOiEdtklkXR2d8833",
+            "function": {
+              "arguments": "{\"code\": \"\\nr = get_prototype_recipe(Prototype.StoneFurnace)\\nprint(r)\\nprint(inspect_inventory())\\n\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 1
+          }
+        ],
+        "reasoning_content": "The imports are restricted - `from fle import *` is not allowed. The previous failed attempts also had this. So I shouldn't import fle. The API is presumably available without import, or maybe I need to use a different import. Let me just try using the API functions directly without importing.\n\nLet me write code that just calls the functions directly."
+      },
+      "request_context_chars": 8150,
+      "usage": {
+        "completion_tokens": 239,
+        "prompt_tokens": 2643,
+        "total_tokens": 2882,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 71,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1024
+        },
+        "prompt_cache_hit_tokens": 1024,
+        "prompt_cache_miss_tokens": 1619
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "call_00_eaBUhqL3JQ9xxo6w6ssL6637",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 3, \"code_sha256\": \"ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6\", \"started_at\": \"2026-08-09T12:58:34.454313Z\", \"duration_seconds\": 0.1329178810119629, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"5: ('count', 0)\", \"ticks\": 0, \"executed_tools\": [\"get_entities\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:3\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 3, \"code_sha256\": \"ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6\", \"duration_seconds\": 0.1329178810119629, \"executed_tools\": [\"get_entities\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+            "event": {
+              "sequence": 3,
+              "code_sha256": "ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6",
+              "started_at": "2026-08-09T12:58:34.454313Z",
+              "duration_seconds": 0.1329178810119629,
+              "reward_delta": 0.0,
+              "error": false,
+              "evaluation_retry": false,
+              "result": "5: ('count', 0)",
+              "ticks": 0,
+              "executed_tools": [
+                "get_entities"
+              ],
+              "policy_violations": []
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+            "events": [
+              {
+                "event_id": "action:3",
+                "kind": "intervention_executed",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 3,
+                  "code_sha256": "ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6",
+                  "duration_seconds": 0.1329178810119629,
+                  "executed_tools": [
+                    "get_entities"
+                  ],
+                  "policy_violations": []
+                },
+                "evidence": {},
+                "reward_channels": {}
+              }
+            ],
+            "terminal_reason": null
+          }
+        },
+        {
+          "tool_call_id": "call_01_cB7mSCaiOiEdtklkXR2d8833",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 4, \"code_sha256\": \"f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795\", \"started_at\": \"2026-08-09T12:58:35.090510Z\", \"duration_seconds\": 0.0162966251373291, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"3: (Recipe(name='stone-furnace', ingredients=[Ingredient(name='stone', count=5, type='item')], products=[Product(name='stone-furnace', count=1, type='item', probability=1.0)], energy=0, category=None, enabled=False),)\\n4: (Inventory(stone-furnace=1, coal=5, iron-ore=5),)\", \"ticks\": 0, \"executed_tools\": [\"get_prototype_recipe\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3\", \"events\": [{\"event_id\": \"action:4\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 4, \"code_sha256\": \"f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795\", \"duration_seconds\": 0.0162966251373291, \"executed_tools\": [\"get_prototype_recipe\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+            "event": {
+              "sequence": 4,
+              "code_sha256": "f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795",
+              "started_at": "2026-08-09T12:58:35.090510Z",
+              "duration_seconds": 0.0162966251373291,
+              "reward_delta": 0.0,
+              "error": false,
+              "evaluation_retry": false,
+              "result": "3: (Recipe(name='stone-furnace', ingredients=[Ingredient(name='stone', count=5, type='item')], products=[Product(name='stone-furnace', count=1, type='item', probability=1.0)], energy=0, category=None, enabled=False),)\n4: (Inventory(stone-furnace=1, coal=5, iron-ore=5),)",
+              "ticks": 0,
+              "executed_tools": [
+                "get_prototype_recipe",
+                "inspect_inventory"
+              ],
+              "policy_violations": []
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "state_hash": "588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3",
+            "events": [
+              {
+                "event_id": "action:4",
+                "kind": "intervention_executed",
+                "tick": 0,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 4,
+                  "code_sha256": "f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795",
+                  "duration_seconds": 0.0162966251373291,
+                  "executed_tools": [
+                    "get_prototype_recipe",
+                    "inspect_inventory"
+                  ],
+                  "policy_violations": []
+                },
+                "evidence": {},
+                "reward_channels": {}
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    },
+    {
+      "turn": 4,
+      "elapsed_seconds": 18.818,
+      "finish_reason": "length",
+      "assistant": {
+        "content": "",
+        "role": "assistant",
+        "reasoning_content": "The world is empty (count 0 entities), I have a stone furnace, 5 coal, 5 iron ore in inventory. I need to place the furnace, insert coal and iron ore, and set the recipe to iron smelting. Let me find where the player is and place the furnace nearby.\n\nI need to know my character's position. Let me check. Actually, I can use move_to or get_entities. The count was 0, so no entities exist. Let me place the furnace next to my character. First, I need to know my position. Maybe there's a function to get character position. Let me try placing at a position near 0,0.\n\nLet me place the stone furnace. In Factorio, placing a furnace requires fuel (coal) and input (iron ore) inserted. Then set recipe to smelt iron. Actually, the recipe for stone furnace - the furnace recipe is \"iron-plate\" from iron ore. But there's no Prototype for iron plate smelting? Let me check recipes. Actually the stone furnace itself doesn't need to be crafted - it's in inventory.\n\nPlan:\n1. Place stone furnace at position near character.\n2. Insert coal (fuel) into furnace.\n3. Insert iron ore into furnace.\n4. Set recipe to smelt iron ore into iron plates.\n\nLet me first find my position. I'll try move_to(Position(0,0)) then place_entity nearby. Actually let me check if there's a get_character or my position API. Let me try placing at Position(0,0) directly - the furnace would be placed at that position, but I need to be within 10 tiles. The character is presumably at some position. Let me try get_entities or check my position via a method.\n\nLet me just attempt: place_entity(Prototype.StoneFurnace, position=Position(0,0)). If it fails due to distance, I'll move_to first.\n\nActually, let me try to find my position. Common FLE API: there might be a `get_character()` or the character position. But not listed in the action profile. The action profile lists move_to(Position), place_entity(...). Let me just move_to(Position(0,0)) first, then place the furnace. Actually since entities count is 0, maybe character is at 0,0.\n\nLet me do it step by step in one program: move to 0,0, place furnace at (1,0) or next to, insert coal and iron ore, set recipe.\n\nActually, I can do a single program that does all steps. Let me be careful about the API. Let me write:\n\n```\nmove_to(Position(0,0))\nf = place_entity(Prototype.StoneFurnace, position=Position(1,0))\nprint(f)\n```\n\nBut place_entity returns? Let me get the entity after placing. Then insert_item(Prototype.Coal, target=f, quantity=5) and insert_item(Prototype.IronOre, target=f, quantity=5), then set_entity_recipe(f, RecipeName.IronPlateSmelting?) Hmm, need to check recipe name. The stone furnace recipe is for making stone furnaces. The smelting recipe - maybe Prototype.IronPlate. Actually the action profile says set_entity_recipe(entity, Prototype.X or RecipeName.X). So maybe set_entity_recipe(f, Prototype.IronPlate) would set the recipe to iron plate smelting. Let me check what recipes exist.\n\nLet me look at get_prototype_recipe for IronPlate and see what recipes are available. Actually get_prototype_recipe(Prototype.IronPlate) would give the recipe for making iron plates (smelting iron ore). Let me query that first.\n\nLet me do a single program that inspects the recipe and character position, then decide. But to conserve interventions (max 4 programs), I should be efficient. I've used 2 programs so far (sequence 3 and 4; sequences 1-2 were rejected imports). Actually the constraint says \"no more than 4 intervention programs\" - each factorio_execute_program call is an intervention program? Or maybe each program that makes a change. To be safe, I should minimize the number of factorio_execute_program calls. I've already used 2 (sequences 3 and 4). So I have 2 more if the limit counts those. Hmm, wait, \"Use no more than 4 intervention programs.\" The earlier rejected attempts (sequences 1 and 2) were also factorio_execute_program calls but they errored with policy violation. The compact memory says recent_actions sequences 1-4. So probably the limit is 4 total intervention programs across the whole run, counting rejected ones? That would mean I only have 0 left. But the rejected ones were policy violations (imports), which perhaps don't count as \"interventions\"? Actually sequence 1 and 2 were error=true with no executed tools. Sequences 3 and 4 succeeded.\n\nHmm, this is ambiguous. To be safe, I should do everything in one final program. Let me combine: query recipe, move, place, insert, set recipe, and verify. Actually the API might not allow me to both inspect and act arbitrarily, but it should.\n\nLet me be smart: one program that:\n1. Prints character position if possible (try get_character() or inspect).\n2. Places furnace near me.\n3. Inserts coal and iron ore.\n4. Sets recipe to iron plate smelting.\n5. Sleeps to let it smelt.\n6. Verifies production.\n\nLet me figure out recipe name for smelting. In Factorio, stone furnace smelts iron ore -> iron plate. The recipe name is \"iron-plate-smelting\". The enum might be Prototype.IronPlate or RecipeName.IronPlateSmelting. Let me try set_entity_recipe(furnace, Prototype.IronPlate). Actually the action profile says set_entity_recipe(entity, Prototype.X or RecipeName.X). Prototype.IronPlate likely maps to the iron plate item, and the recipe might be found. I'll try it and print result.\n\nAlternatively, maybe placing the furnace and inserting items automatically smelts? No, the furnace needs a recipe set. Actually in Factorio, when you insert iron ore into a stone furnace, it defaults to smelting iron ore if the recipe was previously set, but for a fresh furnace there's no recipe. Let me set it.\n\nLet me write the combined program carefully, with fallbacks. But I can only write short code. Let me do:\n\n```\nprint(\"pos test\")\n# try to find character\ntry:\n    c = get_character()\n    print(\"char\", c.position)\nexcept Exception as e:\n    print(\"no get_character\", e)\n```\n\nHmm, this could fail. Let me instead just move_to(Position(0,0)) and place at (2,0). Actually, where is the character? In this environment with 0 entities, likely the character is at some origin. The default spawn in Factorio sandbox might be (0,0) or some offset. Let me just place at (0,0) and see.\n\nLet me combine into one program with steps and error handling:\n\n```\nmove_to(Position(0,0))\ntry:\n    f = place_entity(Prototype.StoneFurnace, position=Position(2,0))\n    print(\"placed\", f)\nexcept Exception as e:\n    print(\"place err\", e)\n```\n\nActually place_entity might return the entity. Then:\n\n```\nf = get_entity(...)  # need position or entity\ninsert_item(Prototype.Coal, target=f, quantity=5)\ninsert_item(Prototype.IronOre, target=f, quantity=5)\nset_entity_recipe(f, Prototype.IronPlate)\n```\n\nBut I need to know what place_entity returns. Let me just try in one go and print everything. If it fails, I learn from error messages and retry (but retries cost programs).\n\nGiven uncertainty, let me do one program that attempts the full sequence with prints, and handle errors gracefully so I can diagnose. I have 2 programs left (if counting only successful interventions). Let me use this one carefully.\n\nActually, wait - maybe I should reconsider the count. The task says \"Use no more than 4 intervention programs.\" I've executed 4 factorio_execute_program calls total (2 rejected, 2 successful). If the limit is total calls, I've hit it. But the rejected ones were policy violations before execution. Hmm. The instruction \"A retry does not roll back any earlier side effects\" suggests retries are allowed for engine-rejected programs up to 0 extra times. That's about engine-rejected (syntax/runtime) errors, allowing correction. Actually it says \"An engine-rejected program may be corrected up to 0 extra time(s)\". So 0 extra times for engine-rejected. Policy violations (imports) are not engine-rejected corrections.\n\nI think the 4-program limit counts each factorio_execute_program call. But sequences 1-2 were rejected with no execution - maybe they don't count as \"intervention programs\" since they did nothing. To be safe, I'll assume I have 2 more (sequences 3 and 4 were the interventions, and they were inspection only). Let me do the full action in one more program, then verify in the last one if needed.\n\nActually, let me combine placement + loading + recipe + sleep + verification all into one program. Then I don't need a separate verify program (I can observe via factorio_observe"
+      },
+      "request_context_chars": 12676,
+      "usage": {
+        "completion_tokens": 2048,
+        "prompt_tokens": 4015,
+        "total_tokens": 6063,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": null,
+          "reasoning_tokens": 2048,
+          "rejected_prediction_tokens": null
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cache_write_tokens": null,
+          "cached_tokens": 1152
+        },
+        "prompt_cache_hit_tokens": 1152,
+        "prompt_cache_miss_tokens": 2863
+      },
+      "tool_results": []
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are operating a real Factorio simulation. Use the supplied tools to inspect, intervene, measure, and debug. Never invent a tool result. Solve only the stated objective, prefer supplied inventory over unnecessary gathering, and minimize interventions. When the goal is complete or no useful action remains, answer briefly without another tool call. An engine-rejected program may be corrected up to 0 extra time(s); a retry does not roll back any earlier side effects."
+    },
+    {
+      "role": "user",
+      "content": "Goal: Place and load the supplied stone furnace so that it begins smelting iron ore.\n\nObjectives:\n- A stone furnace is working or has completed into a full output.\n\nConstraints:\n- Use no more than 4 intervention programs.\n\nUse factorio_observe_factory to inspect the simulation and factorio_execute_program for one short intervention at a time. The Factorio engine and task verifier determine success. Do not claim completion without measuring the resulting factory.\n\nAction profile reference:\nInside factorio_execute_program, write ordinary short Python using only the\npublic FLE API (no host/file/network access). Useful operations:\n- inspect_inventory(entity=None), get_entities(set(), position=None, radius=1000)\n- nearest(Prototype.X or Resource.X), move_to(Position), harvest_resource(Position, quantity)\n- get_prototype_recipe(Prototype.X), craft_item(Prototype.X, quantity)\n- place_entity(Prototype.X, direction=Direction.UP, position=Position(x, y))\n- place_entity_next_to(Prototype.X, reference_position, direction, spacing=0)\n- can_place_entity(...), get_entity(...), pickup_entity(...), rotate_entity(...)\n- insert_item(Prototype.X, target, quantity), extract_item(Prototype.X, source, quantity)\n- set_entity_recipe(entity, Prototype.X or RecipeName.X)\n- connect_entities(source, target, Prototype.TransportBelt/Pipe/SmallElectricPole)\n- get_resource_patch(Resource.X, position, radius), nearest_buildable(...)\n- set_research(Technology.X), get_research_progress(Technology.X)\n- sleep(seconds) (at most 15 seconds per call), print(...) for measured feedback\n\nNames use enums such as Prototype.IronPlate, Resource.IronOre, Technology.Automation,\nDirection.UP, and Position(x, y). Inspect recipes, inventories, entities, status,\nand production before assuming a plan worked. Re-fetch entities after the world\nchanges because returned entity objects can become stale. Entity values use\nattributes such as entity.name and entity.position, not dictionary indexing.\n\nThe character can normally act only within about 10 tiles. Call move_to(target)\nbefore harvesting or placing at a distant target. Use the supplied starting\ninventory before mining or crafting, and do not build production chains that\nthe stated objective does not require.\n"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_Q4JruoXIvnhvBzbNFFgi3168",
+          "function": {
+            "arguments": "{}",
+            "name": "factorio_observe_factory"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning_content": "Let me start by observing the factory to understand the current state."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_Q4JruoXIvnhvBzbNFFgi3168",
+      "name": "factorio_observe_factory",
+      "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"task_id\": \"micro_start_furnace_v1\", \"ticks\": 0, \"inventory\": {\"stone-furnace\": 1, \"coal\": 5, \"iron-ore\": 5}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\"}"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_dR3lp9N4CuhGeHoxCWZw5858",
+          "function": {
+            "arguments": "{\"code\": \"\\nfrom fle import *\\nentities = get_entities(set(), position=Position(0,0), radius=1000)\\nfor e in entities[:50]:\\n    print(e.name, e.position)\\nprint(\\\"count\\\", len(entities))\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        },
+        {
+          "id": "call_01_7vgQluZOQzkSMeLhgsJt8661",
+          "function": {
+            "arguments": "{\"code\": \"\\nfrom fle import *\\nr = get_prototype_recipe(Prototype.StoneFurnace)\\nprint(r)\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 1
+        }
+      ],
+      "reasoning_content": "I need to place the stone furnace, load it with coal and iron ore so it smelts. Let me inspect the entities around me to find a good location, and check what recipes are available.\n\nLet me look at the nearby entities first."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_dR3lp9N4CuhGeHoxCWZw5858",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 1, \"code_sha256\": \"f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7\", \"started_at\": \"2026-08-09T12:58:31.336817Z\", \"duration_seconds\": 0.2020956000778824, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}"
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_01_7vgQluZOQzkSMeLhgsJt8661",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 2, \"code_sha256\": \"a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd\", \"started_at\": \"2026-08-09T12:58:31.541421Z\", \"duration_seconds\": 0.20089149998966604, \"reward_delta\": 0.0, \"error\": true, \"evaluation_retry\": false, \"result\": \"ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle\", \"ticks\": 0, \"executed_tools\": [], \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:2\", \"kind\": \"invalid_action\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 2, \"code_sha256\": \"a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd\", \"policy_violations\": [\"imports are restricted by fle-program-v1; rejected: fle\"]}, \"evidence\": {}, \"reward_channels\": {\"invalid_action\": -1.0}}], \"terminal_reason\": null}"
+    },
+    {
+      "content": "The import is restricted; the API functions must be available without importing. Let me use them directly.",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "call_00_eaBUhqL3JQ9xxo6w6ssL6637",
+          "function": {
+            "arguments": "{\"code\": \"\\nentities = get_entities(set(), position=Position(0,0), radius=1000)\\nfor e in entities[:50]:\\n    print(e.name, e.position)\\nprint(\\\"count\\\", len(entities))\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        },
+        {
+          "id": "call_01_cB7mSCaiOiEdtklkXR2d8833",
+          "function": {
+            "arguments": "{\"code\": \"\\nr = get_prototype_recipe(Prototype.StoneFurnace)\\nprint(r)\\nprint(inspect_inventory())\\n\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 1
+        }
+      ],
+      "reasoning_content": "The imports are restricted - `from fle import *` is not allowed. The previous failed attempts also had this. So I shouldn't import fle. The API is presumably available without import, or maybe I need to use a different import. Let me just try using the API functions directly without importing.\n\nLet me write code that just calls the functions directly."
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_00_eaBUhqL3JQ9xxo6w6ssL6637",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 3, \"code_sha256\": \"ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6\", \"started_at\": \"2026-08-09T12:58:34.454313Z\", \"duration_seconds\": 0.1329178810119629, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"5: ('count', 0)\", \"ticks\": 0, \"executed_tools\": [\"get_entities\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e\", \"events\": [{\"event_id\": \"action:3\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 3, \"code_sha256\": \"ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6\", \"duration_seconds\": 0.1329178810119629, \"executed_tools\": [\"get_entities\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}"
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_01_cB7mSCaiOiEdtklkXR2d8833",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"557f8a94-d635-4e4e-9ece-43189141a13f\", \"event\": {\"sequence\": 4, \"code_sha256\": \"f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795\", \"started_at\": \"2026-08-09T12:58:35.090510Z\", \"duration_seconds\": 0.0162966251373291, \"reward_delta\": 0.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"3: (Recipe(name='stone-furnace', ingredients=[Ingredient(name='stone', count=5, type='item')], products=[Product(name='stone-furnace', count=1, type='item', probability=1.0)], energy=0, category=None, enabled=False),)\\n4: (Inventory(stone-furnace=1, coal=5, iron-ore=5),)\", \"ticks\": 0, \"executed_tools\": [\"get_prototype_recipe\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"state_hash\": \"588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3\", \"events\": [{\"event_id\": \"action:4\", \"kind\": \"intervention_executed\", \"tick\": 0, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 4, \"code_sha256\": \"f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795\", \"duration_seconds\": 0.0162966251373291, \"executed_tools\": [\"get_prototype_recipe\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}"
+    },
+    {
+      "content": "",
+      "role": "assistant",
+      "reasoning_content": "The world is empty (count 0 entities), I have a stone furnace, 5 coal, 5 iron ore in inventory. I need to place the furnace, insert coal and iron ore, and set the recipe to iron smelting. Let me find where the player is and place the furnace nearby.\n\nI need to know my character's position. Let me check. Actually, I can use move_to or get_entities. The count was 0, so no entities exist. Let me place the furnace next to my character. First, I need to know my position. Maybe there's a function to get character position. Let me try placing at a position near 0,0.\n\nLet me place the stone furnace. In Factorio, placing a furnace requires fuel (coal) and input (iron ore) inserted. Then set recipe to smelt iron. Actually, the recipe for stone furnace - the furnace recipe is \"iron-plate\" from iron ore. But there's no Prototype for iron plate smelting? Let me check recipes. Actually the stone furnace itself doesn't need to be crafted - it's in inventory.\n\nPlan:\n1. Place stone furnace at position near character.\n2. Insert coal (fuel) into furnace.\n3. Insert iron ore into furnace.\n4. Set recipe to smelt iron ore into iron plates.\n\nLet me first find my position. I'll try move_to(Position(0,0)) then place_entity nearby. Actually let me check if there's a get_character or my position API. Let me try placing at Position(0,0) directly - the furnace would be placed at that position, but I need to be within 10 tiles. The character is presumably at some position. Let me try get_entities or check my position via a method.\n\nLet me just attempt: place_entity(Prototype.StoneFurnace, position=Position(0,0)). If it fails due to distance, I'll move_to first.\n\nActually, let me try to find my position. Common FLE API: there might be a `get_character()` or the character position. But not listed in the action profile. The action profile lists move_to(Position), place_entity(...). Let me just move_to(Position(0,0)) first, then place the furnace. Actually since entities count is 0, maybe character is at 0,0.\n\nLet me do it step by step in one program: move to 0,0, place furnace at (1,0) or next to, insert coal and iron ore, set recipe.\n\nActually, I can do a single program that does all steps. Let me be careful about the API. Let me write:\n\n```\nmove_to(Position(0,0))\nf = place_entity(Prototype.StoneFurnace, position=Position(1,0))\nprint(f)\n```\n\nBut place_entity returns? Let me get the entity after placing. Then insert_item(Prototype.Coal, target=f, quantity=5) and insert_item(Prototype.IronOre, target=f, quantity=5), then set_entity_recipe(f, RecipeName.IronPlateSmelting?) Hmm, need to check recipe name. The stone furnace recipe is for making stone furnaces. The smelting recipe - maybe Prototype.IronPlate. Actually the action profile says set_entity_recipe(entity, Prototype.X or RecipeName.X). So maybe set_entity_recipe(f, Prototype.IronPlate) would set the recipe to iron plate smelting. Let me check what recipes exist.\n\nLet me look at get_prototype_recipe for IronPlate and see what recipes are available. Actually get_prototype_recipe(Prototype.IronPlate) would give the recipe for making iron plates (smelting iron ore). Let me query that first.\n\nLet me do a single program that inspects the recipe and character position, then decide. But to conserve interventions (max 4 programs), I should be efficient. I've used 2 programs so far (sequence 3 and 4; sequences 1-2 were rejected imports). Actually the constraint says \"no more than 4 intervention programs\" - each factorio_execute_program call is an intervention program? Or maybe each program that makes a change. To be safe, I should minimize the number of factorio_execute_program calls. I've already used 2 (sequences 3 and 4). So I have 2 more if the limit counts those. Hmm, wait, \"Use no more than 4 intervention programs.\" The earlier rejected attempts (sequences 1 and 2) were also factorio_execute_program calls but they errored with policy violation. The compact memory says recent_actions sequences 1-4. So probably the limit is 4 total intervention programs across the whole run, counting rejected ones? That would mean I only have 0 left. But the rejected ones were policy violations (imports), which perhaps don't count as \"interventions\"? Actually sequence 1 and 2 were error=true with no executed tools. Sequences 3 and 4 succeeded.\n\nHmm, this is ambiguous. To be safe, I should do everything in one final program. Let me combine: query recipe, move, place, insert, set recipe, and verify. Actually the API might not allow me to both inspect and act arbitrarily, but it should.\n\nLet me be smart: one program that:\n1. Prints character position if possible (try get_character() or inspect).\n2. Places furnace near me.\n3. Inserts coal and iron ore.\n4. Sets recipe to iron plate smelting.\n5. Sleeps to let it smelt.\n6. Verifies production.\n\nLet me figure out recipe name for smelting. In Factorio, stone furnace smelts iron ore -> iron plate. The recipe name is \"iron-plate-smelting\". The enum might be Prototype.IronPlate or RecipeName.IronPlateSmelting. Let me try set_entity_recipe(furnace, Prototype.IronPlate). Actually the action profile says set_entity_recipe(entity, Prototype.X or RecipeName.X). Prototype.IronPlate likely maps to the iron plate item, and the recipe might be found. I'll try it and print result.\n\nAlternatively, maybe placing the furnace and inserting items automatically smelts? No, the furnace needs a recipe set. Actually in Factorio, when you insert iron ore into a stone furnace, it defaults to smelting iron ore if the recipe was previously set, but for a fresh furnace there's no recipe. Let me set it.\n\nLet me write the combined program carefully, with fallbacks. But I can only write short code. Let me do:\n\n```\nprint(\"pos test\")\n# try to find character\ntry:\n    c = get_character()\n    print(\"char\", c.position)\nexcept Exception as e:\n    print(\"no get_character\", e)\n```\n\nHmm, this could fail. Let me instead just move_to(Position(0,0)) and place at (2,0). Actually, where is the character? In this environment with 0 entities, likely the character is at some origin. The default spawn in Factorio sandbox might be (0,0) or some offset. Let me just place at (0,0) and see.\n\nLet me combine into one program with steps and error handling:\n\n```\nmove_to(Position(0,0))\ntry:\n    f = place_entity(Prototype.StoneFurnace, position=Position(2,0))\n    print(\"placed\", f)\nexcept Exception as e:\n    print(\"place err\", e)\n```\n\nActually place_entity might return the entity. Then:\n\n```\nf = get_entity(...)  # need position or entity\ninsert_item(Prototype.Coal, target=f, quantity=5)\ninsert_item(Prototype.IronOre, target=f, quantity=5)\nset_entity_recipe(f, Prototype.IronPlate)\n```\n\nBut I need to know what place_entity returns. Let me just try in one go and print everything. If it fails, I learn from error messages and retry (but retries cost programs).\n\nGiven uncertainty, let me do one program that attempts the full sequence with prints, and handle errors gracefully so I can diagnose. I have 2 programs left (if counting only successful interventions). Let me use this one carefully.\n\nActually, wait - maybe I should reconsider the count. The task says \"Use no more than 4 intervention programs.\" I've executed 4 factorio_execute_program calls total (2 rejected, 2 successful). If the limit is total calls, I've hit it. But the rejected ones were policy violations before execution. Hmm. The instruction \"A retry does not roll back any earlier side effects\" suggests retries are allowed for engine-rejected programs up to 0 extra times. That's about engine-rejected (syntax/runtime) errors, allowing correction. Actually it says \"An engine-rejected program may be corrected up to 0 extra time(s)\". So 0 extra times for engine-rejected. Policy violations (imports) are not engine-rejected corrections.\n\nI think the 4-program limit counts each factorio_execute_program call. But sequences 1-2 were rejected with no execution - maybe they don't count as \"intervention programs\" since they did nothing. To be safe, I'll assume I have 2 more (sequences 3 and 4 were the interventions, and they were inspection only). Let me do the full action in one more program, then verify in the last one if needed.\n\nActually, let me combine placement + loading + recipe + sleep + verification all into one program. Then I don't need a separate verify program (I can observe via factorio_observe"
+    }
+  ],
+  "compact_memory": {
+    "latest_observation": {
+      "ticks": 0,
+      "inventory": {
+        "stone-furnace": 1,
+        "coal": 5,
+        "iron-ore": 5
+      },
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "production": {
+        "output": {},
+        "input": {},
+        "harvested": {},
+        "crafted": {}
+      },
+      "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e"
+    },
+    "recent_actions": [
+      {
+        "sequence": 1,
+        "error": true,
+        "evaluation_retry": false,
+        "executed_tools": [],
+        "result_tail": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      },
+      {
+        "sequence": 2,
+        "error": true,
+        "evaluation_retry": false,
+        "executed_tools": [],
+        "result_tail": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      },
+      {
+        "sequence": 3,
+        "error": false,
+        "evaluation_retry": false,
+        "executed_tools": [
+          "get_entities"
+        ],
+        "result_tail": "5: ('count', 0)",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      },
+      {
+        "sequence": 4,
+        "error": false,
+        "evaluation_retry": false,
+        "executed_tools": [
+          "get_prototype_recipe",
+          "inspect_inventory"
+        ],
+        "result_tail": "3: (Recipe(name='stone-furnace', ingredients=[Ingredient(name='stone', count=5, type='item')], products=[Product(name='stone-furnace', count=1, type='item', probability=1.0)], energy=0, category=None, enabled=False),)\n4: (Inventory(stone-furnace=1, coal=5, iron-ore=5),)",
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "terminal_reason": null
+      }
+    ]
+  },
+  "verification": {
+    "protocol_version": "0.3.0",
+    "lease_id": "557f8a94-d635-4e4e-9ece-43189141a13f",
+    "task_id": "micro_start_furnace_v1",
+    "task_fingerprint": "4e34c256233457e9afc95dfbd9df37bfb51453f3f4a517a0d85f87860d117b73",
+    "verified_at": "2026-08-09T12:58:54.939566Z",
+    "success": false,
+    "scalar_reward": 0.0,
+    "rewards": {
+      "task": 0.0,
+      "throughput": 0.0,
+      "automation": 0.0,
+      "progress": 0.0,
+      "invalid_action": -2.0,
+      "resource_cost": -0.0,
+      "milestone": 0.0,
+      "robustness": 0.0,
+      "time_efficiency": -0.0,
+      "manual_intervention": -0.0
+    },
+    "metrics": {
+      "objective_evaluations": [
+        {
+          "objective_id": "furnace-operates",
+          "kind": "entity_status",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "accepted_statuses": [
+              "full_output",
+              "working"
+            ],
+            "observed_statuses": {}
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 4.0,
+          "limit": 4.0,
+          "evidence": {
+            "total_interventions": 4,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "automated_production_score_delta": 0.0,
+      "automation_reward": 0.0,
+      "automation_reward_basis": "nonnegative_legacy_net_value_delta",
+      "interventions": 4,
+      "scored_interventions": 4,
+      "evaluation_retries": 0,
+      "elapsed_ticks": 0
+    },
+    "evidence": {
+      "verifier": "objective_engine_v1",
+      "task_family": "construction",
+      "backend_task_id": "open_play",
+      "objective_ids": [
+        "furnace-operates"
+      ],
+      "scalarization": "binary"
+    },
+    "terminal_state_hash": "588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3",
+    "action_events": [
+      {
+        "sequence": 1,
+        "code_sha256": "f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7",
+        "started_at": "2026-08-09T12:58:31.336817Z",
+        "duration_seconds": 0.2020956000778824,
+        "reward_delta": 0.0,
+        "error": true,
+        "evaluation_retry": false,
+        "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "ticks": 0,
+        "executed_tools": [],
+        "policy_violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      {
+        "sequence": 2,
+        "code_sha256": "a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd",
+        "started_at": "2026-08-09T12:58:31.541421Z",
+        "duration_seconds": 0.20089149998966604,
+        "reward_delta": 0.0,
+        "error": true,
+        "evaluation_retry": false,
+        "result": "ProgramPolicyViolation: imports are restricted by fle-program-v1; rejected: fle",
+        "ticks": 0,
+        "executed_tools": [],
+        "policy_violations": [
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      {
+        "sequence": 3,
+        "code_sha256": "ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6",
+        "started_at": "2026-08-09T12:58:34.454313Z",
+        "duration_seconds": 0.1329178810119629,
+        "reward_delta": 0.0,
+        "error": false,
+        "evaluation_retry": false,
+        "result": "5: ('count', 0)",
+        "ticks": 0,
+        "executed_tools": [
+          "get_entities"
+        ],
+        "policy_violations": []
+      },
+      {
+        "sequence": 4,
+        "code_sha256": "f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795",
+        "started_at": "2026-08-09T12:58:35.090510Z",
+        "duration_seconds": 0.0162966251373291,
+        "reward_delta": 0.0,
+        "error": false,
+        "evaluation_retry": false,
+        "result": "3: (Recipe(name='stone-furnace', ingredients=[Ingredient(name='stone', count=5, type='item')], products=[Product(name='stone-furnace', count=1, type='item', probability=1.0)], energy=0, category=None, enabled=False),)\n4: (Inventory(stone-furnace=1, coal=5, iron-ore=5),)",
+        "ticks": 0,
+        "executed_tools": [
+          "get_prototype_recipe",
+          "inspect_inventory"
+        ],
+        "policy_violations": []
+      }
+    ],
+    "events": [
+      {
+        "event_id": "action:1",
+        "kind": "invalid_action",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 1,
+          "code_sha256": "f4bec019295cffd6c3e4f13fad35e7dcefae6223c5221e105289c7d20c8ff9f7"
+        },
+        "evidence": {},
+        "reward_channels": {
+          "invalid_action": -1.0
+        }
+      },
+      {
+        "event_id": "action:2",
+        "kind": "invalid_action",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 2,
+          "code_sha256": "a5a2c8c37774d101667b174e9e780252e8ad8e27c4c282d1a0c14fd2ac6847bd"
+        },
+        "evidence": {},
+        "reward_channels": {
+          "invalid_action": -1.0
+        }
+      },
+      {
+        "event_id": "action:3",
+        "kind": "intervention_executed",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 3,
+          "code_sha256": "ac4201fba65dfc7973c9d4095d5bdc77e11f6d7eac4ebc52580354a243657be6"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "action:4",
+        "kind": "intervention_executed",
+        "tick": 0,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 4,
+          "code_sha256": "f52e9197595e769762006f364acbc78668bf154322ae73481bbf68fb17315795"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "objective:furnace-operates",
+        "kind": "objective_failed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": "furnace-operates",
+        "payload": {
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0
+        },
+        "evidence": {
+          "accepted_statuses": [
+            "full_output",
+            "working"
+          ],
+          "observed_statuses": {}
+        },
+        "reward_channels": {
+          "progress": 0.0
+        }
+      },
+      {
+        "event_id": "constraint:intervention-budget",
+        "kind": "constraint_satisfied",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "supported": true,
+          "satisfied": true,
+          "value": 4.0,
+          "limit": 4.0
+        },
+        "evidence": {
+          "total_interventions": 4,
+          "evaluation_retries": 0
+        },
+        "reward_channels": {}
+      },
+      {
+        "event_id": "termination:classified",
+        "kind": "termination_classified",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "reason": "intervention_limit",
+          "success": false
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "verification:completed",
+        "kind": "verification_completed",
+        "tick": 0,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "success": false,
+          "scalar_reward": 0.0,
+          "termination_reason": "intervention_limit"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      }
+    ],
+    "termination_reason": "intervention_limit",
+    "privileged_diagnostics": {
+      "schema_version": "0.1.0",
+      "task_id": "micro_start_furnace_v1",
+      "tick": 0,
+      "elapsed_ticks": 0,
+      "objective_evaluations": [
+        {
+          "objective_id": "furnace-operates",
+          "kind": "entity_status",
+          "supported": true,
+          "satisfied": false,
+          "value": 0.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 0.0,
+          "weight": 1.0,
+          "evidence": {
+            "accepted_statuses": [
+              "full_output",
+              "working"
+            ],
+            "observed_statuses": {}
+          }
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 4.0,
+          "limit": 4.0,
+          "evidence": {
+            "total_interventions": 4,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "inventory": {
+        "stone-furnace": 1.0,
+        "coal": 5.0,
+        "iron-ore": 5.0
+      },
+      "inventory_delta": {},
+      "production": {},
+      "consumption": {},
+      "automated_production": {},
+      "manual_crafts": {},
+      "research": {
+        "researched_count": 187,
+        "technology_count": 196,
+        "current": null,
+        "progress": 0.0,
+        "relevant": {}
+      },
+      "entity_counts": {},
+      "entity_status_counts": {},
+      "bottlenecks": [],
+      "lifecycle": {
+        "character_alive": true,
+        "character_health": 250.0,
+        "death_count": 0,
+        "deaths": [],
+        "respawn_count": 0,
+        "last_respawn_tick": null,
+        "character_recreated_after_death": false,
+        "termination_reason": "intervention_limit"
+      },
+      "pollution": {
+        "total": 0.33363210503489,
+        "emitted_delta": 0.0
+      },
+      "resource_accounting": {
+        "raw_extracted": {},
+        "raw_consumed": {},
+        "all_produced": {},
+        "all_consumed": {}
+      },
+      "action_policy": {
+        "executed_tools": [
+          "get_entities",
+          "get_prototype_recipe",
+          "inspect_inventory"
+        ],
+        "violations": [
+          "imports are restricted by fle-program-v1; rejected: fle",
+          "imports are restricted by fle-program-v1; rejected: fle"
+        ]
+      },
+      "resource_depletions": [],
+      "target_recipes": {
+        "stone-furnace": {
+          "name": "stone-furnace",
+          "ingredients": [
+            {
+              "name": "stone",
+              "count": 5,
+              "type": "item"
+            }
+          ],
+          "products": [
+            {
+              "name": "stone-furnace",
+              "count": 1,
+              "type": "item",
+              "probability": 1.0
+            }
+          ],
+          "energy": 0,
+          "category": null,
+          "enabled": false
+        }
+      },
+      "knowledge_sources": [
+        {
+          "source_id": "factorio-wiki-quick-start",
+          "title": "Factorio Wiki: Quick start guide",
+          "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+          "topics": [
+            "resource_extraction",
+            "smelting",
+            "electricity",
+            "automation",
+            "research"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "voidgrazer-high-level-strategy",
+          "title": "High-Level Strategy for New Players",
+          "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+          "topics": [
+            "progression_phases",
+            "expandability",
+            "automation",
+            "oil_processing",
+            "logistics"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "earlyguides-walkthrough",
+          "title": "Factorio Walkthrough: Start to Endgame",
+          "url": "https://earlyguides.com/factorio/walkthrough",
+          "topics": [
+            "progression_phases",
+            "oil_processing",
+            "trains",
+            "defense",
+            "endgame"
+          ],
+          "access": "dataset_builder"
+        }
+      ],
+      "caveats": [
+        "Bottlenecks are status-derived signals, not a complete causal graph.",
+        "Raw-resource cost is derived from engine production-flow counters; task specifications must choose extracted or consumed semantics.",
+        "Tool-policy auditing records actual FLE controller calls, but cannot classify arbitrary computation inside a submitted Python program."
+      ]
+    },
+    "privileged_transitions": [
+      {
+        "schema_version": "0.1.0",
+        "task_id": "micro_start_furnace_v1",
+        "sequence": 3,
+        "previous": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "furnace-operates",
+              "kind": "entity_status",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "accepted_statuses": [
+                  "full_output",
+                  "working"
+                ],
+                "observed_statuses": {}
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 0.0,
+              "limit": 4.0,
+              "evidence": {
+                "total_interventions": 0,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "current": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "furnace-operates",
+              "kind": "entity_status",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "accepted_statuses": [
+                  "full_output",
+                  "working"
+                ],
+                "observed_statuses": {}
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 1.0,
+              "limit": 4.0,
+              "evidence": {
+                "total_interventions": 1,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "comparison": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "previous_state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "current_state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "verdict": "incomparable",
+          "material_change": false,
+          "dimension_deltas": [
+            {
+              "dimension": "objective_progress",
+              "previous": 0.0,
+              "current": 0.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            },
+            {
+              "dimension": "safety",
+              "previous": 1.0,
+              "current": 1.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            }
+          ],
+          "improvements": [],
+          "regressions": [],
+          "preserved_invariants": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "new_invariant_violations": [],
+          "resolved_invariant_violations": [],
+          "bottleneck_shift": null,
+          "explanation": "No material change was established on comparable dimensions."
+        }
+      },
+      {
+        "schema_version": "0.1.0",
+        "task_id": "micro_start_furnace_v1",
+        "sequence": 4,
+        "previous": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "furnace-operates",
+              "kind": "entity_status",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "accepted_statuses": [
+                  "full_output",
+                  "working"
+                ],
+                "observed_statuses": {}
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 1.0,
+              "limit": 4.0,
+              "evidence": {
+                "total_interventions": 1,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "current": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "state_hash": "588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": null,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "furnace-operates",
+              "kind": "entity_status",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {
+                "accepted_statuses": [
+                  "full_output",
+                  "working"
+                ],
+                "observed_statuses": {}
+              }
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 2.0,
+              "limit": 4.0,
+              "evidence": {
+                "total_interventions": 2,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "entity_counts": {},
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.33363210503489,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "comparison": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_start_furnace_v1",
+          "previous_state_hash": "c5cd81a08a4dd1eb2c90099f1003d4f10b975a7058012c8d9c7c71bfe91bcd4e",
+          "current_state_hash": "588d595951dfc59cac32d9e4faa492dceb078a44f79a1c0bea15a8af3f9916a3",
+          "verdict": "incomparable",
+          "material_change": false,
+          "dimension_deltas": [
+            {
+              "dimension": "objective_progress",
+              "previous": 0.0,
+              "current": 0.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            },
+            {
+              "dimension": "safety",
+              "previous": 1.0,
+              "current": 1.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            }
+          ],
+          "improvements": [],
+          "regressions": [],
+          "preserved_invariants": [
+            "advanced-circuit",
+            "advanced-combinators",
+            "advanced-material-processing",
+            "advanced-material-processing-2",
+            "advanced-oil-processing",
+            "artillery",
+            "atomic-bomb",
+            "automated-rail-transportation",
+            "automation",
+            "automation-2",
+            "automation-3",
+            "automation-science-pack",
+            "automobilism",
+            "battery",
+            "battery-equipment",
+            "battery-mk2-equipment",
+            "belt-immunity-equipment",
+            "braking-force-1",
+            "braking-force-2",
+            "braking-force-3",
+            "braking-force-4",
+            "braking-force-5",
+            "braking-force-6",
+            "braking-force-7",
+            "bulk-inserter",
+            "chemical-science-pack",
+            "circuit-network",
+            "cliff-explosives",
+            "coal-liquefaction",
+            "concrete",
+            "construction-robotics",
+            "defender",
+            "destroyer",
+            "discharge-defense-equipment",
+            "distractor",
+            "effect-transmission",
+            "efficiency-module",
+            "efficiency-module-2",
+            "efficiency-module-3",
+            "electric-energy-accumulators",
+            "electric-energy-distribution-1",
+            "electric-energy-distribution-2",
+            "electric-engine",
+            "electric-mining-drill",
+            "electronics",
+            "energy-shield-equipment",
+            "energy-shield-mk2-equipment",
+            "engine",
+            "exoskeleton-equipment",
+            "explosive-rocketry",
+            "explosives",
+            "fast-inserter",
+            "fission-reactor-equipment",
+            "flamethrower",
+            "flammables",
+            "fluid-handling",
+            "fluid-wagon",
+            "follower-robot-count-1",
+            "follower-robot-count-2",
+            "follower-robot-count-3",
+            "follower-robot-count-4",
+            "gate",
+            "gun-turret",
+            "heavy-armor",
+            "inserter-capacity-bonus-1",
+            "inserter-capacity-bonus-2",
+            "inserter-capacity-bonus-3",
+            "inserter-capacity-bonus-4",
+            "inserter-capacity-bonus-5",
+            "inserter-capacity-bonus-6",
+            "inserter-capacity-bonus-7",
+            "kovarex-enrichment-process",
+            "lamp",
+            "land-mine",
+            "landfill",
+            "laser",
+            "laser-shooting-speed-1",
+            "laser-shooting-speed-2",
+            "laser-shooting-speed-3",
+            "laser-shooting-speed-4",
+            "laser-shooting-speed-5",
+            "laser-shooting-speed-6",
+            "laser-shooting-speed-7",
+            "laser-turret",
+            "laser-weapons-damage-1",
+            "laser-weapons-damage-2",
+            "laser-weapons-damage-3",
+            "laser-weapons-damage-4",
+            "laser-weapons-damage-5",
+            "laser-weapons-damage-6",
+            "logistic-robotics",
+            "logistic-science-pack",
+            "logistic-system",
+            "logistics",
+            "logistics-2",
+            "logistics-3",
+            "low-density-structure",
+            "lubricant",
+            "military",
+            "military-2",
+            "military-3",
+            "military-4",
+            "military-science-pack",
+            "mining-productivity-1",
+            "mining-productivity-2",
+            "mining-productivity-3",
+            "modular-armor",
+            "modules",
+            "night-vision-equipment",
+            "nuclear-fuel-reprocessing",
+            "nuclear-power",
+            "oil-gathering",
+            "oil-processing",
+            "personal-laser-defense-equipment",
+            "personal-roboport-equipment",
+            "personal-roboport-mk2-equipment",
+            "physical-projectile-damage-1",
+            "physical-projectile-damage-2",
+            "physical-projectile-damage-3",
+            "physical-projectile-damage-4",
+            "physical-projectile-damage-5",
+            "physical-projectile-damage-6",
+            "plastics",
+            "power-armor",
+            "power-armor-mk2",
+            "processing-unit",
+            "production-science-pack",
+            "productivity-module",
+            "productivity-module-2",
+            "productivity-module-3",
+            "radar",
+            "railway",
+            "refined-flammables-1",
+            "refined-flammables-2",
+            "refined-flammables-3",
+            "refined-flammables-4",
+            "refined-flammables-5",
+            "refined-flammables-6",
+            "repair-pack",
+            "research-speed-1",
+            "research-speed-2",
+            "research-speed-3",
+            "research-speed-4",
+            "research-speed-5",
+            "research-speed-6",
+            "robotics",
+            "rocket-fuel",
+            "rocket-silo",
+            "rocketry",
+            "solar-energy",
+            "solar-panel-equipment",
+            "space-science-pack",
+            "speed-module",
+            "speed-module-2",
+            "speed-module-3",
+            "spidertron",
+            "steam-power",
+            "steel-axe",
+            "steel-processing",
+            "stone-wall",
+            "stronger-explosives-1",
+            "stronger-explosives-2",
+            "stronger-explosives-3",
+            "stronger-explosives-4",
+            "stronger-explosives-5",
+            "stronger-explosives-6",
+            "sulfur-processing",
+            "tank",
+            "toolbelt",
+            "uranium-ammo",
+            "uranium-mining",
+            "uranium-processing",
+            "utility-science-pack",
+            "weapon-shooting-speed-1",
+            "weapon-shooting-speed-2",
+            "weapon-shooting-speed-3",
+            "weapon-shooting-speed-4",
+            "weapon-shooting-speed-5",
+            "weapon-shooting-speed-6",
+            "worker-robots-speed-1",
+            "worker-robots-speed-2",
+            "worker-robots-speed-3",
+            "worker-robots-speed-4",
+            "worker-robots-speed-5",
+            "worker-robots-storage-1",
+            "worker-robots-storage-2",
+            "worker-robots-storage-3"
+          ],
+          "new_invariant_violations": [],
+          "resolved_invariant_violations": [],
+          "bottleneck_shift": null,
+          "explanation": "No material change was established on comparable dimensions."
+        }
+      }
+    ]
+  }
+}

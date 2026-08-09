@@ -9,9 +9,7 @@ if sys.platform == "win32":
         allow_module_level=True,
     )
 
-PACKAGE_ROOT = (
-    Path(__file__).parents[2] / "environments" / "factorio_microtasks"
-)
+PACKAGE_ROOT = Path(__file__).parents[2] / "environments" / "factorio_microtasks"
 sys.path.insert(0, str(PACKAGE_ROOT))
 
 from factorio_microtasks import FactorioMicrotasksTaskset  # noqa: E402

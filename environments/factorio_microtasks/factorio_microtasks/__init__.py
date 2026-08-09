@@ -3,4 +3,3 @@
 from factorio_microtasks.taskset import FactorioMicrotasksTaskset
 
 __all__ = ["FactorioMicrotasksTaskset"]
-

@@ -70,6 +70,19 @@ Credentials are stored in `~/.fle/codex_auth.json`, and an existing
 `codex login` from the official Codex CLI is picked up automatically. Model
 availability depends on your subscription, not on FLE.
 
+#### Using a Claude subscription instead of an API key
+
+The same works for Anthropic models with a Claude Pro/Max account and no
+`ANTHROPIC_API_KEY`:
+
+```bash
+fle claude login                   # opens a browser (PKCE OAuth); `fle claude status` to check
+fle inspect-eval --env-id iron_ore_throughput --model claude/claude-sonnet-4-5
+```
+
+Credentials are stored in `~/.fle/claude_auth.json`, and an existing Claude
+Code login (`~/.claude/.credentials.json`) is picked up automatically.
+
 ## Environment
 
 FLE is an agent evaluation environment built on the game of Factorio, a popular resource management simulation game.

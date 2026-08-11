@@ -110,6 +110,66 @@ def fle_codex(args):
         sys.exit(1)
 
 
+def fle_claude(args):
+    """Manage the Claude credentials used by `--model claude/<model>`."""
+    import asyncio
+    from datetime import datetime, timezone
+
+    from fle.eval.inspect.claude.auth import (
+        CLAUDE_CODE_CREDENTIALS_FILE,
+        FLE_CREDENTIALS_FILE,
+        ClaudeAuthError,
+        load_credentials,
+        login,
+    )
+
+    command = getattr(args, "claude_command", None) or "status"
+    try:
+        if command == "login":
+            asyncio.run(login())
+        elif command == "status":
+            credentials = load_credentials()
+            if credentials is None:
+                print(
+                    "Not logged in to Claude. Run 'fle claude login' (or log in "
+                    f"to Claude Code to reuse {CLAUDE_CODE_CREDENTIALS_FILE})."
+                )
+                sys.exit(1)
+            expires = datetime.fromtimestamp(credentials.expires_at, timezone.utc)
+            state = "expired" if credentials.is_expired() else "valid"
+            print(
+                f"Logged in to Claude "
+                f"({credentials.subscription_type or 'unknown plan'})"
+            )
+            print(f"  source: {credentials.source} ({credentials.origin})")
+            print(f"  scopes: {' '.join(credentials.scopes) or 'unknown'}")
+            print(f"  token:  {state}, expires {expires:%Y-%m-%d %H:%M:%S} UTC")
+        elif command == "logout":
+            if FLE_CREDENTIALS_FILE.exists():
+                FLE_CREDENTIALS_FILE.unlink()
+                print(f"Removed {FLE_CREDENTIALS_FILE}")
+            else:
+                print("No FLE Claude credentials stored.")
+            # Credentials borrowed from Claude Code are not ours to delete,
+            # but logout must not look successful while the provider would
+            # still authenticate.
+            remaining = load_credentials()
+            if remaining is not None:
+                removal_hint = (
+                    "Run '/logout' in Claude Code to remove it."
+                    if remaining.source == "claude-code"
+                    else f"Delete {remaining.origin} to remove it."
+                )
+                print(
+                    f"Warning: still logged in via {remaining.origin} "
+                    f"({remaining.source}); the claude/<model> provider will "
+                    f"continue to use it. {removal_hint}"
+                )
+    except ClaudeAuthError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def fle_inspect_eval(args):
     """New command: fle inspect-eval using Inspect framework"""
     _eval_integration_dir = Path(__file__).parent / "eval" / "inspect" / "integration"
@@ -626,6 +686,10 @@ Examples:
   fle codex login
   fle inspect-eval --env-id iron_ore_throughput --model codex/gpt-5.6-sol
 
+  # Use a Claude Pro/Max subscription instead of an Anthropic API key
+  fle claude login
+  fle inspect-eval --env-id iron_ore_throughput --model claude/claude-sonnet-4-5
+
   # Other commands
   fle eval --config configs/gym_run_config.json
   fle cluster [start|stop|restart|help] [-n N] [-s SCENARIO]
@@ -821,6 +885,18 @@ Examples:
         help="Codex auth command (default: status)",
     )
 
+    parser_claude = subparsers.add_parser(
+        "claude",
+        help="Manage Claude credentials for the claude/<model> provider",
+    )
+    parser_claude.add_argument(
+        "claude_command",
+        nargs="?",
+        default="status",
+        choices=["login", "status", "logout"],
+        help="Claude auth command (default: status)",
+    )
+
     args = parser.parse_args()
     if args.command:
         fle_init()
@@ -836,6 +912,8 @@ Examples:
         fle_sandbox(args)
     elif args.command == "codex":
         fle_codex(args)
+    elif args.command == "claude":
+        fle_claude(args)
     else:
         parser.print_help()
         sys.exit(1)

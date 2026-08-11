@@ -21,6 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tokens on use, rotated tokens are written back to the file they were loaded
   from, so borrowing the Codex CLI's credentials no longer logs it out.
 
+**Claude subscription (OAuth) support**
+
+- New `claude/<model>` Inspect model provider: run evals against the Anthropic
+  API using a Claude Pro/Max subscription instead of an `ANTHROPIC_API_KEY`
+  (e.g. `fle inspect-eval --model claude/claude-sonnet-4-5`).
+- New `fle claude login|status|logout` command implementing the OAuth PKCE
+  flow. Credentials are stored in `~/.fle/claude_auth.json`; an existing
+  `~/.claude/.credentials.json` from Claude Code is reused automatically, and
+  rotated refresh tokens are written back so Claude Code stays logged in.
+- Vendored pi's `packages/ai/src` (the reference implementation for the
+  Claude Code OAuth flow and request shaping) under `vendor/pi-ai` via
+  `git subtree`; see the subtree commit for the update recipe.
+
 ### Fixed
 
 - `solver.py` and `sandbox_solver.py` no longer pass the OpenRouter-only

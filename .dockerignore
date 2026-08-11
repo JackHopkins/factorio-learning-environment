@@ -16,3 +16,4 @@ build
 dist
 outputs
 logs
+vendor

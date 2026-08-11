@@ -112,12 +112,15 @@ inspect = [
 [project.scripts]
 fle = "fle.run:main"
 
-# Registers the `codex/<model>` provider so `inspect eval --model codex/...`
-# authenticates with a ChatGPT subscription instead of an OPENAI_API_KEY.
-# Points at _registry (not provider) so an incompatible inspect-ai only
-# disables the codex provider instead of breaking every inspect invocation.
+# Registers the `codex/<model>` and `claude/<model>` providers so that
+# `inspect eval` can authenticate with a ChatGPT subscription (instead of an
+# OPENAI_API_KEY) or a Claude Pro/Max subscription (instead of an
+# ANTHROPIC_API_KEY). Points at _registry (not provider) so an incompatible
+# inspect-ai only disables these providers instead of breaking every inspect
+# invocation.
 [project.entry-points.inspect_ai]
 fle = "fle.eval.inspect.codex._registry"
+fle-claude = "fle.eval.inspect.claude._registry"
 
 [tool.hatch.version]
 path = "fle/__init__.py"
@@ -128,6 +131,7 @@ exclude = [
     "fle/**/*.pyc",
     "fle/**/*.pyo",
     "fle/**/*.pyd",
+    "vendor",
 ]
 
 [tool.hatch.build.targets.wheel]

@@ -15,7 +15,7 @@ Invariants tested:
 import pytest
 
 from fle.env import Direction, Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -200,7 +200,7 @@ def test_crafting_machine_progress_in_valid_range(game):
     assert assembler is not None, "Assembler should be placed"
 
     # Set a recipe (iron gear wheels: 2 iron plates -> 1 gear)
-    game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Insert ingredients
     game.insert_item(Prototype.IronPlate, assembler, 50)

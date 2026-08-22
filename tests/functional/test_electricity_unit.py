@@ -11,7 +11,7 @@ from fle.env.entities import (
     EntityStatus,
 )
 from fle.env import DirectionInternal as Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -239,7 +239,7 @@ def test_build_iron_gear_factory_from_scratch(game):
         spacing=0,
     )
     # set the recipe for the assembly machine to produce iron gears
-    game.set_entity_recipe(assembly_machine, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembly_machine, RecipeName.IronGearWheel)
 
     # craft an offshore pump
     recipe = game.get_prototype_recipe(Prototype.OffshorePump)

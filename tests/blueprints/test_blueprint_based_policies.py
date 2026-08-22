@@ -2,7 +2,7 @@ import pytest
 
 from fle.env.entities import Position, BoundingBox  # , Direction
 from fle.env import DirectionInternal as Direction
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -406,7 +406,7 @@ def test_minig_blueprint_4(game):
         exact=True,
     )
 
-    game.set_entity_recipe(assembling_machine_1_1, Prototype.StoneFurnace)
+    game.set_entity_recipe(assembling_machine_1_1, RecipeName.StoneFurnace)
 
     # Place individual burner-mining-drill
     game.move_to(Position(x=origin.x + 5.0, y=origin.y + 3.0))

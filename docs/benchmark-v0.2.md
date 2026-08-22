@@ -104,6 +104,11 @@ fle-benchmark-results summary benchmark/results/my-model.json
 Validation rejects unknown tasks, mismatched benchmark versions, and task
 fingerprints that do not match the checked-out catalog.
 
+The runner also records the model-facing action-reference identifier and its
+SHA-256. This separates API onboarding conditions: changing callable
+signatures, examples, or namespace guidance can change pass rates even when
+the underlying task and verifier are unchanged.
+
 ### Tool-error retries
 
 Evaluation can grant a bounded recovery allowance:

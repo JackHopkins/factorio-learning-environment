@@ -9,7 +9,7 @@ authors = [{ name = "WASLab" }]
 keywords = ["factorio", "rlvr", "agents", "benchmark", "verifiers"]
 dependencies = [
     "verifiers>=0.2.1,<0.4",
-    "factorio-learning-environment @ git+https://github.com/WASlab/factorio-learning-environment.git@7344674b6d6fb323a30cfb8c48b120af6277f00b",
+    "factorio-learning-environment @ git+https://github.com/HumanDotPy/factorio-learning-environment.git@7344674b6d6fb323a30cfb8c48b120af6277f00b",
 ]
 
 [build-system]

@@ -1,7 +1,7 @@
 import pytest
 
 from fle.env.entities import Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -28,7 +28,7 @@ def test_extract_assembler_multi(game):
     assembler = game.place_entity(
         Prototype.AssemblingMachine1, position=Position(x=0, y=0)
     )
-    game.set_entity_recipe(assembler, Prototype.ElectronicCircuit)
+    game.set_entity_recipe(assembler, RecipeName.ElectronicCircuit)
     game.insert_item(Prototype.IronPlate, assembler, quantity=10)
     game.insert_item(Prototype.CopperCable, assembler, quantity=3)
     inventory = game.inspect_inventory(assembler)

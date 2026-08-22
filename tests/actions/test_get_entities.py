@@ -1,7 +1,7 @@
 import pytest
 
 from fle.env import entities as ent
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -195,7 +195,7 @@ def test_get_assembling_machine_1(game):
     assembling_machine = game.place_entity(
         Prototype.AssemblingMachine1, position=ent.Position(x=0, y=0)
     )
-    game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembling_machine, RecipeName.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
 
     retrieved_machine = game.get_entities({Prototype.AssemblingMachine1})[0]

@@ -1,14 +1,15 @@
 # Update these pins together after running the Factorio v1 contract tests.
 [prime_rl]
 version = "0.7.0"
-commit = "d69dbb8da48b621a83610719ce883dc7f862dd13"
+commit = "ec92686fbceb9375d2155cd05c6e87652bf68441"
 python = "~=3.12.0"
 repository = "https://github.com/PrimeIntellect-ai/prime-rl"
+vllm = "0.26.0"
 
 [verifiers]
 api = "v1"
-pypi_release = "0.2.1"
-commit = "1f457da17a0408ef062f2c11576e67d2cd66126a"
+pypi_release = "0.2.2.dev76"
+commit = "d30a3f48e5f14b06b3081b2102ec32cc3149b849"
 source = "prime-rl submodule"
 repository = "https://github.com/PrimeIntellect-ai/verifiers"
 

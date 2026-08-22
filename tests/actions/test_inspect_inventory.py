@@ -1,7 +1,7 @@
 import pytest
 
 from fle.env.entities import Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -34,7 +34,7 @@ def test_inspect_assembling_machine_inventory(game):
     machine = game.place_entity(
         Prototype.AssemblingMachine1, position=Position(x=0, y=0)
     )
-    game.set_entity_recipe(machine, Prototype.IronGearWheel)
+    game.set_entity_recipe(machine, RecipeName.IronGearWheel)
     game.insert_item(Prototype.IronPlate, machine, quantity=5)
     chest_inventory = game.inspect_inventory(entity=machine)
     iron_count = chest_inventory[Prototype.IronPlate]

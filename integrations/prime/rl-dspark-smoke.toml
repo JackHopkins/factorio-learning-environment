@@ -1,0 +1,43 @@
+# Strict-DSpark variant of rl-smoke.toml.
+#
+# This is intentionally a template, not a universal configuration. The target
+# and speculator must be a matched pair. The pair below is the released
+# DeepSpec Qwen3-4B pair; confirm that the selected vLLM build can load the
+# checkpoint format before renting a long-lived pod.
+max_steps = 2
+seq_len = 8192
+
+[model]
+name = "Qwen/Qwen3-4B"
+
+[wandb]
+project = "factorio-rlvr"
+name = "factorio-envd-dspark-smoke"
+
+[orchestrator]
+batch_size = 8
+group_size = 4
+
+[orchestrator.train.sampling]
+max_completion_tokens = 2048
+
+[[orchestrator.train.env]]
+name = "factorio-iron-plate"
+taskset = { id = "factorio_v1", task_ids = ["iron_plate_throughput"], max_interventions = 4, holdout_seconds = 15, task = { tools = { envd_url = "http://127.0.0.1:8172" } } }
+harness = { id = "null", runtime = { type = "subprocess" } }
+
+[trainer.optim]
+lr = 3e-6
+
+[ckpt]
+
+[inference]
+
+# Prime-RL forwards this dictionary to vLLM without requiring a trainer fork.
+# Keep rejection_sample_method="strict" for RL rollouts. Do not substitute the
+# DSpark paper's non-causal global-search production relaxation.
+[inference.vllm_extra]
+speculative_config = { method = "dspark", model = "deepseek-ai/dspark_qwen3_4b_block7", num_speculative_tokens = 7, rejection_sample_method = "strict" }
+
+[orchestrator.renderer]
+name = "prime-qwen3"

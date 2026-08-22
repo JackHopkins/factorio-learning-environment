@@ -1,7 +1,7 @@
 import pytest
 from time import sleep
 from fle.env.entities import Position, ResourcePatch, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -132,7 +132,7 @@ def test_entity_interactions(game):
     assembler = game.place_entity_next_to(
         Prototype.AssemblingMachine1, steam_engine.position, Direction.DOWN, spacing=5
     )
-    game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     input_chest = game.place_entity_next_to(
         Prototype.IronChest,

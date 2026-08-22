@@ -1,7 +1,7 @@
 import pytest
 
 from fle.env import Direction, Position
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -31,7 +31,7 @@ def test_solar_panel_charge_accumulator(game):
     assembly_pos = Position(x=0, y=0)
     game.move_to(assembly_pos)
     ass_machine = game.place_entity(Prototype.AssemblingMachine2, position=assembly_pos)
-    ass_machine = game.set_entity_recipe(ass_machine, Prototype.Concrete)
+    ass_machine = game.set_entity_recipe(ass_machine, RecipeName.Concrete)
     # Find water for power generation
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
@@ -56,7 +56,7 @@ def test_assembler_2_connect_to_storage(game):
             position=assembly_pos,
             direction=Direction.LEFT,
         )
-        game.set_entity_recipe(entity=ass_machine, prototype=Prototype.Concrete)
+        game.set_entity_recipe(entity=ass_machine, recipe=RecipeName.Concrete)
         ass_machine = game.rotate_entity(ass_machine, direction)
 
         tank_pos = Position(x=-37, y=6.5)
@@ -79,7 +79,7 @@ def test_assembler_2_concrete(game):
     ass_machine = game.place_entity_next_to(
         Prototype.AssemblingMachine2, pump.position, Direction.RIGHT, spacing=2
     )
-    game.set_entity_recipe(entity=ass_machine, prototype=Prototype.Concrete)
+    game.set_entity_recipe(entity=ass_machine, recipe=RecipeName.Concrete)
     game.insert_item(Prototype.StoneBrick, ass_machine, 20)
     game.insert_item(Prototype.IronOre, ass_machine, 20)
 

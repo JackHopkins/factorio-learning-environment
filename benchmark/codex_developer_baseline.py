@@ -33,7 +33,7 @@ PROGRAMS: dict[str, list[str]] = {
     "micro_configure_assembler_recipe_v1": [
         """\
 a = place_entity(Prototype.AssemblingMachine1, position=Position(x=0, y=0))
-a = set_entity_recipe(a, Prototype.IronGearWheel)
+a = set_entity_recipe(a, RecipeName.IronGearWheel)
 print(a)
 """
     ],
@@ -95,7 +95,7 @@ assembler = place_entity(
     Prototype.AssemblingMachine1,
     position=Position(x=0, y=0),
 )
-assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
+assembler = set_entity_recipe(assembler, RecipeName.IronGearWheel)
 assembler = insert_item(Prototype.IronPlate, assembler, 10)
 print(connect_entities(solar, assembler, Prototype.SmallElectricPole))
 sleep(5)
@@ -128,7 +128,7 @@ assembler = place_entity(
     Prototype.AssemblingMachine1,
     position=Position(x=0, y=0),
 )
-assembler = set_entity_recipe(assembler, Prototype.ElectronicCircuit)
+assembler = set_entity_recipe(assembler, RecipeName.ElectronicCircuit)
 assembler = insert_item(Prototype.IronPlate, assembler, 10)
 assembler = insert_item(Prototype.CopperCable, assembler, 30)
 print(connect_entities(solar, assembler, Prototype.SmallElectricPole))
@@ -143,7 +143,7 @@ assembler = place_entity(
     Prototype.AssemblingMachine1,
     position=Position(x=0, y=0),
 )
-assembler = set_entity_recipe(assembler, Prototype.AutomationSciencePack)
+assembler = set_entity_recipe(assembler, RecipeName.AutomationSciencePack)
 assembler = insert_item(Prototype.IronGearWheel, assembler, 10)
 assembler = insert_item(Prototype.CopperPlate, assembler, 10)
 print(connect_entities(solar, assembler, Prototype.SmallElectricPole))
@@ -154,7 +154,7 @@ print(get_entity(Prototype.AssemblingMachine1, assembler.position))
     "micro_configure_chemical_plant_v1": [
         """\
 plant = place_entity(Prototype.ChemicalPlant, position=Position(x=0, y=0))
-plant = set_entity_recipe(plant, Prototype.PlasticBar)
+plant = set_entity_recipe(plant, RecipeName.PlasticBar)
 print(plant)
 """
     ],
@@ -171,7 +171,7 @@ assembler = place_entity(
     Prototype.AssemblingMachine2,
     position=Position(x=0, y=0),
 )
-assembler = set_entity_recipe(assembler, Prototype.IronGearWheel)
+assembler = set_entity_recipe(assembler, RecipeName.IronGearWheel)
 assembler = insert_item(Prototype.SpeedModule, assembler, 1)
 print(assembler)
 """

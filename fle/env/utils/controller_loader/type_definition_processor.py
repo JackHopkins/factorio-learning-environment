@@ -21,10 +21,33 @@ class TypeDefinitionProcessor:
             cleaned_content.replace("\n\n\n", "\n").replace("\n\n", "\n").strip()
         )
 
-        # Extract from Prototype class onwards
-        prototype_index = cleaned_content.find("class RecipeName(enum.Enum)")
-        return (
-            cleaned_content[prototype_index:]
-            if prototype_index >= 0
-            else cleaned_content
+        # RecipeName is assembled from the complete Prototype registry at import
+        # time. Render its concrete members for model-facing type documentation
+        # rather than exposing that implementation machinery.
+        from fle.env.game_types import RecipeName
+
+        recipe_lines = ["class RecipeName(enum.Enum):"]
+        recipe_lines.extend(
+            f"    {name} = {member.value!r}"
+            for name, member in RecipeName.__members__.items()
+        )
+
+        prototype_index = cleaned_content.find("class Prototype(")
+        recipe_runtime_index = cleaned_content.find("_RECIPE_NAME_MEMBERS")
+        lookup_index = cleaned_content.find("prototype_by_name")
+        if min(prototype_index, recipe_runtime_index, lookup_index) < 0:
+            return cleaned_content
+
+        prototype_definition = cleaned_content[
+            prototype_index:recipe_runtime_index
+        ].rstrip()
+        remaining_definitions = cleaned_content[lookup_index:]
+        return "\n".join(
+            [
+                *recipe_lines,
+                "",
+                prototype_definition,
+                "",
+                remaining_definitions,
+            ]
         )

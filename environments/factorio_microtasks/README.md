@@ -80,7 +80,7 @@ finalization. The trace also includes:
 
 ## Source and licensing
 
-- Environment integration: <https://github.com/WASlab/factorio-learning-environment>
+- Environment integration: <https://github.com/HumanDotPy/factorio-learning-environment>
 - Upstream FLE: <https://github.com/JackHopkins/factorio-learning-environment>
 - Environment code: MIT
 

@@ -1,6 +1,6 @@
 import pytest
 from fle.env import Direction, Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -87,7 +87,7 @@ def test_filter_inserter(game):
     )
 
     # Set filter to only move iron plates
-    game.set_entity_recipe(inserter, Prototype.IronPlate)
+    game.set_entity_recipe(inserter, RecipeName.IronPlate)
 
     # Insert mixed items
     game.insert_item(Prototype.IronPlate, input_chest, quantity=50)
@@ -141,7 +141,7 @@ def test_filter_stack_inserter(game):
     )
 
     # Set filter to only move electronic circuits
-    game.set_entity_recipe(inserter, Prototype.ElectronicCircuit)
+    game.set_entity_recipe(inserter, RecipeName.ElectronicCircuit)
 
     # Insert large quantity of items
     game.insert_item(Prototype.ElectronicCircuit, input_chest, quantity=100)

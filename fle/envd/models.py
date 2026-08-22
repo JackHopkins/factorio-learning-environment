@@ -8,6 +8,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 PROTOCOL_VERSION = "0.3.0"
+CUSTOMER_GENERATOR_VERSION = "customer-schedule-v1"
+DISRUPTION_GENERATOR_VERSION = "disruption-schedule-v1"
 
 
 class WireModel(BaseModel):
@@ -35,7 +37,23 @@ ObjectiveKind = Literal[
     "entity_position",
     "rocket_launch",
     "survival",
+    "contract_fulfillment",
     "custom",
+]
+OrderKind = Literal["one_shot", "sustained"]
+ContractStatus = Literal["pending", "open", "fulfilled", "expired"]
+PerturbationKind = Literal[
+    "resource_depletion",
+    "entity_destruction",
+    "enemy_wave",
+]
+PerturbationStatus = Literal["pending", "applied", "failed"]
+RolloutSource = Literal["fresh", "inherited", "pathological"]
+LineageOutcome = Literal[
+    "healthy",
+    "degraded_recoverable",
+    "dominated",
+    "horizon_reached",
 ]
 Comparator = Literal["gte", "lte", "eq", "increases", "decreases", "maximize"]
 LearningStrategy = Literal[
@@ -155,6 +173,150 @@ class ProvisioningSpec(WireModel):
     character_inventory_slots_bonus: int = Field(default=0, ge=0, le=1000)
 
 
+class ProductDemandSpec(WireModel):
+    """Requested quantity of one product on a customer order."""
+
+    product: str
+    quantity: float = Field(gt=0)
+
+
+class DemandOrderSpec(WireModel):
+    """One hidden customer order in a pre-generated demand schedule.
+
+    ``one_shot`` orders request total quantities delivered between
+    ``issue_tick`` and ``due_tick``.  ``sustained`` orders request a steady
+    rate over their window; the verifier slices the window and scores each
+    slice against the requested slice quantity.
+    """
+
+    order_id: str
+    kind: OrderKind = "one_shot"
+    products: list[ProductDemandSpec]
+    issue_tick: int = Field(ge=0)
+    due_tick: int = Field(gt=0)
+    grace_ticks: int = Field(default=0, ge=0)
+    required: bool = True
+    weight: float = Field(default=1.0, gt=0)
+
+    @model_validator(mode="after")
+    def validate_window(self) -> "DemandOrderSpec":
+        if self.due_tick <= self.issue_tick:
+            raise ValueError(
+                f"Order {self.order_id!r} due_tick must be greater than issue_tick"
+            )
+        if len(self.products) != len({p.product for p in self.products}):
+            raise ValueError(
+                f"Order {self.order_id!r} has duplicate products"
+            )
+        return self
+
+    @property
+    def close_tick(self) -> int:
+        return self.due_tick + self.grace_ticks
+
+
+class CustomerContractSpec(WireModel):
+    """Immutable externally-owned demand schedule for one rollout.
+
+    The full schedule ships inside the task spec (the benchmark equivalent of
+    hidden unit tests) but the acting policy only ever observes orders whose
+    ``issue_tick`` has already passed.  Fulfillment is measured exclusively by
+    items physically crossing into customer-owned sink depots.
+    """
+
+    generator_version: str = CUSTOMER_GENERATOR_VERSION
+    orders: list[DemandOrderSpec] = Field(min_length=1)
+    depot_chests: int = Field(default=8, ge=1, le=64)
+    lateness_penalty_weight: float = Field(default=0.0, ge=0.0)
+    success_ratio: float = Field(default=1.0, gt=0.0, le=1.0)
+    receipt_key_env: str = "FLE_CUSTOMER_RECEIPT_KEY"
+
+    @model_validator(mode="after")
+    def validate_order_ids(self) -> "CustomerContractSpec":
+        order_ids = [order.order_id for order in self.orders]
+        if len(order_ids) != len(set(order_ids)):
+            raise ValueError("Customer order ids must be unique within a schedule")
+        return self
+
+    @computed_field
+    @property
+    def commitment(self) -> str:
+        payload = json.dumps(
+            [order.model_dump(mode="json") for order in sorted(
+                self.orders, key=lambda order: (order.issue_tick, order.order_id)
+            )],
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class PerturbationSpec(WireModel):
+    """One hidden world disruption scheduled at a trigger tick.
+
+    The schedule is immutable benchmark input; the blast radius is whatever
+    exists in the live factory when it fires, and exactly what was hit is
+    recorded in the emitted event payload for auditability.
+
+    Parameter conventions by kind:
+
+    - ``resource_depletion``: ``radius`` (tiles around target), optional
+      ``resources`` filter list, optional ``position`` override.
+    - ``entity_destruction``: ``count``, ``entity_types`` and/or
+      ``entity_names`` filters, optional ``position`` override.
+    - ``enemy_wave``: ``count``, optional ``tier`` (biter size), spawn at
+      the factory perimeter.
+    """
+
+    perturbation_id: str
+    kind: PerturbationKind
+    trigger_tick: int = Field(ge=0)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_parameters(self) -> "PerturbationSpec":
+        if self.kind == "entity_destruction":
+            filters = (
+                self.parameters.get("entity_types"),
+                self.parameters.get("entity_names"),
+            )
+            if not any(filters):
+                raise ValueError(
+                    f"Perturbation {self.perturbation_id!r} entity_destruction "
+                    "requires parameters.entity_types or parameters.entity_names"
+                )
+        return self
+
+
+class DisruptionScheduleSpec(WireModel):
+    """Immutable hidden disruption schedule for one rollout."""
+
+    generator_version: str = DISRUPTION_GENERATOR_VERSION
+    perturbations: list[PerturbationSpec] = Field(min_length=1)
+    recovery_rate_threshold: float = Field(default=0.85, gt=0.0, le=1.0)
+    recovery_min_ticks: int = Field(default=600, ge=0)
+
+    @model_validator(mode="after")
+    def validate_perturbation_ids(self) -> "DisruptionScheduleSpec":
+        ids = [p.perturbation_id for p in self.perturbations]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Perturbation ids must be unique within a schedule")
+        return self
+
+    @computed_field
+    @property
+    def commitment(self) -> str:
+        payload = json.dumps(
+            [
+                p.model_dump(mode="json")
+                for p in sorted(self.perturbations, key=lambda p: p.trigger_tick)
+            ],
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()
+
+
 class FactorioTaskSpec(WireModel):
     """Immutable inputs required to reproduce one rollout task."""
 
@@ -168,6 +330,24 @@ class FactorioTaskSpec(WireModel):
     curriculum: CurriculumSpec = Field(default_factory=CurriculumSpec)
     knowledge_sources: list[KnowledgeSourceSpec] = Field(default_factory=list)
     provisioning: ProvisioningSpec = Field(default_factory=ProvisioningSpec)
+    customer: CustomerContractSpec | None = None
+    perturbations: DisruptionScheduleSpec | None = None
+    blueprint_scope: str | None = Field(
+        default=None,
+        description=(
+            "Blueprint store scope. None keeps blueprints ephemeral to the "
+            "lease (benchmark default); a lineage id shares saved blueprints "
+            "across a training generation."
+        ),
+    )
+    lineage_id: str | None = Field(
+        default=None,
+        description="Map-lineage this episode continues, if any.",
+    )
+    generation_id: str | None = Field(
+        default=None,
+        description="Training generation this rollout belongs to.",
+    )
     seed: int = 0
     scenario: str = "default_lab_scenario"
     factorio_version: str = "2.0.73"
@@ -191,6 +371,25 @@ class FactorioTaskSpec(WireModel):
     def fingerprint(self) -> str:
         payload = self.model_dump_json(exclude={"fingerprint"})
         return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class LifecycleDecision(WireModel):
+    """Recoverability verdict for one map lineage after an episode.
+
+    Mirrors the ``V_continue(s) < V_restart - C_reset`` retirement rule.
+    Counterfactual branch probes, when present, are the authoritative
+    continuation estimate; otherwise a documented heuristic proxy is used.
+    """
+
+    lineage_id: str
+    outcome: LineageOutcome
+    continue_lineage: bool
+    next_source: RolloutSource | None = None
+    continuation_value: float = Field(ge=0.0, le=1.0)
+    restart_value: float = Field(ge=0.0, le=1.0)
+    reset_cost: float = Field(default=0.0, ge=0.0)
+    reason: str = ""
+    evidence: dict[str, Any] = Field(default_factory=dict)
 
 
 class Lease(WireModel):
@@ -254,6 +453,34 @@ class Observation(WireModel):
     automated_production_score: float = 0.0
     production: dict[str, Any] = Field(default_factory=dict)
     state_hash: str
+    contracts: list["OpenContractView"] = Field(default_factory=list)
+    blueprints: list["BlueprintSummary"] = Field(default_factory=list)
+
+
+class BlueprintSummary(WireModel):
+    """Student-visible blueprint library entry (content stays server-side)."""
+
+    name: str
+    entity_count: int = 0
+    times_placed: int = 0
+    content_sha256: str = ""
+
+
+class OpenContractView(WireModel):
+    """Student-visible projection of a customer order.
+
+    Only orders whose issue tick has passed are ever exposed.  Future demand,
+    penalty weights, and verifier internals are deliberately absent.
+    """
+
+    order_id: str
+    kind: OrderKind
+    products: list[ProductDemandSpec]
+    issued_at_tick: int
+    due_tick: int
+    grace_ticks: int = 0
+    status: ContractStatus = "open"
+    fulfilled: dict[str, float] = Field(default_factory=dict)
 
 
 class RewardVector(WireModel):
@@ -267,6 +494,8 @@ class RewardVector(WireModel):
     robustness: float = 0.0
     time_efficiency: float = 0.0
     manual_intervention: float = 0.0
+    contracts: float = 0.0
+    contract_penalty: float = 0.0
 
 
 class ObjectiveEvaluation(WireModel):
@@ -464,6 +693,10 @@ class VerifierEvent(WireModel):
         "bottleneck_shift",
         "perturbation_applied",
         "recovery_completed",
+        "contract_issued",
+        "contract_progress",
+        "contract_fulfilled",
+        "contract_expired",
         "character_died",
         "character_respawned",
         "resource_depleted",
@@ -529,6 +762,7 @@ class CapabilityManifest(WireModel):
             "checkpoints": False,
             "clone": False,
             "pause_resume": False,
+            "blueprint_store": True,
         }
     )
 

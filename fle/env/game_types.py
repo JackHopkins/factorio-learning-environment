@@ -35,49 +35,33 @@ class PrototypeMetaclass(enum.EnumMeta):
             )
 
 
-class RecipeName(enum.Enum):
-    """
-    Recipe names that can be used in the game for fluids
-    """
-
-    NuclearFuelReprocessing = "nuclear-fuel-reprocessing"
-    UraniumProcessing = "uranium-processing"
-    SulfuricAcid = (
-        "sulfuric-acid"  # Recipe for producing sulfuric acid with a chemical plant
-    )
-    BasicOilProcessing = (
-        "basic-oil-processing"  # Recipe for producing petroleum gas with a oil refinery
-    )
-    AdvancedOilProcessing = "advanced-oil-processing"  # Recipe for producing petroleum gas, heavy oil and light oil with a oil refinery
-    CoalLiquefaction = (
-        "coal-liquefaction"  # Recipe for producing petroleum gas in a oil refinery
-    )
-    HeavyOilCracking = (
-        "heavy-oil-cracking"  # Recipe for producing light oil in a chemical plant
-    )
-    LightOilCracking = (
-        "light-oil-cracking"  # Recipe for producing petroleum gas in a chemical plant
-    )
-
-    SolidFuelFromHeavyOil = "solid-fuel-from-heavy-oil"  # Recipe for producing solid fuel in a chemical plant
-    SolidFuelFromLightOil = "solid-fuel-from-light-oil"  # Recipe for producing solid fuel in a chemical plant
-    SolidFuelFromPetroleumGas = "solid-fuel-from-petroleum-gas"  # Recipe for producing solid fuel in a chemical plant
-
-    FillCrudeOilBarrel = "crude-oil-barrel"
-    FillHeavyOilBarrel = "heavy-oil-barrel"
-    FillLightOilBarrel = "light-oil-barrel"
-    FillLubricantBarrel = "lubricant-barrel"
-    FillPetroleumGasBarrel = "petroleum-gas-barrel"
-    FillSulfuricAcidBarrel = "sulfuric-acid-barrel"
-    FillWaterBarrel = "water-barrel"
-
-    EmptyCrudeOilBarrel = "empty-crude-oil-barrel"
-    EmptyHeavyOilBarrel = "empty-heavy-oil-barrel"
-    EmptyLightOilBarrel = "empty-light-oil-barrel"
-    EmptyLubricantBarrel = "empty-lubricant-barrel"
-    EmptyPetroleumGasBarrel = "empty-petroleum-gas-barrel"
-    EmptySulfuricAcidBarrel = "empty-sulfuric-acid-barrel"
-    EmptyWaterBarrel = "empty-water-barrel"
+_SPECIAL_RECIPE_NAMES = {
+    "NuclearFuelReprocessing": "nuclear-fuel-reprocessing",
+    "UraniumProcessing": "uranium-processing",
+    "SulfuricAcid": "sulfuric-acid",
+    "BasicOilProcessing": "basic-oil-processing",
+    "AdvancedOilProcessing": "advanced-oil-processing",
+    "CoalLiquefaction": "coal-liquefaction",
+    "HeavyOilCracking": "heavy-oil-cracking",
+    "LightOilCracking": "light-oil-cracking",
+    "SolidFuelFromHeavyOil": "solid-fuel-from-heavy-oil",
+    "SolidFuelFromLightOil": "solid-fuel-from-light-oil",
+    "SolidFuelFromPetroleumGas": "solid-fuel-from-petroleum-gas",
+    "FillCrudeOilBarrel": "crude-oil-barrel",
+    "FillHeavyOilBarrel": "heavy-oil-barrel",
+    "FillLightOilBarrel": "light-oil-barrel",
+    "FillLubricantBarrel": "lubricant-barrel",
+    "FillPetroleumGasBarrel": "petroleum-gas-barrel",
+    "FillSulfuricAcidBarrel": "sulfuric-acid-barrel",
+    "FillWaterBarrel": "water-barrel",
+    "EmptyCrudeOilBarrel": "empty-crude-oil-barrel",
+    "EmptyHeavyOilBarrel": "empty-heavy-oil-barrel",
+    "EmptyLightOilBarrel": "empty-light-oil-barrel",
+    "EmptyLubricantBarrel": "empty-lubricant-barrel",
+    "EmptyPetroleumGasBarrel": "empty-petroleum-gas-barrel",
+    "EmptySulfuricAcidBarrel": "empty-sulfuric-acid-barrel",
+    "EmptyWaterBarrel": "empty-water-barrel",
+}
 
 
 class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
@@ -299,6 +283,17 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     @property
     def HEIGHT(self):
         return self.entity_class._height.default
+
+
+# Recipe selection is intentionally distinct from entity/item selection.  The
+# public API uses RecipeName for every recipe, including recipes whose output
+# happens to share a name with a Prototype.
+_RECIPE_NAME_MEMBERS = {
+    member_name: member.value[0]
+    for member_name, member in Prototype.__members__.items()
+}
+_RECIPE_NAME_MEMBERS.update(_SPECIAL_RECIPE_NAMES)
+RecipeName = enum.Enum("RecipeName", _RECIPE_NAME_MEMBERS, module=__name__)
 
 
 prototype_by_name = {prototype.value[0]: prototype for prototype in Prototype}

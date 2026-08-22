@@ -295,7 +295,7 @@ class BlueprintAnalyzer:
             if entity.recipe:
                 lines.append(
                     f"game.set_entity_recipe({var_name}, "
-                    f"Prototype.{prototype_by_name[entity.recipe].name})"
+                    f"RecipeName.{prototype_by_name[entity.recipe].name})"
                 )
                 lines.append("")
 

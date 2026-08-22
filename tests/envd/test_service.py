@@ -102,6 +102,8 @@ def test_terminal_environment_state_blocks_more_actions_but_can_finalize(task_sp
         "print((1).__class__)",
         "print('{0.__class__}'.format(1))",
         "globals()['escaped'] = True",
+        "set_entity_recipe(machine, Prototype.IronGearWheel)",
+        "set_entity_recipe(entity=machine, prototype=Prototype.IronGearWheel)",
     ],
 )
 def test_program_policy_rejects_host_and_namespace_escape(code, task_spec):

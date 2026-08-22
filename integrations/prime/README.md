@@ -105,3 +105,16 @@ The first run uses Prime-RL without source changes. Fork Prime-RL only when we
 add per-turn Factorio advantages, live checkpoint-derived sampling, or policy
 version pinning. Fork Verifiers only if a missing generic lifecycle or trace
 feature cannot be implemented in this adapter and cannot be upstreamed.
+
+## 5. Qualify DSpark before paid rollouts
+
+Prime-RL's generic `inference.vllm_extra` field is sufficient to configure
+vLLM's DSpark speculative decoder; no trainer fork is required. Use
+`rl-dspark-smoke.toml` only with a target-matched speculator and retain strict
+rejection sampling.
+
+The correctness and performance gates are documented in [DSpark.md](DSpark.md).
+Run the non-speculative and DSpark smoke configurations against the same task
+batch before enabling it for a paid rollout. Strict verification preserves the
+target distribution, but an RL-updated policy can make a frozen draft stale
+and erase the speedup without corrupting samples.

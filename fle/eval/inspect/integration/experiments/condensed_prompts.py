@@ -236,7 +236,7 @@ rotate_entity(entity: Entity, direction: Direction) -> Entity
 # Inserters: affects pickup/drop positions
 # Assemblers: must set recipe first
 
-set_entity_recipe(entity: Entity, prototype: Union[Prototype, RecipeName]) -> Entity
+set_entity_recipe(entity: Entity, recipe: RecipeName) -> Entity
 # For AssemblingMachine, ChemicalPlant, OilRefinery
 # MUST set recipe before connecting fluid pipes
 
@@ -397,7 +397,7 @@ move_to(coords.center)
 
 # Place and configure assembler
 assembler = place_entity(Prototype.AssemblingMachine1, position=coords.center)
-set_entity_recipe(assembler, Prototype.CopperCable)
+set_entity_recipe(assembler, RecipeName.CopperCable)
 
 # Input inserter (rotated to insert into assembler)
 input_inserter = place_entity_next_to(Prototype.BurnerInserter, assembler.position, Direction.RIGHT)

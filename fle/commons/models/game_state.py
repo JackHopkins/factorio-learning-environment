@@ -218,17 +218,20 @@ class GameState:
                 if i < len(self.agent_messages):
                     instance.namespaces[i].load_messages(self.agent_messages[i])
 
-        # Merge pickled namespace with existing persistent_vars for each player
+        # Merge pickled namespace vars for each player. self.namespaces holds
+        # one pickled blob per agent; instance.namespaces holds the live
+        # namespace objects to restore into.
         if self.namespaces:
-            for namespace in instance.namespaces:
-                if namespace:
-                    restored_vars = pickle.loads(namespace)
+            for namespace, pickled in zip(instance.namespaces, self.namespaces):
+                if not pickled:
+                    continue
+                restored_vars = pickle.loads(pickled)
                 if (
-                    not hasattr(instance, "persistent_vars")
-                    or instance.persistent_vars is None
+                    not hasattr(namespace, "persistent_vars")
+                    or namespace.persistent_vars is None
                 ):
-                    instance.persistent_vars = {}
-                instance.persistent_vars.update(restored_vars)
+                    namespace.persistent_vars = {}
+                namespace.persistent_vars.update(restored_vars)
 
 
 def filter_serializable_vars(vars_dict: Dict[str, Any]) -> Dict[str, Any]:

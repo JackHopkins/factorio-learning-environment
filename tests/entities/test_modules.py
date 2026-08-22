@@ -15,7 +15,7 @@ Beacon distribution: 50% effectivity (modules in beacons provide half effect)
 import pytest
 
 from fle.env import Direction, Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -62,7 +62,7 @@ def test_insert_module_into_assembler(game):
     assert assembler is not None
 
     # Set a recipe (required before inserting ingredients, but not for modules)
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Insert speed module
     updated_assembler = game.insert_item(Prototype.SpeedModule, assembler, 1)
@@ -80,7 +80,7 @@ def test_insert_multiple_modules_into_assembler(game):
     assembler = game.place_entity(
         Prototype.AssemblingMachine2, position=Position(x=0, y=0)
     )
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # AssemblingMachine2 has 2 module slots
     game.insert_item(Prototype.SpeedModule, assembler, 1)
@@ -119,8 +119,8 @@ def test_speed_module_increases_production_rate(game):
     )
 
     # Set same recipe for both
-    assembler_base = game.set_entity_recipe(assembler_base, Prototype.IronGearWheel)
-    assembler_modded = game.set_entity_recipe(assembler_modded, Prototype.IronGearWheel)
+    assembler_base = game.set_entity_recipe(assembler_base, RecipeName.IronGearWheel)
+    assembler_modded = game.set_entity_recipe(assembler_modded, RecipeName.IronGearWheel)
 
     # Add speed modules to modded assembler (2 slots for AM2)
     game.insert_item(Prototype.SpeedModule, assembler_modded, 1)
@@ -187,7 +187,7 @@ def test_productivity_module_produces_bonus_items(game):
     assembler = game.place_entity(
         Prototype.AssemblingMachine2, position=Position(x=0, y=0)
     )
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Add productivity modules
     game.insert_item(Prototype.ProductivityModule, assembler, 1)
@@ -220,7 +220,7 @@ def test_assembler_module_inventory_reflects_modules(game):
     assembler = game.place_entity(
         Prototype.AssemblingMachine2, position=Position(x=0, y=0)
     )
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Insert different module types
     game.insert_item(Prototype.SpeedModule, assembler, 1)
@@ -247,7 +247,7 @@ def test_beacon_affects_nearby_assembler(game):
     assembler = game.place_entity(
         Prototype.AssemblingMachine2, position=Position(x=0, y=0)
     )
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Place beacon nearby (beacon has 3 tile effect radius)
     beacon = game.place_entity(Prototype.Beacon, position=Position(x=6, y=0))

@@ -102,6 +102,12 @@ uses `deepseek-v4-flash`, one attempt per ready task, temperature 0.1, no tool
 error retries, and the API's default thinking mode. It completed 3 of 21 tasks
 (14.29%) with 32 invalid interventions out of 68 total interventions.
 
+This run predates the versioned, exact-signature action reference and therefore
+represents the original minimal-reference cold-start condition. New runs record
+an `action_reference_id` and SHA-256 in both trajectories and generation
+configuration. Results with different reference identities are separate
+evaluation conditions even when their task catalog is otherwise identical.
+
 This is a valid but provisional one-sample baseline. A preceding development
 run produced different outcomes on several tasks, so capability comparisons
 should use the planned three-attempt condition. The full technical report is
@@ -119,6 +125,8 @@ A pull request adding results should contain:
    capability score).
 6. The tool-error retry budget. Runs with different retry budgets are separate
    evaluation conditions.
+7. The action-reference identifier and SHA-256. Runs using different public
+   documentation must not be pooled into the same comparison.
 
 Run `fle-benchmark-results validate <result.json>` before opening the pull
 request. Do not hand-edit success values or task fingerprints.

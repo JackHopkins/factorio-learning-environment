@@ -4,7 +4,7 @@ Test assembler rendering with various recipes to isolate rendering failures.
 
 import pytest
 from fle.env.entities import Position
-from fle.env.game_types import Prototype
+from fle.env.game_types import Prototype, RecipeName
 
 
 @pytest.fixture()
@@ -412,7 +412,7 @@ def test_single_assembler_with_recipe(clear_terrain):
     )
 
     # Set a recipe
-    game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Render and show
     image = game._render(position=Position(x=0, y=0), radius=6)
@@ -444,15 +444,15 @@ def test_all_assembler_tiers_with_recipe(clear_terrain):
     # Place all 3 tiers
     game.move_to(Position(x=-5, y=0))
     a1 = game.place_entity(Prototype.AssemblingMachine1, position=Position(x=-5, y=0))
-    game.set_entity_recipe(a1, Prototype.IronGearWheel)
+    game.set_entity_recipe(a1, RecipeName.IronGearWheel)
 
     game.move_to(Position(x=0, y=0))
     a2 = game.place_entity(Prototype.AssemblingMachine2, position=Position(x=0, y=0))
-    game.set_entity_recipe(a2, Prototype.IronGearWheel)
+    game.set_entity_recipe(a2, RecipeName.IronGearWheel)
 
     game.move_to(Position(x=5, y=0))
     a3 = game.place_entity(Prototype.AssemblingMachine3, position=Position(x=5, y=0))
-    game.set_entity_recipe(a3, Prototype.IronGearWheel)
+    game.set_entity_recipe(a3, RecipeName.IronGearWheel)
 
     # Render and show
     image = game._render(position=Position(x=0, y=0), radius=10)
@@ -499,7 +499,7 @@ def test_render_assembler_directly(clear_terrain):
     assembler = game.place_entity(
         Prototype.AssemblingMachine1, position=Position(x=0, y=0)
     )
-    game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
 
     # Get entities and examine
     entities = game.get_entities()

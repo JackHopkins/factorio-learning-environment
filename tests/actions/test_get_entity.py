@@ -2,7 +2,7 @@ import pytest
 
 from fle.env import DirectionInternal
 from fle.env.entities import Furnace, Position
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -161,7 +161,7 @@ def test_get_assembling_machine(game):
     assembling_machine = game.place_entity(
         Prototype.AssemblingMachine1, position=Position(x=5, y=0)
     )
-    game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembling_machine, RecipeName.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
     game.craft_item(Prototype.IronGearWheel, 5)
     game.insert_item(Prototype.IronGearWheel, assembling_machine, quantity=5)
@@ -258,7 +258,7 @@ def test_get_assembling_machine_1(game):
     assembling_machine = game.place_entity(
         Prototype.AssemblingMachine1, position=Position(x=5, y=0)
     )
-    game.set_entity_recipe(assembling_machine, Prototype.IronGearWheel)
+    game.set_entity_recipe(assembling_machine, RecipeName.IronGearWheel)
     game.insert_item(Prototype.IronPlate, assembling_machine, quantity=5)
 
     retrieved_machine = game.get_entity(

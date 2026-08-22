@@ -1,6 +1,14 @@
 import pytest
 from pydantic import ValidationError
 
+from fle.env.game_types import Prototype, RecipeName
+from fle.env.utils.controller_loader.type_definition_processor import (
+    TypeDefinitionProcessor,
+)
+from fle.envd.action_reference import (
+    ACTION_PROFILE_REFERENCE_ID,
+    ACTION_PROFILE_REFERENCE_SHA256,
+)
 from fle.envd.models import (
     ConstraintSpec,
     CurriculumSpec,
@@ -166,11 +174,37 @@ def test_rendered_prompt_includes_public_action_and_lookup_reference():
     prompt = render_task_prompt(automation_research_milestone_task())
 
     assert "get_prototype_recipe" in prompt
-    assert "place_entity" in prompt
+    assert "get_entity(Prototype.X, position: Position)" in prompt
+    assert "nearest(Prototype.X or Resource.X) -> Position" in prompt
+    assert "set_entity_recipe(entity: Entity, RecipeName.X)" in prompt
     assert "Technology.Automation" in prompt
-    assert "no host/file/network access" in prompt
+    assert "Do not import FLE or use reflection" in prompt
+    assert "nearest_buildable" not in prompt
     assert "Call move_to(target)" in prompt
     assert "do not build production chains" in prompt
+
+
+def test_recipe_name_is_a_distinct_canonical_recipe_namespace():
+    assert isinstance(RecipeName.PlasticBar, RecipeName)
+    assert RecipeName.PlasticBar.value == Prototype.PlasticBar.value[0]
+    assert RecipeName.PlasticBar is not Prototype.PlasticBar
+    assert isinstance(RecipeName.AutomationSciencePack, RecipeName)
+    assert RecipeName.BasicOilProcessing.value == "basic-oil-processing"
+
+
+def test_action_reference_has_a_stable_comparison_identity():
+    assert ACTION_PROFILE_REFERENCE_ID == "fle-program-v1/reference-v3"
+    assert len(ACTION_PROFILE_REFERENCE_SHA256) == 64
+
+
+def test_full_prompt_types_render_concrete_canonical_recipe_members():
+    definitions = TypeDefinitionProcessor.load_and_clean_definitions(
+        "fle/env/game_types.py"
+    )
+
+    assert "class RecipeName(enum.Enum):" in definitions
+    assert "PlasticBar = 'plastic-bar'" in definitions
+    assert "_RECIPE_NAME_MEMBERS" not in definitions
 
 
 def test_builtin_early_progression_task_uses_native_verifier_and_real_bootstrap():

@@ -1,7 +1,7 @@
 import pytest
 
 from fle.env.entities import Position, EntityStatus, Direction
-from fle.env.game_types import Prototype, Resource
+from fle.env.game_types import Prototype, RecipeName, Resource
 
 
 @pytest.fixture()
@@ -98,7 +98,7 @@ def test_insert_into_assembler(game):
         position=Position(x=0, y=0),
     )
 
-    assembler = game.set_entity_recipe(assembler, Prototype.IronGearWheel)
+    assembler = game.set_entity_recipe(assembler, RecipeName.IronGearWheel)
     assembler = game.insert_item(Prototype.IronGearWheel, assembler, quantity=1000)
     assembler = game.insert_item(Prototype.IronPlate, assembler, quantity=1000)
     assert assembler.status == EntityStatus.NO_POWER

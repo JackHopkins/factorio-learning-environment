@@ -116,3 +116,21 @@ def validate_program(code: str) -> None:
                 raise ProgramPolicyViolation(
                     f"imports are restricted by fle-program-v1; rejected: {names}"
                 )
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id != "set_entity_recipe":
+                continue
+            recipe_argument = node.args[1] if len(node.args) > 1 else None
+            if recipe_argument is None:
+                for keyword in node.keywords:
+                    if keyword.arg in {"recipe", "prototype"}:
+                        recipe_argument = keyword.value
+                        break
+            if (
+                isinstance(recipe_argument, ast.Attribute)
+                and isinstance(recipe_argument.value, ast.Name)
+                and recipe_argument.value.id == "Prototype"
+            ):
+                raise ProgramPolicyViolation(
+                    "set_entity_recipe requires RecipeName.X; Prototype is for "
+                    "entities and items"
+                )

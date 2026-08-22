@@ -20,6 +20,10 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
+from fle.envd.action_reference import (
+    ACTION_PROFILE_REFERENCE_ID,
+    ACTION_PROFILE_REFERENCE_SHA256,
+)
 from fle.envd.benchmark import get_benchmark_task
 from fle.envd.client import EnvironmentClientError, HTTPEnvironmentClient
 from fle.envd.curriculum import BUILTIN_TASKS, get_builtin_task
@@ -368,6 +372,8 @@ async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
         "model": model,
         "model_base_url": args.model_base_url,
         "envd_url": args.envd_url,
+        "action_reference_id": ACTION_PROFILE_REFERENCE_ID,
+        "action_reference_sha256": ACTION_PROFILE_REFERENCE_SHA256,
         "task": spec.model_dump(mode="json"),
         "stop_reason": stop_reason,
         "tool_error_retry_budget": tool_error_retries,

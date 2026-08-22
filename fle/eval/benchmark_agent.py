@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+from fle.envd.action_reference import (
+    ACTION_PROFILE_REFERENCE_ID,
+    ACTION_PROFILE_REFERENCE_SHA256,
+)
 from fle.envd.benchmark import BenchmarkTask, benchmark_catalog
 from fle.envd.benchmark_results import (
     BenchmarkAttempt,
@@ -187,6 +191,8 @@ async def run_benchmark(args: argparse.Namespace) -> BenchmarkRun:
             "attempts_per_task": args.attempts,
             "selected_statuses": args.status,
             "cache_prompt_extension": args.cache_prompt,
+            "action_reference_id": ACTION_PROFILE_REFERENCE_ID,
+            "action_reference_sha256": ACTION_PROFILE_REFERENCE_SHA256,
         },
         attempts=attempts,
     )

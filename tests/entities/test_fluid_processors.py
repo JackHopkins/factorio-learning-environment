@@ -255,7 +255,7 @@ def test_end_to_end_lubricant_tanks(game):
     chemical_plant_pos = storage_tank_2_pos.right(10)
     game.move_to(chemical_plant_pos)
     chem_plant = game.place_entity(Prototype.ChemicalPlant, position=chemical_plant_pos)
-    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    chem_plant = game.set_entity_recipe(chem_plant, RecipeName.Lubricant)
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
 
     # Wait for fluid to flow from the refinery to the storage tanks
@@ -332,7 +332,7 @@ def test_end_to_end_lubricant_direct(game):
     chemical_plant_pos = oil_refinery_pos.right(10)
     game.move_to(chemical_plant_pos)
     chem_plant = game.place_entity(Prototype.ChemicalPlant, position=chemical_plant_pos)
-    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    chem_plant = game.set_entity_recipe(chem_plant, RecipeName.Lubricant)
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
 
     game.connect_entities(
@@ -464,7 +464,7 @@ def test_multiple_positions_to_tanks_with_positions(game):
     chemical_plant_pos = Position(x=52.5, y=45.5)
     game.move_to(chemical_plant_pos)
     chem_plant = game.place_entity(Prototype.ChemicalPlant, position=chemical_plant_pos)
-    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    chem_plant = game.set_entity_recipe(chem_plant, RecipeName.Lubricant)
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
     chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
 
@@ -561,7 +561,7 @@ def test_direct_lubricant_with_positions(game):
     chemical_plant_pos = Position(x=52.5, y=45.5)
     game.move_to(chemical_plant_pos)
     chem_plant = game.place_entity(Prototype.ChemicalPlant, position=chemical_plant_pos)
-    chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
+    chem_plant = game.set_entity_recipe(chem_plant, RecipeName.Lubricant)
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
     chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)
 

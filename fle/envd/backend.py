@@ -9,11 +9,20 @@ from typing import Any
 from fle.commons.constants import REWARD_OVERRIDE_KEY
 from fle.commons.models.game_state import GameState
 from fle.env import FactorioInstance
+from fle.envd.blueprints import BlueprintStore
+from fle.envd.customer import (
+    ContractEngine,
+    DeliveryBucket,
+    success_from_evaluation,
+)
+from fle.envd.perturbations import PerturbationEngine
 from fle.envd.models import (
     ActionEvent,
     ExecutionResult,
     FactorioTaskSpec,
+    BlueprintSummary,
     Observation,
+    OpenContractView,
     PrivilegedTransitionPacket,
     RewardVector,
     StateQualitySnapshot,
@@ -54,6 +63,25 @@ def _instance_state_hash(instance: FactorioInstance) -> str:
     state = __import__("json").loads(raw)
     state.pop("timestamp", None)
     return canonical_hash(state)
+
+
+class _NativeFreeplayTask:
+    """Minimal stand-in for registry tasks on native objective-engine specs.
+
+    Contract and other native specs verify through ``objective_engine_v1``;
+    they never call the legacy ``task.verify`` path, so a full registry task
+    is unnecessary provisioning baggage.
+    """
+
+    def __init__(self, task: FactorioTaskSpec):
+        self.starting_inventory = task.provisioning.starting_inventory or {}
+        self.all_technology_reserached = bool(
+            task.provisioning.all_technologies_researched
+        )
+        self.holdout_wait_period = task.holdout_seconds
+
+    def setup_instance(self, instance) -> None:
+        return None
 
 
 class FactorioWorker(ABC):
@@ -98,6 +126,10 @@ class FLEWorker(FactorioWorker):
         self._action_events: list[ActionEvent] = []
         self._executed_tools_current: list[str] = []
         self._capture_tool_calls = False
+        self.customer_engine: ContractEngine | None = None
+        self._customer_events: list[dict] = []
+        self.perturbation_engine: PerturbationEngine | None = None
+        self._disruption_events: list[dict] = []
         for tool_name in getattr(self.instance, "controllers", {}):
 
             def record_tool(_tool, *_args, _name=tool_name, **_kwargs):
@@ -124,32 +156,61 @@ class FLEWorker(FactorioWorker):
         )
         return cls(worker_id, instance)
 
+    _SCENARIO_CHECKPOINT = "scenario:default_lab_scenario"
+
     def start_task(self, task: FactorioTaskSpec) -> str:
         supported = {
             "scenario": "default_lab_scenario",
             "factorio_version": "2.0.73",
-            "checkpoint_id": "scenario:default_lab_scenario",
             "action_profile": "fle-program-v1",
-            "seed": 0,
         }
         requested = {
             "scenario": task.scenario,
             "factorio_version": task.factorio_version,
-            "checkpoint_id": task.checkpoint_id,
             "action_profile": task.action_profile,
-            "seed": task.seed,
         }
         unsupported = {
             key: {"requested": requested[key], "supported": expected}
             for key, expected in supported.items()
             if requested[key] != expected
         }
+        # Seeds are honored where infrastructure allows: map generation is a
+        # container-launch concern, so workers accept any declared value.
+        restore_raw: str | None = None
+        checkpoint_id = task.checkpoint_id or self._SCENARIO_CHECKPOINT
+        if checkpoint_id != self._SCENARIO_CHECKPOINT:
+            if not checkpoint_id.startswith("lifecycle:"):
+                unsupported["checkpoint_id"] = {
+                    "requested": checkpoint_id,
+                    "supported": (
+                        f"{self._SCENARIO_CHECKPOINT} or lifecycle:<lineage>:ep<N>"
+                    ),
+                }
+            else:
+                from fle.envd.lifecycle import CheckpointPool
+
+                restored = CheckpointPool().get(checkpoint_id)
+                if restored is None:
+                    raise ValueError(
+                        f"Checkpoint {checkpoint_id!r} not found in "
+                        "FLE_LIFECYCLE_DIR pool"
+                    )
+                restore_raw = restored[1]
         if unsupported:
             raise ValueError(
                 "The first envd backend only supports the pinned default world: "
                 f"{unsupported}"
             )
-        fle_task = TaskFactory.create_task(task.backend_task_id or task.task_id)
+        try:
+            fle_task = TaskFactory.create_task(task.backend_task_id or task.task_id)
+        except KeyError:
+            if task.backend_task_id is not None:
+                raise
+            if task.verifier.implementation != "objective_engine_v1":
+                raise
+            # Native specs verify through the objective engine and do not
+            # require a legacy registry task.
+            fle_task = _NativeFreeplayTask(task)
         if hasattr(fle_task, "holdout_wait_period"):
             fle_task.holdout_wait_period = task.holdout_seconds
         provisioning = task.provisioning
@@ -163,13 +224,23 @@ class FLEWorker(FactorioWorker):
             if provisioning.all_technologies_researched is not None
             else fle_task.all_technology_reserached
         )
-        # Independent benchmark leases must not inherit the previous agent's
-        # location.  Reach-limited actions otherwise become task-order
-        # dependent after any rollout that moves the character.
-        self.instance.reset(
-            reset_position=True,
-            all_technologies_researched=all_research,
-        )
+        if restore_raw is not None:
+            state = GameState.parse_raw(restore_raw)
+            # Continuations resume in place: repositioning to spawn would
+            # break inherited-factory semantics.
+            self.instance.reset(
+                game_state=state,
+                reset_position=False,
+                all_technologies_researched=all_research,
+            )
+        else:
+            # Independent benchmark leases must not inherit the previous
+            # agent's location. Reach-limited actions otherwise become
+            # task-order dependent after any rollout that moves the character.
+            self.instance.reset(
+                reset_position=True,
+                all_technologies_researched=all_research,
+            )
         fle_task.setup_instance(self.instance)
         self.instance.rcon_client.send_command(
             "/sc game.forces.player.character_inventory_slots_bonus = "
@@ -188,6 +259,21 @@ class FLEWorker(FactorioWorker):
             )
         self.instance._verified_rocket_launches = 0
         _objective_telemetry(self.instance.first_namespace, reset=True)
+        self._epoch_game_tick = self._read_game_tick()
+        self._customer_events = []
+        self.customer_engine = self._setup_customer(task)
+        self._disruption_events = []
+        self.perturbation_engine = (
+            PerturbationEngine(task.perturbations)
+            if task.perturbations is not None
+            else None
+        )
+        if self.perturbation_engine is not None:
+            # Hidden shocks scheduled at tick 0 are part of the initial
+            # world: they apply before the first observation so the initial
+            # state hash and telemetry include the damage.
+            self._fire_due_shocks(0)
+        self._attach_blueprint_store(task)
         self.instance.set_speed(10)
         self.instance.pause()
         self.task = fle_task
@@ -210,6 +296,199 @@ class FLEWorker(FactorioWorker):
     def _scores(self) -> tuple[float, float]:
         production, automated = self.instance.first_namespace.score()
         return float(production or 0), float(automated or 0)
+
+    # -- customer contract plumbing -----------------------------------------
+
+    _DEPOT_OFFSET = (-6.0, -10.0)
+
+    def _setup_customer(self, task: FactorioTaskSpec) -> ContractEngine | None:
+        """Place immutable sink depots and arm the hidden demand schedule."""
+
+        spec = task.customer
+        if spec is None:
+            try:
+                self.instance.first_namespace._customer_depot("clear")
+            except Exception:
+                pass
+            return None
+        anchor_x, anchor_y = self._DEPOT_OFFSET
+        placement = self.instance.first_namespace._customer_depot(
+            "place", anchor_x, anchor_y, spec.depot_chests, True
+        )
+        if isinstance(placement, dict) and not placement.get("placed"):
+            raise RuntimeError(
+                "Could not place customer sink depots near the spawn area"
+            )
+        engine = ContractEngine(spec)
+        # Orders may be issued at tick 0; reveal them before the first action.
+        self._customer_events.extend(engine.sync(0, []))
+        return engine
+
+    def _sync_customer(self) -> list[VerifierEvent]:
+        """Pull sink telemetry and advance the contract clock to now."""
+
+        engine = self.customer_engine
+        if engine is None:
+            return []
+        telemetry: dict = {}
+        try:
+            telemetry = (
+                self.instance.first_namespace._customer_depot("telemetry") or {}
+            )
+        except Exception:
+            telemetry = {}
+        current_tick = int(telemetry.get("tick") or 0)
+        raw_buckets = telemetry.get("buckets") or {}
+        if isinstance(raw_buckets, dict):
+            # slpp decodes Lua arrays as index-keyed dicts.
+            raw_bucket_list = [
+                raw_buckets[key]
+                for key in sorted(raw_buckets, key=lambda k: int(k))
+            ]
+        else:
+            raw_bucket_list = list(raw_buckets)
+        buckets = [
+            DeliveryBucket(
+                start_tick=int(bucket.get("start_tick") or 0),
+                items={
+                    str(item): float(count)
+                    for item, count in (bucket.get("items") or {}).items()
+                },
+            )
+            for bucket in raw_bucket_list
+        ]
+        events = engine.sync(current_tick, buckets)
+        verifier_events = [
+            VerifierEvent(
+                event_id=f"contract:{payload['order_id']}:{payload['event']}",
+                kind=payload["event"],
+                tick=payload["tick"],
+                source="verifier",
+                payload=payload,
+            )
+            for payload in events
+        ]
+        self._customer_events.extend(events)
+        return verifier_events
+
+    def _contracts_view(self) -> list[OpenContractView]:
+        engine = self.customer_engine
+        return engine.student_view() if engine is not None else []
+
+    # -- episode clock -------------------------------------------------------
+
+    def _read_game_tick(self) -> int:
+        try:
+            response = self.instance.rcon_client.send_command(
+                "/sc rcon.print(game.tick)"
+            )
+            return int(str(response).strip() or 0)
+        except Exception:
+            return 0
+
+    def _episode_tick(self) -> int:
+        """Canonical episode-relative simulation tick (game.tick - epoch).
+
+        All schedule semantics -- contract deadlines, disruption triggers --
+        run on this clock so timing cannot drift against absolute server
+        ticks accumulated across episodes on one worker.
+        """
+
+        return max(self._read_game_tick() - getattr(self, "_epoch_game_tick", 0), 0)
+
+    # -- perturbations -------------------------------------------------------
+
+    def _fire_due_shocks(
+        self, episode_tick: int, stats: dict | None = None
+    ) -> list[VerifierEvent]:
+        engine = self.perturbation_engine
+        if engine is None:
+            return []
+
+        def _fire(command: str, params: dict) -> dict:
+            try:
+                return (
+                    self.instance.first_namespace._perturbation(command, params)
+                    or {}
+                )
+            except Exception as exc:  # noqa: BLE001 - degrade to failed
+                return {"error": str(exc)}
+
+        events = engine.sync(episode_tick, stats, _fire)
+        verifier_events = [
+            VerifierEvent(
+                event_id=(
+                    f"perturbation:{payload['perturbation_id']}:"
+                    f"{payload['event']}"
+                ),
+                kind=(
+                    payload["event"]
+                    if payload["event"]
+                    in ("perturbation_applied", "recovery_completed")
+                    else "custom"
+                ),
+                tick=(
+                    payload.get("applied_tick")
+                    or payload.get("recovered_tick", episode_tick)
+                ),
+                source="verifier",
+                payload=payload,
+            )
+            for payload in events
+        ]
+        self._disruption_events.extend(events)
+        return verifier_events
+
+    def _sync_perturbations(self) -> list[VerifierEvent]:
+        """Fire due disruptions and update recovery tracking."""
+
+        if self.perturbation_engine is None:
+            return []
+        stats: dict = {}
+        try:
+            stats = self.instance.first_namespace._get_production_stats() or {}
+        except Exception:
+            stats = {}
+        return self._fire_due_shocks(self._episode_tick(), stats=stats)
+
+    def _attach_blueprint_store(self, task: FactorioTaskSpec) -> None:
+        """Provision the generation-scoped blueprint library (or ephemeral)."""
+
+        namespace = self.instance.first_namespace
+        scope = task.blueprint_scope
+        store = None
+        if scope:
+            try:
+                store = BlueprintStore(scope=scope)
+            except Exception:
+                store = None
+        namespace._blueprint_store = store
+
+    def _blueprint_summaries(self) -> list[BlueprintSummary]:
+        namespace = self.instance.first_namespace
+        store = getattr(namespace, "_ephemeral_blueprints", None)
+        scoped = getattr(namespace, "_blueprint_store", None)
+        active = scoped or store
+        if active is None:
+            return []
+        try:
+            summaries = active.list_summaries()
+        except Exception:
+            return []
+        return [BlueprintSummary(**summary) for summary in summaries]
+
+    def export_game_state(self) -> str | None:
+        """Serialize the live world for lifecycle checkpointing.
+
+        Trainer-side callers persist the returned blob through a
+        ``CheckpointPool``; a later lease restores it via
+        ``FactorioTaskSpec`` provisioning of that state.
+        """
+
+        try:
+            return GameState.from_instance(self.instance).to_raw()
+        except Exception:
+            return None
 
     def execute(self, lease_id: str, code: str, sequence: int) -> ExecutionResult:
         before, _ = self._scores()
@@ -338,6 +617,8 @@ class FLEWorker(FactorioWorker):
             reward_channels={"invalid_action": -1.0} if error else {},
         )
         emitted_events = [verifier_event]
+        emitted_events.extend(self._sync_customer())
+        emitted_events.extend(self._sync_perturbations())
         if character_died:
             deaths = current_frame.deaths
             latest_death = deaths[-1] if deaths else {}
@@ -378,6 +659,8 @@ class FLEWorker(FactorioWorker):
             automated_production_score=automated,
             production=stats,
             state_hash=_instance_state_hash(self.instance),
+            contracts=self._contracts_view(),
+            blueprints=self._blueprint_summaries(),
         )
 
     def finalize(
@@ -390,6 +673,22 @@ class FLEWorker(FactorioWorker):
         if task.verifier.implementation == "objective_engine_v1":
             if self.initial_telemetry is None:
                 raise RuntimeError("Native verifier has no initial telemetry")
+            self._sync_customer()
+            if self.perturbation_engine is not None:
+                self._sync_perturbations()
+                disruption_summary = self.perturbation_engine.summary()
+            else:
+                disruption_summary = None
+            customer_result = None
+            if self.customer_engine is not None:
+                customer_result = self.customer_engine.evaluate(
+                    self.customer_engine.current_tick,
+                    receipt_context={
+                        "lease_id": lease_id,
+                        "task_id": task.task_id,
+                        "worker_id": self.worker_id,
+                    },
+                )
             self.instance.set_speed_and_unpause(10)
             try:
                 native = verify_native(
@@ -397,6 +696,7 @@ class FLEWorker(FactorioWorker):
                     task,
                     events,
                     self.initial_telemetry,
+                    customer_result=customer_result,
                 )
             finally:
                 self.instance.pause()
@@ -416,6 +716,19 @@ class FLEWorker(FactorioWorker):
                         objective.objective_id for objective in task.objectives
                     ],
                     "scalarization": task.verifier.scalarization,
+                    **(
+                        {
+                            "customer_commitment": customer_result.commitment,
+                            "customer_receipt_mac": customer_result.receipt_mac,
+                        }
+                        if customer_result is not None
+                        else {}
+                    ),
+                    **(
+                        {"disruption_summary": disruption_summary}
+                        if disruption_summary is not None
+                        else {}
+                    ),
                 },
                 terminal_state_hash=_instance_state_hash(self.instance),
                 action_events=events,
@@ -439,6 +752,40 @@ class FLEWorker(FactorioWorker):
                             ),
                         )
                         for event in events
+                    ],
+                    *[
+                        VerifierEvent(
+                            event_id=(
+                                f"contract:{payload['order_id']}:"
+                                f"{payload['event']}"
+                            ),
+                            kind=payload["event"],
+                            tick=payload["tick"],
+                            source="verifier",
+                            payload=payload,
+                        )
+                        for payload in self._customer_events
+                    ],
+                    *[
+                        VerifierEvent(
+                            event_id=(
+                                f"perturbation:{payload['perturbation_id']}:"
+                                f"{payload['event']}"
+                            ),
+                            kind=(
+                                payload["event"]
+                                if payload["event"]
+                                in ("perturbation_applied", "recovery_completed")
+                                else "custom"
+                            ),
+                            tick=(
+                                payload.get("applied_tick")
+                                or payload.get("recovered_tick", 0)
+                            ),
+                            source="verifier",
+                            payload=payload,
+                        )
+                        for payload in self._disruption_events
                     ],
                     *native.events,
                 ],
@@ -566,6 +913,24 @@ class FLEWorker(FactorioWorker):
 
     def release(self) -> None:
         self.instance.pause()
+        self.customer_engine = None
+        self._customer_events = []
+        self.perturbation_engine = None
+        self._disruption_events = []
+        try:
+            namespace = self.instance.first_namespace
+            namespace._blueprint_store = None
+            if hasattr(namespace, "_ephemeral_blueprints"):
+                delattr(namespace, "_ephemeral_blueprints")
+        except Exception:
+            pass
+        try:
+            if self.task_spec is not None and hasattr(
+                self.instance.first_namespace, "_customer_depot"
+            ):
+                self.instance.first_namespace._customer_depot("clear")
+        except Exception:
+            pass
         self.task = None
         self.task_spec = None
         self.initial_telemetry = None

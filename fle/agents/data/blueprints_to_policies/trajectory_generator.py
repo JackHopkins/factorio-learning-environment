@@ -555,7 +555,7 @@ def convert_blueprint_to_trace(blueprint_json: str) -> List[str]:
         if entity.recipe:
             trace.append(
                 f"game.set_entity_recipe({entity_var}, "
-                f"Prototype.{prototype_by_name[entity.recipe].name})"
+                f"RecipeName.{prototype_by_name[entity.recipe].name})"
             )
 
         trace.append("")

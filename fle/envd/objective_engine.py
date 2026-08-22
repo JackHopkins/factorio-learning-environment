@@ -1194,6 +1194,7 @@ def verify_native(
     task: FactorioTaskSpec,
     action_events: list[ActionEvent],
     initial: TelemetryFrame,
+    customer_result: Any | None = None,
 ) -> NativeVerificationResult:
     namespace = instance.first_namespace
     throughput_measurements: dict[str, list[float]] = {}
@@ -1222,6 +1223,56 @@ def verify_native(
         )
         for objective in task.objectives
     ]
+    contract_event_payloads: list[dict[str, Any]] = []
+    if customer_result is not None:
+        from fle.envd.customer import success_from_evaluation
+
+        contract_satisfied = success_from_evaluation(customer_result, task.customer)
+        objectives.append(
+            ObjectiveEvaluation(
+                objective_id="customer:contracts",
+                kind="contract_fulfillment",
+                supported=True,
+                satisfied=contract_satisfied,
+                value=customer_result.aggregate_ratio,
+                baseline=None,
+                threshold=task.customer.success_ratio,
+                normalized_score=min(max(customer_result.net_reward, 0.0), 1.0),
+                weight=1.0,
+                evidence={
+                    "commitment": customer_result.commitment,
+                    "engine_version": customer_result.engine_version,
+                    "finalized_at_tick": customer_result.finalized_at_tick,
+                    "aggregate_ratio": customer_result.aggregate_ratio,
+                    "fulfillment_reward": customer_result.fulfillment_reward,
+                    "penalty": customer_result.penalty,
+                    "net_reward": customer_result.net_reward,
+                    "unattributed_deliveries": customer_result.unattributed,
+                    "receipt_mac": customer_result.receipt_mac,
+                    "order_results": [
+                        result.as_payload()
+                        for result in customer_result.order_results
+                    ],
+                },
+            )
+        )
+        for result in customer_result.order_results:
+            kind = (
+                "contract_fulfilled"
+                if result.ratio + 1e-9 >= 1.0 and result.status != "expired"
+                else "contract_expired"
+            )
+            contract_event_payloads.append(
+                {
+                    "event_id": f"customer:{result.order_id}",
+                    "kind": kind,
+                    "payload": result.as_payload(),
+                    "channels": {
+                        "contracts": result.ratio * result.weight,
+                        "contract_penalty": -result.lateness_penalty * result.weight,
+                    },
+                }
+            )
     constraints = [
         evaluate_constraint(task, constraint, initial, final, action_events)
         for constraint in task.constraints
@@ -1347,6 +1398,18 @@ def verify_native(
 
     tick = final.tick
     verifier_events: list[VerifierEvent] = []
+    for payload in contract_event_payloads:
+        verifier_events.append(
+            VerifierEvent(
+                event_id=payload["event_id"],
+                kind=payload["kind"],
+                tick=final.tick,
+                source="verifier",
+                payload=payload["payload"],
+                evidence={"commitment": customer_result.commitment},
+                reward_channels=payload["channels"],
+            )
+        )
     for objective, result in zip(task.objectives, objectives):
         kind = "objective_satisfied" if result.satisfied else "objective_failed"
         if result.satisfied and objective.kind == "research":
@@ -1468,6 +1531,28 @@ def verify_native(
     # positive-capability reward channel. Resource and intervention costs have
     # their own explicitly negative channels.
     automation_reward = max(automated_score_delta, 0.0)
+    customer_metrics: dict[str, Any] = {}
+    contract_channels: dict[str, float] = {}
+    if customer_result is not None:
+        customer_receipt = dict(customer_result.receipt)
+        customer_receipt.pop("receipt_context", None)
+        customer_metrics = {
+            "customer_commitment": customer_result.commitment,
+            "customer_aggregate_ratio": customer_result.aggregate_ratio,
+            "customer_fulfillment_reward": customer_result.fulfillment_reward,
+            "customer_penalty": customer_result.penalty,
+            "customer_net_reward": customer_result.net_reward,
+            "customer_unattributed_deliveries": customer_result.unattributed,
+            "customer_receipt_mac": customer_result.receipt_mac,
+            "customer_receipt": {
+                **customer_receipt,
+                "receipt_mac": customer_result.receipt_mac,
+            },
+        }
+        contract_channels = {
+            "contracts": customer_result.fulfillment_reward,
+            "contract_penalty": -customer_result.penalty,
+        }
     return NativeVerificationResult(
         success=success,
         scalar_reward=scalar,
@@ -1481,8 +1566,10 @@ def verify_native(
             milestone=milestone,
             time_efficiency=-float(max(final.tick - initial.tick, 0)),
             manual_intervention=-manual_count,
+            **contract_channels,
         ),
         metrics={
+            **customer_metrics,
             "objective_evaluations": [
                 result.model_dump(mode="json") for result in objectives
             ],

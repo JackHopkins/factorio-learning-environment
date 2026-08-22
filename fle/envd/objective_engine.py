@@ -152,12 +152,20 @@ def _objective_telemetry(namespace: Any, reset: bool = False) -> dict[str, Any]:
         return {}
 
 
-def capture_telemetry(instance: Any, targets: Iterable[str] = ()) -> TelemetryFrame:
+def capture_telemetry(
+    instance: Any,
+    targets: Iterable[str] = (),
+    *,
+    research_state=None,
+) -> TelemetryFrame:
     namespace = instance.first_namespace
     engine = _objective_telemetry(namespace)
     flows = ProductionFlows.from_dict(namespace._get_production_stats())
     production_score, automated_score = namespace.score()
-    research = namespace._save_research_state()
+    if research_state is None:
+        research = namespace._save_research_state()
+    else:
+        research = research_state
     entities = list(_leaf_entities(namespace.get_entities()))
 
     entity_counts: dict[str, int] = {}

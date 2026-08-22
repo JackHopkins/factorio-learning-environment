@@ -55,14 +55,22 @@ class GameState:
         return agent_messages
 
     @classmethod
-    def from_instance(cls, instance) -> "GameState":
-        """Capture current game state from Factorio instances"""
+    def from_instance(cls, instance, *, research_state=None) -> "GameState":
+        """Capture current game state from Factorio instances
+
+        ``research_state`` accepts a precomputed ``_save_research_state``
+        result so callers that already captured research this tick avoid a
+        second ~170ms Lua walk of every technology.
+        """
         entities = instance.first_namespace._save_entity_state(
             compress=True, encode=True
         )
 
         # Get research state
-        research_state = instance.first_namespace._save_research_state()
+        if research_state is None:
+            research_state = instance.first_namespace._save_research_state()
+        else:
+            research_state = research_state
 
         # Filter and pickle only serializable variables
         namespaces = []

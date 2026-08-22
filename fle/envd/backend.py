@@ -32,6 +32,7 @@ from fle.envd.models import (
 )
 from fle.envd.objective_engine import (
     TelemetryFrame,
+    _numeric_dict,
     _objective_telemetry,
     build_state_quality_snapshot,
     capture_telemetry,
@@ -40,6 +41,17 @@ from fle.envd.objective_engine import (
     verify_native,
 )
 from fle.eval.tasks import TaskFactory
+
+# Objective kinds whose evaluation matches against full per-entity details.
+# When a task uses none of them, per-intervention telemetry can take the
+# cheap aggregate-census path instead of serializing every entity.
+_ENTITY_DETAIL_KINDS = {
+    "entity_exists",
+    "entity_status",
+    "entity_recipe",
+    "entity_inventory",
+    "entity_position",
+}
 
 
 def _jsonable(value: Any) -> Any:
@@ -58,8 +70,12 @@ def _jsonable(value: Any) -> Any:
     return str(value)
 
 
-def _instance_state_hash(instance: FactorioInstance) -> str:
-    raw = GameState.from_instance(instance).to_raw()
+def _instance_state_hash(
+    instance: FactorioInstance, *, research_state=None
+) -> str:
+    raw = GameState.from_instance(
+        instance, research_state=research_state
+    ).to_raw()
     state = __import__("json").loads(raw)
     state.pop("timestamp", None)
     return canonical_hash(state)
@@ -130,6 +146,12 @@ class FLEWorker(FactorioWorker):
         self._customer_events: list[dict] = []
         self.perturbation_engine: PerturbationEngine | None = None
         self._disruption_events: list[dict] = []
+        # Per-capture-cycle caches. The game is paused between interventions,
+        # so research and the world hash cannot change while a lease idles;
+        # both are invalidated whenever execution may mutate the world.
+        self._research_cache = None
+        self._state_hash_cache: str | None = None
+        self._state_hash_dirty = True
         for tool_name in getattr(self.instance, "controllers", {}):
 
             def record_tool(_tool, *_args, _name=tool_name, **_kwargs):
@@ -278,11 +300,14 @@ class FLEWorker(FactorioWorker):
         self.instance.pause()
         self.task = fle_task
         self.task_spec = task
+        self._research_cache = None
+        self._state_hash_cache = None
+        self._state_hash_dirty = True
         targets = [
             objective.target for objective in task.objectives if objective.target
         ]
-        self.initial_telemetry = capture_telemetry(self.instance, targets)
-        initial_state_hash = _instance_state_hash(self.instance)
+        self.initial_telemetry = self._capture_frame(targets)
+        initial_state_hash = self._current_state_hash()
         self.current_quality = build_state_quality_snapshot(
             task,
             self.initial_telemetry,
@@ -296,6 +321,147 @@ class FLEWorker(FactorioWorker):
     def _scores(self) -> tuple[float, float]:
         production, automated = self.instance.first_namespace.score()
         return float(production or 0), float(automated or 0)
+
+    # -- telemetry caching ---------------------------------------------------
+
+    def _current_state_hash(self) -> str:
+        """World hash, memoized across the paused window between actions."""
+
+        if self._state_hash_dirty or self._state_hash_cache is None:
+            if self._research_cache is None:
+                self._research_cache = (
+                    self.instance.first_namespace._save_research_state()
+                )
+            self._state_hash_cache = _instance_state_hash(
+                self.instance, research_state=self._research_cache
+            )
+            self._state_hash_dirty = False
+        return self._state_hash_cache
+
+    def _needs_entity_details(self) -> bool:
+        spec = self.task_spec
+        return any(
+            objective.kind in _ENTITY_DETAIL_KINDS
+            for objective in (spec.objectives if spec else [])
+        )
+
+    def _capture_frame(self, targets: list[str]) -> TelemetryFrame:
+        """Telemetry for one capture cycle.
+
+        Research is fetched at most once per cycle and shared with the state
+        hash. When no objective consumes per-entity details, the census tool
+        replaces the full entity dump (~120ms of Lua serialization plus
+        pydantic parsing on even modest factories).
+        """
+
+        namespace = self.instance.first_namespace
+        if self._research_cache is None:
+            self._research_cache = namespace._save_research_state()
+        if not self._needs_entity_details():
+            return self._light_telemetry(namespace, targets)
+        return capture_telemetry(
+            self.instance, targets, research_state=self._research_cache
+        )
+
+    @staticmethod
+    def _target_recipes(namespace: Any, targets: list[str]) -> dict[str, Any]:
+        recipes: dict[str, Any] = {}
+        for target in sorted(set(targets)):
+            try:
+                recipes[target] = _jsonable(namespace.get_prototype_recipe(target))
+            except Exception as exc:
+                recipes[target] = {"available": False, "error": str(exc)}
+        return recipes
+
+    def _light_telemetry(
+        self, namespace: Any, targets: list[str]
+    ) -> TelemetryFrame:
+        """Census-based telemetry frame without per-entity details.
+
+        Research names still populate ``researched`` so dominance comparison
+        keeps detecting technology loss; only the heavyweight per-technology
+        metadata and entity details are omitted.
+        """
+
+        from fle.commons.models.achievements import ProductionFlows
+
+        engine = _objective_telemetry(namespace)
+        flows = ProductionFlows.from_dict(namespace._get_production_stats())
+        production_score, automated_score = namespace.score()
+
+        census_response: dict = {}
+        try:
+            census_response = namespace._entity_census() or {}
+        except Exception:
+            census_response = {}
+
+        entity_counts: dict[str, int] = {}
+        status_counts: dict[str, int] = {}
+        status_by_name: dict[str, dict[str, int]] = {}
+        for name, statuses in (census_response.get("census") or {}).items():
+            name_statuses = {
+                str(status): int(count)
+                for status, count in (statuses or {}).items()
+            }
+            total_for_name = sum(name_statuses.values())
+            entity_counts[name] = entity_counts.get(name, 0) + total_for_name
+            merged = status_by_name.setdefault(name, {})
+            for status, count in name_statuses.items():
+                status_counts[status] = status_counts.get(status, 0) + count
+                merged[status] = merged.get(status, 0) + count
+
+        researched: dict[str, bool] = {}
+        current_research = None
+        research_progress = 0.0
+        research_state = self._research_cache
+        if research_state is not None:
+            try:
+                researched = {
+                    str(name): bool(tech.researched)
+                    for name, tech in research_state.technologies.items()
+                }
+                if research_state.current_research:
+                    current_research = str(research_state.current_research)
+                research_progress = float(research_state.research_progress or 0)
+            except Exception:
+                pass
+
+        return TelemetryFrame(
+            tick=int(self.instance.get_elapsed_ticks()),
+            inventory=_numeric_dict(namespace.inspect_inventory()),
+            flows=flows,
+            production_score=float(production_score or 0),
+            automated_production_score=float(automated_score or 0),
+            researched=researched,
+            technologies={},
+            current_research=current_research,
+            research_progress=research_progress,
+            entity_counts=entity_counts,
+            entity_status_counts=status_counts,
+            entity_status_by_name=status_by_name,
+            entity_details=[],
+            rocket_launches=int(engine.get("rockets_launched", 0) or 0),
+            target_recipes=self._target_recipes(namespace, targets),
+            character_alive=bool(engine.get("character_alive", True)),
+            character_health=(
+                float(engine["character_health"])
+                if isinstance(engine.get("character_health"), (int, float))
+                else None
+            ),
+            deaths=list(engine.get("deaths", []) or []),
+            death_count=int(engine.get("death_count", 0) or 0),
+            respawn_count=int(engine.get("respawn_count", 0) or 0),
+            last_respawn_tick=(
+                int(engine["last_respawn_tick"])
+                if isinstance(engine.get("last_respawn_tick"), (int, float))
+                else None
+            ),
+            resource_depletions=list(engine.get("resource_depletions", []) or []),
+            pollution_total=float(engine.get("pollution_total", 0) or 0),
+            pollution_emitted=float(engine.get("pollution_emitted", 0) or 0),
+            produced=_numeric_dict(engine.get("produced", {})),
+            consumed=_numeric_dict(engine.get("consumed", {})),
+        )
 
     # -- customer contract plumbing -----------------------------------------
 
@@ -493,6 +659,10 @@ class FLEWorker(FactorioWorker):
     def execute(self, lease_id: str, code: str, sequence: int) -> ExecutionResult:
         before, _ = self._scores()
         started = datetime.now(timezone.utc)
+        # The world may mutate during evaluation; both caches are invalid
+        # from this point until the next capture cycle completes.
+        self._state_hash_dirty = True
+        self._research_cache = None
         self._executed_tools_current = []
         self._capture_tool_calls = True
         self.instance.set_speed_and_unpause(10)
@@ -548,11 +718,11 @@ class FLEWorker(FactorioWorker):
             finally:
                 self.instance.pause()
         else:
-            current_frame = capture_telemetry(self.instance, targets)
+            current_frame = self._capture_frame(targets)
 
         after = current_frame.production_score
         automated = current_frame.automated_production_score
-        state_hash = _instance_state_hash(self.instance)
+        state_hash = self._current_state_hash()
         character_died = bool(
             self.initial_telemetry
             and current_frame.death_count > self.initial_telemetry.death_count
@@ -658,7 +828,7 @@ class FLEWorker(FactorioWorker):
             production_score=production,
             automated_production_score=automated,
             production=stats,
-            state_hash=_instance_state_hash(self.instance),
+            state_hash=self._current_state_hash(),
             contracts=self._contracts_view(),
             blueprints=self._blueprint_summaries(),
         )
@@ -691,6 +861,10 @@ class FLEWorker(FactorioWorker):
                 )
             self.instance.set_speed_and_unpause(10)
             try:
+                # Holdout windows advance the world; the memoized hash must
+                # not survive them.
+                self._state_hash_dirty = True
+                self._research_cache = None
                 native = verify_native(
                     self.instance,
                     task,
@@ -730,7 +904,7 @@ class FLEWorker(FactorioWorker):
                         else {}
                     ),
                 },
-                terminal_state_hash=_instance_state_hash(self.instance),
+                terminal_state_hash=self._current_state_hash(),
                 action_events=events,
                 events=[
                     *[
@@ -864,7 +1038,7 @@ class FLEWorker(FactorioWorker):
                 ],
                 "scalarization": task.verifier.scalarization,
             },
-            terminal_state_hash=_instance_state_hash(self.instance),
+            terminal_state_hash=self._current_state_hash(),
             action_events=events,
             events=[
                 *[

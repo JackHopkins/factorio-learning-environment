@@ -1,0 +1,25 @@
+[
+  {
+    "model": "thinkingmachines/inkling:free",
+    "task_id": "micro_craft_iron_gear_v1",
+    "attempt": 0,
+    "success": false,
+    "scalar_reward": 0.0,
+    "interventions": 0,
+    "termination_reason": "no_progress",
+    "usage": {
+      "input_tokens": 33042.0,
+      "output_tokens": 56.0,
+      "cached_tokens": 9856.0,
+      "cache_write_tokens": 0.0,
+      "reasoning_tokens": 0.0,
+      "api_calls": 2.0,
+      "estimated_cost_usd": 0.0,
+      "actual_cost_usd": 0.0
+    },
+    "final_inventory": {
+      "iron-plate": 2.0
+    },
+    "transcript_tail": "{\"name\":\"tool_call\",\"args\":{\"arguments\":{\"code\":\"print(inspect_inventory())\"}}\n\n\nsession_id: 20260822_221952_bf0c6a\n"
+  }
+]

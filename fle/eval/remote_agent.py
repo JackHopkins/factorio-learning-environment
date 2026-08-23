@@ -12,6 +12,7 @@ import argparse
 import asyncio
 import json
 import os
+import random
 import sys
 import time
 from datetime import datetime, timezone
@@ -19,6 +20,9 @@ from pathlib import Path
 from typing import Any
 
 from openai import AsyncOpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fle.envd.action_reference import (
     ACTION_PROFILE_REFERENCE_ID,
@@ -220,6 +224,53 @@ async def _execute_tool(
         return {"error": f"{type(exc).__name__}: {exc}"}, None
 
 
+async def _completion_with_retry(
+    model_client: AsyncOpenAI,
+    completion_kwargs: dict[str, Any],
+    *,
+    max_attempts: int = 6,
+):
+    """Chat completion hardened for free/shared inference routes.
+
+    Retries transient failures -- 429 rate limits, 5xx, timeouts -- with
+    exponential backoff, honoring a server-provided ``Retry-After`` header.
+    Non-transient errors raise immediately.
+    """
+
+    delay = 2.0
+    last_error: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return await model_client.chat.completions.create(**completion_kwargs)
+        except Exception as exc:  # noqa: BLE001 - classify then re-raise
+            status_code = getattr(exc, "status_code", None)
+            if status_code is None:
+                response = getattr(exc, "response", None)
+                status_code = getattr(response, "status_code", None)
+            message = str(exc).lower()
+            transient = (
+                status_code in {408, 409, 429, 500, 502, 503, 504}
+                or "rate limit" in message
+                or "overloaded" in message
+                or isinstance(exc, (TimeoutError, asyncio.TimeoutError))
+            )
+            if not transient or attempt >= max_attempts:
+                raise
+            headers = getattr(getattr(exc, "response", None), "headers", None)
+            retry_after = headers.get("retry-after") if headers else None
+            wait = delay
+            try:
+                parsed = float(retry_after) if retry_after else None
+                if parsed is not None and 0 < parsed <= 300:
+                    wait = parsed
+            except ValueError:
+                pass
+            await asyncio.sleep(wait + random.uniform(0.0, 0.5))
+            delay = min(delay * 2, 120.0)
+            last_error = exc
+    raise RuntimeError("unreachable retry state") from last_error
+
+
 async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
     spec = _task_spec(args.task_id)
     tool_error_retries = int(getattr(args, "tool_error_retries", 0))
@@ -285,8 +336,8 @@ async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
                     }
                     if bool(getattr(args, "cache_prompt", False)):
                         completion_kwargs["extra_body"] = {"cache_prompt": True}
-                    completion = await model_client.chat.completions.create(
-                        **completion_kwargs
+                    completion = await _completion_with_retry(
+                        model_client, completion_kwargs
                     )
                     elapsed = time.perf_counter() - request_started
                     choice = completion.choices[0]
@@ -399,6 +450,10 @@ def _parser() -> argparse.ArgumentParser:
         default=(
             os.getenv("DEEPSEEK_API_KEY")
             or os.getenv("OPENAI_API_KEY")
+            or os.getenv("OPEN_ROUTER_API_KEY")
+            or os.getenv("OPENCODE_ZEN_API_KEY")
+            or os.getenv("OPEN_CODE_ZEN_API_KEY")
+            or os.getenv("ZEN_API_KEY")
             or "local-no-key"
         ),
     )

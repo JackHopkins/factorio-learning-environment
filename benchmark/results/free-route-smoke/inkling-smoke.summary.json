@@ -1,0 +1,27 @@
+{
+  "run_id": "api_microtasks_v1-20260822T194431Z",
+  "model": {
+    "name": "thinkingmachines/inkling:free",
+    "provider": "openrouter",
+    "revision": null,
+    "quantization": null,
+    "endpoint": null
+  },
+  "suite": "api_microtasks_v1",
+  "benchmark_split": null,
+  "attempt_count": 1,
+  "success_count": 0,
+  "success_rate": 0.0,
+  "invalid_intervention_rate": 0.0,
+  "retry_intervention_rate": 0.0,
+  "retry_assisted_success_rate": 0.0,
+  "mean_interventions": 0.0,
+  "per_task_success_rate": {
+    "micro_craft_iron_gear_v1": 0.0
+  },
+  "per_mechanic_success_rate": {
+    "inventory": 0.0,
+    "manual_crafting": 0.0
+  },
+  "wall_clock_seconds": 2.352
+}

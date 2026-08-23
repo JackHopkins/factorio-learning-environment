@@ -1,0 +1,72 @@
+[
+  {
+    "model": "z-ai/glm-5.2:free",
+    "task_id": "micro_craft_iron_gear_v1",
+    "attempt": 0,
+    "success": false,
+    "scalar_reward": 0.0,
+    "interventions": 0,
+    "termination_reason": "no_progress",
+    "usage": {
+      "input_tokens": 0.0,
+      "output_tokens": 0.0,
+      "cached_tokens": 0.0,
+      "cache_write_tokens": 0.0,
+      "reasoning_tokens": 0.0,
+      "api_calls": 0.0,
+      "estimated_cost_usd": 0.0,
+      "actual_cost_usd": 0.0
+    },
+    "final_inventory": {
+      "iron-plate": 2.0
+    },
+    "transcript_tail": "API call failed after 3 retries: HTTP 429: Rate limit exceeded: free-models-per-day. Add 5 credits to unlock 1000 free model requests per day\n\n\nsession_id: 20260822_232620_bf3441\n"
+  },
+  {
+    "model": "z-ai/glm-5.2:free",
+    "task_id": "micro_fuel_furnace_v1",
+    "attempt": 0,
+    "success": false,
+    "scalar_reward": 0.0,
+    "interventions": 0,
+    "termination_reason": "no_progress",
+    "usage": {
+      "input_tokens": 0.0,
+      "output_tokens": 0.0,
+      "cached_tokens": 0.0,
+      "cache_write_tokens": 0.0,
+      "reasoning_tokens": 0.0,
+      "api_calls": 0.0,
+      "estimated_cost_usd": 0.0,
+      "actual_cost_usd": 0.0
+    },
+    "final_inventory": {
+      "stone-furnace": 1.0,
+      "coal": 5.0
+    },
+    "transcript_tail": "API call failed after 3 retries: HTTP 429: Rate limit exceeded: free-models-per-day. Add 5 credits to unlock 1000 free model requests per day\n\n\nsession_id: 20260822_232647_ec1708\n"
+  },
+  {
+    "model": "z-ai/glm-5.2:free",
+    "task_id": "micro_configure_assembler_recipe_v1",
+    "attempt": 0,
+    "success": false,
+    "scalar_reward": 0.0,
+    "interventions": 0,
+    "termination_reason": "no_progress",
+    "usage": {
+      "input_tokens": 0.0,
+      "output_tokens": 0.0,
+      "cached_tokens": 0.0,
+      "cache_write_tokens": 0.0,
+      "reasoning_tokens": 0.0,
+      "api_calls": 0.0,
+      "estimated_cost_usd": 0.0,
+      "actual_cost_usd": 0.0
+    },
+    "final_inventory": {
+      "assembling-machine-1": 1.0
+    },
+    "transcript_tail": "API call failed after 3 retries: HTTP 429: Rate limit exceeded: free-models-per-day. Add 5 credits to unlock 1000 free model requests per day\n\n\nsession_id: 20260822_232710_0b4b29\n"
+  }
+]

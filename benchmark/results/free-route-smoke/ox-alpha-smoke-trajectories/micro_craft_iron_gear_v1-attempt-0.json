@@ -1,0 +1,966 @@
+{
+  "mode": "rollout",
+  "run_at": "2026-08-22T19:43:33.328464+00:00",
+  "model": "stealth/ox-alpha",
+  "model_base_url": "https://openrouter.ai/api/v1",
+  "envd_url": "http://127.0.0.1:8172",
+  "action_reference_id": "fle-program-v1/reference-v3",
+  "action_reference_sha256": "bf45b867115370e4c9846e2d0c736d1e38029781d20e97045d4e6dfc902dae8c",
+  "task": {
+    "task_id": "micro_craft_iron_gear_v1",
+    "backend_task_id": "open_play",
+    "goal": "Craft at least one iron gear wheel from the supplied iron plates.",
+    "task_family": "construction",
+    "objectives": [
+      {
+        "objective_id": "carry-gear",
+        "kind": "inventory",
+        "description": "The character inventory contains an iron gear wheel.",
+        "target": "iron-gear-wheel",
+        "comparator": "gte",
+        "threshold": 1.0,
+        "window_seconds": null,
+        "required": true,
+        "weight": 1.0,
+        "parameters": {}
+      }
+    ],
+    "constraints": [
+      {
+        "constraint_id": "intervention-budget",
+        "kind": "max_interventions",
+        "description": "Use no more than 2 intervention programs.",
+        "limit": 2.0,
+        "parameters": {}
+      }
+    ],
+    "verifier": {
+      "implementation": "objective_engine_v1",
+      "mode": "all_required",
+      "scalarization": "binary",
+      "success_threshold": null,
+      "holdout_windows": 1,
+      "emit_transition_comparisons": true,
+      "transition_holdout_seconds": 0
+    },
+    "curriculum": {
+      "stage": "api-microtasks",
+      "suggested_strategies": [
+        "sft",
+        "opd",
+        "opsd",
+        "grpo",
+        "evaluation"
+      ],
+      "prerequisite_task_ids": [],
+      "episode_mode": "independent"
+    },
+    "knowledge_sources": [
+      {
+        "source_id": "factorio-wiki-quick-start",
+        "title": "Factorio Wiki: Quick start guide",
+        "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+        "topics": [
+          "resource_extraction",
+          "smelting",
+          "electricity",
+          "automation",
+          "research"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "voidgrazer-high-level-strategy",
+        "title": "High-Level Strategy for New Players",
+        "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+        "topics": [
+          "progression_phases",
+          "expandability",
+          "automation",
+          "oil_processing",
+          "logistics"
+        ],
+        "access": "privileged_teacher"
+      },
+      {
+        "source_id": "earlyguides-walkthrough",
+        "title": "Factorio Walkthrough: Start to Endgame",
+        "url": "https://earlyguides.com/factorio/walkthrough",
+        "topics": [
+          "progression_phases",
+          "oil_processing",
+          "trains",
+          "defense",
+          "endgame"
+        ],
+        "access": "dataset_builder"
+      }
+    ],
+    "provisioning": {
+      "starting_inventory": {
+        "iron-plate": 2
+      },
+      "all_technologies_researched": false,
+      "researched_technologies": [],
+      "character_inventory_slots_bonus": 0
+    },
+    "customer": null,
+    "perturbations": null,
+    "blueprint_scope": null,
+    "lineage_id": null,
+    "generation_id": null,
+    "seed": 0,
+    "scenario": "default_lab_scenario",
+    "factorio_version": "2.0.73",
+    "checkpoint_id": "scenario:default_lab_scenario",
+    "action_profile": "fle-program-v1",
+    "max_interventions": 2,
+    "holdout_seconds": 0,
+    "fingerprint": "2abb707dc53e52a8a8dd4b4a1ac820950cd0bef372bc8dc76cc1c22759520e1b"
+  },
+  "stop_reason": "max_turns",
+  "tool_error_retry_budget": 0,
+  "rollout_error": null,
+  "elapsed_seconds": 38.139,
+  "turns": [
+    {
+      "turn": 1,
+      "elapsed_seconds": 7.023,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "I'll start by inspecting the current factory state to see what's in the character inventory.",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "6a373ce4-f8fc-4e9a-9a9c-47cf17fec508",
+            "function": {
+              "arguments": "{}",
+              "name": "factorio_observe_factory"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning": "The user wants me to continue from a compacted state. The memory shows no prior observations or actions. The goal: craft at least one iron gear wheel from supplied iron plates. I should first observe the factory to see the inventory.\n\nLet me call factorio_observe_factory first.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "The user wants me to continue from a compacted state. The memory shows no prior observations or actions. The goal: craft at least one iron gear wheel from supplied iron plates. I should first observe the factory to see the inventory.\n\nLet me call factorio_observe_factory first.",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      },
+      "request_context_chars": 5603,
+      "usage": {
+        "completion_tokens": 85,
+        "prompt_tokens": 1529,
+        "total_tokens": 1614,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost": 0,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        }
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "6a373ce4-f8fc-4e9a-9a9c-47cf17fec508",
+          "name": "factorio_observe_factory",
+          "content": "{\"lease_id\": \"15581eef-1512-4540-ac22-97caf25175fa\", \"task_id\": \"micro_craft_iron_gear_v1\", \"ticks\": 0, \"inventory\": {\"iron-plate\": 2}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423\", \"contracts\": [], \"blueprints\": []}",
+          "raw": {
+            "lease_id": "15581eef-1512-4540-ac22-97caf25175fa",
+            "task_id": "micro_craft_iron_gear_v1",
+            "ticks": 0,
+            "inventory": {
+              "iron-plate": 2
+            },
+            "production_score": 0.0,
+            "automated_production_score": 0.0,
+            "production": {
+              "output": {},
+              "input": {},
+              "harvested": {},
+              "crafted": {}
+            },
+            "state_hash": "a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423",
+            "contracts": [],
+            "blueprints": []
+          }
+        }
+      ]
+    },
+    {
+      "turn": 2,
+      "elapsed_seconds": 29.393,
+      "finish_reason": "tool_calls",
+      "assistant": {
+        "content": "Inventory confirmed: 2 iron plates — exactly enough for one iron gear wheel (recipe: 2 iron plates). I'll craft it in a single intervention.",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "id": "c6d25f32-90a9-46b2-895e-e3e8317413b1",
+            "function": {
+              "arguments": "{\"code\":\"crafted = craft_item(Prototype.IronGearWheel, quantity=1)\\ninv = inspect_inventory()\\nprint(\\\"crafted:\\\", crafted)\\nprint(\\\"iron-gear-wheel in inventory:\\\", inv.get(Prototype.IronGearWheel))\\nprint(\\\"iron-plate remaining:\\\", inv.get(Prototype.IronPlate))\"}",
+              "name": "factorio_execute_program"
+            },
+            "type": "function",
+            "index": 0
+          }
+        ],
+        "reasoning": "The inventory has 2 iron plates. An iron gear wheel requires 2 iron plates. I can craft it directly with craft_item(Prototype.IronGearWheel, 1). That's one intervention program. Then observe to verify.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "The inventory has 2 iron plates. An iron gear wheel requires 2 iron plates. I can craft it directly with craft_item(Prototype.IronGearWheel, 1). That's one intervention program. Then observe to verify.",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      },
+      "request_context_chars": 7400,
+      "usage": {
+        "completion_tokens": 151,
+        "prompt_tokens": 1891,
+        "total_tokens": 2042,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "audio_tokens": 0,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null,
+          "image_tokens": 0
+        },
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0,
+          "video_tokens": 0
+        },
+        "cost": 0,
+        "is_byok": false,
+        "cost_details": {
+          "upstream_inference_cost": 0,
+          "upstream_inference_prompt_cost": 0,
+          "upstream_inference_completions_cost": 0
+        }
+      },
+      "tool_results": [
+        {
+          "tool_call_id": "c6d25f32-90a9-46b2-895e-e3e8317413b1",
+          "name": "factorio_execute_program",
+          "content": "{\"lease_id\": \"15581eef-1512-4540-ac22-97caf25175fa\", \"event\": {\"sequence\": 1, \"code_sha256\": \"10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52\", \"started_at\": \"2026-08-22T19:43:32.177836Z\", \"duration_seconds\": 0.27921295166015625, \"reward_delta\": 1.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"3: ('crafted:', 1)\\n4: ('iron-gear-wheel in inventory:', 1)\\n5: ('iron-plate remaining:', 0)\", \"ticks\": 30, \"executed_tools\": [\"craft_item\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 1.0, \"automated_production_score\": -1.0, \"state_hash\": \"00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"intervention_executed\", \"tick\": 30, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52\", \"duration_seconds\": 0.27921295166015625, \"executed_tools\": [\"craft_item\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}",
+          "raw": {
+            "lease_id": "15581eef-1512-4540-ac22-97caf25175fa",
+            "event": {
+              "sequence": 1,
+              "code_sha256": "10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52",
+              "started_at": "2026-08-22T19:43:32.177836Z",
+              "duration_seconds": 0.27921295166015625,
+              "reward_delta": 1.0,
+              "error": false,
+              "evaluation_retry": false,
+              "result": "3: ('crafted:', 1)\n4: ('iron-gear-wheel in inventory:', 1)\n5: ('iron-plate remaining:', 0)",
+              "ticks": 30,
+              "executed_tools": [
+                "craft_item",
+                "inspect_inventory"
+              ],
+              "policy_violations": []
+            },
+            "production_score": 1.0,
+            "automated_production_score": -1.0,
+            "state_hash": "00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420",
+            "events": [
+              {
+                "event_id": "action:1",
+                "kind": "intervention_executed",
+                "tick": 30,
+                "source": "environment",
+                "objective_id": null,
+                "payload": {
+                  "sequence": 1,
+                  "code_sha256": "10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52",
+                  "duration_seconds": 0.27921295166015625,
+                  "executed_tools": [
+                    "craft_item",
+                    "inspect_inventory"
+                  ],
+                  "policy_violations": []
+                },
+                "evidence": {},
+                "reward_channels": {}
+              }
+            ],
+            "terminal_reason": null
+          }
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are operating a real Factorio simulation. Use the supplied tools to inspect, intervene, measure, and debug. Never invent a tool result. Solve only the stated objective, prefer supplied inventory over unnecessary gathering, and minimize interventions. When the goal is complete or no useful action remains, answer briefly without another tool call. An engine-rejected program may be corrected up to 0 extra time(s); a retry does not roll back any earlier side effects."
+    },
+    {
+      "role": "user",
+      "content": "Goal: Craft at least one iron gear wheel from the supplied iron plates.\n\nObjectives:\n- The character inventory contains an iron gear wheel.\n\nConstraints:\n- Use no more than 2 intervention programs.\n\nUse factorio_observe_factory to inspect the simulation and factorio_execute_program for one short intervention at a time. The Factorio engine and task verifier determine success. Do not claim completion without measuring the resulting factory.\n\nAction profile reference:\nInside factorio_execute_program, write ordinary short Python using the names\nalready loaded below. Do not import FLE or use reflection (dir, type, getattr,\nprivate/dunder attributes); host, file, and network access are unavailable.\n\nCore signatures and return values:\n- inspect_inventory(entity=None) -> Inventory\n- get_entities(entities=set(), position=None, radius=1000) -> list[Entity]\n- nearest(Prototype.X or Resource.X) -> Position\n- move_to(position: Position) -> Position\n- harvest_resource(position: Position, quantity=1) -> int\n- get_prototype_recipe(Prototype.X or RecipeName.X) -> Recipe\n- craft_item(Prototype.X, quantity=1) -> int\n- can_place_entity(Prototype.X, direction=Direction.UP, position=Position(x, y)) -> bool\n- place_entity(Prototype.X, direction=Direction.UP, position=Position(x, y), exact=True) -> Entity\n- place_entity_next_to(Prototype.X, reference_position: Position, direction, spacing=0) -> Entity\n- get_entity(Prototype.X, position: Position) -> Entity or None\n- pickup_entity(entity: Entity) -> bool\n- rotate_entity(entity: Entity, direction=Direction.UP) -> Entity\n- insert_item(Prototype.X, target: Entity, quantity=5) -> Entity\n- extract_item(Prototype.X, source: Entity or Position, quantity=5) -> int\n- set_entity_recipe(entity: Entity, RecipeName.X) -> Entity\n- connect_entities(source, target, Prototype.TransportBelt/Pipe/SmallElectricPole)\n- get_resource_patch(Resource.X, position: Position, radius=30) -> ResourcePatch\n- set_research(Technology.X), get_research_progress(Technology.X)\n- sleep(seconds) (at most 15 seconds per call), print(...) for measured feedback\n\nBlueprint library (reusable factory fragments):\n- blueprint('save', name='smelter', x=0, y=0, radius=32) -> dict\n    Captures player-owned entities in the area around Position(x, y) and\n    stores them under `name` for this episode (and later episodes when a\n    persistent library is provisioned). radius=0 captures everything you own.\n    Returns {'saved': name, 'entity_count': n, ...}.\n- blueprint('place', source, x, y) -> dict\n    Places a stored blueprint by its name, or an inline Factorio exchange\n    string. Placement debits every required item from your character\n    inventory up front (all-or-nothing: if anything is missing you get back\n    {'error': 'missing_materials', 'missing': {...}} and nothing is built),\n    then charges construction time on the task clock. Returns\n    {'placed': count, 'items_consumed': {...}, ...}.\n- blueprint('list') -> {'blueprints': [{'name', 'entity_count', ...}]}\n- blueprint('get', name) -> {'name', 'content'}  # full exchange string\nPrefer placing saved blueprints by name; reserve raw strings for novel\ndesigns. Blueprints reuse designs, they do not create matter: stockpile the\nmaterials a design needs before placing it.\n\nRecipeName is the canonical recipe namespace. Use it for every recipe, including\nRecipeName.IronGearWheel, RecipeName.AutomationSciencePack,\nRecipeName.PlasticBar, RecipeName.BasicOilProcessing,\nRecipeName.UraniumProcessing, and RecipeName.LightOilCracking. Prototype names\nidentify entities and items and are not accepted by set_entity_recipe.\n\nExamples:\n  coal_position = nearest(Resource.Coal)  # nearest returns a Position\n  move_to(coal_position)\n  harvest_resource(coal_position, 5)\n\n  machine = place_entity(Prototype.AssemblingMachine1, position=Position(0, 0))\n  machine = set_entity_recipe(machine, RecipeName.IronGearWheel)\n\n  labs = get_entities({Prototype.Lab}, position=Position(0, 0), radius=20)\n  if labs:\n      insert_item(Prototype.AutomationSciencePack, labs[0], 1)\n\nNames use CamelCase enums such as Prototype.IronPlate, Prototype.PumpJack,\nResource.IronOre, Technology.Automation, Direction.UP, and Position(x, y).\nInspect recipes, inventories, entities, status, and production before assuming\na plan worked. Re-fetch entities after the world changes because returned entity\nobjects can become stale. Entity values use attributes such as entity.name and\nentity.position, not dictionary indexing; a Position has x and y only.\n\nThe character can normally act only within about 10 tiles. Call move_to(target)\nbefore harvesting or placing at a distant target. Use the supplied starting\ninventory before mining or crafting, and do not build production chains that\nthe stated objective does not require.\n"
+    },
+    {
+      "content": "I'll start by inspecting the current factory state to see what's in the character inventory.",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "6a373ce4-f8fc-4e9a-9a9c-47cf17fec508",
+          "function": {
+            "arguments": "{}",
+            "name": "factorio_observe_factory"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning": "The user wants me to continue from a compacted state. The memory shows no prior observations or actions. The goal: craft at least one iron gear wheel from supplied iron plates. I should first observe the factory to see the inventory.\n\nLet me call factorio_observe_factory first.",
+      "reasoning_details": [
+        {
+          "type": "reasoning.text",
+          "text": "The user wants me to continue from a compacted state. The memory shows no prior observations or actions. The goal: craft at least one iron gear wheel from supplied iron plates. I should first observe the factory to see the inventory.\n\nLet me call factorio_observe_factory first.",
+          "format": "unknown",
+          "index": 0
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "6a373ce4-f8fc-4e9a-9a9c-47cf17fec508",
+      "name": "factorio_observe_factory",
+      "content": "{\"lease_id\": \"15581eef-1512-4540-ac22-97caf25175fa\", \"task_id\": \"micro_craft_iron_gear_v1\", \"ticks\": 0, \"inventory\": {\"iron-plate\": 2}, \"production_score\": 0.0, \"automated_production_score\": 0.0, \"production\": {\"output\": {}, \"input\": {}, \"harvested\": {}, \"crafted\": {}}, \"state_hash\": \"a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423\", \"contracts\": [], \"blueprints\": []}"
+    },
+    {
+      "content": "Inventory confirmed: 2 iron plates — exactly enough for one iron gear wheel (recipe: 2 iron plates). I'll craft it in a single intervention.",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "id": "c6d25f32-90a9-46b2-895e-e3e8317413b1",
+          "function": {
+            "arguments": "{\"code\":\"crafted = craft_item(Prototype.IronGearWheel, quantity=1)\\ninv = inspect_inventory()\\nprint(\\\"crafted:\\\", crafted)\\nprint(\\\"iron-gear-wheel in inventory:\\\", inv.get(Prototype.IronGearWheel))\\nprint(\\\"iron-plate remaining:\\\", inv.get(Prototype.IronPlate))\"}",
+            "name": "factorio_execute_program"
+          },
+          "type": "function",
+          "index": 0
+        }
+      ],
+      "reasoning": "The inventory has 2 iron plates. An iron gear wheel requires 2 iron plates. I can craft it directly with craft_item(Prototype.IronGearWheel, 1). That's one intervention program. Then observe to verify.",
+      "reasoning_details": [
+        {
+          "type": "reasoning.text",
+          "text": "The inventory has 2 iron plates. An iron gear wheel requires 2 iron plates. I can craft it directly with craft_item(Prototype.IronGearWheel, 1). That's one intervention program. Then observe to verify.",
+          "format": "unknown",
+          "index": 0
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "c6d25f32-90a9-46b2-895e-e3e8317413b1",
+      "name": "factorio_execute_program",
+      "content": "{\"lease_id\": \"15581eef-1512-4540-ac22-97caf25175fa\", \"event\": {\"sequence\": 1, \"code_sha256\": \"10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52\", \"started_at\": \"2026-08-22T19:43:32.177836Z\", \"duration_seconds\": 0.27921295166015625, \"reward_delta\": 1.0, \"error\": false, \"evaluation_retry\": false, \"result\": \"3: ('crafted:', 1)\\n4: ('iron-gear-wheel in inventory:', 1)\\n5: ('iron-plate remaining:', 0)\", \"ticks\": 30, \"executed_tools\": [\"craft_item\", \"inspect_inventory\"], \"policy_violations\": []}, \"production_score\": 1.0, \"automated_production_score\": -1.0, \"state_hash\": \"00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420\", \"events\": [{\"event_id\": \"action:1\", \"kind\": \"intervention_executed\", \"tick\": 30, \"source\": \"environment\", \"objective_id\": null, \"payload\": {\"sequence\": 1, \"code_sha256\": \"10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52\", \"duration_seconds\": 0.27921295166015625, \"executed_tools\": [\"craft_item\", \"inspect_inventory\"], \"policy_violations\": []}, \"evidence\": {}, \"reward_channels\": {}}], \"terminal_reason\": null}"
+    }
+  ],
+  "compact_memory": {
+    "latest_observation": {
+      "ticks": 0,
+      "inventory": {
+        "iron-plate": 2
+      },
+      "production_score": 0.0,
+      "automated_production_score": 0.0,
+      "production": {
+        "output": {},
+        "input": {},
+        "harvested": {},
+        "crafted": {}
+      },
+      "state_hash": "a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423"
+    },
+    "recent_actions": [
+      {
+        "sequence": 1,
+        "error": false,
+        "evaluation_retry": false,
+        "executed_tools": [
+          "craft_item",
+          "inspect_inventory"
+        ],
+        "result_tail": "3: ('crafted:', 1)\n4: ('iron-gear-wheel in inventory:', 1)\n5: ('iron-plate remaining:', 0)",
+        "production_score": 1.0,
+        "automated_production_score": -1.0,
+        "terminal_reason": null
+      }
+    ]
+  },
+  "verification": {
+    "protocol_version": "0.3.0",
+    "lease_id": "15581eef-1512-4540-ac22-97caf25175fa",
+    "task_id": "micro_craft_iron_gear_v1",
+    "task_fingerprint": "2abb707dc53e52a8a8dd4b4a1ac820950cd0bef372bc8dc76cc1c22759520e1b",
+    "verified_at": "2026-08-22T19:43:33.321248Z",
+    "success": true,
+    "scalar_reward": 1.0,
+    "rewards": {
+      "task": 1.0,
+      "throughput": 0.0,
+      "automation": 0.0,
+      "progress": 1.0,
+      "invalid_action": -0.0,
+      "resource_cost": -0.0,
+      "milestone": 0.0,
+      "robustness": 0.0,
+      "time_efficiency": -30.0,
+      "manual_intervention": -1.0,
+      "contracts": 0.0,
+      "contract_penalty": 0.0
+    },
+    "metrics": {
+      "objective_evaluations": [
+        {
+          "objective_id": "carry-gear",
+          "kind": "inventory",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 1.0,
+          "weight": 1.0,
+          "evidence": {}
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0,
+          "evidence": {
+            "total_interventions": 1,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "production_score": 1.0,
+      "automated_production_score": -1.0,
+      "automated_production_score_delta": -1.0,
+      "automation_reward": 0.0,
+      "automation_reward_basis": "nonnegative_legacy_net_value_delta",
+      "interventions": 1,
+      "scored_interventions": 1,
+      "evaluation_retries": 0,
+      "elapsed_ticks": 30
+    },
+    "evidence": {
+      "verifier": "objective_engine_v1",
+      "task_family": "construction",
+      "backend_task_id": "open_play",
+      "objective_ids": [
+        "carry-gear"
+      ],
+      "scalarization": "binary"
+    },
+    "terminal_state_hash": "00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420",
+    "action_events": [
+      {
+        "sequence": 1,
+        "code_sha256": "10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52",
+        "started_at": "2026-08-22T19:43:32.177836Z",
+        "duration_seconds": 0.27921295166015625,
+        "reward_delta": 1.0,
+        "error": false,
+        "evaluation_retry": false,
+        "result": "3: ('crafted:', 1)\n4: ('iron-gear-wheel in inventory:', 1)\n5: ('iron-plate remaining:', 0)",
+        "ticks": 30,
+        "executed_tools": [
+          "craft_item",
+          "inspect_inventory"
+        ],
+        "policy_violations": []
+      }
+    ],
+    "events": [
+      {
+        "event_id": "action:1",
+        "kind": "intervention_executed",
+        "tick": 30,
+        "source": "environment",
+        "objective_id": null,
+        "payload": {
+          "sequence": 1,
+          "code_sha256": "10b1685c77811e4df0f525c4f42223e1f58400a2b9c7c5b6a14a2b36c1f85f52"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "objective:carry-gear",
+        "kind": "objective_satisfied",
+        "tick": 30,
+        "source": "verifier",
+        "objective_id": "carry-gear",
+        "payload": {
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "threshold": 1.0,
+          "normalized_score": 1.0
+        },
+        "evidence": {},
+        "reward_channels": {
+          "progress": 1.0
+        }
+      },
+      {
+        "event_id": "constraint:intervention-budget",
+        "kind": "constraint_satisfied",
+        "tick": 30,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0
+        },
+        "evidence": {
+          "total_interventions": 1,
+          "evaluation_retries": 0
+        },
+        "reward_channels": {}
+      },
+      {
+        "event_id": "termination:classified",
+        "kind": "termination_classified",
+        "tick": 30,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "reason": "success",
+          "success": true
+        },
+        "evidence": {},
+        "reward_channels": {}
+      },
+      {
+        "event_id": "verification:completed",
+        "kind": "verification_completed",
+        "tick": 30,
+        "source": "verifier",
+        "objective_id": null,
+        "payload": {
+          "success": true,
+          "scalar_reward": 1.0,
+          "termination_reason": "success"
+        },
+        "evidence": {},
+        "reward_channels": {}
+      }
+    ],
+    "termination_reason": "success",
+    "privileged_diagnostics": {
+      "schema_version": "0.1.0",
+      "task_id": "micro_craft_iron_gear_v1",
+      "tick": 30,
+      "elapsed_ticks": 30,
+      "objective_evaluations": [
+        {
+          "objective_id": "carry-gear",
+          "kind": "inventory",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "baseline": 0.0,
+          "threshold": 1.0,
+          "normalized_score": 1.0,
+          "weight": 1.0,
+          "evidence": {}
+        }
+      ],
+      "constraint_evaluations": [
+        {
+          "constraint_id": "intervention-budget",
+          "kind": "max_interventions",
+          "supported": true,
+          "satisfied": true,
+          "value": 1.0,
+          "limit": 2.0,
+          "evidence": {
+            "total_interventions": 1,
+            "evaluation_retries": 0
+          }
+        }
+      ],
+      "inventory": {
+        "iron-gear-wheel": 1.0
+      },
+      "inventory_delta": {
+        "iron-gear-wheel": 1.0
+      },
+      "production": {
+        "iron-gear-wheel": 1.0
+      },
+      "consumption": {
+        "iron-plate": 2.0
+      },
+      "automated_production": {},
+      "manual_crafts": {
+        "iron-gear-wheel": 1.0
+      },
+      "research": {
+        "researched_count": 1,
+        "technology_count": 196,
+        "current": null,
+        "progress": 0.0,
+        "relevant": {}
+      },
+      "entity_counts": {},
+      "entity_status_counts": {},
+      "bottlenecks": [],
+      "lifecycle": {
+        "character_alive": true,
+        "character_health": 250.0,
+        "death_count": 0,
+        "deaths": [],
+        "respawn_count": 0,
+        "last_respawn_tick": null,
+        "character_recreated_after_death": false,
+        "termination_reason": "success"
+      },
+      "pollution": {
+        "total": 0.0,
+        "emitted_delta": 0.0
+      },
+      "resource_accounting": {
+        "raw_extracted": {},
+        "raw_consumed": {},
+        "all_produced": {
+          "iron-gear-wheel": 1.0
+        },
+        "all_consumed": {
+          "iron-plate": 2.0
+        }
+      },
+      "action_policy": {
+        "executed_tools": [
+          "craft_item",
+          "inspect_inventory"
+        ],
+        "violations": []
+      },
+      "resource_depletions": [],
+      "target_recipes": {
+        "iron-gear-wheel": {
+          "name": "iron-gear-wheel",
+          "ingredients": [
+            {
+              "name": "iron-plate",
+              "count": 2,
+              "type": "item"
+            }
+          ],
+          "products": [
+            {
+              "name": "iron-gear-wheel",
+              "count": 1,
+              "type": "item",
+              "probability": 1.0
+            }
+          ],
+          "energy": 0,
+          "category": null,
+          "enabled": false
+        }
+      },
+      "knowledge_sources": [
+        {
+          "source_id": "factorio-wiki-quick-start",
+          "title": "Factorio Wiki: Quick start guide",
+          "url": "https://wiki.factorio.com/Tutorial:Quick_start_guide",
+          "topics": [
+            "resource_extraction",
+            "smelting",
+            "electricity",
+            "automation",
+            "research"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "voidgrazer-high-level-strategy",
+          "title": "High-Level Strategy for New Players",
+          "url": "https://steamcommunity.com/sharedfiles/filedetails/?id=2275950965",
+          "topics": [
+            "progression_phases",
+            "expandability",
+            "automation",
+            "oil_processing",
+            "logistics"
+          ],
+          "access": "privileged_teacher"
+        },
+        {
+          "source_id": "earlyguides-walkthrough",
+          "title": "Factorio Walkthrough: Start to Endgame",
+          "url": "https://earlyguides.com/factorio/walkthrough",
+          "topics": [
+            "progression_phases",
+            "oil_processing",
+            "trains",
+            "defense",
+            "endgame"
+          ],
+          "access": "dataset_builder"
+        }
+      ],
+      "caveats": [
+        "Bottlenecks are status-derived signals, not a complete causal graph.",
+        "Raw-resource cost is derived from engine production-flow counters; task specifications must choose extracted or consumed semantics.",
+        "Tool-policy auditing records actual FLE controller calls, but cannot classify arbitrary computation inside a submitted Python program."
+      ]
+    },
+    "privileged_transitions": [
+      {
+        "schema_version": "0.1.0",
+        "task_id": "micro_craft_iron_gear_v1",
+        "sequence": 1,
+        "previous": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_craft_iron_gear_v1",
+          "state_hash": "a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423",
+          "tick": 0,
+          "horizon_ticks": 0,
+          "objective_progress": 0.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": null,
+          "operational_health": 1.0,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 0.0,
+          "automated_production_score": 0.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "carry-gear",
+              "kind": "inventory",
+              "supported": true,
+              "satisfied": false,
+              "value": 0.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 0.0,
+              "weight": 1.0,
+              "evidence": {}
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 0.0,
+              "limit": 2.0,
+              "evidence": {
+                "total_interventions": 0,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {},
+          "bottlenecks": [],
+          "researched_technologies": [
+            "automation-science-pack"
+          ],
+          "entity_counts": {
+            "entity-ghost": 27,
+            "character": 1
+          },
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {},
+            "all_consumed": {}
+          },
+          "pollution": {
+            "total": 0.0,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "current": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_craft_iron_gear_v1",
+          "state_hash": "00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420",
+          "tick": 30,
+          "horizon_ticks": 0,
+          "objective_progress": 1.0,
+          "milestone_progress": null,
+          "sustained_capability": null,
+          "automation_quality": 0.0,
+          "operational_health": 1.0,
+          "future_option_value": null,
+          "safety": 1.0,
+          "production_score": 1.0,
+          "automated_production_score": -1.0,
+          "objective_evaluations": [
+            {
+              "objective_id": "carry-gear",
+              "kind": "inventory",
+              "supported": true,
+              "satisfied": true,
+              "value": 1.0,
+              "baseline": 0.0,
+              "threshold": 1.0,
+              "normalized_score": 1.0,
+              "weight": 1.0,
+              "evidence": {}
+            }
+          ],
+          "constraint_evaluations": [
+            {
+              "constraint_id": "intervention-budget",
+              "kind": "max_interventions",
+              "supported": true,
+              "satisfied": true,
+              "value": 1.0,
+              "limit": 2.0,
+              "evidence": {
+                "total_interventions": 1,
+                "evaluation_retries": 0
+              }
+            }
+          ],
+          "automated_production": {},
+          "manual_production": {
+            "iron-gear-wheel": 1.0
+          },
+          "bottlenecks": [],
+          "researched_technologies": [
+            "automation-science-pack"
+          ],
+          "entity_counts": {
+            "entity-ghost": 27,
+            "character": 1
+          },
+          "lifecycle": {
+            "character_alive": true,
+            "character_health": 250.0,
+            "death_count": 0,
+            "deaths": [],
+            "respawn_count": 0,
+            "last_respawn_tick": null,
+            "character_recreated_after_death": false,
+            "termination_reason": null
+          },
+          "resource_accounting": {
+            "raw_extracted": {},
+            "raw_consumed": {},
+            "all_produced": {
+              "iron-gear-wheel": 1.0
+            },
+            "all_consumed": {
+              "iron-plate": 2.0
+            }
+          },
+          "pollution": {
+            "total": 0.0,
+            "emitted_delta": 0.0
+          },
+          "future_probes": [],
+          "invariant_violations": [],
+          "caveats": [
+            "This is a task-conditioned partial-order summary, not a universal scalar measure of factory quality.",
+            "Sustained capability is omitted unless an autonomous holdout was measured for a throughput objective.",
+            "Future option value is omitted unless identical branch probes were run."
+          ]
+        },
+        "comparison": {
+          "schema_version": "0.1.0",
+          "task_id": "micro_craft_iron_gear_v1",
+          "previous_state_hash": "a6e4e390ef6e0c87b3728840d67446ea34c7964fb6606329b024908c3bbd9423",
+          "current_state_hash": "00103b63ab33f34bd9c777b272d35d37dad70b6b2d0d08bfc06b1d40d6c4e420",
+          "verdict": "dominates",
+          "material_change": true,
+          "dimension_deltas": [
+            {
+              "dimension": "objective_progress",
+              "previous": 0.0,
+              "current": 1.0,
+              "delta": 1.0,
+              "direction": "maximize",
+              "classification": "improved"
+            },
+            {
+              "dimension": "operational_health",
+              "previous": 1.0,
+              "current": 1.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            },
+            {
+              "dimension": "safety",
+              "previous": 1.0,
+              "current": 1.0,
+              "delta": 0.0,
+              "direction": "maximize",
+              "classification": "preserved"
+            }
+          ],
+          "improvements": [
+            "objective_progress"
+          ],
+          "regressions": [],
+          "preserved_invariants": [
+            "automation-science-pack"
+          ],
+          "new_invariant_violations": [],
+          "resolved_invariant_violations": [],
+          "bottleneck_shift": null,
+          "explanation": "At least one comparable quality dimension improved and none regressed."
+        }
+      }
+    ]
+  }
+}

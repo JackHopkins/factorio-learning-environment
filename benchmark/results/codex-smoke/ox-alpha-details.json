@@ -1,0 +1,22 @@
+[
+  {
+    "model": "stealth/ox-alpha",
+    "task_id": "micro_craft_iron_gear_v1",
+    "attempt": 0,
+    "termination_reason": "no_progress",
+    "success": false,
+    "scalar_reward": 0.0,
+    "interventions": 0,
+    "final_inventory": {
+      "iron-plate": 2.0
+    },
+    "objective_values": [
+      {
+        "id": "carry-gear",
+        "satisfied": false,
+        "value": 0.0
+      }
+    ],
+    "transcript_tail": "\n[codex timed out]"
+  }
+]

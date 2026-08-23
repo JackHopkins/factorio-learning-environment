@@ -1,0 +1,66 @@
+{
+  "result_schema_version": "1.0.0",
+  "benchmark_version": "0.2.0-dev",
+  "run_id": "api_microtasks_v1-20260822T194431Z",
+  "model": {
+    "name": "thinkingmachines/inkling:free",
+    "provider": "openrouter",
+    "revision": null,
+    "quantization": null,
+    "endpoint": null
+  },
+  "suite": "api_microtasks_v1",
+  "benchmark_split": null,
+  "started_at": "2026-08-22T19:44:31.465753Z",
+  "completed_at": "2026-08-22T19:44:33.753564Z",
+  "repository_commit": "28fe1bb7ebcea4077b8361dcc6476c14719b3d3f",
+  "environment": {
+    "envd_url": "http://127.0.0.1:8172",
+    "factorio_version": [
+      "2.0.73"
+    ],
+    "action_profiles": [
+      "fle-program-v1"
+    ]
+  },
+  "generation_config": {
+    "temperature": 0.1,
+    "max_output_tokens": 2048,
+    "max_turns_override": 0,
+    "tool_error_retries": 0,
+    "context_budget_chars": 18000,
+    "attempts_per_task": 1,
+    "selected_statuses": [
+      "ready"
+    ],
+    "cache_prompt_extension": false,
+    "action_reference_id": "fle-program-v1/reference-v3",
+    "action_reference_sha256": "bf45b867115370e4c9846e2d0c736d1e38029781d20e97045d4e6dfc902dae8c"
+  },
+  "attempts": [
+    {
+      "task_id": "micro_craft_iron_gear_v1",
+      "task_fingerprint": "2abb707dc53e52a8a8dd4b4a1ac820950cd0bef372bc8dc76cc1c22759520e1b",
+      "attempt": 0,
+      "seed": 0,
+      "success": false,
+      "scalar_reward": 0.0,
+      "interventions": 0,
+      "invalid_interventions": 0,
+      "retry_interventions": 0,
+      "elapsed_seconds": 1.894,
+      "termination_reason": "no_progress",
+      "trajectory_artifact": "inkling-smoke-trajectories/micro_craft_iron_gear_v1-attempt-0.json",
+      "metrics": {
+        "production_score": 0.0,
+        "automated_production_score": 0.0,
+        "automated_production_score_delta": 0.0,
+        "automation_reward": 0.0,
+        "interventions": 0.0,
+        "scored_interventions": 0.0,
+        "evaluation_retries": 0.0,
+        "elapsed_ticks": 0.0
+      }
+    }
+  ]
+}

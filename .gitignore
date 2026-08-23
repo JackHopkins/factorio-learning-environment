@@ -1,6 +1,8 @@
 # Python/venv
 .venv/
 .env
+.env.*
+!.env.example
 .fle/
 api_keys.json
 **/.claude/settings.local.json

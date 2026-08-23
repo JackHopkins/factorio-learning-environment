@@ -1,0 +1,42 @@
+{
+  "result_schema_version": "1.0.0",
+  "benchmark_version": "0.2.0-dev",
+  "run_id": "codex-ox-alpha-20260822T230252Z",
+  "model": {
+    "name": "ox-alpha",
+    "provider": "stealth",
+    "revision": null,
+    "quantization": null,
+    "endpoint": null
+  },
+  "suite": "api_microtasks_v1",
+  "benchmark_split": "development",
+  "started_at": "2026-08-22T23:02:52.981496Z",
+  "completed_at": "2026-08-22T23:08:54.981496Z",
+  "repository_commit": "unknown",
+  "environment": {},
+  "generation_config": {
+    "harness": "codex-cli",
+    "temperature": 0.1
+  },
+  "attempts": [
+    {
+      "task_id": "micro_craft_iron_gear_v1",
+      "task_fingerprint": "2abb707dc53e52a8a8dd4b4a1ac820950cd0bef372bc8dc76cc1c22759520e1b",
+      "attempt": 0,
+      "seed": 0,
+      "success": false,
+      "scalar_reward": 0.0,
+      "interventions": 0,
+      "invalid_interventions": 0,
+      "retry_interventions": 0,
+      "elapsed_seconds": 360.32991159998346,
+      "termination_reason": "no_progress",
+      "trajectory_artifact": null,
+      "metrics": {
+        "contracts": 0.0,
+        "contract_penalty": 0.0
+      }
+    }
+  ]
+}

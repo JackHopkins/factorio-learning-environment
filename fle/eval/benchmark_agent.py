@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fle.envd.action_reference import (
     ACTION_PROFILE_REFERENCE_ID,
     ACTION_PROFILE_REFERENCE_SHA256,
@@ -208,10 +212,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--model-base-url", default="http://127.0.0.1:18080/v1")
     parser.add_argument(
         "--api-key",
-        default=(
-            os.getenv("DEEPSEEK_API_KEY")
-            or os.getenv("OPENAI_API_KEY")
-            or "local-no-key"
+        default=None,
+        help=(
+            "API key for the inference route. Defaults are resolved from the "
+            "--provider: openrouter reads OPEN_ROUTER_API_KEY, zen reads "
+            "OPENCODE_ZEN_API_KEY; otherwise DEEPSEEK_API_KEY then "
+            "OPENAI_API_KEY."
         ),
     )
     parser.add_argument("--model", default="auto")
@@ -238,6 +244,35 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_api_key(provider: str) -> str:
+    """Provider-aware key resolution so a DeepSeek key never leaks to an
+    OpenRouter endpoint (and vice versa)."""
+
+    provider = (provider or "").lower()
+    if provider == "openrouter":
+        return (
+            os.getenv("OPEN_ROUTER_API_KEY")
+            or os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+            or "local-no-key"
+        )
+    if provider in {"zen", "opencode", "opencodezen"}:
+        return (
+            os.getenv("OPENCODE_ZEN_API_KEY")
+            or os.getenv("OPEN_CODE_ZEN_API_KEY")
+            or os.getenv("ZEN_API_KEY")
+            or os.getenv("OPENCODE_API_KEY")
+            or os.getenv("DEEPSEEK_API_KEY")
+            or os.getenv("OPENAI_API_KEY")
+            or "local-no-key"
+        )
+    return (
+        os.getenv("DEEPSEEK_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+        or "local-no-key"
+    )
+
+
 def main() -> int:
     args = _parser().parse_args()
     if args.attempts < 1:
@@ -246,6 +281,8 @@ def main() -> int:
         raise SystemExit("--tool-error-retries cannot be negative")
     if not args.status:
         args.status = ["ready"]
+    if args.api_key is None:
+        args.api_key = _resolve_api_key(args.provider)
     started = time.perf_counter()
     run = asyncio.run(run_benchmark(args))
     _atomic_json(args.output, run.model_dump(mode="json"))

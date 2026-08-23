@@ -1,0 +1,26 @@
+{
+  "attempt_count": 1,
+  "benchmark_split": "development",
+  "invalid_intervention_rate": 0.0,
+  "mean_interventions": 0.0,
+  "model": {
+    "endpoint": null,
+    "name": "inkling:free",
+    "provider": "thinkingmachines",
+    "quantization": null,
+    "revision": null
+  },
+  "per_mechanic_success_rate": {
+    "inventory": 0.0,
+    "manual_crafting": 0.0
+  },
+  "per_task_success_rate": {
+    "micro_craft_iron_gear_v1": 0.0
+  },
+  "retry_assisted_success_rate": 0.0,
+  "retry_intervention_rate": 0.0,
+  "run_id": "hermes-inkling-free-20260823T021947Z",
+  "success_count": 0,
+  "success_rate": 0.0,
+  "suite": "api_microtasks_v1"
+}

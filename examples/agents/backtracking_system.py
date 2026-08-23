@@ -8,8 +8,8 @@ from fle.env.namespace import FactorioNamespace
 from fle.agents.models import CompletionResult, Response
 from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
-from fle.agents.backtracking_agent import BacktrackingAgent
-from fle.agents.basic_agent import BasicAgent
+from examples.agents.backtracking_agent import BacktrackingAgent
+from examples.agents.basic_agent import BasicAgent
 
 
 class BacktrackingSystem(AgentABC):

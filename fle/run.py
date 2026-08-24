@@ -197,6 +197,9 @@ def fle_inspect_eval(args):
             # Default to a working model for testing
             cmd.extend(["--model", "openai/gpt-4o-mini"])
 
+        if getattr(args, "model_base_url", None):
+            cmd.extend(["--model-base-url", args.model_base_url])
+
         # Add reasoning configuration for reasoning models
         if hasattr(args, "reasoning_effort") and args.reasoning_effort:
             cmd.extend(["--reasoning-effort", args.reasoning_effort])
@@ -622,6 +625,12 @@ Examples:
     )
     parser_inspect.add_argument(
         "--model", help="Model to use for evaluation (e.g., openai/gpt-4o-mini)"
+    )
+    parser_inspect.add_argument(
+        "--model-base-url",
+        help="Base URL for the model API, passed through to inspect eval. "
+        "Use with an openai-api/... model to target local or self-hosted "
+        "OpenAI-compatible endpoints (e.g. vLLM, LM Studio, llama-server)",
     )
     parser_inspect.add_argument(
         "--env-id", help="Specific environment/task to evaluate (default: all tasks)"

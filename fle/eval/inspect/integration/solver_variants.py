@@ -320,12 +320,13 @@ Now begin building your factory step by step."""
 
                 else:
                     # Standard mode: append to message history
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}"""
+{game_state_str}"""
 
                     step_message = ChatMessageUser(content=step_content)
                     state.messages.append(step_message)
@@ -1527,12 +1528,13 @@ Now begin building your factory step by step."""
                     current_score = production_scores[-1] if production_scores else 0
 
                     # Create step message with full observation (only current step gets full context)
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
+{game_state_str}
 
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to expand and improve your factory."""
@@ -2089,12 +2091,13 @@ Now begin building your factory step by step."""
                     current_score = production_scores[-1] if production_scores else 0
 
                     # Create step message with full observation
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
+{game_state_str}
 
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to expand and improve your factory."""
@@ -2594,12 +2597,13 @@ def factorio_condensed_prompt_latest_image_solver():
                     current_score = production_scores[-1] if production_scores else 0
 
                     # Create step message
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
+{game_state_str}
 
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to expand and improve your factory."""
@@ -3041,12 +3045,13 @@ def factorio_condensed_prompt_solver():
                     current_score = production_scores[-1] if production_scores else 0
 
                     # Create step message
+                    game_state_str = obs_formatted.raw_str.replace("\\n", "\n")
                     step_content = f"""\n\n## Step {step + 1}/{trajectory_length} - Game State Analysis
 
 Progress: {(step / trajectory_length) * 100:.1f}% of trajectory complete
 
 **Current Game State:**
-{obs_formatted.raw_str.replace("\\n", "\n")}
+{game_state_str}
 
 **Next Action Required:**
 Analyze the current state and write a Python program using the FLE API to expand and improve your factory."""

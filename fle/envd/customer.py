@@ -82,7 +82,12 @@ _CATALOG: dict[str, dict[str, Any]] = {
     "locomotive": {"tier": 2, "family": "transport", "qty": 40, "rate": 4},
     "cargo-wagon": {"tier": 2, "family": "transport", "qty": 40, "rate": 4},
     "artillery-shell": {"tier": 3, "family": "military", "qty": 100, "rate": 5},
-    "uranium-rounds-magazine": {"tier": 2, "family": "military", "qty": 600, "rate": 60},
+    "uranium-rounds-magazine": {
+        "tier": 2,
+        "family": "military",
+        "qty": 600,
+        "rate": 60,
+    },
     "battery": {"tier": 2, "family": "components", "qty": 1200, "rate": 120},
     "plastic-bar": {"tier": 1, "family": "components", "qty": 4000, "rate": 600},
     "sulfur": {"tier": 1, "family": "chemistry", "qty": 2000, "rate": 350},
@@ -110,7 +115,9 @@ class ScheduleConfig:
     warmup_ticks: int = 36000
 
 
-def _quantity(rng: random.Random, entry: dict[str, Any], config: ScheduleConfig) -> float:
+def _quantity(
+    rng: random.Random, entry: dict[str, Any], config: ScheduleConfig
+) -> float:
     scale = 0.5 + config.difficulty
     jitter = rng.uniform(0.75, 1.3)
     return max(1.0, round(entry["qty"] * scale * jitter))
@@ -155,9 +162,11 @@ def generate_contract_schedule(
         tier_bias = int(difficulty * 2)
         for name, entry in products:
             population.append((name, entry))
-            weights_.append(_TIER_WEIGHTS.get(entry["tier"], (1.0,))[
-                min(tier_bias, len(_TIER_WEIGHTS.get(entry["tier"], (1.0,))) - 1)
-            ])
+            weights_.append(
+                _TIER_WEIGHTS.get(entry["tier"], (1.0,))[
+                    min(tier_bias, len(_TIER_WEIGHTS.get(entry["tier"], (1.0,))) - 1)
+                ]
+            )
         return rng.choices(population, weights=weights_, k=1)[0]
 
     orders: list[DemandOrderSpec] = []
@@ -363,9 +372,7 @@ class ContractEngine:
                 events.append(
                     {
                         "event": (
-                            "contract_fulfilled"
-                            if complete
-                            else "contract_expired"
+                            "contract_fulfilled" if complete else "contract_expired"
                         ),
                         "order_id": spec.order_id,
                         "tick": spec.close_tick,
@@ -404,9 +411,7 @@ class ContractEngine:
                     continue
                 credit = min(capacity, remaining)
                 state.absorbed[product] = state.absorbed.get(product, 0.0) + credit
-                state.fulfilled[product] = (
-                    state.fulfilled.get(product, 0.0) + credit
-                )
+                state.fulfilled[product] = state.fulfilled.get(product, 0.0) + credit
                 state.credits.setdefault(product, []).append((tick, credit))
                 remaining -= credit
                 if self._order_complete(state):
@@ -537,9 +542,7 @@ class ContractEngine:
                     weight=spec.weight,
                     requested={p.product: p.quantity for p in spec.products},
                     accepted={
-                        p.product: min(
-                            state.fulfilled.get(p.product, 0.0), p.quantity
-                        )
+                        p.product: min(state.fulfilled.get(p.product, 0.0), p.quantity)
                         for p in spec.products
                     },
                     ratio=ratio,
@@ -575,7 +578,9 @@ class ContractEngine:
             aggregate_ratio=aggregate,
             fulfillment_reward=weighted_ratio / total_weight if total_weight else 0.0,
             penalty=penalty,
-            net_reward=(weighted_ratio - self.spec.lateness_penalty_weight * weighted_penalty)
+            net_reward=(
+                weighted_ratio - self.spec.lateness_penalty_weight * weighted_penalty
+            )
             / total_weight
             if total_weight
             else 0.0,
@@ -599,9 +604,7 @@ def _sign_payload(payload: dict[str, Any], key: bytes) -> str:
     return hmac.new(key, _canonical(payload), hashlib.sha256).hexdigest()
 
 
-def verify_receipt(
-    payload: dict[str, Any], mac: str, key: bytes
-) -> bool:
+def verify_receipt(payload: dict[str, Any], mac: str, key: bytes) -> bool:
     return hmac.compare_digest(_sign_payload(payload, key), mac)
 
 
@@ -609,9 +612,15 @@ def success_from_evaluation(
     result: ContractEvaluationResult, spec: CustomerContractSpec
 ) -> bool:
     required_results = [r for r in result.order_results if r.required]
+    required_orders = [order for order in spec.orders if order.required]
     if not required_results:
-        return True
-    per_order = all(r.ratio + 1e-9 >= _order_success_floor(spec) for r in required_results)
+        # A schedule with required demand cannot be passed by finalizing before
+        # its first required order is issued. Optional-only schedules remain
+        # vacuously successful.
+        return not required_orders
+    per_order = all(
+        r.ratio + 1e-9 >= _order_success_floor(spec) for r in required_results
+    )
     return per_order and result.aggregate_ratio + 1e-9 >= spec.success_ratio
 
 
@@ -622,9 +631,237 @@ def _order_success_floor(spec: CustomerContractSpec) -> float:
     return min(1.0, spec.success_ratio)
 
 
+# ---------------------------------------------------------------------------
+# Single active order (adaptive contract epochs)
+# ---------------------------------------------------------------------------
+
+ACTIVE_ORDER_ENGINE_VERSION = "active-order-v1"
+
+
+@dataclass
+class ActiveOrderOutcome:
+    """Detailed delivery accounting for one committed epoch order."""
+
+    engine_version: str
+    item_name: str
+    requested_quantity: int
+    delivered_quantity: float
+    completion_ratio: float
+    status: str  # fulfilled | partial | expired | abandoned
+    activation_tick: int
+    terminal_tick: int
+    first_delivery_tick: int | None
+    completion_tick: int | None
+    unattributed_delivered: float
+
+
+class ActiveOrder:
+    """Deterministic state machine for exactly one open customer order.
+
+    Unlike :class:`ContractEngine` this holds a single committed order whose
+    clock starts at activation and closes at fulfillment or deadline expiry.
+    It performs no selection, rating, or calibration -- callers own those.
+    """
+
+    __slots__ = (
+        "item_name",
+        "requested_quantity",
+        "deadline_ticks",
+        "_activation_tick",
+        "_delivered",
+        "_unattributed",
+        "_first_delivery_tick",
+        "_completion_tick",
+        "_status",
+        "_terminal_tick",
+        "_now",
+    )
+
+    def __init__(
+        self,
+        item_name: str,
+        requested_quantity: int,
+        deadline_ticks: int,
+        *,
+        activation_tick: int,
+    ):
+        if requested_quantity <= 0:
+            raise ValueError("requested_quantity must be positive")
+        if deadline_ticks <= 0:
+            raise ValueError("deadline_ticks must be positive")
+        self.item_name = item_name
+        self.requested_quantity = requested_quantity
+        self.deadline_ticks = deadline_ticks
+        self._activation_tick = activation_tick
+        self._delivered = 0.0
+        self._unattributed = 0.0
+        self._first_delivery_tick: int | None = None
+        self._completion_tick: int | None = None
+        self._status: str = "open"
+        self._terminal_tick: int | None = None
+        self._now: int | None = None
+
+    # -- clock ---------------------------------------------------------------
+
+    @property
+    def elapsed_ticks(self) -> int:
+        endpoint = (
+            self._terminal_tick
+            if self._terminal_tick is not None
+            else (self._now if self._now is not None else self._activation_tick)
+        )
+        return max(endpoint - self._activation_tick, 0)
+
+    @property
+    def remaining_ticks(self) -> int:
+        if self._status != "open":
+            return 0
+        return max(
+            self.deadline_ticks
+            - ((self._now or self._activation_tick) - self._activation_tick),
+            0,
+        )
+
+    def sync(self, current_tick: int) -> dict[str, Any] | None:
+        """Advance the clock; expires the order once its deadline passes."""
+
+        if self._status != "open":
+            return None
+        self._now = max(current_tick, self._activation_tick)
+        if (current_tick - self._activation_tick) >= self.deadline_ticks:
+            complete = self._delivered >= self.requested_quantity - 1e-9
+            self._status = "fulfilled" if complete else "expired"
+            self._terminal_tick = self._activation_tick + self.deadline_ticks
+            if complete and self._completion_tick is None:
+                self._completion_tick = self._terminal_tick
+            return {
+                "event": ("contract_fulfilled" if complete else "contract_expired"),
+                "item": self.item_name,
+                "tick": self._terminal_tick,
+            }
+        return None
+
+    # -- deliveries ------------------------------------------------------------
+
+    def attribute(self, amount: float, tick: int) -> dict[str, Any] | None:
+        """Credit sink-verified units while the order remains open."""
+
+        if self._status != "open" or amount <= 0:
+            if amount > 0 and self._status == "fulfilled":
+                self._unattributed += amount
+            return None
+        # The order closes at its deadline.  Buckets are attributed at their
+        # end tick, so a bucket that closes on/after the due boundary is late
+        # even if it was opened while the order was active.
+        if tick < self._activation_tick or tick >= self._activation_tick + self.deadline_ticks:
+            self._unattributed += amount
+            return None
+        self._now = max(self._now or self._activation_tick, tick)
+        capacity = max(self.requested_quantity - self._delivered, 0.0)
+        credit = min(capacity, amount)
+        overflow = amount - credit
+        if credit <= 1e-9:
+            self._unattributed += overflow
+            return None
+        self._delivered += credit
+        if self._first_delivery_tick is None:
+            self._first_delivery_tick = tick
+        event = {
+            "event": "contract_progress",
+            "item": self.item_name,
+            "amount": credit,
+            "tick": tick,
+        }
+        if self._delivered >= self.requested_quantity - 1e-9:
+            self._status = "fulfilled"
+            self._completion_tick = tick
+            self._terminal_tick = tick
+            event["event"] = "contract_fulfilled"
+        if overflow > 1e-9:
+            self._unattributed += overflow
+        return event
+
+    # -- lifecycle ---------------------------------------------------------
+
+    def abandon(self, tick: int) -> None:
+        """Agent-initiated abandonment; recorded verbatim, never a win."""
+        if self._status == "open":
+            self._now = max(self._now or self._activation_tick, tick)
+            self._status = "abandoned"
+            self._terminal_tick = tick
+
+    @property
+    def status(self) -> str:
+        return self._status
+
+    @property
+    def delivered(self) -> float:
+        return self._delivered
+
+    @property
+    def first_delivery_tick(self) -> int | None:
+        return self._first_delivery_tick
+
+    @property
+    def completion_tick(self) -> int | None:
+        return self._completion_tick
+
+    def student_view(self) -> OpenContractView:
+        """Student-visible projection: no difficulty or rating internals."""
+        return OpenContractView(
+            order_id="epoch-order",
+            kind="one_shot",
+            products=[
+                ProductDemandSpec(
+                    product=self.item_name,
+                    quantity=float(self.requested_quantity),
+                )
+            ],
+            issued_at_tick=self._activation_tick,
+            due_tick=self._activation_tick + self.deadline_ticks,
+            grace_ticks=0,
+            status=(
+                "fulfilled"
+                if self._status == "fulfilled"
+                else ("open" if self._status == "open" else "expired")
+            ),
+            fulfilled={self.item_name: round(self._delivered, 4)},
+        )
+
+    def evaluate(self, terminal_tick: int | None = None) -> ActiveOrderOutcome:
+        if terminal_tick is not None:
+            tick = terminal_tick
+        elif self._terminal_tick is not None:
+            tick = self._terminal_tick
+        elif self._now is not None:
+            tick = self._now
+        else:
+            tick = self._activation_tick
+        ratio = min(self._delivered / self.requested_quantity, 1.0)
+        status = self._status
+        if status == "open":
+            status = "fulfilled" if ratio >= 1.0 - 1e-9 else "partial"
+        return ActiveOrderOutcome(
+            engine_version=ACTIVE_ORDER_ENGINE_VERSION,
+            item_name=self.item_name,
+            requested_quantity=self.requested_quantity,
+            delivered_quantity=self._delivered,
+            completion_ratio=ratio,
+            status=status,
+            activation_tick=self._activation_tick,
+            terminal_tick=tick,
+            first_delivery_tick=self._first_delivery_tick,
+            completion_tick=self._completion_tick,
+            unattributed_delivered=self._unattributed,
+        )
+
+
 __all__ = [
     "SLICE_TICKS",
     "CUSTOMER_ENGINE_VERSION",
+    "ACTIVE_ORDER_ENGINE_VERSION",
+    "ActiveOrder",
+    "ActiveOrderOutcome",
     "DeliveryBucket",
     "OrderResult",
     "ContractEvaluationResult",

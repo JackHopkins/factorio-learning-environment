@@ -7,13 +7,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from fle.envd.errors import (
     CapacityExhausted,
+    CommitmentMismatch,
     EnvironmentServiceError,
+    IdempotencyConflict,
     InterventionLimitReached,
     LeaseFinalized,
     LeaseNotFound,
     RuntimeBackendError,
 )
-from fle.envd.models import FactorioTaskSpec
+from fle.envd.models import (
+    ContractEpochSpec,
+    FactorioTaskSpec,
+)
 from fle.envd.service import EnvironmentService
 
 
@@ -28,6 +33,7 @@ class LeaseRequest(RequestModel):
 
 class ExecuteRequest(RequestModel):
     code: str
+    request_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class ForkRequest(RequestModel):
@@ -36,6 +42,21 @@ class ForkRequest(RequestModel):
 
 class CheckpointRequest(RequestModel):
     name: str | None = Field(default=None, max_length=128)
+
+
+class ContractEpochBeginRequest(RequestModel):
+    """Privileged benchmark payload; never part of the agent tool surface."""
+
+    spec: ContractEpochSpec
+    request_id: str | None = None
+
+
+class ContractEpochFinalizeRequest(RequestModel):
+    epoch_index: int = Field(ge=0)
+    commitment_hash: str
+    abandon: bool = False
+    infrastructure_interrupt: bool = False
+    request_id: str | None = None
 
 
 def _register_error_handlers(app: FastAPI) -> None:
@@ -61,6 +82,14 @@ def _register_error_handlers(app: FastAPI) -> None:
         # failures as a gateway error rather than an internal stack trace.
         status = exc.status_code if 400 <= exc.status_code < 500 else 502
         return _error(status, str(exc))
+
+    @app.exception_handler(CommitmentMismatch)
+    async def commitment_error(_, exc: CommitmentMismatch):
+        return _error(409, str(exc))
+
+    @app.exception_handler(IdempotencyConflict)
+    async def idempotency_error(_, exc: IdempotencyConflict):
+        return _error(409, str(exc))
 
     @app.exception_handler(EnvironmentServiceError)
     async def service_error(_, exc: EnvironmentServiceError):
@@ -93,7 +122,11 @@ def create_app(service: EnvironmentService) -> FastAPI:
 
     @app.post("/v1/leases/{lease_id}/execute")
     def execute(lease_id: str, request: ExecuteRequest):
-        return service.execute(lease_id, request.code)
+        return service.execute(
+            lease_id,
+            request.code,
+            request_id=request.request_id,
+        )
 
     @app.get("/v1/leases/{lease_id}/observe")
     def observe(lease_id: str):
@@ -102,6 +135,39 @@ def create_app(service: EnvironmentService) -> FastAPI:
     @app.post("/v1/leases/{lease_id}/finalize")
     def finalize(lease_id: str):
         return service.finalize(lease_id)
+
+    # -- adaptive contract benchmark (privileged HTTP, never agent tools) --
+
+    @app.get("/v1/leases/{lease_id}/contract/context")
+    def contract_context(lease_id: str, session_id: str, epoch_index: int):
+        return service.capture_contract_context(lease_id, session_id, epoch_index)
+
+    @app.post("/v1/leases/{lease_id}/contract/begin", status_code=201)
+    def contract_begin(lease_id: str, request: ContractEpochBeginRequest):
+        return service.begin_contract_epoch(
+            lease_id,
+            request.spec,
+            request_id=request.request_id,
+        ).model_dump(mode="json")
+
+    @app.post("/v1/leases/{lease_id}/contract/finalize")
+    def contract_finalize(lease_id: str, request: ContractEpochFinalizeRequest):
+        return service.finalize_contract_epoch(
+            lease_id,
+            request.epoch_index,
+            request.commitment_hash,
+            abandon=request.abandon,
+            infrastructure_interrupt=request.infrastructure_interrupt,
+            request_id=request.request_id,
+        ).model_dump(mode="json")
+
+    @app.get("/v1/leases/{lease_id}/contract/state")
+    def contract_state(lease_id: str):
+        return service.get_contract_session_state(lease_id).model_dump(mode="json")
+
+    @app.post("/v1/leases/{lease_id}/contract/session-finalize")
+    def contract_session_finalize(lease_id: str):
+        return service.finalize_contract_session(lease_id).model_dump(mode="json")
 
     return app
 
@@ -142,7 +208,11 @@ def create_agentenv_app(service) -> FastAPI:
 
     @app.post("/v1/leases/{lease_id}/execute")
     async def execute(lease_id: str, request: ExecuteRequest):
-        return await service.execute(lease_id, request.code)
+        return await service.execute(
+            lease_id,
+            request.code,
+            request_id=request.request_id,
+        )
 
     @app.get("/v1/leases/{lease_id}/observe")
     async def observe(lease_id: str):

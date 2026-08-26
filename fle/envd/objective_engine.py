@@ -1141,7 +1141,10 @@ def _termination_reason(
             return "action_policy_violation"
         return "constraint_violation"
     scored_interventions = sum(not event.evaluation_retry for event in action_events)
-    if scored_interventions >= task.max_interventions:
+    if (
+        task.max_interventions is not None
+        and scored_interventions >= task.max_interventions
+    ):
         return "intervention_limit"
     if action_events and action_events[-1].error:
         return "invalid_action"
@@ -1154,10 +1157,15 @@ def _success(
     task: FactorioTaskSpec,
     objectives: list[ObjectiveEvaluation],
     constraints: list[ConstraintEvaluation],
+    extra_required_ids: set[str] | None = None,
 ) -> bool:
-    required = [
-        result for spec, result in zip(task.objectives, objectives) if spec.required
-    ]
+    required_ids = {
+        objective.objective_id
+        for objective in task.objectives
+        if objective.required
+    }
+    required_ids.update(extra_required_ids or set())
+    required = [result for result in objectives if result.objective_id in required_ids]
     constraints_pass = all(
         result.supported and result.satisfied for result in constraints
     )
@@ -1285,7 +1293,12 @@ def verify_native(
         evaluate_constraint(task, constraint, initial, final, action_events)
         for constraint in task.constraints
     ]
-    success = _success(task, objectives, constraints)
+    success = _success(
+        task,
+        objectives,
+        constraints,
+        extra_required_ids={"customer:contracts"} if customer_result is not None else None,
+    )
     constraints_pass = all(
         result.supported and result.satisfied for result in constraints
     )
@@ -1544,12 +1557,25 @@ def verify_native(
     if customer_result is not None:
         customer_receipt = dict(customer_result.receipt)
         customer_receipt.pop("receipt_context", None)
+        required_results = [
+            result for result in customer_result.order_results if result.required
+        ]
+        required_total = sum(
+            order.required for order in task.customer.orders
+        ) if task.customer is not None else len(required_results)
+        fulfilled_count = sum(
+            result.ratio + 1e-9 >= 1.0 and result.status != "expired"
+            for result in required_results
+        )
         customer_metrics = {
             "customer_commitment": customer_result.commitment,
             "customer_aggregate_ratio": customer_result.aggregate_ratio,
             "customer_fulfillment_reward": customer_result.fulfillment_reward,
             "customer_penalty": customer_result.penalty,
             "customer_net_reward": customer_result.net_reward,
+            "customer_orders_fulfilled": float(fulfilled_count),
+            "customer_orders_issued": float(len(required_results)),
+            "customer_orders_total": float(required_total),
             "customer_unattributed_deliveries": customer_result.unattributed,
             "customer_receipt_mac": customer_result.receipt_mac,
             "customer_receipt": {

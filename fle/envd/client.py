@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import asyncio
+import sys
 from types import TracebackType
-from typing import Self
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:  # pragma: no cover - 3.10 support
+    from typing_extensions import Self
 
 import aiohttp
 
 from fle.envd.models import (
+    ActiveContractState,
+    ContractContextSnapshot,
+    ContractEpochOutcome,
+    ContractEpochSpec,
+    ContractSessionState,
+    ContractSessionSummary,
     ExecutionResult,
     FactorioTaskSpec,
     HealthStatus,
@@ -81,10 +93,25 @@ class HTTPEnvironmentClient:
         )
         return Lease.model_validate(data)
 
-    async def execute(self, lease_id: str, code: str) -> ExecutionResult:
-        data = await self._request(
-            "POST", f"/v1/leases/{lease_id}/execute", json={"code": code}
-        )
+    async def execute(
+        self,
+        lease_id: str,
+        code: str,
+        *,
+        request_id: str | None = None,
+    ) -> ExecutionResult:
+        attempts = 2 if request_id is not None else 1
+        for attempt in range(attempts):
+            try:
+                data = await self._request(
+                    "POST",
+                    f"/v1/leases/{lease_id}/execute",
+                    json={"code": code, "request_id": request_id},
+                )
+                break
+            except (aiohttp.ClientError, asyncio.TimeoutError):
+                if attempt + 1 >= attempts:
+                    raise
         return ExecutionResult.model_validate(data)
 
     async def observe(self, lease_id: str) -> Observation:
@@ -120,6 +147,68 @@ class HTTPEnvironmentClient:
             json={"name": name},
         )
         return RuntimeCheckpoint.model_validate(data)
+
+    # -- adaptive contract benchmark (privileged HTTP) -----------------------
+
+    async def capture_contract_context(
+        self, lease_id: str, session_id: str, epoch_index: int
+    ) -> ContractContextSnapshot:
+        data = await self._request(
+            "GET",
+            f"/v1/leases/{lease_id}/contract/context"
+            f"?session_id={session_id}&epoch_index={epoch_index}",
+        )
+        return ContractContextSnapshot.model_validate(data)
+
+    async def begin_contract_epoch(
+        self,
+        lease_id: str,
+        spec: ContractEpochSpec,
+        *,
+        request_id: str | None = None,
+    ) -> ActiveContractState:
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/contract/begin",
+            json={
+                "spec": spec.model_dump(mode="json"),
+                "request_id": request_id,
+            },
+        )
+        return ActiveContractState.model_validate(data)
+
+    async def finalize_contract_epoch(
+        self,
+        lease_id: str,
+        epoch_index: int,
+        commitment_hash: str,
+        *,
+        abandon: bool = False,
+        infrastructure_interrupt: bool = False,
+        request_id: str | None = None,
+    ) -> ContractEpochOutcome:
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/contract/finalize",
+            json={
+                "epoch_index": epoch_index,
+                "commitment_hash": commitment_hash,
+                "abandon": abandon,
+                "infrastructure_interrupt": infrastructure_interrupt,
+                "request_id": request_id,
+            },
+        )
+        return ContractEpochOutcome.model_validate(data)
+
+    async def get_contract_session_state(self, lease_id: str) -> ContractSessionState:
+        data = await self._request("GET", f"/v1/leases/{lease_id}/contract/state")
+        return ContractSessionState.model_validate(data)
+
+    async def finalize_contract_session(self, lease_id: str) -> ContractSessionSummary:
+        data = await self._request(
+            "POST", f"/v1/leases/{lease_id}/contract/session-finalize"
+        )
+        return ContractSessionSummary.model_validate(data)
 
     async def close(self) -> None:
         if self._session is not None:

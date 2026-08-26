@@ -6,17 +6,25 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
+from typing import Any
 
 from fle.envd.backend import FactorioWorker
 from fle.envd.errors import (
     CapacityExhausted,
+    CommitmentMismatch,
+    IdempotencyConflict,
     InterventionLimitReached,
     LeaseFinalized,
     LeaseNotFound,
 )
 from fle.envd.models import (
     ActionEvent,
+    ActiveContractState,
     CapabilityManifest,
+    ContractEpochOutcome,
+    ContractEpochSpec,
+    ContractSessionState,
+    ContractSessionSummary,
     ExecutionResult,
     FactorioTaskSpec,
     HealthStatus,
@@ -37,6 +45,14 @@ class _LeaseRecord:
     terminal_reason: str | None = None
     released: bool = False
     lock: threading.RLock = field(default_factory=threading.RLock)
+    execute_request_cache: dict[str, tuple[str, ExecutionResult]] = field(
+        default_factory=dict
+    )
+    # Adaptive contract session bookkeeping (section 14).  Idempotency caches
+    # replay identical requests without re-touching the simulation.
+    active_commitment_hash: str | None = None
+    epoch_request_cache: dict[tuple[str, str], Any] = field(default_factory=dict)
+    session_summary: ContractSessionSummary | None = None
 
 
 class EnvironmentService:
@@ -144,13 +160,31 @@ class EnvironmentService:
     def _renew(self, record: _LeaseRecord) -> None:
         record.lease.expires_at = self._now() + self._lease_ttl
 
-    def execute(self, lease_id: str, code: str) -> ExecutionResult:
+    def execute(
+        self,
+        lease_id: str,
+        code: str,
+        *,
+        request_id: str | None = None,
+    ) -> ExecutionResult:
         if not code.strip():
             raise ValueError("code must not be empty")
+        code_sha256 = sha256(code.encode("utf-8")).hexdigest()
         record = self._record(lease_id)
         with record.lock:
             if record.released:
                 raise LeaseNotFound(f"Released lease: {lease_id}")
+            if request_id is not None:
+                cached = record.execute_request_cache.get(request_id)
+                if cached is not None:
+                    cached_hash, cached_result = cached
+                    if cached_hash != code_sha256:
+                        raise IdempotencyConflict(
+                            f"Execute request_id {request_id!r} was already used "
+                            "for a different program"
+                        )
+                    self._renew(record)
+                    return cached_result.model_copy(deep=True)
             if record.snapshot is not None:
                 raise LeaseFinalized(f"Lease is already finalized: {lease_id}")
             if record.terminal_reason is not None:
@@ -161,10 +195,14 @@ class EnvironmentService:
             scored_interventions = sum(
                 not event.evaluation_retry for event in record.events
             )
-            if scored_interventions >= record.lease.task.max_interventions:
+            intervention_limit = record.lease.task.max_interventions
+            if (
+                intervention_limit is not None
+                and scored_interventions >= intervention_limit
+            ):
                 raise InterventionLimitReached(
                     "Task allows at most "
-                    f"{record.lease.task.max_interventions} scored interventions "
+                    f"{intervention_limit} scored interventions "
                     "plus its configured tool-error retries"
                 )
             sequence = len(record.events) + 1
@@ -180,7 +218,7 @@ class EnvironmentService:
                 violation = str(exc)
                 event = ActionEvent(
                     sequence=sequence,
-                    code_sha256=sha256(code.encode("utf-8")).hexdigest(),
+                    code_sha256=code_sha256,
                     started_at=started_at,
                     duration_seconds=time.perf_counter() - started,
                     error=True,
@@ -220,6 +258,11 @@ class EnvironmentService:
                 record.lease.tool_error_retries_used += 1
             record.events.append(result.event)
             record.terminal_reason = result.terminal_reason
+            if request_id is not None:
+                record.execute_request_cache[request_id] = (
+                    code_sha256,
+                    result.model_copy(deep=True),
+                )
             self._renew(record)
             return result
 
@@ -245,6 +288,123 @@ class EnvironmentService:
             self._renew(record)
             return record.snapshot
 
+    # -- adaptive contract epoch lifecycle (section 14) -----------------------
+
+    def _live_record(self, lease_id: str) -> _LeaseRecord:
+        record = self._record(lease_id)
+        if record.released:
+            raise LeaseNotFound(f"Released lease: {lease_id}")
+        return record
+
+    def _replay(
+        self,
+        record: _LeaseRecord,
+        method: str,
+        request_id: str | None,
+    ) -> tuple[bool, Any]:
+        if request_id is None:
+            return False, None
+        cached = record.epoch_request_cache.get((method, request_id))
+        return (True, cached) if cached is not None else (False, None)
+
+    def begin_contract_epoch(
+        self,
+        lease_id: str,
+        spec: ContractEpochSpec,
+        *,
+        request_id: str | None = None,
+    ) -> ActiveContractState:
+        """Activate one committed order; the factory is never reset."""
+        if request_id:
+            self.reap_expired()
+            with self._lock:
+                record = self._leases.get(lease_id)
+                if record is not None:
+                    cached_hit, cached = self._replay(record, "begin", request_id)
+                    if cached_hit:
+                        return cached
+        record = self._live_record(lease_id)
+        with record.lock:
+            if record.snapshot is not None:
+                raise LeaseFinalized(f"Lease is already finalized: {lease_id}")
+            state = record.worker.begin_contract_epoch(spec)
+            record.active_commitment_hash = spec.commitment_hash
+            if request_id:
+                record.epoch_request_cache[("begin", request_id)] = state
+            return state
+
+    def finalize_contract_epoch(
+        self,
+        lease_id: str,
+        epoch_index: int,
+        commitment_hash: str,
+        *,
+        abandon: bool = False,
+        infrastructure_interrupt: bool = False,
+        request_id: str | None = None,
+    ) -> ContractEpochOutcome:
+        """Close the open epoch; fails on hash, session, or epoch mismatch."""
+        if request_id:
+            with self._lock:
+                record = self._leases.get(lease_id)
+                if record is not None:
+                    cached_hit, cached = self._replay(record, "finalize", request_id)
+                    if cached_hit and not abandon:
+                        return cached
+        record = self._live_record(lease_id)
+        with record.lock:
+            stored_hash = record.active_commitment_hash
+            if stored_hash is not None and stored_hash != commitment_hash:
+                raise CommitmentMismatch(
+                    "Finalization commitment does not match the committed "
+                    "epoch specification"
+                )
+            outcome = record.worker.finalize_contract_epoch(
+                epoch_index,
+                commitment_hash,
+                abandon=abandon,
+                infrastructure_interrupt=infrastructure_interrupt,
+            )
+            record.active_commitment_hash = None
+            if request_id and not abandon:
+                record.epoch_request_cache[("finalize", request_id)] = outcome
+            return outcome
+
+    def capture_contract_context(
+        self,
+        lease_id: str,
+        session_id: str,
+        epoch_index: int,
+    ):
+        """Passive context snapshot for selection; privileged HTTP only."""
+        record = self._live_record(lease_id)
+        with record.lock:
+            return record.worker.capture_contract_context(session_id, epoch_index)
+
+    def get_contract_session_state(self, lease_id: str) -> ContractSessionState:
+        record = self._record(lease_id)
+        with record.lock:
+            if record.released:
+                raise LeaseNotFound(f"Released lease: {lease_id}")
+            state = record.worker.get_contract_session_state()
+            return state.model_copy(
+                update={"active_commitment_hash": record.active_commitment_hash}
+            )
+
+    def finalize_contract_session(
+        self,
+        lease_id: str,
+        *,
+        request_id: str | None = None,
+    ) -> ContractSessionSummary:
+        record = self._live_record(lease_id)
+        with record.lock:
+            if record.session_summary is not None:
+                return record.session_summary
+            summary = record.worker.finalize_contract_session()
+            record.session_summary = summary
+            return summary
+
     def release(self, lease_id: str) -> bool:
         with self._lock:
             record = self._leases.pop(lease_id, None)
@@ -252,9 +412,11 @@ class EnvironmentService:
                 return False
         with record.lock:
             record.released = True
-            record.worker.release()
-        with self._lock:
-            self._busy_workers.discard(record.worker.worker_id)
+            try:
+                record.worker.release()
+            finally:
+                with self._lock:
+                    self._busy_workers.discard(record.worker.worker_id)
         return True
 
     def close(self) -> None:

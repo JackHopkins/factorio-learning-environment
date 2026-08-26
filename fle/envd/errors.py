@@ -22,6 +22,30 @@ class LeaseFinalized(EnvironmentServiceError):
     pass
 
 
+class IdempotencyConflict(EnvironmentServiceError):
+    """A request ID was reused for a different mutation payload."""
+
+
+class ContractEpochError(EnvironmentServiceError):
+    """Base error for adaptive contract epoch lifecycle violations."""
+
+
+class EpochAlreadyActive(ContractEpochError):
+    """A second open order was requested while one is active."""
+
+
+class NoActiveEpoch(ContractEpochError):
+    """Finalization attempted without an open epoch."""
+
+
+class EpochMismatch(ContractEpochError):
+    """Epoch index or session identity does not match the lease state."""
+
+
+class CommitmentMismatch(ContractEpochError):
+    """Finalization commitment hash differs from the committed spec."""
+
+
 class RuntimeBackendError(EnvironmentServiceError):
     """An environment-runtime control-plane or data-plane request failed."""
 

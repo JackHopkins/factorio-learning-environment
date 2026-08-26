@@ -2,10 +2,12 @@ import pytest
 
 from fle.envd.errors import (
     CapacityExhausted,
+    IdempotencyConflict,
     InterventionLimitReached,
     LeaseFinalized,
 )
 from fle.envd.service import EnvironmentService
+from fle.envd.models import FactorioTaskSpec
 from tests.envd.conftest import FakeWorker
 
 pytestmark = pytest.mark.no_factorio
@@ -39,6 +41,48 @@ def test_lease_execute_finalize_release(task_spec):
     assert service.health().available == 1
 
 
+def test_execute_request_id_replays_exact_result_without_mutating(task_spec):
+    service = EnvironmentService([FakeWorker()])
+    lease = service.lease(task_spec)
+
+    first = service.execute(
+        lease.lease_id,
+        "print('once')",
+        request_id="logical-call-1",
+    )
+    replay = service.execute(
+        lease.lease_id,
+        "print('once')",
+        request_id="logical-call-1",
+    )
+
+    assert replay == first
+    assert service.observe(lease.lease_id).production_score == 1.0
+    with pytest.raises(IdempotencyConflict):
+        service.execute(
+            lease.lease_id,
+            "print('different')",
+            request_id="logical-call-1",
+        )
+
+
+def test_terminal_execute_can_be_replayed_by_request_id(task_spec):
+    class TerminalWorker(FakeWorker):
+        def execute(self, lease_id, code, sequence):
+            result = super().execute(lease_id, code, sequence)
+            result.terminal_reason = "contract_fulfilled"
+            return result
+
+    service = EnvironmentService([TerminalWorker()])
+    lease = service.lease(task_spec)
+    first = service.execute(lease.lease_id, "finish()", request_id="finish-1")
+
+    replay = service.execute(lease.lease_id, "finish()", request_id="finish-1")
+
+    assert replay == first
+    assert replay.event.sequence == 1
+
+
 def test_capacity_and_intervention_limits(task_spec):
     service = EnvironmentService([FakeWorker()])
     lease = service.lease(task_spec)
@@ -50,6 +94,23 @@ def test_capacity_and_intervention_limits(task_spec):
     service.execute(lease.lease_id, "two()")
     with pytest.raises(InterventionLimitReached):
         service.execute(lease.lease_id, "three()")
+
+
+def test_adaptive_contract_tracks_interventions_without_a_hard_limit():
+    service = EnvironmentService([FakeWorker()])
+    task = FactorioTaskSpec(
+        task_id="adaptive-contract",
+        goal="Fulfil generated orders.",
+        adaptive_contract_session=True,
+        max_interventions=2,
+    )
+    assert task.max_interventions is None
+    lease = service.lease(task)
+
+    for index in range(20):
+        result = service.execute(lease.lease_id, f"step_{index}()")
+
+    assert result.event.sequence == 20
 
 
 def test_engine_error_retry_does_not_consume_scored_intervention_budget(task_spec):

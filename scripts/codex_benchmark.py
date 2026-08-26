@@ -217,6 +217,12 @@ async def run_attempt(
         metrics={
             "contracts": float(snapshot.rewards.contracts),
             "contract_penalty": float(snapshot.rewards.contract_penalty),
+            "contracts_fulfilled": float(
+                snapshot.metrics.get("customer_orders_fulfilled", 0.0)
+            ),
+            "contracts_total": float(
+                snapshot.metrics.get("customer_orders_total", 0.0)
+            ),
         },
     )
     detail = {
@@ -227,6 +233,12 @@ async def run_attempt(
         "success": bool(snapshot.success),
         "scalar_reward": float(snapshot.scalar_reward),
         "interventions": len(events),
+        "contracts_fulfilled": float(
+            snapshot.metrics.get("customer_orders_fulfilled", 0.0)
+        ),
+        "contracts_total": float(
+            snapshot.metrics.get("customer_orders_total", 0.0)
+        ),
         "final_inventory": dict(snapshot.privileged_diagnostics.inventory)
         if snapshot.privileged_diagnostics is not None
         else {},

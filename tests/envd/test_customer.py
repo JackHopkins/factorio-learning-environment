@@ -1,6 +1,7 @@
 import pytest
 
 from fle.envd.customer import (
+    ActiveOrder,
     SLICE_TICKS,
     ContractEngine,
     DeliveryBucket,
@@ -95,6 +96,27 @@ def test_task_fingerprint_includes_customer_spec():
         plain.model_validate(
             plain.model_dump() | {"customer": {"orders": []}}
         )
+
+
+def test_customer_tasks_have_no_intervention_budget():
+    from fle.envd.models import ConstraintSpec
+
+    task = FactorioTaskSpec(
+        task_id="customer-unbounded",
+        goal="Fulfil orders.",
+        customer=_spec([_one_shot()]),
+        max_interventions=1,
+        constraints=[
+            ConstraintSpec(
+                constraint_id="legacy-limit",
+                kind="max_interventions",
+                description="Legacy intervention cap.",
+                limit=1,
+            )
+        ],
+    )
+    assert task.max_interventions is None
+    assert task.constraints == []
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +272,35 @@ def test_partial_sustained_delivery_scores_fractionally():
     assert result.order_results[0].ratio == pytest.approx(0.25)
 
 
+def test_active_order_rejects_delivery_at_or_after_deadline():
+    order = ActiveOrder(
+        item_name="iron-plate",
+        requested_quantity=100,
+        deadline_ticks=100,
+        activation_tick=10,
+    )
+    order.attribute(50, 50)
+    assert order.attribute(50, 110) is None
+    order.sync(110)
+    outcome = order.evaluate(110)
+    assert outcome.status == "expired"
+    assert outcome.delivered_quantity == pytest.approx(50.0)
+
+
+def test_active_order_preserves_partial_delivery_when_abandoned():
+    order = ActiveOrder(
+        item_name="iron-plate",
+        requested_quantity=100,
+        deadline_ticks=100,
+        activation_tick=10,
+    )
+    order.attribute(40, 50)
+    order.abandon(60)
+    outcome = order.evaluate(60)
+    assert outcome.status == "abandoned"
+    assert outcome.delivered_quantity == pytest.approx(40.0)
+
+
 # ---------------------------------------------------------------------------
 # Reward integral and penalties
 # ---------------------------------------------------------------------------
@@ -300,6 +351,18 @@ def test_unrevealed_orders_do_not_dilute_the_integral():
     assert result.aggregate_ratio == pytest.approx(1.0)
     assert [r.order_id for r in result.order_results] == ["issued"]
     assert success_from_evaluation(result, spec) is True
+
+
+def test_success_cannot_be_claimed_before_required_demand_is_issued():
+    future = _one_shot(
+        "future", quantity=100, issue=500000, due=600000
+    )
+    spec = _spec([future])
+    engine = ContractEngine(spec)
+    result = engine.evaluate(10)
+
+    assert result.order_results == []
+    assert success_from_evaluation(result, spec) is False
 
 
 def test_success_requires_all_required_orders_met():

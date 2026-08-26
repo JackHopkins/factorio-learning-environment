@@ -406,7 +406,13 @@ class AgentEnvEnvironmentGateway:
         finally:
             await self._finish_reservation()
 
-    async def execute(self, lease_id: str, code: str) -> ExecutionResult:
+    async def execute(
+        self,
+        lease_id: str,
+        code: str,
+        *,
+        request_id: str | None = None,
+    ) -> ExecutionResult:
         record = await self._record(lease_id)
         async with record.lock:
             result = ExecutionResult.model_validate(
@@ -414,7 +420,7 @@ class AgentEnvEnvironmentGateway:
                     record.sandbox_id,
                     "POST",
                     f"/v1/leases/{record.inner_lease_id}/execute",
-                    json={"code": code},
+                    json={"code": code, "request_id": request_id},
                 )
             )
             if result.event.evaluation_retry:

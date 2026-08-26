@@ -7,13 +7,17 @@ from fle.commons.models.achievements import ProductionFlows
 from fle.commons.models.research_state import ResearchState
 from fle.commons.models.technology_state import TechnologyState
 from fle.env.entities import EntityStatus
+from fle.envd.customer import ContractEngine, DeliveryBucket
 from fle.envd.models import (
     ActionEvent,
     ConstraintSpec,
+    CustomerContractSpec,
+    DemandOrderSpec,
     CurriculumSpec,
     FactorioTaskSpec,
     FutureProbeResult,
     ObjectiveSpec,
+    ProductDemandSpec,
     StateQualitySnapshot,
     VerifierSpec,
 )
@@ -578,6 +582,56 @@ def test_native_verifier_combines_objectives_constraints_and_teacher_packet():
         "power_shortage",
     }
     assert result.events[-1].kind == "verification_completed"
+
+
+def test_customer_objective_gates_success_and_exposes_order_counts():
+    instance = FakeInstance()
+    initial = capture_telemetry(instance)
+    customer = CustomerContractSpec(
+        orders=[
+            DemandOrderSpec(
+                order_id="order-1",
+                products=[ProductDemandSpec(product="iron-plate", quantity=10)],
+                issue_tick=0,
+                due_tick=1000,
+            )
+        ]
+    )
+    engine = ContractEngine(customer)
+    engine.sync(1, [])
+    customer_result = engine.evaluate(1, signing_key=b"test-key")
+    task = FactorioTaskSpec(
+        task_id="customer-objective",
+        goal="Fulfill the order.",
+        objectives=[],
+        customer=customer,
+        verifier=VerifierSpec(
+            implementation="objective_engine_v1",
+            scalarization="backend_override",
+        ),
+    )
+
+    result = verify_native(
+        instance, task, [], initial, customer_result=customer_result
+    )
+
+    assert result.success is False
+    assert result.scalar_reward == 0.0
+    assert result.metrics["customer_orders_fulfilled"] == 0.0
+    assert result.metrics["customer_orders_total"] == 1.0
+
+    engine.sync(
+        10,
+        [DeliveryBucket(start_tick=0, items={"iron-plate": 10})],
+    )
+    fulfilled = engine.evaluate(10, signing_key=b"test-key")
+    result = verify_native(
+        instance, task, [], initial, customer_result=fulfilled
+    )
+
+    assert result.success is True
+    assert result.metrics["customer_orders_fulfilled"] == 1.0
+    assert result.metrics["customer_orders_total"] == 1.0
 
 
 def test_automation_reward_does_not_penalize_consuming_provisioned_inputs():

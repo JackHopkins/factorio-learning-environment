@@ -73,3 +73,31 @@ def test_http_lease_accepts_bounded_tool_error_retry_budget(task_spec):
     assert response.status_code == 201
     assert response.json()["tool_error_retry_budget"] == 2
     assert response.json()["tool_error_retries_used"] == 0
+
+
+def test_http_execute_request_id_is_idempotent_and_conflict_checked(task_spec):
+    service = EnvironmentService([FakeWorker()])
+    client = TestClient(create_app(service))
+    lease = client.post(
+        "/v1/leases",
+        json={"task": task_spec.model_dump(mode="json", exclude_computed_fields=True)},
+    ).json()
+    path = f"/v1/leases/{lease['lease_id']}/execute"
+
+    first = client.post(
+        path,
+        json={"code": "print('once')", "request_id": "request-1"},
+    )
+    replay = client.post(
+        path,
+        json={"code": "print('once')", "request_id": "request-1"},
+    )
+    conflict = client.post(
+        path,
+        json={"code": "print('different')", "request_id": "request-1"},
+    )
+
+    assert first.status_code == 200
+    assert replay.json() == first.json()
+    assert conflict.status_code == 409
+    assert "different program" in conflict.json()["detail"]

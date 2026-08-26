@@ -35,6 +35,7 @@ def test_result_record_validates_catalog_fingerprints_and_summarizes():
                 interventions=2,
                 retry_interventions=1,
                 elapsed_seconds=1.5,
+                metrics={"contracts_fulfilled": 2.0, "contracts_total": 3.0},
             )
         ],
     )
@@ -45,6 +46,9 @@ def test_result_record_validates_catalog_fingerprints_and_summarizes():
     assert summary["retry_intervention_rate"] == 0.5
     assert summary["retry_assisted_success_rate"] == 1
     assert summary["per_mechanic_success_rate"]["placement"] == 1
+    assert summary["contracts_fulfilled"] == 2
+    assert summary["contracts_total"] == 3
+    assert summary["contract_fulfillment_rate"] == pytest.approx(2 / 3)
 
 
 def test_result_record_rejects_unknown_fingerprint():

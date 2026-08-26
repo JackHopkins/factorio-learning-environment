@@ -10,6 +10,30 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validat
 PROTOCOL_VERSION = "0.3.0"
 CUSTOMER_GENERATOR_VERSION = "customer-schedule-v1"
 DISRUPTION_GENERATOR_VERSION = "disruption-schedule-v1"
+# Adaptive contract benchmark identity.  Any change to generation, selection,
+# rating, or calibration policy requires bumping the benchmark version; the
+# calibration manifest version changes independently when only fitted
+# parameters are re-published.
+ADAPTIVE_BENCHMARK_SCHEMA_VERSION = "adaptive-contract-1"
+ADAPTIVE_BENCHMARK_VERSION = "adaptive-contract-benchmark-0.2.0-dev"
+CONTRACT_FEATURES_VERSION = "contract-features-v1"
+CONTRACT_GENERATOR_VERSION = "contract-generator-v2"
+CONTRACT_SELECTOR_VERSION = "contract-selector-v2"
+CONTRACT_CALIBRATION_VERSION = "uncalibrated"  # replaced by manifests
+CONTRACT_RATER_MODEL_VERSION = "trueskill-contract-v1"
+PARTICIPANT_IDENTITY_VERSION = "participant-identity-v1"
+TRAINING_BANK_VERSION = "training-bank-v1"
+
+ContractMixtureClass = Literal["consolidation", "frontier", "stress"]
+EpochOutcomeStatus = Literal[
+    "fulfilled",
+    "partial",
+    "expired",
+    "abandoned",
+    "infrastructure_error",
+    "invalid",
+]
+RatingResult = Literal["win", "draw", "loss"]
 
 
 class WireModel(BaseModel):
@@ -205,9 +229,7 @@ class DemandOrderSpec(WireModel):
                 f"Order {self.order_id!r} due_tick must be greater than issue_tick"
             )
         if len(self.products) != len({p.product for p in self.products}):
-            raise ValueError(
-                f"Order {self.order_id!r} has duplicate products"
-            )
+            raise ValueError(f"Order {self.order_id!r} has duplicate products")
         return self
 
     @property
@@ -242,9 +264,12 @@ class CustomerContractSpec(WireModel):
     @property
     def commitment(self) -> str:
         payload = json.dumps(
-            [order.model_dump(mode="json") for order in sorted(
-                self.orders, key=lambda order: (order.issue_tick, order.order_id)
-            )],
+            [
+                order.model_dump(mode="json")
+                for order in sorted(
+                    self.orders, key=lambda order: (order.issue_tick, order.order_id)
+                )
+            ],
             sort_keys=True,
             separators=(",", ":"),
         )
@@ -324,6 +349,13 @@ class FactorioTaskSpec(WireModel):
     backend_task_id: str | None = None
     goal: str
     task_family: TaskFamily = "throughput"
+    adaptive_contract_session: bool = Field(
+        default=False,
+        description=(
+            "Enable the persistent customer depot used by the adaptive "
+            "contract benchmark."
+        ),
+    )
     objectives: list[ObjectiveSpec] = Field(default_factory=list)
     constraints: list[ConstraintSpec] = Field(default_factory=list)
     verifier: VerifierSpec = Field(default_factory=VerifierSpec)
@@ -353,7 +385,15 @@ class FactorioTaskSpec(WireModel):
     factorio_version: str = "2.0.73"
     checkpoint_id: str = "scenario:default_lab_scenario"
     action_profile: str = "fle-program-v1"
-    max_interventions: int = Field(default=8, ge=1)
+    max_interventions: int | None = Field(
+        default=8,
+        ge=1,
+        description=(
+            "Hard intervention cap for bounded tasks. Customer contracts and "
+            "adaptive sessions always normalize this to null and only track "
+            "interventions as telemetry."
+        ),
+    )
     holdout_seconds: int = Field(default=60, ge=0)
 
     @model_validator(mode="after")
@@ -364,6 +404,13 @@ class FactorioTaskSpec(WireModel):
         constraint_ids = [constraint.constraint_id for constraint in self.constraints]
         if len(constraint_ids) != len(set(constraint_ids)):
             raise ValueError("Factorio constraint ids must be unique within a task")
+        if self.customer is not None or self.adaptive_contract_session:
+            self.max_interventions = None
+            self.constraints = [
+                constraint
+                for constraint in self.constraints
+                if constraint.kind != "max_interventions"
+            ]
         return self
 
     @computed_field
@@ -757,6 +804,15 @@ class CapabilityManifest(WireModel):
             "resource_accounting": True,
             "action_policy_audit": True,
             "program_policy_guard": True,
+            # Harness-facing tool semantics.  These flags describe the
+            # transport/service contract; they do not claim that a Factorio
+            # worker can mutate the same world concurrently.
+            "concurrent_request_safe": True,
+            "per_lease_serial_execution": True,
+            "parallel_world_mutations": False,
+            "programmatic_action_composition": True,
+            "provider_native_programmatic_tool_calling": False,
+            "idempotent_execute_retries": True,
             "process_isolation": False,
             "terminal_reasons": True,
             "checkpoints": False,
@@ -778,3 +834,293 @@ class HealthStatus(WireModel):
 def canonical_hash(value: Any) -> str:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# Adaptive contract benchmark wire models
+# ---------------------------------------------------------------------------
+
+
+class ContractContextSnapshot(WireModel):
+    """Passive factory measurements frozen immediately before an epoch.
+
+    Capture may read authoritative game state but must never grant items,
+    place entities, advance research, or run simulation.  The monotonic
+    watermark is (session_id, epoch_index, captured_tick, state_digest);
+    snapshots older than the prior finalized epoch are rejected.
+    """
+
+    schema_version: str = ADAPTIVE_BENCHMARK_SCHEMA_VERSION
+    session_id: str
+    epoch_index: int = Field(ge=0)
+    captured_tick: int = Field(ge=0)
+    technology_ids: tuple[str, ...]
+    unlocked_recipe_ids: tuple[str, ...]
+    inventory_counts: dict[str, int]
+    placed_entity_counts: dict[str, int]
+    production_rates_60s: dict[str, float]
+    production_rates_300s: dict[str, float]
+    power_capacity_kw: float
+    power_utilization: float
+    logistic_network_count: int
+    train_stop_count: int
+    pollution_total: float | None
+    evolution_factor: float | None
+    map_seed_hash: str
+    state_digest: str
+
+    def watermark(self) -> tuple[str, int, int, str]:
+        return (
+            self.session_id,
+            self.epoch_index,
+            self.captured_tick,
+            self.state_digest,
+        )
+
+
+class ContractDifficultyFeatures(WireModel):
+    """Deterministic order features used by difficulty and selection.
+
+    Feature definitions are frozen per calibration manifest; adding or
+    redefining a feature requires a new features version.
+    """
+
+    schema_version: str = CONTRACT_FEATURES_VERSION
+    product_id: str
+    product_tier: int
+    recipe_depth: int
+    missing_technology_count: int
+    missing_machine_type_count: int
+    required_new_intermediate_count: int
+    log_quantity: float
+    deadline_ticks: int
+    required_rate_per_minute: float
+    existing_rate_per_minute: float
+    inventory_coverage_ratio: float
+    estimated_power_fraction: float
+    transport_complexity: float
+    stage_band: int = Field(ge=0, le=5)
+
+
+class ContractEpochSpec(WireModel):
+    """The complete immutable definition of one benchmark epoch.
+
+    ``commitment_hash`` covers every other field via canonical JSON; the
+    outcome repeats it and finalization fails on mismatch.  Parsing a
+    tampered specification fails validation because the hash is re-derived
+    and compared on every load.
+    """
+
+    schema_version: str = ADAPTIVE_BENCHMARK_SCHEMA_VERSION
+    benchmark_version: str = ADAPTIVE_BENCHMARK_VERSION
+    calibration_version: str = CONTRACT_CALIBRATION_VERSION
+    session_id: str
+    epoch_index: int = Field(ge=0)
+    template_id: str
+    generation_seed: int
+    selection_seed: int
+    item_name: str
+    quantity: int = Field(gt=0)
+    deadline_ticks: int = Field(gt=0)
+    intervention_budget: int | None = None
+    context: ContractContextSnapshot
+    features: ContractDifficultyFeatures
+    raw_difficulty: float
+    state_advantage: float
+    effective_difficulty: float
+    commitment_hash: str
+
+    @model_validator(mode="after")
+    def validate_commitment(self) -> "ContractEpochSpec":
+        expected = compute_commitment_hash(self)
+        if self.commitment_hash != expected:
+            raise ValueError(
+                "Epoch specification commitment mismatch: recorded "
+                f"{self.commitment_hash[:12]!r} != derived {expected[:12]!r}"
+            )
+        return self
+
+    @classmethod
+    def create(cls, **fields: Any) -> "ContractEpochSpec":
+        """Build a spec, deriving its commitment over the given fields."""
+        fields.pop("commitment_hash", None)
+        provisional = cls.model_construct(**fields)
+        return cls(
+            **fields,
+            commitment_hash=compute_commitment_hash(provisional),
+        )
+
+
+def compute_commitment_hash(spec_like: Any) -> str:
+    payload = json.dumps(
+        getattr(spec_like, "model_dump")(exclude={"commitment_hash"}, mode="json"),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class ContractEpochOutcome(WireModel):
+    """Authoritative result of one committed epoch."""
+
+    schema_version: str = ADAPTIVE_BENCHMARK_SCHEMA_VERSION
+    session_id: str
+    epoch_index: int = Field(ge=0)
+    commitment_hash: str
+    status: EpochOutcomeStatus
+    delivered_quantity: int = Field(ge=0)
+    requested_quantity: int = Field(gt=0)
+    completion_ratio: float = Field(ge=0.0)
+    simulation_ticks_used: int = Field(ge=0)
+    interventions_used: int = Field(ge=0)
+    model_seconds: float = Field(ge=0.0)
+    tool_seconds: float = Field(ge=0.0)
+    runner_wall_seconds: float = Field(ge=0.0)
+    first_delivery_tick: int | None = None
+    completion_tick: int | None = None
+    terminal_state_digest: str
+
+
+class CapabilityRating(WireModel):
+    """Online ability posterior for one participant series.
+
+    Only plain floats cross the rating boundary so the underlying inference
+    implementation remains replaceable and never leaks into saved records.
+    """
+
+    model_version: str = CONTRACT_RATER_MODEL_VERSION
+    mu: float
+    sigma: float = Field(ge=0.0)
+    conservative_score: float
+    rated_epoch_count: int = Field(ge=0)
+
+
+class ParticipantIdentity(WireModel):
+    """Rating-series identity derived from the actual model and harness.
+
+    Changing any component starts a distinct series; ratings from different
+    identities are never pooled.
+    """
+
+    schema_version: str = PARTICIPANT_IDENTITY_VERSION
+    provider: str
+    model_snapshot: str
+    harness_version: str
+    system_prompt_hash: str
+    tool_manifest_hash: str
+    inference_settings_hash: str
+
+    @computed_field
+    @property
+    def participant_id(self) -> str:
+        return canonical_hash(self.model_dump(exclude={"participant_id"}))
+
+
+class ContractTemplateSpec(WireModel):
+    """One parameterized order family in a bank.
+
+    Product choice resolves against pinned game data at generation time;
+    templates constrain the mixture class, progression bands, pressure, and
+    window rather than hardcoding quantities.
+    """
+
+    template_version: str = CONTRACT_GENERATOR_VERSION
+    template_id: str
+    mixture_class: ContractMixtureClass
+    families: tuple[str, ...] = ()
+    products: tuple[str, ...] = ()  # empty = resolve from mixture rule
+    stage_bands: tuple[int, ...] = Field(default=(0, 1, 2, 3, 4, 5))
+    pressure_multiplier_range: tuple[float, float] = (1.2, 2.5)
+    production_window_minutes_range: tuple[float, float] = (10.0, 45.0)
+
+
+class SelectorWeights(WireModel):
+    """Versioned candidate-scoring policy (section 13)."""
+
+    selector_version: str = CONTRACT_SELECTOR_VERSION
+    w_info: float = 1.0
+    w_coverage: float = 0.6
+    w_novelty: float = 0.3
+    w_repeat: float = 0.4
+    w_extrapolation: float = 0.8
+    selection_temperature: float = Field(default=0.05, gt=0.0)
+
+
+class SessionStoppingConfig(WireModel):
+    """Optional evaluation stops plus contract-session safety failsafes."""
+
+    target_sigma: float | None = Field(default=None, gt=0.0)
+    max_rated_epochs: int | None = Field(default=None, ge=1)
+    max_session_ticks: int | None = Field(default=None, ge=1)
+    max_session_interventions: int | None = Field(default=None, ge=1)
+    max_failed_deliveries: int | None = Field(default=5, ge=1)
+    wall_clock_failsafe_seconds: float = Field(default=24 * 3600.0, gt=0.0)
+
+
+class CalibrationManifest(WireModel):
+    """Immutable published contextual-difficulty calibration (section 16).
+
+    Out-of-envelope epochs are flagged and excluded from official rating
+    unless the supported range explicitly covers them.
+    """
+
+    calibration_version: str
+    benchmark_version: str
+    training_data_sha256: str
+    game_versions: tuple[str, ...]
+    mod_versions: tuple[str, ...] = ()
+    feature_schema_version: str = CONTRACT_FEATURES_VERSION
+    template_bank_version: str
+    partial_floor: float = Field(default=0.25, ge=0.0, le=1.0)
+    partial_ceiling: float = Field(default=0.90, ge=0.0, le=1.0)
+    template_intercepts: dict[str, float]
+    beta_raw: dict[str, float]
+    beta_state: dict[str, float]
+    normalization: dict[str, tuple[float, float]]  # feature -> (mean, std)
+    clipping: dict[str, tuple[float, float]]
+    parameter_covariance_digest: str = ""
+    supported_ranges: dict[str, tuple[float, float]]
+    heldout_metrics: dict[str, float] = Field(default_factory=dict)
+    implementation_commit: str = ""
+    accepted: bool = False
+
+    @model_validator(mode="after")
+    def validate_thresholds(self) -> "CalibrationManifest":
+        if self.partial_floor >= self.partial_ceiling:
+            raise ValueError("partial_floor must be below partial_ceiling")
+        return self
+
+
+class ActiveContractState(WireModel):
+    """Server-side projection returned when an epoch begins."""
+
+    lease_id: str
+    session_id: str
+    epoch_index: int
+    spec_commitment_hash: str
+    open_order: OpenContractView
+    epoch_start_tick: int
+
+
+class ContractSessionState(WireModel):
+    """Privileged lifecycle view of an adaptive contract session."""
+
+    lease_id: str
+    session_id: str
+    session_simulation_ticks: int
+    epoch_simulation_ticks: int
+    completed_epoch_count: int
+    active_epoch_index: int | None
+    active_commitment_hash: str | None
+    agent_interventions: int
+
+
+class ContractSessionSummary(WireModel):
+    """Aggregation retained through session end."""
+
+    session_id: str
+    session_simulation_ticks: int
+    epochs: list[ContractEpochOutcome]
+    fulfilled_epochs: int
+    total_delivered: int
+    total_requested: int

@@ -10,14 +10,32 @@ from fle.commons.constants import REWARD_OVERRIDE_KEY
 from fle.commons.models.game_state import GameState
 from fle.env import FactorioInstance
 from fle.envd.blueprints import BlueprintStore
+from fle.envd.contract_features import (
+    ProductCatalog,
+    NamespaceRecipeDataSource,
+    capture_context_snapshot,
+)
+from fle.envd.errors import (
+    CommitmentMismatch,
+    EpochAlreadyActive,
+    EpochMismatch,
+    NoActiveEpoch,
+)
 from fle.envd.customer import (
+    DELIVERY_BUCKET_TICKS,
+    ActiveOrder,
     ContractEngine,
     DeliveryBucket,
-    success_from_evaluation,
 )
 from fle.envd.perturbations import PerturbationEngine
 from fle.envd.models import (
     ActionEvent,
+    ActiveContractState,
+    ContractContextSnapshot,
+    ContractEpochOutcome,
+    ContractEpochSpec,
+    ContractSessionState,
+    ContractSessionSummary,
     ExecutionResult,
     FactorioTaskSpec,
     BlueprintSummary,
@@ -70,12 +88,8 @@ def _jsonable(value: Any) -> Any:
     return str(value)
 
 
-def _instance_state_hash(
-    instance: FactorioInstance, *, research_state=None
-) -> str:
-    raw = GameState.from_instance(
-        instance, research_state=research_state
-    ).to_raw()
+def _instance_state_hash(instance: FactorioInstance, *, research_state=None) -> str:
+    raw = GameState.from_instance(instance, research_state=research_state).to_raw()
     state = __import__("json").loads(raw)
     state.pop("timestamp", None)
     return canonical_hash(state)
@@ -144,6 +158,21 @@ class FLEWorker(FactorioWorker):
         self._capture_tool_calls = False
         self.customer_engine: ContractEngine | None = None
         self._customer_events: list[dict] = []
+        # Adaptive contract session state (section 14).  The factory is never
+        # reset between epochs; only the active order lifecycle rotates.
+        self.contract_session_id: str | None = None
+        self._contract_baseline_tick: int | None = None
+        self._active_order: ActiveOrder | None = None
+        self._active_epoch_index: int | None = None
+        self._active_commitment_hash: str | None = None
+        self._epoch_start_tick: int | None = None
+        self._epoch_interventions_base: int = 0
+        self._completed_epochs: int = 0
+        self._epoch_records: list[ContractEpochOutcome] = []
+        self._flow_history: list[tuple[int, dict[str, float]]] = []
+        self._observed_unlocked: set[str] = set()
+        self._recipe_catalog: ProductCatalog | None = None
+        self._last_capture_watermark: tuple[str, int, int, str] | None = None
         self.perturbation_engine: PerturbationEngine | None = None
         self._disruption_events: list[dict] = []
         # Per-capture-cycle caches. The game is paused between interventions,
@@ -152,6 +181,7 @@ class FLEWorker(FactorioWorker):
         self._research_cache = None
         self._state_hash_cache: str | None = None
         self._state_hash_dirty = True
+        self._adaptive_depot_placed = False
         for tool_name in getattr(self.instance, "controllers", {}):
 
             def record_tool(_tool, *_args, _name=tool_name, **_kwargs):
@@ -283,6 +313,18 @@ class FLEWorker(FactorioWorker):
         _objective_telemetry(self.instance.first_namespace, reset=True)
         self._epoch_game_tick = self._read_game_tick()
         self._customer_events = []
+        self._adaptive_depot_placed = False
+        self._active_order = None
+        self._active_epoch_index = None
+        self._active_commitment_hash = None
+        self._epoch_start_tick = None
+        self._contract_baseline_tick = None
+        self.contract_session_id = None
+        self._completed_epochs = 0
+        self._epoch_records = []
+        self._flow_history = []
+        self._observed_unlocked = set()
+        self._last_capture_watermark = None
         self.customer_engine = self._setup_customer(task)
         self._disruption_events = []
         self.perturbation_engine = (
@@ -373,9 +415,7 @@ class FLEWorker(FactorioWorker):
                 recipes[target] = {"available": False, "error": str(exc)}
         return recipes
 
-    def _light_telemetry(
-        self, namespace: Any, targets: list[str]
-    ) -> TelemetryFrame:
+    def _light_telemetry(self, namespace: Any, targets: list[str]) -> TelemetryFrame:
         """Census-based telemetry frame without per-entity details.
 
         Research names still populate ``researched`` so dominance comparison
@@ -400,8 +440,7 @@ class FLEWorker(FactorioWorker):
         status_by_name: dict[str, dict[str, int]] = {}
         for name, statuses in (census_response.get("census") or {}).items():
             name_statuses = {
-                str(status): int(count)
-                for status, count in (statuses or {}).items()
+                str(status): int(count) for status, count in (statuses or {}).items()
             }
             total_for_name = sum(name_statuses.values())
             entity_counts[name] = entity_counts.get(name, 0) + total_for_name
@@ -473,9 +512,26 @@ class FLEWorker(FactorioWorker):
         spec = task.customer
         if spec is None:
             try:
-                self.instance.first_namespace._customer_depot("clear")
+                # Adaptive open-play sessions have no hidden schedule, but
+                # still need a real customer-owned sink for each committed
+                # order.  Place the depots once at lease start so the agent can
+                # discover and use them across all epochs.
+                if task.adaptive_contract_session:
+                    placement = self.instance.first_namespace._customer_depot(
+                        "place", self._DEPOT_OFFSET[0], self._DEPOT_OFFSET[1], 8, True
+                    )
+                    if not isinstance(placement, dict) or not placement.get("placed"):
+                        raise RuntimeError(
+                            "Could not place adaptive customer sink depots"
+                        )
+                    self._adaptive_depot_placed = True
+                else:
+                    self.instance.first_namespace._customer_depot("clear")
             except Exception:
-                pass
+                if not task.adaptive_contract_session:
+                    pass
+                else:
+                    raise
             return None
         anchor_x, anchor_y = self._DEPOT_OFFSET
         placement = self.instance.first_namespace._customer_depot(
@@ -498,9 +554,7 @@ class FLEWorker(FactorioWorker):
             return []
         telemetry: dict = {}
         try:
-            telemetry = (
-                self.instance.first_namespace._customer_depot("telemetry") or {}
-            )
+            telemetry = self.instance.first_namespace._customer_depot("telemetry") or {}
         except Exception:
             telemetry = {}
         current_tick = int(telemetry.get("tick") or 0)
@@ -508,8 +562,7 @@ class FLEWorker(FactorioWorker):
         if isinstance(raw_buckets, dict):
             # slpp decodes Lua arrays as index-keyed dicts.
             raw_bucket_list = [
-                raw_buckets[key]
-                for key in sorted(raw_buckets, key=lambda k: int(k))
+                raw_buckets[key] for key in sorted(raw_buckets, key=lambda k: int(k))
             ]
         else:
             raw_bucket_list = list(raw_buckets)
@@ -539,7 +592,329 @@ class FLEWorker(FactorioWorker):
 
     def _contracts_view(self) -> list[OpenContractView]:
         engine = self.customer_engine
-        return engine.student_view() if engine is not None else []
+        contracts = list(engine.student_view()) if engine is not None else []
+        if self._active_order is not None:
+            contracts.append(self._active_order.student_view())
+        return contracts
+
+    def _sync_active_order(self) -> list[VerifierEvent]:
+        """Credit adaptive-order deliveries and advance its authoritative clock."""
+
+        order = self._active_order
+        if order is None or order.status != "open":
+            return []
+        payloads: list[dict] = []
+        for bucket_tick, bucket_items in self._drain_delivery_buckets():
+            expiry = order.sync(bucket_tick)
+            if expiry:
+                payloads.append(expiry)
+            delivery = order.attribute(
+                float(bucket_items.get(order.item_name, 0.0)), bucket_tick
+            )
+            if delivery:
+                payloads.append(delivery)
+        current_tick = self._read_game_tick()
+        relative_tick = max(current_tick - getattr(self, "_epoch_game_tick", 0), 0)
+        terminal = order.sync(relative_tick)
+        if terminal:
+            payloads.append(terminal)
+        self._customer_events.extend(payloads)
+        return [
+            VerifierEvent(
+                event_id=(
+                    f"adaptive-contract:{self._active_epoch_index}:"
+                    f"{payload['event']}:{payload['tick']}"
+                ),
+                kind=str(payload["event"]),
+                tick=int(payload["tick"]),
+                source="verifier",
+                payload=payload,
+            )
+            for payload in payloads
+        ]
+
+    # -- adaptive contract epoch lifecycle (section 14) -----------------------
+
+    @property
+    def contract_catalog(self) -> ProductCatalog:
+        """Memoized recipe catalog over the live namespace (per worker)."""
+        if self._recipe_catalog is None:
+            self._recipe_catalog = ProductCatalog(
+                NamespaceRecipeDataSource(self.instance.first_namespace)
+            )
+        return self._recipe_catalog
+
+    def capture_contract_context(
+        self, session_id: str, epoch_index: int
+    ) -> ContractContextSnapshot:
+        """Passive snapshot; never mutates simulation state."""
+        if self.task is None:
+            raise RuntimeError("Worker has no active task")
+        namespace = self.instance.first_namespace
+        tick = self._read_game_tick()
+        relative_tick = max(tick - getattr(self, "_epoch_game_tick", 0), 0)
+        # Sample cumulative outputs for the rate windows before freezing.
+        try:
+            stats = namespace._get_production_stats() or {}
+            outputs_now = {
+                str(item): float(amount or 0.0)
+                for item, amount in (stats.get("output") or {}).items()
+            }
+        except Exception:
+            outputs_now = {}
+        self._record_flow_sample(relative_tick, outputs_now)
+        snapshot = capture_context_snapshot(
+            namespace,
+            session_id=session_id,
+            epoch_index=epoch_index,
+            captured_tick=relative_tick,
+            map_seed_hash=self.contract_map_seed_hash(),
+            prior_watermark=self._last_capture_watermark,
+            flow_history=self._flow_history,
+            observed_unlocked_recipes=self._observed_unlocked,
+        )
+        self._last_capture_watermark = snapshot.watermark()
+        return snapshot
+
+    def _record_flow_sample(self, tick: int, outputs: dict[str, float]) -> None:
+        """Ring-buffer of cumulative output samples (capped, deduplicated)."""
+        if self._flow_history and self._flow_history[-1][0] == tick:
+            self._flow_history[-1] = (tick, outputs)
+        else:
+            self._flow_history.append((tick, outputs))
+        if len(self._flow_history) > 64:
+            del self._flow_history[: len(self._flow_history) - 64]
+
+    def contract_map_seed_hash(self) -> str:
+        try:
+            seed = self.instance.rcon_client.send_command(
+                "/sc rcon.print(game.default_map_gen_settings.seed)"
+            )
+            return hashlib.sha256(str(seed).strip().encode()).hexdigest()[:32]
+        except Exception:
+            return "unknown"
+
+    def _prior_contract_watermark(
+        self, session_id: str
+    ) -> tuple[str, int, int, str] | None:
+        if (
+            self._last_capture_watermark is not None
+            and self._last_capture_watermark[0] == session_id
+        ):
+            return self._last_capture_watermark
+        return None
+
+    def begin_contract_epoch(self, spec: ContractEpochSpec) -> ActiveContractState:
+        if self.task is None:
+            raise RuntimeError("Worker has no active task")
+        if self._active_order is not None:
+            raise EpochAlreadyActive(
+                f"Lease {self.worker_id} already holds an open epoch "
+                f"(index {self._active_epoch_index})"
+            )
+        expected = self._completed_epochs + 1
+        if spec.epoch_index != expected:
+            raise EpochMismatch(
+                f"Expected epoch index {expected}, got {spec.epoch_index}"
+            )
+        if (
+            self.contract_session_id is not None
+            and spec.session_id != self.contract_session_id
+        ):
+            raise EpochMismatch("Session id cannot change within one lease")
+
+        now = self._read_game_tick()
+        relative_now = max(now - getattr(self, "_epoch_game_tick", 0), 0)
+        order = ActiveOrder(
+            item_name=spec.item_name,
+            requested_quantity=spec.quantity,
+            deadline_ticks=spec.deadline_ticks,
+            activation_tick=relative_now,
+        )
+        self.contract_session_id = spec.session_id
+        if self._contract_baseline_tick is None:
+            self._contract_baseline_tick = now
+        self._active_order = order
+        self._active_epoch_index = spec.epoch_index
+        self._active_commitment_hash = spec.commitment_hash
+        self._epoch_start_tick = now
+        self._epoch_interventions_base = len(self._action_events)
+        # Orders may complete at tick 0 of the window only through deliveries;
+        # arm the clock without advancing it.
+        self._customer_events.append(
+            {"event": "contract_issued", "order": spec.item_name, "tick": relative_now}
+        )
+        return ActiveContractState(
+            lease_id=self.worker_id,
+            session_id=spec.session_id,
+            epoch_index=spec.epoch_index,
+            spec_commitment_hash=spec.commitment_hash,
+            open_order=order.student_view(),
+            epoch_start_tick=relative_now,
+        )
+
+    def finalize_contract_epoch(
+        self,
+        epoch_index: int,
+        commitment_hash: str,
+        *,
+        abandon: bool = False,
+        infrastructure_interrupt: bool = False,
+    ) -> ContractEpochOutcome:
+        order = self._active_order
+        if order is None or self._active_epoch_index is None:
+            raise NoActiveEpoch("No open contract epoch on this lease")
+        if epoch_index != self._active_epoch_index:
+            raise EpochMismatch(
+                f"Active epoch is {self._active_epoch_index}, got {epoch_index}"
+            )
+        if (
+            self._active_commitment_hash is not None
+            and commitment_hash != self._active_commitment_hash
+        ):
+            raise CommitmentMismatch("Finalization commitment does not match epoch")
+        # Attribute sink deliveries up to now, then close out.  Sync schedule
+        # engines and pull sink telemetry first.
+        self._sync_customer()
+        current_tick = self._read_game_tick()
+        relative_tick = max(current_tick - getattr(self, "_epoch_game_tick", 0), 0)
+        for bucket_tick, bucket_items in self._drain_delivery_buckets():
+            amount = float(bucket_items.get(order.item_name, 0.0))
+            if amount <= 0:
+                continue
+            # Close the order at the bucket boundary before attributing it;
+            # this makes late deliveries impossible while retaining all
+            # qualifying buckets already observed before an interruption.
+            if not (abandon or infrastructure_interrupt):
+                expiry_event = order.sync(bucket_tick)
+                if expiry_event:
+                    self._customer_events.append(expiry_event)
+            event = order.attribute(amount, bucket_tick)
+            if event:
+                self._customer_events.append(event)
+        # Drain qualifying deliveries before abandonment so an interrupted
+        # provider does not erase the partial work completed before failure.
+        if (abandon or infrastructure_interrupt) and order.status == "open":
+            order.abandon(relative_tick)
+        outcome_state = order.evaluate(relative_tick)
+        if order.status == "open":
+            expiry_event = order.sync(relative_tick)
+            if expiry_event:
+                self._customer_events.append(expiry_event)
+            outcome_state = order.evaluate(relative_tick)
+
+        delivered_int = min(
+            int(round(outcome_state.delivered_quantity)),
+            outcome_state.requested_quantity,
+        )
+        ratio = outcome_state.completion_ratio
+
+        status_map = {
+            "fulfilled": "fulfilled",
+            "partial": "partial",
+            "expired": "expired",
+            "abandoned": "abandoned",
+        }
+        # Section 5: an infrastructure interruption is never recorded as an
+        # order loss; delivery accounting stays in the retained record.
+        status = status_map[outcome_state.status]
+        if infrastructure_interrupt:
+            status = "infrastructure_error"
+        interventions_used = len(self._action_events) - self._epoch_interventions_base
+        record = ContractEpochOutcome(
+            session_id=self.contract_session_id or "",
+            epoch_index=epoch_index,
+            commitment_hash=commitment_hash,
+            status=status,
+            delivered_quantity=delivered_int,
+            requested_quantity=outcome_state.requested_quantity,
+            completion_ratio=round(ratio, 6),
+            simulation_ticks_used=relative_tick - (self._epoch_start_tick_relative()),
+            interventions_used=interventions_used,
+            model_seconds=0.0,  # runner-owned clocks (section 5)
+            tool_seconds=0.0,
+            runner_wall_seconds=0.0,
+            first_delivery_tick=(outcome_state.first_delivery_tick),
+            completion_tick=outcome_state.completion_tick,
+            terminal_state_digest=self._current_state_hash(),
+        )
+        self._epoch_records.append(record)
+        self._completed_epochs += 1
+        # Active customer state cleared after finalization (section 14).
+        self._active_order = None
+        self._active_epoch_index = None
+        self._active_commitment_hash = None
+        self._epoch_start_tick = None
+        return record
+
+    def _epoch_start_tick_relative(self) -> int:
+        if self._epoch_start_tick is None:
+            return 0
+        return max(self._epoch_start_tick - getattr(self, "_epoch_game_tick", 0), 0)
+
+    def _drain_delivery_buckets(self) -> list[tuple[int, dict[str, float]]]:
+        """Pull sink telemetry as chronological (tick, items) samples."""
+        engine_telemetry: dict = {}
+        try:
+            engine_telemetry = (
+                self.instance.first_namespace._customer_depot("telemetry") or {}
+            )
+        except Exception:
+            return []
+        current_tick = int(engine_telemetry.get("tick") or 0)
+        raw_buckets = engine_telemetry.get("buckets") or {}
+        if isinstance(raw_buckets, dict):
+            raw_list = [
+                raw_buckets[key] for key in sorted(raw_buckets, key=lambda k: int(k))
+            ]
+        else:
+            raw_list = list(raw_buckets)
+        samples: list[tuple[int, dict[str, float]]] = []
+        for bucket in raw_list:
+            start = int(bucket.get("start_tick") or 0)
+            end = start + DELIVERY_BUCKET_TICKS - 1
+            items = {
+                str(item): float(count)
+                for item, count in (bucket.get("items") or {}).items()
+            }
+            samples.append((min(end, current_tick) or start, items))
+        return sorted(samples, key=lambda s: s[0])
+
+    def get_contract_session_state(self) -> ContractSessionState:
+        now = self._read_game_tick()
+        baseline = self._contract_baseline_tick
+        session_ticks = max(now - baseline, 0) if baseline is not None else 0
+        epoch_ticks = (
+            max(now - self._epoch_start_tick, 0)
+            if self._epoch_start_tick is not None
+            else 0
+        )
+        return ContractSessionState(
+            lease_id=self.worker_id,
+            session_id=self.contract_session_id or "",
+            session_simulation_ticks=session_ticks,
+            epoch_simulation_ticks=epoch_ticks,
+            completed_epoch_count=self._completed_epochs,
+            active_epoch_index=self._active_epoch_index,
+            active_commitment_hash=None,  # service layer fills from its ledger
+            agent_interventions=len(self._action_events),
+        )
+
+    def finalize_contract_session(self) -> ContractSessionSummary:
+        if self._active_order is not None:
+            raise EpochAlreadyActive("Cannot finalize a session with an open epoch")
+        total_delivered = sum(r.delivered_quantity for r in self._epoch_records)
+        total_requested = sum(r.requested_quantity for r in self._epoch_records)
+        return ContractSessionSummary(
+            session_id=self.contract_session_id or "",
+            session_simulation_ticks=self.get_contract_session_state().session_simulation_ticks,
+            epochs=list(self._epoch_records),
+            fulfilled_epochs=sum(
+                1 for r in self._epoch_records if r.status == "fulfilled"
+            ),
+            total_delivered=total_delivered,
+            total_requested=total_requested,
+        )
 
     # -- episode clock -------------------------------------------------------
 
@@ -574,8 +949,7 @@ class FLEWorker(FactorioWorker):
         def _fire(command: str, params: dict) -> dict:
             try:
                 return (
-                    self.instance.first_namespace._perturbation(command, params)
-                    or {}
+                    self.instance.first_namespace._perturbation(command, params) or {}
                 )
             except Exception as exc:  # noqa: BLE001 - degrade to failed
                 return {"error": str(exc)}
@@ -584,8 +958,7 @@ class FLEWorker(FactorioWorker):
         verifier_events = [
             VerifierEvent(
                 event_id=(
-                    f"perturbation:{payload['perturbation_id']}:"
-                    f"{payload['event']}"
+                    f"perturbation:{payload['perturbation_id']}:{payload['event']}"
                 ),
                 kind=(
                     payload["event"]
@@ -788,6 +1161,7 @@ class FLEWorker(FactorioWorker):
         )
         emitted_events = [verifier_event]
         emitted_events.extend(self._sync_customer())
+        emitted_events.extend(self._sync_active_order())
         emitted_events.extend(self._sync_perturbations())
         if character_died:
             deaths = current_frame.deaths
@@ -816,6 +1190,7 @@ class FLEWorker(FactorioWorker):
         )
 
     def observe(self, lease_id: str) -> Observation:
+        self._sync_active_order()
         production, automated = self._scores()
         namespace = self.instance.first_namespace
         inventory = _jsonable(namespace.inspect_inventory())
@@ -930,8 +1305,7 @@ class FLEWorker(FactorioWorker):
                     *[
                         VerifierEvent(
                             event_id=(
-                                f"contract:{payload['order_id']}:"
-                                f"{payload['event']}"
+                                f"contract:{payload['order_id']}:{payload['event']}"
                             ),
                             kind=payload["event"],
                             tick=payload["tick"],
@@ -1086,6 +1460,21 @@ class FLEWorker(FactorioWorker):
         )
 
     def release(self) -> None:
+        # Release is the last-resort cleanup path used when a provider or
+        # transport fails before the runner can finalize its open epoch.
+        if self._active_order is not None and self._active_epoch_index is not None:
+            try:
+                self.finalize_contract_epoch(
+                    self._active_epoch_index,
+                    self._active_commitment_hash or "",
+                    infrastructure_interrupt=True,
+                )
+            except Exception:
+                # Continue releasing the Factorio lease even if telemetry is
+                # unavailable; the caller must never strand a worker.
+                self._active_order = None
+                self._active_epoch_index = None
+                self._active_commitment_hash = None
         self.instance.pause()
         self.customer_engine = None
         self._customer_events = []
@@ -1107,6 +1496,15 @@ class FLEWorker(FactorioWorker):
             pass
         self.task = None
         self.task_spec = None
+        self._active_order = None
+        self._active_epoch_index = None
+        self._active_commitment_hash = None
+        self._epoch_start_tick = None
+        self.contract_session_id = None
+        self._contract_baseline_tick = None
+        self._completed_epochs = 0
+        self._epoch_records = []
+        self._adaptive_depot_placed = False
         self.initial_telemetry = None
         self.current_quality = None
         self.privileged_transitions = []

@@ -193,7 +193,7 @@ def test_recipe_name_is_a_distinct_canonical_recipe_namespace():
 
 
 def test_action_reference_has_a_stable_comparison_identity():
-    assert ACTION_PROFILE_REFERENCE_ID == "fle-program-v1/reference-v3"
+    assert ACTION_PROFILE_REFERENCE_ID == "fle-program-v1/reference-v4"
     assert len(ACTION_PROFILE_REFERENCE_SHA256) == 64
 
 

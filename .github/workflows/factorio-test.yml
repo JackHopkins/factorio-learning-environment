@@ -43,7 +43,7 @@ jobs:
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Install Python dependencies
-        run: uv sync --dev --extra prime
+        run: uv sync --dev --extra prime --extra eval
 
       - name: Test cross-platform cluster command
         run: uv run pytest -q tests/test_run.py tests/test_cluster.py tests/test_game_control.py tests/envd tests/prime

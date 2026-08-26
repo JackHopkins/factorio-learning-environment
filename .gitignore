@@ -53,6 +53,11 @@ api_keys.json
 wandb/
 summary_cache/
 
+# Local benchmark sessions (published baselines are curated separately)
+/benchmark/results/adaptive-*/
+/benchmark/results/customer-*/
+/benchmark/results/full-eval/
+
 # Jack's stuff.
 /docker-compose.yml
 /data/plans/factorio_guides/

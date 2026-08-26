@@ -14,6 +14,9 @@ The function returns a Position object with the coordinates of the nearest entit
 
 - `type`: Resource or Prototype to find (e.g., Resource.Coal, Resource.Water)
 
+Pass one specific member. Bare namespaces and strings are invalid: do not call
+`nearest(Resource)`, `nearest(Prototype)`, or `nearest("coal")`.
+
 ### Examples
 
 ```python

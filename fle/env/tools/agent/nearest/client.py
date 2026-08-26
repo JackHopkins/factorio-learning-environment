@@ -20,41 +20,34 @@ class Nearest(Tool):
         :param type: Entity or resource type to find
         :return: Position of nearest entity or resource
         """
+        name, metaclass = self._normalize_type(type)
         try:
-            if not isinstance(type, tuple) and isinstance(type.value, tuple):
-                type = type.value
+            response, _ = self.execute(self.player_index, name)
+        except Exception as exc:
+            raise RuntimeError(f"nearest({name}) failed: {exc}") from exc
 
-            name, metaclass = type
-
-            if not isinstance(name, str):
-                raise Exception(
-                    "'Nearest' must be called with an entity name as the first argument."
+        if response is None or response == {}:
+            if metaclass == ResourcePatch:
+                raise LookupError(
+                    f"No {name} found within 500 tiles. Move around to explore more."
                 )
+            raise LookupError(f"No {name} found within 500 tiles")
 
-            response, time_elapsed = self.execute(self.player_index, name)
+        return Position(x=response["x"], y=response["y"])
 
-            if response is None or response == {}:
-                if metaclass == ResourcePatch:
-                    raise Exception(
-                        f"No {type} found on the map within 500 tiles of the player. Move around to explore the map more."
-                    )
-                else:
-                    raise Exception(f"No {type} found within 500 tiles of the player")
-
-            # if not self.game_state.last_observed_player_location:
-            #    self.game_state.last_observed_player_location = self.game_state.player_location
-
-            # if relative:
-            #    x = -response['x'] + self.game_state.last_observed_player_location[0]
-            #    y = -response['y'] + self.game_state.last_observed_player_location[1]
-            # else:
-            x = response["x"]
-            y = response["y"]
-
-            position = Position(x=x, y=y)
-
-            return position
-        except TypeError:
-            raise Exception(f"Could not find nearest {type[0]} on the surface")
-        except Exception as e:
-            raise Exception(f"Could not find nearest {type[0]}", e)
+    @staticmethod
+    def _normalize_type(value):
+        if isinstance(value, Prototype):
+            return value.value
+        if (
+            isinstance(value, tuple)
+            and len(value) == 2
+            and isinstance(value[0], str)
+            and value[1] == ResourcePatch
+        ):
+            return value
+        raise ValueError(
+            "nearest() requires one specific enum member, such as "
+            "Resource.Coal, Resource.IronOre, or Prototype.StoneFurnace; "
+            "bare Resource/Prototype classes and strings are invalid"
+        )

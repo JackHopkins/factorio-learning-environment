@@ -40,10 +40,14 @@ FACTORIO_TOOLS = [
         "function": {
             "name": "factorio_observe_factory",
             "description": (
-                "Inspect the current Factorio inventory, production statistics, "
-                "simulation ticks, scores, and state hash."
+                "Directly inspect the current Factorio inventory, production "
+                "statistics, simulation ticks, scores, and state hash."
             ),
-            "parameters": {"type": "object", "properties": {}},
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
         },
     },
     {
@@ -51,8 +55,10 @@ FACTORIO_TOOLS = [
         "function": {
             "name": "factorio_execute_program",
             "description": (
-                "Execute one short Python intervention through the guarded, "
-                "auditable FLE program API."
+                "Directly submit one short Python program through the guarded, "
+                "auditable FLE program API. Calls, loops, and conditionals in "
+                "the program compose synchronously in source order and count as "
+                "one intervention."
             ),
             "parameters": {
                 "type": "object",
@@ -206,6 +212,7 @@ async def _execute_tool(
     lease_id: str,
     name: str,
     arguments: str,
+    request_id: str | None = None,
 ) -> tuple[Any, str | None]:
     try:
         parsed = json.loads(arguments or "{}")
@@ -217,11 +224,33 @@ async def _execute_tool(
             code = parsed.get("code")
             if not isinstance(code, str) or not code.strip():
                 raise ValueError("factorio_execute_program requires non-empty code")
-            result = await env_client.execute(lease_id, code)
+            if request_id is None:
+                result = await env_client.execute(lease_id, code)
+            else:
+                result = await env_client.execute(
+                    lease_id,
+                    code,
+                    request_id=request_id,
+                )
             return result, result.terminal_reason
         raise ValueError(f"unknown model tool: {name}")
     except (EnvironmentClientError, ValueError, json.JSONDecodeError) as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}, None
+    except Exception as exc:  # noqa: BLE001 - preserve one result per tool call
+        return {"error": f"{type(exc).__name__}: {exc}"}, None
+
+
+def _skipped_tool_result(terminal_reason: str) -> dict[str, Any]:
+    """Keep an assistant tool-call batch protocol-valid after termination."""
+
+    return {
+        "error": (
+            "tool call skipped because the environment reached terminal state "
+            f"{terminal_reason!r} after an earlier call"
+        ),
+        "skipped": True,
+        "terminal_reason": terminal_reason,
+    }
 
 
 async def _completion_with_retry(
@@ -331,6 +360,7 @@ async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
                         "messages": request_messages,
                         "tools": FACTORIO_TOOLS,
                         "tool_choice": "auto",
+                        "parallel_tool_calls": True,
                         "temperature": args.temperature,
                         "max_tokens": args.max_output_tokens,
                     }
@@ -368,12 +398,17 @@ async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
 
                     terminal_reason = None
                     for tool_call in tool_calls:
-                        result, terminal = await _execute_tool(
-                            env_client,
-                            lease_id,
-                            tool_call.function.name,
-                            tool_call.function.arguments,
-                        )
+                        if terminal_reason is not None:
+                            result = _skipped_tool_result(terminal_reason)
+                            terminal = None
+                        else:
+                            result, terminal = await _execute_tool(
+                                env_client,
+                                lease_id,
+                                tool_call.function.name,
+                                tool_call.function.arguments,
+                                request_id=tool_call.id,
+                            )
                         raw = (
                             result.model_dump(mode="json")
                             if hasattr(result, "model_dump")
@@ -383,7 +418,6 @@ async def _rollout(args: argparse.Namespace) -> dict[str, Any]:
                         tool_message = {
                             "role": "tool",
                             "tool_call_id": tool_call.id,
-                            "name": tool_call.function.name,
                             "content": content,
                         }
                         block.append(tool_message)

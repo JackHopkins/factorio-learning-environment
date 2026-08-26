@@ -4,17 +4,32 @@ from __future__ import annotations
 
 import hashlib
 
-ACTION_PROFILE_REFERENCE_ID = "fle-program-v1/reference-v3"
+ACTION_PROFILE_REFERENCE_ID = "fle-program-v1/reference-v4"
 
 ACTION_PROFILE_REFERENCE = """\
-Inside factorio_execute_program, write ordinary short Python using the names
-already loaded below. Do not import FLE or use reflection (dir, type, getattr,
-private/dunder attributes); host, file, and network access are unavailable.
+There are two tool boundaries. The harness calls `factorio_observe_factory`
+directly when it needs a factory snapshot, and calls
+`factorio_execute_program` directly to submit one program. Inside
+`factorio_execute_program`, write ordinary short Python using the names
+already loaded below. Calls made by that program are the programmatic action
+composition path: they run synchronously in source order, can use normal
+Python control flow, and together count as one environment intervention.
+Do not try to emit MCP calls from the program.
+Do not import FLE or use reflection (dir, type, getattr, private/dunder
+attributes); host, file, and network access are unavailable.
+
+Parallel-call semantics: a harness may issue requests concurrently, including
+multiple requests for one lease, but envd serializes all operations for a
+lease. Do not assume same-lease world mutations overlap or that completion
+order is the submission order; use the returned event sequence. Independent
+leases may run in parallel when capacity is available.
 
 Core signatures and return values:
 - inspect_inventory(entity=None) -> Inventory
 - get_entities(entities=set(), position=None, radius=1000) -> list[Entity]
 - nearest(Prototype.X or Resource.X) -> Position
+    X must be one specific member. Bare Resource/Prototype classes and strings
+    are invalid; use Resource.Coal, Resource.IronOre, Prototype.StoneFurnace, etc.
 - move_to(position: Position) -> Position
 - harvest_resource(position: Position, quantity=1) -> int
 - get_prototype_recipe(Prototype.X or RecipeName.X) -> Recipe
@@ -31,7 +46,17 @@ Core signatures and return values:
 - connect_entities(source, target, Prototype.TransportBelt/Pipe/SmallElectricPole)
 - get_resource_patch(Resource.X, position: Position, radius=30) -> ResourcePatch
 - set_research(Technology.X), get_research_progress(Technology.X)
-- sleep(seconds) (at most 15 seconds per call), print(...) for measured feedback
+- wait(ticks, until=None, poll_ticks=300) -> dict
+    Advances the live factory for up to `ticks`. Machines, belts, research,
+    power, and deliveries continue normally. An optional inventory condition
+    stops early, for example:
+    wait(18000, until={'inventory': {'entity': furnace,
+         'item': Prototype.StoneBrick, 'at_least': 100}})
+    Returns requested/waited ticks, actual simulation ticks advanced, action
+    ticks charged, condition_met, and the last observed value. Contract
+    deadlines continue to apply while waiting.
+- sleep(seconds), retained as a compatibility wrapper for short waits
+- print(...) for measured feedback
 
 Blueprint library (reusable factory fragments):
 - blueprint('save', name='smelter', x=0, y=0, radius=32) -> dict

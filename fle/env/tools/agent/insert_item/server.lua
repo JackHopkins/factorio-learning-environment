@@ -262,6 +262,19 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
 
     -- game.print("Inserted " .. inserted .. " items.")
     if inserted > 0 then
+        -- Customer contracts certify factory output. Direct agent insertion is
+        -- retained as audit telemetry but must not be confused with inserter-
+        -- fed traffic when the depot drain runs on the next scenario tick.
+        if storage.customer
+            and storage.customer.depots
+            and closest_entity.unit_number
+            and storage.customer.depots[closest_entity.unit_number]
+        then
+            storage.customer.manual_pending = storage.customer.manual_pending or {}
+            local pending = storage.customer.manual_pending[closest_entity.unit_number] or {}
+            pending[insert_item] = (pending[insert_item] or 0) + inserted
+            storage.customer.manual_pending[closest_entity.unit_number] = pending
+        end
         -- Only remove successfully inserted items from player
         player.remove_item{name=insert_item, count=inserted}
         -- game.print("Successfully inserted " .. inserted .. " items.")

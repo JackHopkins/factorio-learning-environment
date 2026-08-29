@@ -262,6 +262,10 @@ def test_steady_supply_beats_burst_for_sustained_orders():
     assert steady.order_results[0].ratio == pytest.approx(1.0)
     assert burst.order_results[0].ratio < steady.order_results[0].ratio
     assert burst.order_results[0].ratio == pytest.approx(0.25)
+    burst_telemetry = burst.order_results[0].delivery_telemetry["lines"]["copper-cable"]
+    assert burst_telemetry["raw_bucket_count"] == 1
+    assert burst_telemetry["raw_bucket_coverage_ratio"] < 1.0
+    assert burst_telemetry["sustained_service_score"] == pytest.approx(0.25)
 
 
 def test_partial_sustained_delivery_scores_fractionally():
@@ -299,6 +303,130 @@ def test_active_order_preserves_partial_delivery_when_abandoned():
     outcome = order.evaluate(60)
     assert outcome.status == "abandoned"
     assert outcome.delivered_quantity == pytest.approx(40.0)
+
+
+def test_active_order_scores_mixed_lines_independently():
+    order = ActiveOrder(
+        item_name="copper-plate",
+        requested_quantity=100,
+        deadline_ticks=3600,
+        activation_tick=0,
+        products=(
+            ProductDemandSpec(product="copper-plate", quantity=40),
+            ProductDemandSpec(product="iron-plate", quantity=60),
+        ),
+    )
+    order.attribute(40, 60, product="copper-plate")
+    order.attribute(30, 60, product="iron-plate")
+    outcome = order.evaluate(60)
+
+    assert outcome.completion_ratio == pytest.approx(0.75)
+    assert outcome.delivered_by_product == {
+        "copper-plate": 40.0,
+        "iron-plate": 30.0,
+    }
+
+
+def test_active_sustained_order_penalizes_end_burst():
+    order = ActiveOrder(
+        item_name="iron-plate",
+        requested_quantity=400,
+        deadline_ticks=4 * SLICE_TICKS,
+        activation_tick=0,
+        order_kind="sustained",
+    )
+    order.attribute(400, 60)
+    order.sync(4 * SLICE_TICKS)
+    outcome = order.evaluate()
+
+    assert outcome.status == "expired"
+    assert outcome.completion_ratio == pytest.approx(0.25)
+    telemetry = outcome.delivery_telemetry["lines"]["iron-plate"]
+    assert telemetry["raw_bucket_count"] == 1
+    assert telemetry["raw_bucket_coverage_ratio"] < 1.0
+    assert telemetry["sustained_service_score"] == pytest.approx(0.25)
+    assert order.student_view().remaining["iron-plate"] == 0
+    assert order.student_view().completion_ratio == pytest.approx(0.25)
+
+
+def test_live_and_schedule_sustained_scores_match_for_adaptive_windows():
+    deadline = SLICE_TICKS + SLICE_TICKS // 2
+    demand = DemandOrderSpec(
+        order_id="partial-slice",
+        kind="sustained",
+        products=[ProductDemandSpec(product="iron-plate", quantity=150)],
+        issue_tick=0,
+        due_tick=deadline,
+    )
+    engine = ContractEngine(_spec([demand]))
+    engine.sync(10, [DeliveryBucket(start_tick=0, items={"iron-plate": 75})])
+    engine.sync(
+        deadline // 2 + 10,
+        [DeliveryBucket(start_tick=deadline // 2, items={"iron-plate": 75})],
+    )
+    scheduled = engine.evaluate(deadline + 1).order_results[0]
+
+    active = ActiveOrder(
+        item_name="iron-plate",
+        requested_quantity=150,
+        deadline_ticks=deadline,
+        activation_tick=0,
+        order_kind="sustained",
+    )
+    active.attribute(75, 59)
+    active.attribute(75, deadline // 2 + 59)
+    active.sync(deadline)
+    live = active.evaluate()
+
+    assert scheduled.ratio == pytest.approx(1.0)
+    assert live.completion_ratio == pytest.approx(scheduled.ratio)
+    assert scheduled.delivery_telemetry["lines"]["iron-plate"][
+        "sustained_service_score"
+    ] == pytest.approx(live.delivery_telemetry["lines"]["iron-plate"][
+        "sustained_service_score"
+    ])
+
+
+def test_low_volume_sustained_order_uses_feasible_integer_windows():
+    deadline = 15 * SLICE_TICKS
+    order = ActiveOrder(
+        item_name="electronic-circuit",
+        requested_quantity=10,
+        deadline_ticks=deadline,
+        activation_tick=0,
+        order_kind="sustained",
+    )
+    for index in range(5):
+        order.attribute(2, index * (deadline // 5) + 60)
+    order.sync(deadline)
+    outcome = order.evaluate()
+
+    assert outcome.status == "fulfilled"
+    assert outcome.completion_ratio == pytest.approx(1.0)
+    line = outcome.delivery_telemetry["lines"]["electronic-circuit"]
+    assert line["service_window_count"] == 5
+    assert line["service_window_quotas"] == [2, 2, 2, 2, 2]
+
+
+def test_sustained_order_retains_automated_flow_after_nominal_total():
+    deadline = 5 * SLICE_TICKS
+    order = ActiveOrder(
+        item_name="iron-plate",
+        requested_quantity=10,
+        deadline_ticks=deadline,
+        activation_tick=0,
+        order_kind="sustained",
+    )
+    for index in range(5):
+        order.attribute(10, index * SLICE_TICKS + 60)
+    order.sync(deadline)
+    outcome = order.evaluate()
+
+    assert outcome.status == "fulfilled"
+    assert outcome.completion_ratio == pytest.approx(1.0)
+    assert outcome.delivered_quantity == 50
+    assert outcome.unattributed_delivered == 0
+    assert order.student_view().fulfilled == {"iron-plate": 10.0}
 
 
 # ---------------------------------------------------------------------------

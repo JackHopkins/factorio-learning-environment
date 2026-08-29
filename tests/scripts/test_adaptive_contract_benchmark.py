@@ -13,7 +13,9 @@ import pytest
 
 from fle.envd.contract_features import ProductCatalog, StaticRecipeDataSource
 from fle.envd.models import (
+    CapabilityDelta,
     CapabilityRating,
+    ContractDifficultyFeatures,
     ContractEpochOutcome,
     ContractEpochSpec,
 )
@@ -29,12 +31,17 @@ sys.path.insert(0, str(REPO))
 
 from scripts.adaptive_contract_benchmark import (  # noqa: E402
     CUSTOMER_DEPOT_LOCATION,
+    FACTORY_ROLE_OBJECTIVE,
     OpenAICompatibleAgentSession,
     OpenCodePersistentAgentSession,
     ScriptedAgentSession,
+    _atomic_json,
     _load_recipe_dump,
+    _persist_active_interruption,
     _refresh_coverage_obligations,
     build_candidate_pool,
+    build_progress_report,
+    default_adaptive_run_id,
     freeplay_task_spec,
     render_order_prompt,
     run_session,
@@ -101,6 +108,181 @@ def test_freeplay_task_is_persistent_open_play():
     assert spec.verifier.implementation == "objective_engine_v1"
 
 
+def test_live_harness_prompts_share_subtle_factory_objective_without_policy_details():
+    from scripts.adaptive_contract_benchmark import HermesPersistentAgentSession
+
+    prompts = (
+        OpenAICompatibleAgentSession.SYSTEM_PROMPT,
+        HermesPersistentAgentSession.SYSTEM_PROMPT,
+        OpenCodePersistentAgentSession.SYSTEM_PROMPT,
+    )
+    for prompt in prompts:
+        assert FACTORY_ROLE_OBJECTIVE in prompt
+        lowered = prompt.lower()
+        assert "rating" not in lowered
+        assert "selection logic" not in lowered
+        assert "capability graph" not in lowered
+        assert "grading" not in lowered
+        assert "host filesystem" in lowered
+
+
+def test_atomic_json_retries_replace_and_leaves_no_temp_file(tmp_path, monkeypatch):
+    import scripts.adaptive_contract_benchmark as runner
+
+    target = tmp_path / "record.json"
+    real_replace = runner.os.replace
+    replace_calls = []
+    sleep_delays = []
+
+    def flaky_replace(source, destination):
+        replace_calls.append((source, destination))
+        if len(replace_calls) < 3:
+            raise PermissionError("transient Windows sharing violation")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(runner.os, "replace", flaky_replace)
+    monkeypatch.setattr(runner.time, "sleep", sleep_delays.append)
+
+    _atomic_json(
+        target,
+        {"status": "ok"},
+        max_replace_attempts=3,
+        backoff_seconds=0.01,
+        max_backoff_seconds=0.02,
+    )
+
+    assert json.loads(target.read_text(encoding="utf-8")) == {"status": "ok"}
+    assert len(replace_calls) == 3
+    assert sleep_delays == [0.01, 0.02]
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_atomic_json_bounded_failure_cleans_temp_file(tmp_path, monkeypatch):
+    import scripts.adaptive_contract_benchmark as runner
+
+    target = tmp_path / "record.json"
+    replace_calls = []
+
+    def always_locked(source, destination):
+        replace_calls.append((source, destination))
+        raise PermissionError("persistent Windows sharing violation")
+
+    monkeypatch.setattr(runner.os, "replace", always_locked)
+    monkeypatch.setattr(runner.time, "sleep", lambda _delay: None)
+
+    with pytest.raises(PermissionError, match="persistent"):
+        _atomic_json(
+            target,
+            {"status": "failed"},
+            max_replace_attempts=2,
+            backoff_seconds=0.0,
+        )
+
+    assert len(replace_calls) == 2
+    assert not target.exists()
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_active_order_artifact_records_epoch_finalization_failure(tmp_path):
+    spec = ContractEpochSpec.create(
+        session_id="s",
+        epoch_index=2,
+        template_id="test",
+        generation_seed=1,
+        selection_seed=2,
+        item_name="iron-plate",
+        quantity=50,
+        deadline_ticks=3600,
+        context=_context(2),
+        features=ContractDifficultyFeatures(
+            product_id="iron-plate",
+            product_tier=0,
+            recipe_depth=1,
+            missing_technology_count=0,
+            missing_machine_type_count=0,
+            required_new_intermediate_count=0,
+            log_quantity=4.0,
+            deadline_ticks=3600,
+            required_rate_per_minute=50,
+            existing_rate_per_minute=0,
+            inventory_coverage_ratio=0,
+            estimated_power_fraction=0,
+            transport_complexity=0,
+            stage_band=0,
+        ),
+        raw_difficulty=1.0,
+        state_advantage=0.0,
+        effective_difficulty=1.0,
+    )
+
+    _persist_active_interruption(tmp_path, spec, RuntimeError("finalizer failed"))
+
+    artifact = json.loads((tmp_path / "active-order.json").read_text())
+    assert artifact["status"] == "interrupted"
+    assert artifact["termination_reason"] == "epoch_finalization_failed"
+    assert artifact["infrastructure_error"] == {
+        "category": "RuntimeError",
+        "message": "finalizer failed",
+    }
+
+
+def test_progress_report_is_observed_only_and_portfolio_serializable():
+    delta = CapabilityDelta(
+        before_state_digest="before",
+        after_state_digest="after",
+        target_id="iron-plate",
+        meaningful_progress=True,
+        path_progress=2,
+        new_technologies=("automation",),
+        new_recipes=("iron-gear-wheel",),
+        new_machines=("assembling-machine-1",),
+        newly_producing=("iron-plate",),
+    )
+    spec = ContractEpochSpec.create(
+        session_id="s", epoch_index=1, template_id="test",
+        generation_seed=1, selection_seed=2, item_name="iron-plate",
+        quantity=60, order_kind="sustained", deadline_ticks=3600,
+        context=_context(1),
+        features=ContractDifficultyFeatures(
+            product_id="iron-plate", product_tier=0, recipe_depth=1,
+            missing_technology_count=0, missing_machine_type_count=0,
+            required_new_intermediate_count=0, log_quantity=4.0,
+            deadline_ticks=3600, required_rate_per_minute=60,
+            existing_rate_per_minute=0, inventory_coverage_ratio=0,
+            estimated_power_fraction=0, transport_complexity=0,
+            stage_band=0,
+        ),
+        raw_difficulty=1.0, state_advantage=0.0, effective_difficulty=1.0,
+    )
+    outcome = ContractEpochOutcome(
+        session_id="s", epoch_index=1, commitment_hash=spec.commitment_hash,
+        status="fulfilled", delivered_quantity=60, requested_quantity=60,
+        delivered_by_product={"iron-plate": 60},
+        requested_by_product={"iron-plate": 60}, completion_ratio=1.0,
+        performance_score=1.0, simulation_ticks_used=3600,
+        interventions_used=3, model_seconds=1, tool_seconds=0,
+        runner_wall_seconds=1, terminal_state_digest="after",
+        capability_delta=delta,
+    )
+    epoch = SimpleNamespace(
+        spec=spec,
+        outcome=outcome,
+        capability_delta=delta,
+        post_context=SimpleNamespace(),
+    )
+
+    vector, portfolio = build_progress_report([epoch])
+
+    assert vector["evidence_status"] == "observed_only"
+    assert vector["structural_delta_summary"]["meaningful_progress_epochs"] == 1
+    assert vector["structural_delta_summary"]["path_nodes_crossed"] == 2
+    assert vector["sustainable_capability_count"] == 1
+    assert vector["certified_capability_count"] == 0
+    assert portfolio[0]["status"] == "observed_sustained"
+    json.dumps(vector)
+    json.dumps(portfolio)
+
+
 def test_opencode_session_writes_isolated_factorio_config(tmp_path):
     session = OpenCodePersistentAgentSession(
         envd_url="http://127.0.0.1:8172",
@@ -130,6 +312,235 @@ def test_opencode_session_writes_isolated_factorio_config(tmp_path):
 def test_opencode_session_id_parses_json_event_stream():
     output = "noise\n" + json.dumps({"type": "step_start", "sessionID": "ses_123"})
     assert OpenCodePersistentAgentSession._parse_session_id(output) == "ses_123"
+
+
+def test_default_adaptive_run_id_is_date_first_readable_and_collision_safe():
+    from datetime import datetime, timezone
+
+    now = datetime(2026, 8, 27, 20, 31, 50, tzinfo=timezone.utc)
+    assert default_adaptive_run_id(
+        "opencode/muse-spark-1.2-contributor-free", "opencode", now=now
+    ) == "08-27-2026-Muse-Spark-1.2-OpenCode"
+    assert default_adaptive_run_id(
+        "provider/model:v1", "hermes", now=now, collision=True
+    ) == "08-27-2026-Model-V1-Hermes-20-31-50"
+
+
+def test_opencode_retries_rate_limit_before_world_mutation(tmp_path, monkeypatch):
+    import asyncio
+    import scripts.adaptive_contract_benchmark as adaptive_runner
+
+    session = OpenCodePersistentAgentSession(
+        envd_url="http://127.0.0.1:8172",
+        lease_id="lease-test",
+        model="opencode/muse-spark-1.2-contributor-free",
+        reasoning="max",
+        timeout_seconds=60,
+        artifacts_dir=tmp_path / "artifacts",
+        command=sys.executable,
+        api_max_retries=1,
+    )
+    invocations = [
+        SimpleNamespace(
+            returncode=1,
+            stdout='{"statusCode":429,"isRetryable":true}',
+            stderr="",
+            timed_out=False,
+        ),
+        SimpleNamespace(
+            returncode=0,
+            stdout='{"type":"step_finish","sessionID":"ses_retry"}',
+            stderr="",
+            timed_out=False,
+        ),
+    ]
+    calls = []
+
+    def invoke(prompt):
+        calls.append(prompt)
+        invocation = invocations.pop(0)
+        if len(calls) == 2:
+            session.terminal_file.write_text(
+                json.dumps({"reason": "contract_fulfilled"}),
+                encoding="utf-8",
+            )
+        return invocation
+
+    real_sleep = asyncio.sleep
+
+    async def immediate_sleep(_delay):
+        await real_sleep(0)
+
+    monkeypatch.setattr(session, "_invoke", invoke)
+    monkeypatch.setattr(adaptive_runner.asyncio, "sleep", immediate_sleep)
+    try:
+        telemetry = asyncio.run(session.run_epoch("order"))
+        artifact = (tmp_path / "artifacts" / "epoch-0001.opencode.jsonl").read_text()
+        assert calls == ["order", "order"]
+        assert session.invocation_count == 1
+        assert session.session_id == "ses_retry"
+        assert telemetry.transport_errors == 0
+        assert "provider retry" in artifact
+    finally:
+        asyncio.run(session.close())
+
+
+def _fake_opencode_session(tmp_path, *, api_max_retries=0):
+    return OpenCodePersistentAgentSession(
+        envd_url="http://127.0.0.1:8172",
+        lease_id="lease-test",
+        model="opencode/muse-spark-1.2-contributor-free",
+        reasoning="max",
+        timeout_seconds=60,
+        artifacts_dir=tmp_path / "artifacts",
+        command=sys.executable,
+        api_max_retries=api_max_retries,
+    )
+
+
+def _step_finish(session_id, reason):
+    return json.dumps(
+        {"type": "step_finish", "sessionID": session_id, "reason": reason}
+    )
+
+
+def test_opencode_length_continues_same_epoch_and_session(tmp_path):
+    import asyncio
+
+    session = _fake_opencode_session(tmp_path)
+    invocations = [
+        SimpleNamespace(
+            returncode=0,
+            stdout=_step_finish("ses_length", "length"),
+            stderr="",
+            timed_out=False,
+        ),
+        SimpleNamespace(
+            returncode=0,
+            stdout=_step_finish("ses_length", "stop"),
+            stderr="",
+            timed_out=False,
+        ),
+    ]
+    calls = []
+
+    def invoke(prompt):
+        calls.append((prompt, session.session_id))
+        invocation = invocations.pop(0)
+        if len(calls) == 2:
+            session.terminal_file.write_text(
+                json.dumps({"reason": "contract_fulfilled"}), encoding="utf-8"
+            )
+        return invocation
+
+    session._invoke = invoke
+    try:
+        telemetry = asyncio.run(session.run_epoch("order"))
+        assert len(calls) == 2
+        assert calls[0] == ("order", None)
+        assert calls[1][1] == "ses_length"
+        assert "reason:length" in calls[1][0]
+        assert session.invocation_count == 1
+        assert telemetry.transport_errors == 0
+        assert telemetry.invocations == 2
+        assert telemetry.continuation_reasons == ["reason:length"]
+        assert telemetry.stop_reason == "contract_terminal:contract_fulfilled"
+        audit = json.loads(
+            (tmp_path / "artifacts" / "epoch-0001.opencode.audit.json").read_text()
+        )
+        assert audit["provider_invocations"] == 2
+        assert audit["terminal_observed"] is True
+    finally:
+        asyncio.run(session.close())
+
+
+def test_opencode_repeated_length_continues_until_terminal(tmp_path):
+    import asyncio
+
+    session = _fake_opencode_session(tmp_path)
+    outputs = [
+        _step_finish("ses_repeat", "length"),
+        _step_finish("ses_repeat", "length"),
+        _step_finish("ses_repeat", "stop"),
+    ]
+    calls = []
+
+    def invoke(prompt):
+        calls.append((prompt, session.session_id))
+        output = outputs.pop(0)
+        if not outputs:
+            session.terminal_file.write_text(
+                json.dumps({"reason": "contract_expired"}), encoding="utf-8"
+            )
+        return SimpleNamespace(returncode=0, stdout=output, stderr="", timed_out=False)
+
+    session._invoke = invoke
+    try:
+        telemetry = asyncio.run(session.run_epoch("order"))
+        assert len(calls) == 3
+        assert all(session_id == "ses_repeat" for _, session_id in calls[1:])
+        assert telemetry.transport_errors == 0
+        assert telemetry.invocations == 3
+        assert telemetry.continuation_reasons == ["reason:length", "reason:length"]
+        assert telemetry.provider_step_finish_reasons == ["length", "length", "stop"]
+    finally:
+        asyncio.run(session.close())
+
+
+@pytest.mark.parametrize("returncode", [0, 1])
+def test_opencode_exit_without_contract_terminal_is_unrated_transport_failure(
+    tmp_path, returncode
+):
+    import asyncio
+
+    session = _fake_opencode_session(tmp_path)
+    session._invoke = lambda prompt: SimpleNamespace(
+        returncode=returncode,
+        stdout=_step_finish("ses_exit", "stop"),
+        stderr="",
+        timed_out=False,
+    )
+    try:
+        telemetry = asyncio.run(session.run_epoch("order"))
+        assert telemetry.transport_errors == 1
+        assert telemetry.failure_category == "provider_exit_without_terminal"
+        assert telemetry.stop_reason in {
+            "provider_exit_without_contract_terminal",
+            "provider_nonzero_exit_without_contract_terminal",
+        }
+        audit = json.loads(
+            (tmp_path / "artifacts" / "epoch-0001.opencode.audit.json").read_text()
+        )
+        assert audit["terminal_observed"] is False
+        assert audit["failure_category"] == "provider_exit_without_terminal"
+    finally:
+        asyncio.run(session.close())
+
+
+def test_opencode_normal_terminal_signal_stops_without_transport_failure(tmp_path):
+    import asyncio
+
+    session = _fake_opencode_session(tmp_path)
+
+    def invoke(prompt):
+        session.terminal_file.write_text(
+            json.dumps({"reason": "contract_fulfilled"}), encoding="utf-8"
+        )
+        return SimpleNamespace(
+            returncode=0,
+            stdout=_step_finish("ses_terminal", "stop"),
+            stderr="",
+            timed_out=False,
+        )
+
+    session._invoke = invoke
+    try:
+        telemetry = asyncio.run(session.run_epoch("order"))
+        assert telemetry.transport_errors == 0
+        assert telemetry.failure_category is None
+        assert telemetry.stop_reason == "contract_terminal:contract_fulfilled"
+    finally:
+        asyncio.run(session.close())
 
 
 def test_render_order_prompt_contains_commitment_relevant_facts():
@@ -703,6 +1114,12 @@ def test_end_to_end_session_loop(tmp_path, fake_client_factory):
     assert record.participant.tool_manifest_hash != "tm"
     assert record.participant.inference_settings_hash != "is"
     assert all(epoch.outcome.model_seconds > 0 for epoch in record.epochs)
+    assert any(
+        note.startswith("progress_vector_v1=") for note in persisted["notes"]
+    )
+    assert any(
+        note.startswith("portfolio_evidence_v1=") for note in persisted["notes"]
+    )
 
     selection = json.loads(
         (tmp_path / "session-epochs" / "epoch-0001.selection.json").read_text(

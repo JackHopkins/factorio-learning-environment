@@ -1,12 +1,14 @@
 # Adaptive contract benchmark implementation specification
 
-Status: implementation plan for review
+Status: implemented development policy (`adaptive-contract-benchmark-0.5.0-dev`)
 
 This document specifies a progression-aware benchmark for persistent Factorio
-agents. It replaces the earlier design discussion. The benchmark presents a
-sequence of customer orders inside one persistent factory, adapts order
-difficulty to the observed factory state and rating uncertainty, and produces a
-reconstructable capability estimate.
+agents. The benchmark presents a sequence of customer orders inside one
+persistent factory, adapts order difficulty to the observed factory state, and
+produces reconstructable capability evidence. Factory progress and agent
+performance are separate concepts: the former describes what the factory can
+reliably do, while the latter describes how efficiently the agent expands or
+uses that capability.
 
 TrueSkill supplies the online ability estimate. A calibrated contextual model
 supplies contract difficulty. PLR and ACCEL are training policies only; neither
@@ -25,6 +27,10 @@ The primary leaderboard value is a conservative TrueSkill score. Orders
 fulfilled, stage coverage, simulation ticks, interventions, and efficiency are
 first-class companion metrics, not hidden diagnostics.
 
+TrueSkill is an agent-performance metric, not the definition of factory
+progress. Capability evidence remains authoritative even when an epoch is
+unrated or when the rating model is experimental.
+
 ## 2. Hard invariants
 
 1. The factory persists across every epoch in one session.
@@ -40,6 +46,8 @@ first-class companion metrics, not hidden diagnostics.
 10. Official evaluation banks are immutable and isolated from training replay.
 11. Every rating can be reconstructed from retained epoch records.
 12. Provider-specific harness code cannot alter selection or rating policy.
+13. The agent receives a brief operating objective, never hidden benchmark
+    policy, grading details, capability-graph internals, or rating logic.
 
 ## 3. Terminology
 
@@ -64,6 +72,7 @@ first-class companion metrics, not hidden diagnostics.
 | fle/envd/customer.py | Deterministic active-order state and delivery accounting |
 | fle/envd/contract_features.py | Passive snapshots and deterministic feature extraction |
 | fle/envd/contract_generator.py | Template expansion, feasibility, quantity, deadlines |
+| fle/envd/contract_policy.py | Online product, service-mode, quantity, and deadline policy |
 | fle/envd/contract_rating.py | Outcome mapping, contextual difficulty, TrueSkill updates |
 | fle/envd/contract_selector.py | Candidate scoring, coverage, seeded selection |
 | fle/envd/contract_calibration.py | Offline fitting, validation, manifests |
@@ -79,6 +88,13 @@ across all epochs. The outer runner retains exclusive ownership of lease,
 contract, selection, rating, and termination policy. Global OpenCode commands
 are convenience entry points only; they do not create orders or grant access to
 the host filesystem, shell, web, or delegation tools during an evaluation.
+
+All live harnesses share a short operating objective: operate and expand an
+automated factory capable of reliably supplying changing customer demand.
+The objective is deliberately qualitative. The model receives the action/API
+reference and current order, but not grading criteria, hidden policy, graph
+state, rating state, or candidate-selection logic. Tool permissions remain
+limited to the supplied Factorio execution and read-only reference interfaces.
 
 Do not put selection, rating, or calibration policy in customer.py. That module
 must remain a deterministic order state machine.
@@ -261,6 +277,62 @@ Progression bands are coverage labels, not separate ratings in version 1:
 The classifier uses stable state features and table tests. A session must not
 move backward merely because inventory was consumed.
 
+### 8.1 Factory progress versus agent performance
+
+The underlying progress measure is expansion of the factory's sustainable
+production possibility frontier. For a demand vector `d`, the factory has a
+feasible set `F(s, T)` containing the orders it can supply within horizon `T`
+from state `s`. Progress is an expansion of this set, or an improvement in the
+latency, throughput, cost, or reliability of an existing order. The set is
+allowed to shrink after depletion, damage, or reconfiguration; the record keeps
+the observed state and does not silently convert a historical capability into a
+current one.
+
+Use a partial capability vector rather than a single ordinal as the primary
+description:
+
+```text
+progress = (
+    sustainable frontier tier,
+    breadth of observed products and bundles,
+    joint sustainable throughput,
+    delivery reliability,
+    infrastructure capacity
+)
+```
+
+Science per minute and progression bands are useful projections of this vector,
+not substitutes for it. Separate products measured in isolation do not prove a
+joint capability, so mixed-demand orders are required to test the shape of the
+frontier. The current runner persists per-epoch post-contexts, capability graph
+snapshots, and deltas, plus an `observed_only` progress-vector summary in the
+existing session notes field. It does not call a one-off delivery autonomous.
+
+Agent performance is measured separately: frontier expansion per simulation
+time, delivery efficiency, intervention cost, recovery behavior, and rating
+confidence. This prevents a quickly assembled but fragile factory from being
+confused with a genuinely capable one.
+
+### 8.2 Commissioning, service, and qualification
+
+Orders have distinct measurement phases:
+
+1. **Commissioning** establishes whether a nearby product or dependency can be
+   constructed and delivered at all. It uses a small request and is evidence of
+   reachability, not sustainable capacity.
+2. **Service** requests a sustained rate or mixed demand over repeated delivery
+   windows. It establishes throughput and reliability from the persistent
+   factory, with buffers treated as legitimate but finite infrastructure.
+3. **Qualification** freezes the agent, applies a committed demand vector, and
+   runs the factory for a defined autonomous window. Only this phase can issue
+   an autonomous-capability certificate.
+
+The current benchmark performs commissioning and service measurements. It does
+not yet claim qualification. A future implementation should fork or checkpoint
+the world at the end of construction, stop all agent actions, run warm-up and
+service windows, record lower-bound throughput and reliability, then discard the
+validation fork. The validation fork must not mutate the scored trajectory.
+
 ## 9. Progression-aware generation
 
 ### 9.1 Product metadata
@@ -381,10 +453,13 @@ infrastructure error                    -> unrated
 invalid contract                        -> unrated
 ~~~
 
-Initial thresholds are partial_floor = 0.25 and partial_ceiling = 0.90. They are
-calibrated and versioned. Do not fit per-item cutpoints in version 1 because
-sparse observations make them unstable. Always retain raw completion ratio and
-delivery timing.
+Initial thresholds are partial_floor = 0.25 and partial_ceiling = 0.90. They
+remain useful for categorical reporting. Rating uses the continuous completion
+score: the rater interpolates between the loss, draw, and win TrueSkill
+posteriors, so 26% and 99% completion do not produce the same update. Exact
+fulfillment remains a categorical win. Always retain raw completion ratio,
+per-product delivery, and delivery timing so this approximation can be
+recomputed or replaced.
 
 ## 12. Rating update
 
@@ -400,6 +475,14 @@ class ContractRater(Protocol):
         difficulty_mean: float,
         difficulty_sigma: float,
         result: Literal["win", "draw", "loss"],
+    ) -> CapabilityRating: ...
+
+    def update_continuous(
+        self,
+        rating: CapabilityRating,
+        difficulty_mean: float,
+        difficulty_sigma: float,
+        score: float,
     ) -> CapabilityRating: ...
 ~~~
 
@@ -463,6 +546,87 @@ Sandbag resistance:
 - retain hidden candidate seeds
 - report repeated destruction/rebuild patterns
 - never make later contracts easier because useful infrastructure was discarded
+
+### 13.1 Evidence-driven customer policy
+
+The capability graph controls which products are plausible candidates; it is
+not a hard scripted ladder. The online customer then makes three joint but
+orthogonal decisions:
+
+1. **Breadth:** choose a product using learning uncertainty, staleness,
+   under-coverage, frontier value, and a recent-product penalty. An 80% hard
+   rotation away from the immediately previous product prevents accidental
+   single-item loops when alternatives exist.
+2. **Service mode:** use a small commissioning order for products without
+   evidence, a sustained throughput window for demonstrated production, or a
+   consolidation order that tests cumulative capacity. Mixed orders are one
+   service contract with independently sized product lines. Each line receives
+   its own feature/difficulty evaluation; the committed contract difficulty is
+   their mean plus a coordination term, matching mean per-line fulfillment.
+3. **Pressure:** size each line from observed depot delivery rates, live 60/300
+   second production rates, completion history, and rate uncertainty. A failed
+   order may still be followed by more total units when evidence supports a
+   longer service window; quantity does not mechanically increase just because
+   the previous contract failed.
+
+Cold-start quantity falls with recipe depth and its setup deadline grows with
+recipe depth and missing technology. Consequently an unseen electronic circuit
+is a small, generous commissioning request, not a plate-scale bulk order.
+Sustained contracts use integer-aware delivery windows. High-volume contracts
+retain approximately minute-scale cadence, while low-volume contracts use
+fewer equal-duration windows with whole-item quotas (normally at least two
+items per window). Quotas sum exactly to the requested quantity, so discrete
+items cannot make perfect service mathematically impossible. All automated
+traffic inside the service interval remains available to cadence scoring after
+the nominal quantity is accepted; the accepted quantity and reward remain
+capped. This prevents both end bursts and high-throughput early fills from
+distorting the result.
+
+The official online selector uses an evaluation adaptation of PLR/ACCEL rather
+than importing their training replay buffers or claiming to reproduce their
+learned-regret algorithms. A deterministic 20-order schedule assigns 50% of
+orders to rating-near anchors, 30% to replay/consolidation, 15% to a one-edge
+frontier, and 5% to a one-axis ACCEL-style mutation. Replay priority combines
+intermediate completion, capability-path progress, uncertainty, staleness, and
+breadth. ACCEL mutations change one local pressure axis of a demonstrated or
+near-demonstrated order; they never jump arbitrarily deeper into the graph.
+Every committed spec records the lane, reason, parent, mutation, line sizing,
+and final rating distance.
+
+The policy should be understood as measurement over the capability frontier,
+not as a hidden ladder the agent must infer. Its useful actions are to expand
+nearby capability, deepen sustainable throughput, compose multiple demands, or
+revalidate stale evidence. Coverage and uncertainty can guide that choice, but
+the policy remains runner-side and is never included in the agent prompt.
+
+An attempted contract is audit history, not capacity evidence. Contract credit
+and throughput sizing use only simulation-sourced traffic delivered by
+inserters into customer depots. Direct agent insertion is drained and retained
+as manual audit telemetry, but never changes fulfillment or capacity evidence.
+The backend also retains automated totals and per-window delivery measurements
+separately from sustained-service completion, so a late automated inventory
+burst may have 100% raw coverage and still receive a lower service score. A
+zero-delivery frontier attempt with capability progress is preferentially
+replayed at lower pressure; it does not authorize a larger throughput request.
+Transient automated depot rates are observational evidence only. A product
+enters throughput selection after a sustained contract reaches at least 60%
+service coverage; the existing 80% threshold remains the stronger reliability
+requirement for stress selection.
+
+`factory_band` is measured from the frozen persistent state and `target_band`
+describes the requested probe. The legacy `stage_band` field aliases the target
+band for old readers. Frontier eligibility is limited to one band/graph edge
+beyond the measured factory envelope. Commissioning and service deadlines are
+bounded between documented minima and a four-hour simulation maximum; a deep
+or analytically enormous candidate is deferred instead of made nominally
+feasible by a multi-day deadline.
+
+For OpenCode, a provider `step_finish` with `reason:length` resumes the same
+session and contract epoch. Repeated context continuations are not a turn or
+intervention budget. Only an authoritative MCP terminal signal ends the order;
+a clean or nonzero provider exit without that signal is an unrated
+infrastructure outcome. Per-invocation reasons and continuation decisions are
+persisted in the epoch audit artifact.
 
 ## 14. Persistent backend lifecycle
 
@@ -541,6 +705,12 @@ close conversation
 Record model turns, tool calls, tokens where available, model seconds, tool
 seconds, paused wall seconds, and transport errors. Provider harnesses implement
 AgentSession; common policy never branches on provider.
+
+Session and audit JSON use a same-directory temporary file followed by
+`os.replace`. The temporary file is flushed and synced before replacement;
+Windows sharing violations receive a bounded exponential backoff, and the
+temporary path is cleaned on both success and failure. A persistent replace
+failure is an I/O error, not a customer-order loss.
 
 ## 16. Calibration
 
@@ -625,7 +795,16 @@ Publish:
 - median and tail first-delivery and completion ticks
 - model, tool, paused, and runner wall-clock seconds
 - extrapolation and infrastructure-error counts
+- per-epoch post-context, capability-graph snapshots, and capability deltas
+- an `observed_only` progress vector and portfolio evidence summary in session
+  notes; these are evidence hooks, not autonomous-capability certificates
 - ordered epoch commitment hashes
+
+The session record remains valid for existing readers because the summary uses
+the already published `notes` field. Consumers that need machine-readable
+details should parse the `progress_vector_v1=` and
+`portfolio_evidence_v1=` note entries, while using the epoch records as the
+authoritative source for detailed evidence.
 
 ## 19. PLR training policy
 

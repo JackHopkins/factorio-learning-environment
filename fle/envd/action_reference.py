@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 
-ACTION_PROFILE_REFERENCE_ID = "fle-program-v1/reference-v4"
+ACTION_PROFILE_REFERENCE_ID = "fle-program-v1/reference-v5"
 
 ACTION_PROFILE_REFERENCE = """\
 There are two tool boundaries. The harness calls `factorio_observe_factory`
@@ -82,6 +82,19 @@ RecipeName.IronGearWheel, RecipeName.AutomationSciencePack,
 RecipeName.PlasticBar, RecipeName.BasicOilProcessing,
 RecipeName.UraniumProcessing, and RecipeName.LightOilCracking. Prototype names
 identify entities and items and are not accepted by set_entity_recipe.
+
+Reference and recipe-name details:
+- `get_prototype_recipe(Prototype.Lab)` is the normal way to inspect the
+  lab's exact crafting recipe. `Prototype.Lab` names the placeable entity; it
+  is not a valid argument to `set_entity_recipe`.
+- `RecipeName.FillLubricantBarrel` maps to the Factorio recipe ID
+  `lubricant-barrel`. The phrase `fill-lubricant-barrel` is a compatibility
+  alias for reference lookup, not the ID emitted by the Factorio 2.0 export.
+- `petroleum-gas` is a fluid product, not a unique recipe. Ask
+  `factorio_search_reference` for petroleum-gas, then select one exact recipe
+  ID such as `basic-oil-processing`, `advanced-oil-processing`,
+  `coal-liquefaction`, or `light-oil-cracking` before planning or configuring
+  a refinery or chemical plant.
 
 Examples:
   coal_position = nearest(Resource.Coal)  # nearest returns a Position

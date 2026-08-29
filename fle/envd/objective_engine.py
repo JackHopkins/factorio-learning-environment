@@ -1211,11 +1211,16 @@ def verify_native(
     action_events: list[ActionEvent],
     initial: TelemetryFrame,
     customer_result: Any | None = None,
+    precomputed_throughput_measurements: dict[str, list[float]] | None = None,
 ) -> NativeVerificationResult:
     namespace = instance.first_namespace
-    throughput_measurements: dict[str, list[float]] = {}
+    throughput_measurements: dict[str, list[float]] = dict(
+        precomputed_throughput_measurements or {}
+    )
     for objective in task.objectives:
         if objective.kind != "throughput":
+            continue
+        if objective.objective_id in throughput_measurements:
             continue
         measurements: list[float] = []
         for _ in range(task.verifier.holdout_windows):

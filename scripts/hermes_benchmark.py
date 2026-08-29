@@ -112,10 +112,11 @@ def build_prompt(spec) -> str:
     canonical = render_task_prompt(spec)
     return (
         "You are being evaluated on one Factorio task. Follow the task and "
-        "public action profile below exactly. The only tools available to "
-        "you are the two Factorio MCP tools exposed by this harness: "
+        "public action profile below exactly. The available tools are the "
+        "factorio_* MCP tools exposed by this harness, including "
         "mcp__factorio__factorio_observe_factory and "
-        "mcp__factorio__factorio_execute_program. Call observe first. "
+        "mcp__factorio__factorio_execute_program plus callable API and exact "
+        "game-data reference lookups. Call observe first. "
         "Pass ordinary short Python in the execute tool's `code` argument, "
         "one intervention per call. Do not use shell, filesystem, browser, "
         "web, imports, reflection, or any other tool. Measure the resulting "
@@ -474,6 +475,9 @@ def _write_hermes_profile(
     terminal_file: Path | None = None,
     api_max_retries: int = 3,
     compression_enabled: bool = False,
+    game_data_path: str | Path | None = None,
+    memory_path: str | Path | None = None,
+    memory_enabled: bool = False,
 ) -> None:
     """Write a minimal profile without touching the user's Hermes config."""
 
@@ -482,6 +486,9 @@ def _write_hermes_profile(
         "ENVD_URL": envd_url,
         "LEASE_ID": lease_id,
         "MCP_TRACE_FILE": str(trace_file),
+        "FACTORIO_GAME_DATA_FILE": str(game_data_path or ""),
+        "MEMORY_PATH": str(memory_path or ""),
+        "MEMORY_ENABLED": "1" if memory_enabled else "0",
     }
     if terminal_file is not None:
         mcp_env["MCP_TERMINAL_FILE"] = str(terminal_file)
@@ -520,7 +527,7 @@ def _write_hermes_profile(
             "cwd": str(scratch),
             "home_mode": "profile",
         },
-        "memory": {"memory_enabled": False},
+        "memory": {"memory_enabled": memory_enabled},
         "compression": {
             "enabled": compression_enabled,
             "threshold": 0.50,

@@ -13,8 +13,7 @@ The tool returns a Recipe object containing:
 ## Basic Usage
 
 ```python
-# Get recipe for any prototype
-# for example, iron gear wheels
+# Get the recipe for a craftable item/entity prototype
 recipe = get_prototype_recipe(Prototype.IronGearWheel)
 
 # Access recipe information
@@ -36,6 +35,14 @@ The tool accepts one of:
 1. `Prototype` enum value
 2. `RecipeName` enum value
 3. Raw string name of the recipe
+
+`Prototype.Lab` is a valid entity argument and returns the lab's exact
+crafting recipe. For process selection, use a `RecipeName` value. In
+particular, `RecipeName.FillLubricantBarrel` resolves to the canonical Factorio
+recipe ID `lubricant-barrel`; `fill-lubricant-barrel` is only a compatibility
+alias used by the reference layer. `petroleum-gas` names a product with several
+possible processes, so use an exact recipe such as `BasicOilProcessing`,
+`AdvancedOilProcessing`, `CoalLiquefaction`, or `LightOilCracking`.
 
 ### Return Value
 

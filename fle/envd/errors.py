@@ -26,6 +26,18 @@ class IdempotencyConflict(EnvironmentServiceError):
     """A request ID was reused for a different mutation payload."""
 
 
+class MemoryNotFound(EnvironmentServiceError):
+    """A model memory key does not exist in the current lease."""
+
+
+class MemoryConflict(EnvironmentServiceError):
+    """A revisioned model-memory mutation observed stale state."""
+
+
+class MemoryLimitExceeded(EnvironmentServiceError):
+    """The configured per-session memory budget was exceeded."""
+
+
 class ContractEpochError(EnvironmentServiceError):
     """Base error for adaptive contract epoch lifecycle violations."""
 

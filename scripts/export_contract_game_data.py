@@ -100,10 +100,27 @@ def export_game_data(host: str, port: int, password: str) -> dict[str, Any]:
                 technology.get("unlocked_recipes")
             )
             technologies.append(technology)
+        # Prototype metadata is kept separate from recipes so lookup tools can
+        # answer machine/prototype questions without asking the agent to infer
+        # them from a category string.  Only stable, serializable fields are
+        # exported; field access is guarded because not every entity prototype
+        # exposes every machine property.
+        prototypes = _json_command(
+            client,
+            "local o={} for n,e in pairs(prototypes.entity) do "
+            "local categories={} local ok,cats=pcall(function() return e.crafting_categories end) "
+            "if ok and cats then for c,_ in pairs(cats) do table.insert(categories,c) end end "
+            "table.sort(categories) local energy=nil local eok,ev=pcall(function() return e.energy_usage end) "
+            "if eok then energy=ev end table.insert(o,{name=e.name,type=e.type,crafting_categories=categories,energy_usage=energy}) "
+            "end table.sort(o,function(a,b) return a.name<b.name end) "
+            "rcon.print(helpers.table_to_json(o))",
+        )
+        prototypes = _empty_table_as_list(prototypes)
         return {
             "factorio_version": version,
             "recipes": recipes,
             "technologies": technologies,
+            "prototypes": prototypes,
         }
     finally:
         client.close()

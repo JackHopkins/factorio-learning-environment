@@ -5,12 +5,12 @@ semantics; the live class proves two-epoch persistence against a real
 Factorio server.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
 
-from fle.envd.backend import FLEWorker, FactorioWorker
+from fle.envd.backend import FactorioWorker, FLEWorker
 from fle.envd.customer import ActiveOrder
 from fle.envd.errors import (
     CommitmentMismatch,
@@ -21,14 +21,15 @@ from fle.envd.models import (
     ActionEvent,
     ActiveContractState,
     ContractContextSnapshot,
+    ContractDifficultyFeatures,
     ContractEpochOutcome,
     ContractEpochSpec,
-    ContractDifficultyFeatures,
     ContractSessionState,
     ContractSessionSummary,
     ExecutionResult,
     FactorioTaskSpec,
     Observation,
+    ProductDemandSpec,
     VerificationSnapshot,
 )
 from fle.envd.service import EnvironmentService
@@ -139,6 +140,8 @@ class ContractFakeWorker(FactorioWorker):
             requested_quantity=spec.quantity,
             deadline_ticks=spec.deadline_ticks,
             activation_tick=self.tick - self._session_baseline_tick,
+            products=spec.products or None,
+            order_kind=spec.order_kind,
         )
         self.contract_session_id = spec.session_id
         self._active_order = order
@@ -188,7 +191,10 @@ class ContractFakeWorker(FactorioWorker):
             status=status,
             delivered_quantity=int(order.delivered),
             requested_quantity=order.requested_quantity,
+            delivered_by_product=dict(outcome_state.delivered_by_product),
+            requested_by_product=dict(outcome_state.requested_by_product),
             completion_ratio=outcome_state.completion_ratio,
+            performance_score=outcome_state.completion_ratio,
             simulation_ticks_used=(self.tick - self._epoch_start_tick),
             interventions_used=self._interventions,
             model_seconds=0.0,
@@ -312,7 +318,20 @@ def test_adaptive_depot_placement_requires_explicit_task_marker():
     class Namespace:
         def _customer_depot(self, command, *args):
             calls.append((command, args))
-            return {"placed": 8} if command == "place" else {"cleared": True}
+            if command == "place":
+                return {"placed": 8}
+            if command == "telemetry":
+                return {
+                    "depots": {
+                        1: {
+                            "unit_number": 42,
+                            "valid": True,
+                            "position": {"x": -5.5, "y": -9.5},
+                            "surface": "nauvis",
+                        }
+                    }
+                }
+            return {"cleared": True}
 
     worker = object.__new__(FLEWorker)
     worker.instance = SimpleNamespace(first_namespace=Namespace())
@@ -335,6 +354,131 @@ def test_adaptive_depot_placement_requires_explicit_task_marker():
     )
     assert calls and calls[0][0] == "place"
     assert worker._adaptive_depot_placed is True
+    assert worker._customer_depots_cache[0].position == {"x": -5.5, "y": -9.5}
+
+
+@UNIT
+def test_customer_depot_metadata_and_delivery_receipts_are_unambiguous():
+    worker = FLEWorker.__new__(FLEWorker)
+    worker.customer_engine = None
+    worker._active_order = ActiveOrder("steel-plate", 100, 3600, activation_tick=0)
+    worker._customer_depots_cache = []
+    worker._cache_customer_depots(
+        {
+            "depots": {
+                1: {
+                    "unit_number": 42,
+                    "valid": True,
+                    "entity_name": "steel",
+                    "position": {"x": -5.5, "y": -9.5},
+                    "surface": "nauvis",
+                }
+            }
+        }
+    )
+
+    depot = worker._customer_depots_cache[0]
+    assert depot.depot_id == "customer-depot-42"
+    assert depot.position == {"x": -5.5, "y": -9.5}
+    assert depot.customer_owned is True
+    assert depot.consumes_deliveries is True
+
+    missed = worker._delivery_receipt(["insert_item"], {})
+    assert missed is not None
+    assert missed.credited == {}
+    assert missed.remaining == {"steel-plate": 100.0}
+    assert "No customer delivery was credited" in missed.message
+
+    worker._active_order.attribute(40.0, 60)
+    credited = worker._delivery_receipt(["insert_item"], {})
+    assert credited is not None
+    assert credited.credited == {"steel-plate": 40.0}
+    assert credited.remaining == {"steel-plate": 60.0}
+    assert "drained immediately" in credited.message
+
+    automated = worker._delivery_receipt(["wait"], {"steel-plate": 35.0})
+    assert automated is not None
+    assert automated.credited == {"steel-plate": 5.0}
+
+
+@UNIT
+def test_delivery_bucket_history_preserves_raw_window_rates_after_drain():
+    worker = FLEWorker.__new__(FLEWorker)
+    worker._delivery_history = []
+    worker._delivery_raw_totals = {}
+    worker._delivery_observed_tick = 0
+
+    current_tick, samples = worker._parse_delivery_buckets(
+        {
+            "tick": 300,
+            "buckets": {
+                "1": {"start_tick": 0, "items": {"iron-plate": 50}},
+                "2": {"start_tick": 60, "items": {"iron-plate": 40}},
+            },
+            "raw_delivery_totals": {"iron-plate": 90},
+        }
+    )
+    assert current_tick == 300
+    assert samples == [(59, {"iron-plate": 50.0}), (119, {"iron-plate": 40.0})]
+    worker._record_delivery_samples(
+        {"tick": current_tick, "raw_delivery_totals": {"iron-plate": 90}},
+        samples,
+    )
+
+    telemetry = worker._delivery_telemetry_snapshot()
+    assert telemetry.raw_totals == {"iron-plate": 90.0}
+    assert telemetry.raw_rates_60s == {"iron-plate": 90.0}
+    assert telemetry.raw_rates_300s == {"iron-plate": 18.0}
+    assert telemetry.sample_count == 2
+    assert len(telemetry.recent_buckets) == 2
+
+
+@UNIT
+def test_manual_depot_traffic_is_audited_but_excluded_from_crediting_samples():
+    worker = FLEWorker.__new__(FLEWorker)
+    worker._delivery_history = []
+    worker._delivery_raw_totals = {}
+    worker._manual_delivery_history = []
+    worker._manual_delivery_totals = {}
+    worker._delivery_observed_tick = 0
+    raw = {
+        "tick": 120,
+        "buckets": [
+            {
+                "start_tick": 60,
+                "items": {"iron-plate": 7},
+                "manual_items": {"iron-plate": 40},
+            }
+        ],
+        "raw_delivery_totals": {"iron-plate": 7},
+        "manual_delivery_totals": {"iron-plate": 40},
+    }
+
+    current_tick, automated = worker._parse_delivery_buckets(raw)
+    _, manual = worker._parse_delivery_buckets(raw, item_field="manual_items")
+    worker._record_delivery_samples(raw, automated)
+    worker._record_manual_delivery_samples(raw, manual)
+
+    assert current_tick == 120
+    assert automated == [(119, {"iron-plate": 7.0})]
+    assert manual == [(119, {"iron-plate": 40.0})]
+    telemetry = worker._delivery_telemetry_snapshot()
+    assert telemetry.raw_totals == {"iron-plate": 7.0}
+    assert telemetry.manual_totals == {"iron-plate": 40.0}
+    assert telemetry.sample_count == 1
+    assert telemetry.manual_sample_count == 1
+    assert telemetry.raw_rates_60s == {"iron-plate": 7.0}
+
+
+@UNIT
+def test_active_order_view_exposes_remaining_quantity():
+    order = ActiveOrder("steel-plate", 100, 3600, activation_tick=0)
+    order.attribute(35.0, 60)
+
+    view = order.student_view()
+
+    assert view.fulfilled == {"steel-plate": 35.0}
+    assert view.remaining == {"steel-plate": 65.0}
 
 
 # ---------------------------------------------------------------------------
@@ -469,6 +613,18 @@ def test_session_and_epoch_ticks_accounted_separately():
 
 
 @UNIT
+def test_contract_session_state_poll_renews_lease_keepalive():
+    service, _worker, lease_id = _service()
+    lease = service._leases[lease_id].lease
+    original_expiry = lease.expires_at
+    service._now = lambda: original_expiry - timedelta(seconds=1)
+
+    service.get_contract_session_state(lease_id)
+
+    assert lease.expires_at > original_expiry
+
+
+@UNIT
 def test_infrastructure_interrupt_never_recorded_as_loss():
     service, worker, lease_id = _service()
     spec = _spec(1)
@@ -528,6 +684,45 @@ def test_delivery_fulfillment_flows_through_lifecycle():
 
 
 @UNIT
+def test_mixed_order_accounting_flows_through_service_lifecycle():
+    service, worker, lease_id = _service()
+    base = _spec(1, quantity=100, item="copper-plate")
+    payload = base.model_dump(exclude={"commitment_hash"})
+    payload.update(
+        context=base.context,
+        features=base.features,
+        products=(
+            ProductDemandSpec(product="copper-plate", quantity=40),
+            ProductDemandSpec(product="iron-plate", quantity=60),
+        ),
+        order_kind="one_shot",
+    )
+    spec = ContractEpochSpec.create(**payload)
+
+    state = service.begin_contract_epoch(lease_id, spec, request_id="mixed-begin")
+    assert [line.product for line in state.open_order.products] == [
+        "copper-plate",
+        "iron-plate",
+    ]
+    worker._active_order.attribute(40, worker.tick, product="copper-plate")
+    worker._active_order.attribute(30, worker.tick, product="iron-plate")
+    worker.tick += 300
+
+    outcome = service.finalize_contract_epoch(
+        lease_id, 1, spec.commitment_hash, request_id="mixed-finalize"
+    )
+    assert outcome.delivered_by_product == {
+        "copper-plate": 40.0,
+        "iron-plate": 30.0,
+    }
+    assert outcome.requested_by_product == {
+        "copper-plate": 40.0,
+        "iron-plate": 60.0,
+    }
+    assert outcome.completion_ratio == pytest.approx(0.75)
+
+
+@UNIT
 def test_live_worker_sync_exposes_and_terminates_adaptive_order():
     """Normal observe/execute plumbing advances the adaptive order."""
     from fle.envd.backend import FLEWorker
@@ -570,6 +765,64 @@ def test_live_worker_sync_expires_adaptive_order_without_delivery():
 
     assert worker._active_order.status == "expired"
     assert [event.kind for event in events] == ["contract_expired"]
+
+
+@UNIT
+def test_authoritative_throughput_check_measures_unattended_depot_rate():
+    worker = FLEWorker.__new__(FLEWorker)
+    worker._active_epoch_index = 1
+    worker.contract_session_id = "session-1"
+    worker._active_order = ActiveOrder(
+        "iron-plate",
+        10,
+        3600,
+        activation_tick=0,
+        order_kind="sustained",
+    )
+    worker._active_order.sync(3600)
+    worker._delivery_raw_totals = {}
+    worker._manual_delivery_totals = {}
+    worker._state_hash_dirty = False
+    worker._research_cache = object()
+    worker._authoritative_throughput_check = None
+    clock = {"tick": 3600, "drains": 0}
+
+    class Namespace:
+        @staticmethod
+        def sleep(seconds):
+            clock["tick"] += seconds * 60
+
+    class Instance:
+        first_namespace = Namespace()
+
+        @staticmethod
+        def set_speed_and_unpause(_speed):
+            return None
+
+        @staticmethod
+        def pause():
+            return None
+
+    def drain():
+        clock["drains"] += 1
+        if clock["drains"] == 2:
+            worker._delivery_raw_totals["iron-plate"] = 10.0
+        return []
+
+    worker.instance = Instance()
+    worker._episode_tick = lambda: clock["tick"]
+    worker._drain_delivery_buckets = drain
+
+    result = worker.check_contract_throughput(
+        "lease-1", authoritative=True
+    )
+
+    assert result.window_ticks == 3600
+    assert result.delivered_by_product == {"iron-plate": 10.0}
+    assert result.observed_rate_per_minute == {"iron-plate": 10.0}
+    assert result.performance_score == 1.0
+    assert result.interventions_during_window == 0
+    assert worker._authoritative_throughput_check == result
 
 
 # ---------------------------------------------------------------------------

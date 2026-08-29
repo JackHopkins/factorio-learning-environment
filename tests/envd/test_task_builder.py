@@ -182,6 +182,9 @@ def test_rendered_prompt_includes_public_action_and_lookup_reference():
     assert "nearest_buildable" not in prompt
     assert "Call move_to(target)" in prompt
     assert "do not build production chains" in prompt
+    assert "Prototype.Lab" in prompt
+    assert "fill-lubricant-barrel" in prompt
+    assert "petroleum-gas" in prompt
 
 
 def test_recipe_name_is_a_distinct_canonical_recipe_namespace():
@@ -193,7 +196,7 @@ def test_recipe_name_is_a_distinct_canonical_recipe_namespace():
 
 
 def test_action_reference_has_a_stable_comparison_identity():
-    assert ACTION_PROFILE_REFERENCE_ID == "fle-program-v1/reference-v4"
+    assert ACTION_PROFILE_REFERENCE_ID == "fle-program-v1/reference-v5"
     assert len(ACTION_PROFILE_REFERENCE_SHA256) == 64
 
 

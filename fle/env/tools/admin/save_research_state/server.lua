@@ -1,4 +1,4 @@
-storage.actions.save_research_state = function(player_index)
+storage.actions.save_research_state = function(player_index, compact)
     -- Validate the character exists and is valid
     local player = storage.agent_characters and storage.agent_characters[player_index]
     if not player or not player.valid then
@@ -14,6 +14,50 @@ storage.actions.save_research_state = function(player_index)
     local force = player.force
     if not force then
         return {error = "No valid force found"}
+    end
+
+    -- The full technology graph is useful when restoring a GameState, but it
+    -- can exceed the RCON response limit once a factory has explored enough
+    -- technologies. State hashes only need dynamic research identity, so
+    -- expose a small sparse representation for that path.
+    if compact then
+        local researched = {}
+        local disabled = {}
+        for name, tech in pairs(force.technologies) do
+            if tech.researched then
+                researched[name] = tech.level or 1
+            end
+            if not tech.enabled then
+                table.insert(disabled, name)
+            end
+        end
+        table.sort(disabled)
+
+        local research_queue = {}
+        if force.research_queue then
+            for _, tech in ipairs(force.research_queue) do
+                table.insert(research_queue, tech.name)
+            end
+        end
+
+        local current_research = nil
+        local research_progress = 0
+        local progress = {}
+        if force.current_research then
+            current_research = force.current_research.name
+            research_progress = force.research_progress or 0
+            progress[current_research] = research_progress
+        end
+
+        return {
+            format = "research-state-identity-v1",
+            researched = researched,
+            disabled = disabled,
+            current_research = current_research,
+            research_progress = research_progress,
+            research_queue = research_queue,
+            progress = progress,
+        }
     end
 
     -- Helper to serialize technology state

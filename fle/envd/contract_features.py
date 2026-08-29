@@ -24,6 +24,7 @@ from fle.envd.models import (
     ADAPTIVE_BENCHMARK_SCHEMA_VERSION,
     ContractContextSnapshot,
     ContractDifficultyFeatures,
+    DepotDeliveryTelemetry,
     canonical_hash,
 )
 
@@ -650,6 +651,9 @@ def capture_context_snapshot(
     prior_watermark: tuple[str, int, int, str] | None = None,
     flow_history: list[tuple[int, dict[str, float]]] | None = None,
     observed_unlocked_recipes: Iterable[str] = (),
+    delivery_telemetry: DepotDeliveryTelemetry | dict[str, Any] | None = None,
+    factory_band: int | None = None,
+    target_band: int | None = None,
 ) -> ContractContextSnapshot:
     """Freeze passive factory measurements into an immutable snapshot.
 
@@ -688,17 +692,35 @@ def capture_context_snapshot(
     samples = prior_history + [(captured_tick, outputs_now)]
     rates_60s = _window_rate(samples, 3600)
     rates_300s = _window_rate(samples, 18000)
+    production_products = set(outputs_now)
+    for _, counts in samples:
+        production_products.update(str(item) for item in counts)
+    automated_rates_60s, automated_rates_300s, has_recent_rate = (
+        _recent_automated_production_rates(namespace, production_products)
+    )
+    # A live FLE namespace has the provenance-aware query.  Legacy test
+    # namespaces and old wire producers do not, so retain the historical
+    # projection only when the query is genuinely unavailable.  An available
+    # query returning zero is meaningful: it means the observed flow was
+    # manual and must not become capacity evidence.
+    production_rates_60s = automated_rates_60s if has_recent_rate else rates_60s
+    production_rates_300s = automated_rates_300s if has_recent_rate else rates_300s
 
     power = _power_summary(namespace)
 
+    delivery = _coerce_delivery_telemetry(delivery_telemetry)
     fields: dict[str, Any] = {
         "captured_tick": int(captured_tick),
         "technology_ids": technology_ids,
         "unlocked_recipe_ids": _unlocked_recipes(engine, observed_unlocked_recipes),
         "inventory_counts": inventory,
         "placed_entity_counts": placed_entity_counts,
-        "production_rates_60s": rates_60s,
-        "production_rates_300s": rates_300s,
+        "production_rates_60s": production_rates_60s,
+        "production_rates_300s": production_rates_300s,
+        "raw_production_rates_60s": rates_60s,
+        "raw_production_rates_300s": rates_300s,
+        "automated_production_rates_60s": automated_rates_60s,
+        "automated_production_rates_300s": automated_rates_300s,
         "power_capacity_kw": power[0],
         "power_utilization": power[1],
         "logistic_network_count": _logistic_network_count(namespace),
@@ -710,7 +732,36 @@ def capture_context_snapshot(
             float(evolution_raw) if isinstance(evolution_raw, (int, float)) else None
         ),
         "map_seed_hash": map_seed_hash,
+        "target_band": target_band,
+        "delivery_telemetry": (
+            delivery.model_dump(mode="json") if delivery is not None else None
+        ),
+        "delivery_rates_60s": (
+            dict(delivery.raw_rates_60s) if delivery is not None else {}
+        ),
+        "delivery_rates_300s": (
+            dict(delivery.raw_rates_300s) if delivery is not None else {}
+        ),
+        "delivery_totals": (
+            dict(delivery.raw_totals) if delivery is not None else {}
+        ),
     }
+
+    # Construct a digest-free probe to classify the actual factory state. The
+    # target band is a candidate property and must never influence this
+    # measured factory band.
+    probe_band = int(factory_band) if factory_band is not None else 0
+    probe = ContractContextSnapshot(
+        schema_version=ADAPTIVE_BENCHMARK_SCHEMA_VERSION,
+        session_id=session_id,
+        epoch_index=epoch_index,
+        state_digest="",
+        factory_band=probe_band,
+        **{key: value for key, value in fields.items() if key != "target_band"},
+    )
+    if factory_band is None:
+        factory_band = classify_progression_band(probe)
+    fields["factory_band"] = max(0, min(int(factory_band), 5))
 
     candidate_watermark = (
         session_id,
@@ -737,6 +788,20 @@ def capture_context_snapshot(
     return snapshot
 
 
+def _coerce_delivery_telemetry(
+    value: DepotDeliveryTelemetry | dict[str, Any] | None,
+) -> DepotDeliveryTelemetry | None:
+    """Validate a delivery projection without making capture depend on it."""
+
+    if value is None:
+        return None
+    if isinstance(value, DepotDeliveryTelemetry):
+        return value
+    if isinstance(value, dict):
+        return DepotDeliveryTelemetry.model_validate(value)
+    raise TypeError("delivery_telemetry must be a DepotDeliveryTelemetry or mapping")
+
+
 def _objective_engine_telemetry(namespace: Any) -> dict[str, Any]:
     getter = getattr(namespace, "_objective_telemetry", None)
     if getter is None:
@@ -746,6 +811,54 @@ def _objective_engine_telemetry(namespace: Any) -> dict[str, Any]:
         return value if isinstance(value, dict) else {}
     except Exception:
         return {}
+
+
+def _recent_automated_production_rates(
+    namespace: Any,
+    products: Iterable[str],
+) -> tuple[dict[str, float], dict[str, float], bool]:
+    """Read manual-adjusted production rates from FLE's cheap rate query.
+
+    The ordinary objective telemetry contains cumulative flow counts and is
+    intentionally retained as raw diagnostic data.  It cannot establish
+    sustainable capacity because hand-crafted and hand-harvested outputs are
+    included in that projection.  ``get_recent_rate`` subtracts those
+    timestamped events before returning ``dynamic_per_minute``.  Query the
+    longer window first so that the FLE event ledger is not pruned before it
+    can be accounted for there.
+
+    The final boolean distinguishes an unavailable legacy namespace from a
+    live namespace whose only recent output was manual.  Falling back to raw
+    rates in the latter case would recreate the capacity-escalation bug.
+    """
+
+    getter = getattr(namespace, "_get_recent_rate", None)
+    if not callable(getter):
+        return {}, {}, False
+
+    product_ids = tuple(sorted({str(product) for product in products if product}))
+    rates: dict[int, dict[str, float]] = {60: {}, 300: {}}
+    for window_seconds in (300, 60):
+        for product in product_ids:
+            try:
+                response = getter(product, window_seconds)
+                if hasattr(response, "model_dump"):
+                    response = response.model_dump(mode="json")
+                if not isinstance(response, dict) or response.get("error"):
+                    continue
+                dynamic = response.get("dynamic_per_minute")
+                if dynamic is None:
+                    # Be tolerant of an equivalent future wire response while
+                    # keeping the subtraction explicit and non-negative.
+                    total = float(response.get("total_per_minute") or 0.0)
+                    manual = float(response.get("manual_per_minute") or 0.0)
+                    dynamic = total - manual
+                value = max(float(dynamic or 0.0), 0.0)
+            except Exception:
+                continue
+            if value > EPSILON_RATE:
+                rates[window_seconds][product] = round(value, 4)
+    return rates[60], rates[300], True
 
 
 def _entity_counts(namespace: Any, engine: dict[str, Any]) -> dict[str, int]:
@@ -898,7 +1011,7 @@ def classify_progression_band(snapshot: ContractContextSnapshot) -> int:
         if threshold_band == 5:
             sustained = any(
                 item.startswith("space-science-pack") and rate >= 1.0
-                for item, rate in snapshot.production_rates_300s.items()
+                for item, rate in automated_rates_300(snapshot).items()
             )
             hit = hit and (sustained or "space-science-pack" in techs)
         if hit:
@@ -929,15 +1042,26 @@ def extract_difficulty_features(
 
     facts = catalog.require(product_id)
     resolved_band = (
-        stage_band if stage_band is not None else classify_progression_band(snapshot)
+        stage_band
+        if stage_band is not None
+        else (
+            snapshot.target_band
+            if snapshot.target_band is not None
+            else snapshot.factory_band
+            if snapshot.factory_band is not None
+            else classify_progression_band(snapshot)
+        )
     )
+    factory_band = snapshot.factory_band
+    if "factory_band" not in getattr(snapshot, "model_fields_set", set()):
+        factory_band = classify_progression_band(snapshot)
 
     unlocked = set(snapshot.technology_ids)
     missing_techs = sorted(facts.enabling_technologies - unlocked)
     missing_machines = sorted(
         catalog.missing_machine_categories(product_id, snapshot.placed_entity_counts)
     )
-    rates = snapshot.production_rates_300s
+    rates = automated_rates_300(snapshot)
     required_new_intermediates = sum(
         1
         for item in facts.intermediates
@@ -947,7 +1071,11 @@ def extract_difficulty_features(
 
     deadline_minutes = deadline_ticks / TICKS_PER_MINUTE
     required_rate = quantity / deadline_minutes
-    existing_rate = max(rates.get(product_id, 0.0), rates_60(snapshot, product_id))
+    existing_rate = max(rates.get(product_id, 0.0), automated_rates_60(snapshot, product_id))
+    existing_delivery_rate = max(
+        snapshot.delivery_rates_60s.get(product_id, 0.0),
+        snapshot.delivery_rates_300s.get(product_id, 0.0),
+    )
     inventory_coverage = min(
         snapshot.inventory_counts.get(product_id, 0) / max(quantity, 1), 1.0
     )
@@ -975,11 +1103,50 @@ def extract_difficulty_features(
         estimated_power_fraction=round(min(estimated_power_fraction, 10.0), 4),
         transport_complexity=round(transport, 4),
         stage_band=resolved_band,
+        factory_band=factory_band,
+        target_band=resolved_band,
+        existing_delivery_rate_per_minute=round(existing_delivery_rate, 4),
     )
 
 
 def rates_60(snapshot: ContractContextSnapshot, item: str) -> float:
-    return snapshot.production_rates_60s.get(item, 0.0)
+    """Compatibility accessor for the snapshot's production projection."""
+
+    return automated_rates_60(snapshot, item)
+
+
+def automated_rates_60(
+    snapshot: ContractContextSnapshot,
+    item: str | None = None,
+) -> float | dict[str, float]:
+    """Return provenance-safe 60s rates, with a legacy wire fallback.
+
+    Captures that include the explicit automated field must use it even when
+    the rate is empty: an empty result is how a manual-only flow is conveyed.
+    Older snapshots do not carry that field and retain the historical
+    production projection for compatibility.
+    """
+
+    field = "automated_production_rates_60s"
+    if field in getattr(snapshot, "model_fields_set", set()):
+        rates = dict(getattr(snapshot, field, {}) or {})
+    else:
+        rates = dict(snapshot.production_rates_60s)
+    return rates if item is None else float(rates.get(item, 0.0))
+
+
+def automated_rates_300(
+    snapshot: ContractContextSnapshot,
+    item: str | None = None,
+) -> float | dict[str, float]:
+    """Return provenance-safe 300s rates, with a legacy wire fallback."""
+
+    field = "automated_production_rates_300s"
+    if field in getattr(snapshot, "model_fields_set", set()):
+        rates = dict(getattr(snapshot, field, {}) or {})
+    else:
+        rates = dict(snapshot.production_rates_300s)
+    return rates if item is None else float(rates.get(item, 0.0))
 
 
 def missing_detail(

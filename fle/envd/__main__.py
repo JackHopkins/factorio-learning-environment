@@ -14,6 +14,11 @@ def main() -> None:
     parser.add_argument("--factorio-address", default="localhost")
     parser.add_argument("--rcon-ports", default="27000")
     parser.add_argument(
+        "--audit-rcon-ports",
+        default=os.getenv("FLE_AUDIT_RCON_PORTS", ""),
+        help="Comma-separated reserved Factorio ports used only for cloned audits",
+    )
+    parser.add_argument(
         "--lease-ttl",
         type=int,
         default=int(
@@ -104,10 +109,18 @@ def main() -> None:
     ports = [
         int(value.strip()) for value in args.rcon_ports.split(",") if value.strip()
     ]
+    audit_ports = [
+        int(value.strip())
+        for value in args.audit_rcon_ports.split(",")
+        if value.strip()
+    ]
+    if set(ports) & set(audit_ports):
+        parser.error("--rcon-ports and --audit-rcon-ports must be disjoint")
     service = build_live_service(
         ports,
         address=args.factorio_address,
         lease_ttl_seconds=args.lease_ttl,
+        audit_tcp_ports=audit_ports,
     )
     uvicorn.run(create_app(service), host=args.host, port=args.port, workers=1)
 

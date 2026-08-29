@@ -15,6 +15,12 @@ local function update_production_stats(force, entity_name, amount)
         else
             storage.harvested_items[entity_name] = amount
         end
+        storage.manual_production_events = storage.manual_production_events or {}
+        table.insert(storage.manual_production_events, {
+            tick = game.tick,
+            kind = "harvested",
+            outputs = {[entity_name] = amount},
+        })
     end
 
 local function get_entity_yield(entity)

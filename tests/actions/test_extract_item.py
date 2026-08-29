@@ -40,3 +40,16 @@ def test_extract_assembler_multi(game):
     assert game.inspect_inventory()[Prototype.IronPlate] == 2
     assert game.inspect_inventory()[Prototype.CopperCable] == 2
     assert count1 == 2 and count2 == 2
+
+
+def test_extract_never_inflates_quantity_across_entity_inventories(game):
+    assembler = game.place_entity(
+        Prototype.AssemblingMachine1, position=Position(x=0, y=0)
+    )
+    game.set_entity_recipe(assembler, RecipeName.ElectronicCircuit)
+    game.insert_item(Prototype.IronPlate, assembler, quantity=10)
+
+    extracted = game.extract_item(Prototype.IronPlate, assembler, quantity=100)
+
+    assert extracted == 10
+    assert game.inspect_inventory()[Prototype.IronPlate] == 10

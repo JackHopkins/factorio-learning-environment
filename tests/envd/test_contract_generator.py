@@ -233,7 +233,7 @@ def test_locked_products_are_rejected_with_reasons():
     assert all(c.rejection_reason == "recipe_locked" for c in advanced)
 
 
-def test_disabled_frontier_recipe_with_known_technology_is_researchable():
+def test_disabled_frontier_recipe_with_known_technology_is_researchable_but_large_orders_defer():
     catalog = ProductCatalog(
         StaticRecipeDataSource(
             RECIPES,
@@ -258,7 +258,10 @@ def test_disabled_frontier_recipe_with_known_technology_is_researchable():
     )
     advanced = [c for c in candidates if c.item_name == "advanced-circuit"]
     assert advanced
-    assert any(c.accepted for c in advanced)
+    # The recipe is analytically researchable, but the generated quantities
+    # would require a commissioning window beyond the bounded epoch cap. It
+    # must be deferred as oversized rather than reported as recipe-locked.
+    assert all(c.rejection_reason == "analytic_too_large" for c in advanced)
     assert all(c.rejection_reason != "recipe_locked" for c in advanced)
 
 

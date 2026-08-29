@@ -15,14 +15,22 @@ DISRUPTION_GENERATOR_VERSION = "disruption-schedule-v1"
 # calibration manifest version changes independently when only fitted
 # parameters are re-published.
 ADAPTIVE_BENCHMARK_SCHEMA_VERSION = "adaptive-contract-1"
-ADAPTIVE_BENCHMARK_VERSION = "adaptive-contract-benchmark-0.2.0-dev"
-CONTRACT_FEATURES_VERSION = "contract-features-v1"
-CONTRACT_GENERATOR_VERSION = "contract-generator-v2"
-CONTRACT_SELECTOR_VERSION = "contract-selector-v2"
+ADAPTIVE_BENCHMARK_VERSION = "adaptive-contract-benchmark-0.5.0-dev"
+CONTRACT_FEATURES_VERSION = "contract-features-v2"
+CONTRACT_GENERATOR_VERSION = "contract-generator-v3"
+CONTRACT_SELECTOR_VERSION = "contract-selector-v3"
 CONTRACT_CALIBRATION_VERSION = "uncalibrated"  # replaced by manifests
-CONTRACT_RATER_MODEL_VERSION = "trueskill-contract-v1"
+CONTRACT_RATER_MODEL_VERSION = "trueskill-continuous-contract-v2"
 PARTICIPANT_IDENTITY_VERSION = "participant-identity-v1"
 TRAINING_BANK_VERSION = "training-bank-v1"
+MEMORY_IMPLEMENTATION_VERSION = "session-memory-v1"
+API_REFERENCE_VERSION = "fle-api-reference-v1"
+GAME_DATA_REFERENCE_VERSION = "factorio-game-data-reference-v1"
+CAPABILITY_GRAPH_VERSION = "capability-graph-v2"
+CAPABILITY_CERTIFICATE_VERSION = "capability-certificates-v1"
+FOLLOW_UP_POLICY_VERSION = "evidence-driven-customer-v2"
+DELIVERY_TELEMETRY_VERSION = "depot-delivery-telemetry-v2"
+STATE_OBSERVATION_VERSION = "state-observation-v1"
 
 ContractMixtureClass = Literal["consolidation", "frontier", "stress"]
 EpochOutcomeStatus = Literal[
@@ -161,6 +169,35 @@ class VerifierSpec(WireModel):
     holdout_windows: int = Field(default=1, ge=1)
     emit_transition_comparisons: bool = True
     transition_holdout_seconds: int = Field(default=0, ge=0)
+
+
+class ThroughputAuditSpec(WireModel):
+    """Hidden two-stage autonomous qualification policy for throughput."""
+
+    detector_window_seconds: int = Field(default=5, ge=1, le=3600)
+    detector_trigger_ratio: float = Field(default=1.05, gt=0.0)
+    burn_in_seconds: int = Field(default=20, ge=0, le=3600)
+    holdout_seconds_min: int = Field(default=30, ge=1, le=3600)
+    holdout_seconds_max: int = Field(default=60, ge=1, le=3600)
+    subwindow_seconds: int = Field(default=10, ge=1, le=600)
+    subwindow_floor_ratio: float = Field(default=0.8, ge=0.0, le=1.0)
+    audit_game_speed: float = Field(default=50.0, gt=0.0, le=1000.0)
+    require_depot_service: bool = True
+
+    @model_validator(mode="after")
+    def validate_windows(self) -> "ThroughputAuditSpec":
+        if self.holdout_seconds_max < self.holdout_seconds_min:
+            raise ValueError("holdout_seconds_max must be >= holdout_seconds_min")
+        if self.subwindow_seconds > self.holdout_seconds_max:
+            raise ValueError("subwindow_seconds cannot exceed the maximum holdout")
+        if (
+            self.holdout_seconds_min % self.subwindow_seconds
+            or self.holdout_seconds_max % self.subwindow_seconds
+        ):
+            raise ValueError(
+                "holdout bounds must be divisible by subwindow_seconds"
+            )
+        return self
 
 
 class CurriculumSpec(WireModel):
@@ -359,6 +396,7 @@ class FactorioTaskSpec(WireModel):
     objectives: list[ObjectiveSpec] = Field(default_factory=list)
     constraints: list[ConstraintSpec] = Field(default_factory=list)
     verifier: VerifierSpec = Field(default_factory=VerifierSpec)
+    throughput_audit: ThroughputAuditSpec | None = None
     curriculum: CurriculumSpec = Field(default_factory=CurriculumSpec)
     knowledge_sources: list[KnowledgeSourceSpec] = Field(default_factory=list)
     provisioning: ProvisioningSpec = Field(default_factory=ProvisioningSpec)
@@ -481,9 +519,115 @@ class ActionEvent(WireModel):
     policy_violations: list[str] = Field(default_factory=list)
 
 
+class CustomerDepotView(WireModel):
+    """Authoritative student-visible identity for a customer delivery sink."""
+
+    depot_id: str
+    unit_number: int | None = None
+    entity_name: str = "steel-chest"
+    position: dict[str, float]
+    surface: str | None = None
+    customer_owned: bool = True
+    consumes_deliveries: bool = True
+
+
+class DepotDeliveryTelemetry(WireModel):
+    """Auditable physical delivery measurements from customer-owned depots.
+
+    ``raw_totals`` and the windowed rates contain only automated, simulation-
+    sourced depot traffic. Direct agent insertion is retained separately as
+    audit noise and never contributes to contract fulfillment.
+    """
+
+    schema_version: str = DELIVERY_TELEMETRY_VERSION
+    observed_until_tick: int = Field(default=0, ge=0)
+    bucket_ticks: int = Field(default=60, gt=0)
+    sample_count: int = Field(default=0, ge=0)
+    raw_totals: dict[str, float] = Field(default_factory=dict)
+    manual_totals: dict[str, float] = Field(default_factory=dict)
+    raw_rates_60s: dict[str, float] = Field(default_factory=dict)
+    raw_rates_300s: dict[str, float] = Field(default_factory=dict)
+    # Short-window service is useful for immediate control decisions while
+    # the longer windows keep the signal stable.  The cumulative and bucket
+    # histories remain authoritative inside the worker and are queryable via
+    # the state-history endpoint.
+    raw_rates_5s: dict[str, float] = Field(default_factory=dict)
+    since_contract_totals: dict[str, float] = Field(default_factory=dict)
+    recent_buckets: list[dict[str, Any]] = Field(default_factory=list)
+    manual_sample_count: int = Field(default=0, ge=0)
+    recent_manual_buckets: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DeliveryReceipt(WireModel):
+    """Objective-level feedback for an intervention that inserted items."""
+
+    credited: dict[str, float] = Field(default_factory=dict)
+    remaining: dict[str, float] = Field(default_factory=dict)
+    contract_status: ContractStatus | None = None
+    customer_depot_ids: list[str] = Field(default_factory=list)
+    message: str
+
+
+class MemoryEntry(WireModel):
+    """One model-owned notebook entry; content is never interpreted by envd."""
+
+    key: str
+    content: str
+    revision: int = Field(ge=1)
+    content_sha256: str
+    byte_size: int = Field(ge=0)
+    created_at: datetime
+    updated_at: datetime
+
+
+class MemoryMutation(WireModel):
+    """Auditable write/delete event for the per-session notebook."""
+
+    mutation_id: str
+    operation: Literal["write", "delete"]
+    key: str
+    revision: int = Field(ge=1)
+    content_sha256: str
+    byte_size: int = Field(ge=0)
+    expected_revision: int | None = Field(default=None, ge=0)
+    occurred_at: datetime
+
+
+class MemoryMutationResponse(WireModel):
+    entry: MemoryEntry | None = None
+    mutation: MemoryMutation
+
+
+class MemoryListResponse(WireModel):
+    entries: list[MemoryEntry] = Field(default_factory=list)
+    next_cursor: str | None = None
+    total: int = Field(ge=0)
+    retained_bytes: int = Field(ge=0)
+
+
+class MemorySearchHit(WireModel):
+    key: str
+    revision: int = Field(ge=1)
+    content_sha256: str
+    snippet: str
+
+
+class MemorySearchResponse(WireModel):
+    results: list[MemorySearchHit] = Field(default_factory=list)
+    next_cursor: str | None = None
+    total: int = Field(ge=0)
+
+
+class MemoryTraceResponse(WireModel):
+    events: list[MemoryMutation] = Field(default_factory=list)
+    next_cursor: str | None = None
+    total: int = Field(ge=0)
+
+
 class ExecutionResult(WireModel):
     lease_id: str
     event: ActionEvent
+    delivery_receipt: DeliveryReceipt | None = None
     production_score: float
     automated_production_score: float
     state_hash: str
@@ -500,7 +644,24 @@ class Observation(WireModel):
     automated_production_score: float = 0.0
     production: dict[str, Any] = Field(default_factory=dict)
     state_hash: str
+    # Revisioned model-facing state protocol.  ``cursor`` is opaque to the
+    # caller; passing it back asks for the next delta.  A stale cursor causes
+    # the worker to return a fresh keyframe instead of an incomplete delta.
+    schema_version: str = STATE_OBSERVATION_VERSION
+    revision: int = Field(default=0, ge=0)
+    cursor: str = ""
+    keyframe_id: str = ""
+    base_revision: int = Field(default=0, ge=0)
+    is_keyframe: bool = True
+    cursor_expired: bool = False
+    inventory_delta: dict[str, int | float] = Field(default_factory=dict)
+    delta: dict[str, Any] = Field(default_factory=dict)
+    entities: dict[str, Any] = Field(default_factory=dict)
+    research: dict[str, Any] = Field(default_factory=dict)
+    errors: dict[str, Any] = Field(default_factory=dict)
     contracts: list["OpenContractView"] = Field(default_factory=list)
+    customer_depots: list[CustomerDepotView] = Field(default_factory=list)
+    customer_delivery: DepotDeliveryTelemetry | None = None
     blueprints: list["BlueprintSummary"] = Field(default_factory=list)
 
 
@@ -528,6 +689,8 @@ class OpenContractView(WireModel):
     grace_ticks: int = 0
     status: ContractStatus = "open"
     fulfilled: dict[str, float] = Field(default_factory=dict)
+    remaining: dict[str, float] = Field(default_factory=dict)
+    completion_ratio: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class RewardVector(WireModel):
@@ -784,6 +947,9 @@ class CapabilityManifest(WireModel):
     protocol_version: str = PROTOCOL_VERSION
     factorio_version: str = "2.0.73"
     action_profiles: list[str] = Field(default_factory=lambda: ["fle-program-v1"])
+    api_reference_id: str = API_REFERENCE_VERSION
+    game_data_reference_id: str = GAME_DATA_REFERENCE_VERSION
+    memory_implementation_version: str = MEMORY_IMPLEMENTATION_VERSION
     features: dict[str, bool] = Field(
         default_factory=lambda: {
             "leases": True,
@@ -819,6 +985,12 @@ class CapabilityManifest(WireModel):
             "clone": False,
             "pause_resume": False,
             "blueprint_store": True,
+            "callable_api_reference": True,
+            "exact_game_data_reference": True,
+            "session_memory": True,
+            "capability_graph_evidence": True,
+            "adaptive_follow_up_policy": True,
+            "autonomous_throughput_checks": True,
         }
     )
 
@@ -860,6 +1032,14 @@ class ContractContextSnapshot(WireModel):
     placed_entity_counts: dict[str, int]
     production_rates_60s: dict[str, float]
     production_rates_300s: dict[str, float]
+    # ``production_rates_*`` is retained for wire compatibility and is the
+    # rate used by candidate generation.  New captures also retain the raw
+    # flow-statistics projection and a provenance-safe projection whose manual
+    # harvest/craft events have been removed by FLE's ``get_recent_rate``.
+    raw_production_rates_60s: dict[str, float] = Field(default_factory=dict)
+    raw_production_rates_300s: dict[str, float] = Field(default_factory=dict)
+    automated_production_rates_60s: dict[str, float] = Field(default_factory=dict)
+    automated_production_rates_300s: dict[str, float] = Field(default_factory=dict)
     power_capacity_kw: float
     power_utilization: float
     logistic_network_count: int
@@ -868,6 +1048,14 @@ class ContractContextSnapshot(WireModel):
     evolution_factor: float | None
     map_seed_hash: str
     state_digest: str
+    # The factory band is measured from the frozen state.  ``target_band`` is
+    # optional because a context is captured before candidate selection.
+    factory_band: int = Field(default=0, ge=0, le=5)
+    target_band: int | None = Field(default=None, ge=0, le=5)
+    delivery_telemetry: DepotDeliveryTelemetry | None = None
+    delivery_rates_60s: dict[str, float] = Field(default_factory=dict)
+    delivery_rates_300s: dict[str, float] = Field(default_factory=dict)
+    delivery_totals: dict[str, float] = Field(default_factory=dict)
 
     def watermark(self) -> tuple[str, int, int, str]:
         return (
@@ -900,6 +1088,345 @@ class ContractDifficultyFeatures(WireModel):
     estimated_power_fraction: float
     transport_complexity: float
     stage_band: int = Field(ge=0, le=5)
+    # ``stage_band`` remains the v1 wire name and is the target band for new
+    # candidates. These explicit fields remove the old factory/target
+    # ambiguity while keeping old consumers valid.
+    factory_band: int | None = Field(default=None, ge=0, le=5)
+    target_band: int | None = Field(default=None, ge=0, le=5)
+    existing_delivery_rate_per_minute: float = 0.0
+
+
+CapabilityNodeKind = Literal[
+    "product",
+    "recipe",
+    "technology",
+    "machine",
+    "resource",
+    "logistics",
+    "power",
+]
+CapabilityNodeStatus = Literal[
+    "locked",
+    "reachable",
+    "unlocked",
+    "constructed",
+    "producing",
+    "delivered",
+]
+
+
+class CapabilityNodeEvidence(WireModel):
+    """One advisory dependency-graph node and the live evidence for it."""
+
+    node_id: str
+    kind: CapabilityNodeKind
+    status: CapabilityNodeStatus
+    prerequisites: tuple[str, ...] = ()
+    first_evidence_tick: int | None = Field(default=None, ge=0)
+    latest_evidence_tick: int | None = Field(default=None, ge=0)
+    production_rate_per_minute: float = 0.0
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+class CapabilityGraphSnapshot(WireModel):
+    """Privileged, reproducible capability evidence for one factory snapshot."""
+
+    schema_version: str = CAPABILITY_GRAPH_VERSION
+    factorio_version: str = "unknown"
+    state_digest: str
+    captured_tick: int = Field(ge=0)
+    nodes: list[CapabilityNodeEvidence] = Field(default_factory=list)
+    advisory_frontier: tuple[str, ...] = ()
+    target_path: tuple[str, ...] = ()
+
+
+class CapabilityDelta(WireModel):
+    """Evidence delta between the committed order's pre/post snapshots."""
+
+    schema_version: str = CAPABILITY_GRAPH_VERSION
+    before_state_digest: str
+    after_state_digest: str
+    target_id: str
+    new_technologies: tuple[str, ...] = ()
+    new_recipes: tuple[str, ...] = ()
+    new_machines: tuple[str, ...] = ()
+    newly_producing: tuple[str, ...] = ()
+    production_rate_deltas: dict[str, float] = Field(default_factory=dict)
+    path_nodes_before: tuple[str, ...] = ()
+    path_nodes_after: tuple[str, ...] = ()
+    path_progress: int = Field(default=0, ge=0)
+    meaningful_progress: bool = False
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Certified sustainable-capability evidence
+# ---------------------------------------------------------------------------
+
+
+CapabilityEvidenceStatus = Literal[
+    "commissioned",
+    "observed_sustained",
+    # ``sustained`` is retained as a wire-compatible spelling for early
+    # producers of this record. New records use ``observed_sustained``.
+    "sustained",
+    "autonomous",
+    "robust",
+]
+
+
+class CapabilityCertificate(WireModel):
+    """A bounded, auditable claim about what a factory can produce.
+
+    A passive snapshot can establish commissioning, but it cannot establish
+    autonomous operation. The latter requires an explicit qualification window
+    with no agent interventions. Mixed demand vectors are represented by
+    multiple entries in ``demand_vector`` and the observed/target rates use
+    the same keys.
+    """
+
+    schema_version: str = CAPABILITY_CERTIFICATE_VERSION
+    certificate_id: str
+    capability_id: str | None = None
+    session_id: str = ""
+    source_state_digest: str = ""
+    captured_tick: int = Field(default=0, ge=0)
+    certified_at_tick: int | None = Field(default=None, ge=0)
+    status: CapabilityEvidenceStatus = "commissioned"
+    evidence_source: Literal["snapshot", "contract", "qualification", "stress"] = "snapshot"
+    demand_vector: dict[str, float] = Field(default_factory=dict)
+    target_rate_per_minute: dict[str, float] = Field(default_factory=dict)
+    observed_rate_per_minute: dict[str, float] = Field(default_factory=dict)
+    capability_band: int = Field(default=0, ge=0)
+    prerequisite_capability_ids: tuple[str, ...] = ()
+    sustained_window_ticks: int = Field(default=0, ge=0)
+    qualification_window_ticks: int = Field(default=0, ge=0)
+    interventions_during_window: int = Field(default=0, ge=0)
+    autonomous_validation: bool = False
+    robustness_checks: int = Field(default=0, ge=0)
+    reliability: float = Field(default=0.0, ge=0.0, le=1.0)
+    evidence: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_claim(self) -> "CapabilityCertificate":
+        if not self.demand_vector:
+            raise ValueError("capability certificates require a non-empty demand_vector")
+        if any(float(rate) < 0 for rate in self.demand_vector.values()):
+            raise ValueError("demand_vector rates cannot be negative")
+        if any(float(rate) < 0 for rate in self.target_rate_per_minute.values()):
+            raise ValueError("target rates cannot be negative")
+        if any(float(rate) < 0 for rate in self.observed_rate_per_minute.values()):
+            raise ValueError("observed rates cannot be negative")
+        if self.status in {"observed_sustained", "sustained", "autonomous", "robust"}:
+            if self.sustained_window_ticks <= 0:
+                raise ValueError("sustained evidence requires a positive sustained_window_ticks")
+        if self.status in {"autonomous", "robust"}:
+            if self.evidence_source not in {"qualification", "stress"}:
+                raise ValueError("autonomous evidence must come from a qualification or stress window")
+            if not self.autonomous_validation:
+                raise ValueError("autonomous evidence requires autonomous_validation=True")
+            if self.qualification_window_ticks <= 0:
+                raise ValueError("autonomous evidence requires a positive qualification window")
+            if self.interventions_during_window != 0:
+                raise ValueError("autonomous evidence requires zero interventions during qualification")
+        if self.status == "robust":
+            if self.evidence_source != "stress" or self.robustness_checks <= 0:
+                raise ValueError("robust evidence requires at least one stress/perturbation check")
+        if self.capability_id is None:
+            object.__setattr__(self, "capability_id", self.derived_capability_id())
+        return self
+
+    def derived_capability_id(self) -> str:
+        """Return a stable key, including all lines for mixed demand vectors."""
+        if len(self.demand_vector) == 1:
+            return f"product:{next(iter(self.demand_vector))}"
+        lines = "+".join(
+            f"{product}={float(rate):g}"
+            for product, rate in sorted(self.demand_vector.items())
+        )
+        return f"demand:{lines}"
+
+    @property
+    def products(self) -> tuple[str, ...]:
+        return tuple(sorted(self.demand_vector))
+
+    @property
+    def is_sustainable(self) -> bool:
+        return self.status in {"observed_sustained", "sustained", "autonomous", "robust"}
+
+    @property
+    def is_autonomous(self) -> bool:
+        return self.status in {"autonomous", "robust"}
+
+
+class FactoryProgressVector(WireModel):
+    """Current factory capability, with dimensions kept separate.
+
+    The vector is intentionally not collapsed into one score. Consumers may
+    apply their own partial-order or lexicographic comparison while the
+    ledger retains a conservative best watermark for longitudinal reporting.
+    """
+
+    schema_version: str = CAPABILITY_CERTIFICATE_VERSION
+    session_id: str = ""
+    captured_tick: int = Field(default=0, ge=0)
+    highest_observed_band: int = Field(default=0, ge=0)
+    highest_certified_band: int = Field(default=0, ge=0)
+    closure_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
+    breadth: int = Field(default=0, ge=0)
+    joint_sustained_throughput: float = Field(default=0.0, ge=0.0)
+    observed_sustained_throughput: float = Field(default=0.0, ge=0.0)
+    autonomy: float = Field(default=0.0, ge=0.0, le=1.0)
+    reliability: float = Field(default=0.0, ge=0.0, le=1.0)
+    certified_capability_count: int = Field(default=0, ge=0)
+    sustainable_capability_count: int = Field(default=0, ge=0)
+    current_capability_ids: tuple[str, ...] = ()
+    # This is a real previously observed vector, never a component-wise
+    # synthetic maximum that could describe an impossible factory state.
+    best_watermark: dict[str, Any] = Field(default_factory=dict)
+
+    def order_key(self) -> tuple[float, ...]:
+        return (
+            float(self.highest_certified_band),
+            float(self.highest_observed_band),
+            float(self.closure_ratio),
+            float(self.breadth),
+            float(self.joint_sustained_throughput),
+            float(self.autonomy),
+            float(self.reliability),
+        )
+
+
+class CapabilityLedger(WireModel):
+    """Serializable evidence ledger and current progress projection."""
+
+    schema_version: str = CAPABILITY_CERTIFICATE_VERSION
+    session_id: str = ""
+    certificates: list[CapabilityCertificate] = Field(default_factory=list)
+    progress_history: list[FactoryProgressVector] = Field(default_factory=list)
+    best_progress: FactoryProgressVector | None = None
+
+    def record(self, certificate: CapabilityCertificate) -> CapabilityCertificate:
+        """Append evidence and refresh current/best progress projections."""
+        if self.session_id and certificate.session_id and certificate.session_id != self.session_id:
+            raise ValueError("certificate session_id does not match ledger session_id")
+        if not self.session_id and certificate.session_id:
+            self.session_id = certificate.session_id
+        self.certificates.append(certificate)
+        current = self.compute_progress(captured_tick=certificate.certified_at_tick or certificate.captured_tick)
+        # Keep the stored watermark finite. ``current_progress`` adds the
+        # serialized best vector when it is requested for reporting.
+        current.best_watermark = {}
+        self.progress_history.append(current)
+        if self.best_progress is None or current.order_key() > self.best_progress.order_key():
+            self.best_progress = current
+        return certificate
+
+    add = record
+
+    def current_progress(self) -> FactoryProgressVector:
+        """Return the projection without changing the ledger."""
+        return self.compute_progress()
+
+    def compute_progress(self, *, captured_tick: int | None = None) -> FactoryProgressVector:
+        latest: dict[str, CapabilityCertificate] = {}
+        for certificate in self.certificates:
+            key = certificate.capability_id or certificate.derived_capability_id()
+            prior = latest.get(key)
+            if prior is None or (certificate.certified_at_tick or certificate.captured_tick) >= (prior.certified_at_tick or prior.captured_tick):
+                latest[key] = certificate
+        sustainable = [certificate for certificate in latest.values() if certificate.is_sustainable]
+        sustainable_ids = {certificate.capability_id or certificate.derived_capability_id() for certificate in sustainable}
+        closed = [
+            certificate
+            for certificate in sustainable
+            if all(prerequisite in sustainable_ids for prerequisite in certificate.prerequisite_capability_ids)
+        ]
+        autonomous = [certificate for certificate in sustainable if certificate.is_autonomous]
+        if sustainable:
+            closure_ratio = len(closed) / len(sustainable)
+            reliability = sum(c.reliability for c in sustainable) / len(sustainable)
+        else:
+            closure_ratio = 0.0
+            reliability = 0.0
+        if autonomous:
+            autonomy = len(autonomous) / len(sustainable)
+        else:
+            autonomy = 0.0
+        products = {product for certificate in sustainable for product in certificate.products}
+        observed_joint = max(
+            (
+                sum(
+                    certificate.observed_rate_per_minute.get(product, 0.0)
+                    for product in certificate.products
+                )
+                for certificate in sustainable
+                if len(certificate.products) > 1
+            ),
+            default=0.0,
+        )
+        if observed_joint == 0.0:
+            observed_joint = sum(
+                certificate.observed_rate_per_minute.get(product, 0.0)
+                for certificate in sustainable
+                for product in certificate.products
+            )
+        joint = 0.0
+        for certificate in autonomous:
+            if len(certificate.products) > 1:
+                joint = max(joint, sum(certificate.observed_rate_per_minute.get(product, 0.0) for product in certificate.products))
+        if joint == 0.0:
+            joint = sum(
+                certificate.observed_rate_per_minute.get(product, 0.0)
+                for certificate in autonomous
+                for product in certificate.products
+            )
+        vector = FactoryProgressVector(
+            session_id=self.session_id,
+            captured_tick=(captured_tick if captured_tick is not None else (self.progress_history[-1].captured_tick if self.progress_history else 0)),
+            highest_observed_band=max(
+                (certificate.capability_band for certificate in closed),
+                default=0,
+            ),
+            highest_certified_band=max((certificate.capability_band for certificate in closed if certificate.is_autonomous), default=0),
+            closure_ratio=closure_ratio,
+            breadth=len(products),
+            joint_sustained_throughput=joint,
+            observed_sustained_throughput=observed_joint,
+            autonomy=autonomy,
+            reliability=reliability,
+            certified_capability_count=len(autonomous),
+            sustainable_capability_count=len(sustainable),
+            current_capability_ids=tuple(sorted(sustainable_ids)),
+        )
+        best = self.best_progress
+        if best is not None:
+            vector.best_watermark = best.model_dump(mode="json")
+        return vector
+
+
+class CustomerFollowUp(WireModel):
+    """Logged reason and target continuity decision for the next order."""
+
+    schema_version: str = FOLLOW_UP_POLICY_VERSION
+    policy: str = FOLLOW_UP_POLICY_VERSION
+    reason: Literal[
+        "initial",
+        "fulfilled_pressure",
+        "fulfilled_frontier",
+        "partial_near_capacity",
+        "frontier_progress_repeat",
+        "frontier_progress_nearby",
+        "zero_progress_backoff",
+        "stretch",
+    ]
+    parent_epoch_index: int | None = Field(default=None, ge=0)
+    parent_product_id: str | None = None
+    selected_product_id: str | None = None
+    selected_template_id: str | None = None
+    target_path: tuple[str, ...] = ()
+    stretch: bool = False
+    evidence: dict[str, Any] = Field(default_factory=dict)
 
 
 class ContractEpochSpec(WireModel):
@@ -917,10 +1444,13 @@ class ContractEpochSpec(WireModel):
     session_id: str
     epoch_index: int = Field(ge=0)
     template_id: str
+    mixture_class: ContractMixtureClass = "frontier"
     generation_seed: int
     selection_seed: int
     item_name: str
     quantity: int = Field(gt=0)
+    order_kind: OrderKind = "one_shot"
+    products: tuple[ProductDemandSpec, ...] = ()
     deadline_ticks: int = Field(gt=0)
     intervention_budget: int | None = None
     context: ContractContextSnapshot
@@ -928,7 +1458,25 @@ class ContractEpochSpec(WireModel):
     raw_difficulty: float
     state_advantage: float
     effective_difficulty: float
+    follow_up: CustomerFollowUp | None = None
+    policy_evidence: dict[str, Any] = Field(default_factory=dict)
+    factory_band: int | None = Field(default=None, ge=0, le=5)
+    target_band: int | None = Field(default=None, ge=0, le=5)
+    throughput_audit: ThroughputAuditSpec | None = None
     commitment_hash: str
+
+    @model_validator(mode="after")
+    def validate_products(self) -> "ContractEpochSpec":
+        if not self.products:
+            return self
+        if self.products[0].product != self.item_name:
+            raise ValueError("item_name must identify the first adaptive order line")
+        if len(self.products) != len({line.product for line in self.products}):
+            raise ValueError("adaptive order lines must have unique products")
+        total = sum(int(round(line.quantity)) for line in self.products)
+        if total != self.quantity:
+            raise ValueError("quantity must equal the summed adaptive order lines")
+        return self
 
     @model_validator(mode="after")
     def validate_commitment(self) -> "ContractEpochSpec":
@@ -944,6 +1492,23 @@ class ContractEpochSpec(WireModel):
     def create(cls, **fields: Any) -> "ContractEpochSpec":
         """Build a spec, deriving its commitment over the given fields."""
         fields.pop("commitment_hash", None)
+        if not fields.get("products"):
+            fields["products"] = (
+                ProductDemandSpec(
+                    product=str(fields["item_name"]),
+                    quantity=float(fields["quantity"]),
+                ),
+            )
+        if fields.get("order_kind") == "sustained" and "throughput_audit" not in fields:
+            fields["throughput_audit"] = ThroughputAuditSpec()
+        context = fields.get("context")
+        features = fields.get("features")
+        if fields.get("factory_band") is None and context is not None:
+            fields["factory_band"] = getattr(context, "factory_band", None)
+        if fields.get("target_band") is None and features is not None:
+            fields["target_band"] = getattr(
+                features, "target_band", None
+            ) or getattr(features, "stage_band", None)
         provisional = cls.model_construct(**fields)
         return cls(
             **fields,
@@ -952,12 +1517,77 @@ class ContractEpochSpec(WireModel):
 
 
 def compute_commitment_hash(spec_like: Any) -> str:
-    payload = json.dumps(
-        getattr(spec_like, "model_dump")(exclude={"commitment_hash"}, mode="json"),
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    data = getattr(spec_like, "model_dump")(exclude={"commitment_hash"}, mode="json")
+    # Preserve validation of pre-v0.4 single-line commitments. New specs always
+    # carry explicit products and therefore bind every new policy field.
+    if not data.get("products"):
+        data.pop("products", None)
+        if data.get("order_kind") == "one_shot":
+            data.pop("order_kind", None)
+        if not data.get("policy_evidence"):
+            data.pop("policy_evidence", None)
+    # Parsed pre-v2 records did not contain the explicit band fields. Pydantic
+    # fills them with None, so omit them only when they were not present on the
+    # input model; new ``create`` calls bind them into the commitment.
+    fields_set = getattr(spec_like, "model_fields_set", set())
+    for field_name in ("factory_band", "target_band"):
+        if data.get(field_name) is None and field_name not in fields_set:
+            data.pop(field_name, None)
+    # None preserves compatibility with pre-audit one-shot records even after
+    # a JSON round-trip makes the field explicit. Sustained specs bind the
+    # complete non-null audit policy into their commitment.
+    if data.get("throughput_audit") is None:
+        data.pop("throughput_audit", None)
+    payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()
+
+
+class ThroughputCheckResult(WireModel):
+    """Depot throughput observed while the agent could not intervene."""
+
+    schema_version: str = "autonomous-throughput-check-v1"
+    lease_id: str
+    session_id: str
+    epoch_index: int = Field(ge=1)
+    authoritative: bool = False
+    start_tick: int = Field(ge=0)
+    end_tick: int = Field(ge=0)
+    window_ticks: int = Field(gt=0)
+    delivered_by_product: dict[str, float] = Field(default_factory=dict)
+    manual_delivered_by_product: dict[str, float] = Field(default_factory=dict)
+    observed_rate_per_minute: dict[str, float] = Field(default_factory=dict)
+    target_rate_per_minute: dict[str, float] = Field(default_factory=dict)
+    line_scores: dict[str, float] = Field(default_factory=dict)
+    performance_score: float = Field(ge=0.0, le=1.0)
+    interventions_during_window: int = Field(default=0, ge=0)
+    contract_status: ContractStatus
+
+
+class ThroughputAuditResult(WireModel):
+    """Privileged evidence from an intervention-free cloned simulation."""
+
+    schema_version: str = "autonomous-throughput-audit-v1"
+    lease_id: str
+    session_id: str
+    epoch_index: int = Field(ge=1)
+    audit_worker_id: str
+    candidate_tick: int = Field(ge=0)
+    candidate_state_hash: str
+    detector_window_seconds: int = Field(gt=0)
+    detector_rates_per_minute: dict[str, float] = Field(default_factory=dict)
+    target_rates_per_minute: dict[str, float] = Field(default_factory=dict)
+    burn_in_seconds: int = Field(ge=0)
+    holdout_seconds: int = Field(gt=0)
+    holdout_ticks: int = Field(gt=0)
+    subwindow_seconds: int = Field(gt=0)
+    subwindow_ticks: list[int] = Field(default_factory=list)
+    production_rates_per_minute: dict[str, float] = Field(default_factory=dict)
+    depot_rates_per_minute: dict[str, float] = Field(default_factory=dict)
+    production_subwindow_rates: dict[str, list[float]] = Field(default_factory=dict)
+    depot_subwindow_rates: dict[str, list[float]] = Field(default_factory=dict)
+    line_scores: dict[str, float] = Field(default_factory=dict)
+    passed: bool = False
+    failure_reasons: list[str] = Field(default_factory=list)
 
 
 class ContractEpochOutcome(WireModel):
@@ -970,7 +1600,10 @@ class ContractEpochOutcome(WireModel):
     status: EpochOutcomeStatus
     delivered_quantity: int = Field(ge=0)
     requested_quantity: int = Field(gt=0)
+    delivered_by_product: dict[str, float] = Field(default_factory=dict)
+    requested_by_product: dict[str, float] = Field(default_factory=dict)
     completion_ratio: float = Field(ge=0.0)
+    performance_score: float | None = Field(default=None, ge=0.0, le=1.0)
     simulation_ticks_used: int = Field(ge=0)
     interventions_used: int = Field(ge=0)
     model_seconds: float = Field(ge=0.0)
@@ -979,6 +1612,15 @@ class ContractEpochOutcome(WireModel):
     first_delivery_tick: int | None = None
     completion_tick: int | None = None
     terminal_state_digest: str
+    capability_delta: CapabilityDelta | None = None
+    factory_band: int | None = Field(default=None, ge=0, le=5)
+    target_band: int | None = Field(default=None, ge=0, le=5)
+    delivery_telemetry: dict[str, Any] = Field(default_factory=dict)
+    autonomous_throughput: ThroughputCheckResult | None = None
+    throughput_audit: ThroughputAuditResult | None = None
+    throughput_audit_attempts: list[ThroughputAuditResult] = Field(
+        default_factory=list
+    )
 
 
 class CapabilityRating(WireModel):
@@ -1009,6 +1651,11 @@ class ParticipantIdentity(WireModel):
     system_prompt_hash: str
     tool_manifest_hash: str
     inference_settings_hash: str
+    api_reference_hash: str = ""
+    game_data_reference_hash: str = ""
+    memory_implementation_version: str = "disabled"
+    memory_initial_state_hash: str = ""
+    graph_visibility_policy: str = "privileged_only"
 
     @computed_field
     @property

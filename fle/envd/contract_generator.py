@@ -28,6 +28,8 @@ from fle.envd.contract_features import (
     GameDataError,
     ProductCatalog,
     ProductFacts,
+    automated_rates_60,
+    automated_rates_300,
 )
 from fle.envd.models import (
     ADAPTIVE_BENCHMARK_SCHEMA_VERSION,
@@ -37,10 +39,11 @@ from fle.envd.models import (
     ContractEpochSpec,
     ContractMixtureClass,
     ContractTemplateSpec,
+    ProductDemandSpec,
     WireModel,
 )
 
-GENERATION_POLICY_VERSION = "generation-policy-v2"
+GENERATION_POLICY_VERSION = "generation-policy-v3"
 
 # Section 9.2 mixture weights.  Changing these requires a new benchmark
 # version; they are policy, not calibration output.
@@ -80,6 +83,13 @@ PARALLEL_MACHINE_ASSUMPTION = 8
 # missing technology fits inside a proposed deadline.
 RESEARCH_SECONDS_PER_UNIT_ASSUMPTION = 30.0
 MACHINE_SETUP_SECONDS_PER_CATEGORY = 120.0
+
+# An adaptive order is a commissioning probe, not an unbounded project. Keep
+# its simulation window finite enough for a useful rating sample; truly deep
+# work is deferred until the factory demonstrates the missing prerequisites.
+MAX_COMMISSIONING_DEADLINE_TICKS = 180 * TICKS_PER_MINUTE
+MAX_ANALYTIC_MINIMUM_TICKS = 120 * TICKS_PER_MINUTE
+MAX_FRONTIER_RECIPE_DEPTH = 8
 
 
 class DifficultyModel(Protocol):
@@ -359,8 +369,8 @@ def baseline_rate(
 ) -> float:
     """Section 9.3: max(existing rate, stage reference rate, epsilon)."""
     existing = max(
-        snapshot.production_rates_300s.get(product_id, 0.0),
-        snapshot.production_rates_60s.get(product_id, 0.0),
+        float(automated_rates_300(snapshot, product_id)),
+        float(automated_rates_60(snapshot, product_id)),
     )
     return max(existing, STAGE_REFERENCE_RATES.get(band, 30.0), EPSILON_RATE)
 
@@ -426,7 +436,9 @@ def _resolve_product(
 
     produced = {
         item
-        for item, rate in snapshot.production_rates_300s.items()
+        for item, rate in (
+            automated_rates_300(snapshot)
+        ).items()
         if rate > EPSILON_RATE
     }
 
@@ -485,6 +497,7 @@ def generate_candidates(
     predicted_quantile_ticks: int | None = None,
     calibration_envelope: dict[str, tuple[float, float]] | None = None,
     pool_size: int = 6,
+    allow_stage_stretch: bool = False,
 ) -> list[ContractCandidate]:
     """Expand one template into a bounded, deterministic candidate slice."""
 
@@ -565,6 +578,7 @@ def generate_candidates(
             family_repetition_cap=family_repetition_cap,
             calibration_envelope=calibration_envelope,
             features=features,
+            allow_stage_stretch=allow_stage_stretch,
         )
         if reject is not None:
             reason, detail = reject
@@ -607,7 +621,7 @@ def context_band(
 ) -> int:
     """Target band: frontier probes one step ahead, other work stays current."""
 
-    current = max(min(_snapshot_band(context), 5), 0)
+    current = max(min(_snapshot_factory_band(context), 5), 0)
     if template.mixture_class == "frontier":
         return min(current + 1, 5)
     return current
@@ -642,6 +656,14 @@ def _snapshot_band(context: ContractContextSnapshot) -> int:
             _SNAPSHOT_BAND_CACHE.clear()
         _SNAPSHOT_BAND_CACHE[context.state_digest] = cached
     return cached
+
+
+def _snapshot_factory_band(context: ContractContextSnapshot) -> int:
+    """Read the measured band, falling back for pre-v2 contexts."""
+
+    if "factory_band" in getattr(context, "model_fields_set", set()):
+        return max(0, min(int(context.factory_band), 5))
+    return _snapshot_band(context)
 
 
 def _features_for(
@@ -679,6 +701,7 @@ def _rejection_reason(
     family_repetition_cap: int,
     calibration_envelope: dict[str, tuple[float, float]] | None,
     features: ContractDifficultyFeatures,
+    allow_stage_stretch: bool = False,
 ) -> tuple[str, dict[str, Any]] | None:
     """Section 9.4 rejection policy; returns (reason, detail) or None."""
 
@@ -688,12 +711,78 @@ def _rejection_reason(
             {"reason": "no_known_enabling_technology"},
         )
 
-    if features.stage_band not in template.stage_bands:
+    if not allow_stage_stretch and features.stage_band not in template.stage_bands:
+        # Kept as an explicit compatibility mode for offline calibration.  The
+        # adaptive session enables ``allow_stage_stretch`` so the graph remains
+        # advisory and every remote selection is retained in the audit record.
         return (
             "stage_band_unsupported",
             {
                 "stage_band": features.stage_band,
                 "supported_stage_bands": list(template.stage_bands),
+            },
+        )
+
+    factory_band = _snapshot_factory_band(context)
+    if template.mixture_class == "frontier":
+        # ``allow_stage_stretch`` only preserves old template-bank
+        # compatibility. It must not permit a remote graph jump.
+        if features.stage_band > min(factory_band + 1, 5):
+            return (
+                "frontier_beyond_local_band",
+                {
+                    "factory_band": factory_band,
+                    "target_band": features.stage_band,
+                    "maximum_target_band": min(factory_band + 1, 5),
+                },
+            )
+        maximum_depth = min(
+            MAX_FRONTIER_RECIPE_DEPTH, max(3, factory_band + 3)
+        )
+        if facts.depth > maximum_depth:
+            return (
+                "frontier_graph_too_deep",
+                {
+                    "factory_band": factory_band,
+                    "recipe_depth": facts.depth,
+                    "maximum_recipe_depth": maximum_depth,
+                },
+            )
+        maximum_missing_technology = max(1, factory_band + 1)
+        if features.missing_technology_count > maximum_missing_technology:
+            return (
+                "frontier_technology_distance",
+                {
+                    "factory_band": factory_band,
+                    "missing_technology_count": features.missing_technology_count,
+                    "maximum_missing_technology_count": maximum_missing_technology,
+                },
+            )
+
+    if facts.depth > MAX_FRONTIER_RECIPE_DEPTH:
+        return (
+            "recipe_depth_exceeds_cap",
+            {
+                "recipe_depth": facts.depth,
+                "maximum_recipe_depth": MAX_FRONTIER_RECIPE_DEPTH,
+            },
+        )
+
+    if analytic_minimum_ticks > MAX_ANALYTIC_MINIMUM_TICKS:
+        return (
+            "analytic_too_large",
+            {
+                "analytic_minimum_ticks": analytic_minimum_ticks,
+                "maximum_analytic_minimum_ticks": MAX_ANALYTIC_MINIMUM_TICKS,
+            },
+        )
+
+    if deadline_ticks > MAX_COMMISSIONING_DEADLINE_TICKS:
+        return (
+            "deadline_exceeds_commissioning_cap",
+            {
+                "deadline_ticks": deadline_ticks,
+                "maximum_deadline_ticks": MAX_COMMISSIONING_DEADLINE_TICKS,
             },
         )
 
@@ -784,10 +873,17 @@ def build_epoch_spec(
     benchmark_version: str,
     calibration_version: str,
     intervention_budget: int | None = None,
+    follow_up=None,
+    order_kind: str = "one_shot",
+    products: tuple[ProductDemandSpec, ...] | None = None,
+    policy_evidence: dict[str, Any] | None = None,
 ) -> ContractEpochSpec:
     """Commit one accepted candidate into an immutable epoch specification."""
     if not candidate.accepted or candidate.features is None:
         raise ValueError("Cannot commit a rejected candidate")
+    lines = products or (
+        ProductDemandSpec(product=candidate.item_name, quantity=float(candidate.quantity)),
+    )
     return ContractEpochSpec.create(
         schema_version=ADAPTIVE_BENCHMARK_SCHEMA_VERSION,
         benchmark_version=benchmark_version,
@@ -795,10 +891,13 @@ def build_epoch_spec(
         session_id=session_id,
         epoch_index=epoch_index,
         template_id=candidate.template_id,
+        mixture_class=candidate.mixture_class,
         generation_seed=candidate.generation_seed,
         selection_seed=selection_seed,
         item_name=candidate.item_name,
-        quantity=candidate.quantity,
+        quantity=sum(int(round(line.quantity)) for line in lines),
+        order_kind=order_kind,
+        products=lines,
         deadline_ticks=candidate.deadline_ticks,
         intervention_budget=intervention_budget,
         context=context,
@@ -806,11 +905,16 @@ def build_epoch_spec(
         raw_difficulty=float(candidate.raw_difficulty or 0.0),
         state_advantage=float(candidate.state_advantage or 0.0),
         effective_difficulty=float(candidate.effective_difficulty or 0.0),
+        follow_up=follow_up,
+        policy_evidence=policy_evidence or {},
     )
 
 
 __all__ = [
     "ANALYTIC_SAFETY_FACTOR",
+    "MAX_ANALYTIC_MINIMUM_TICKS",
+    "MAX_COMMISSIONING_DEADLINE_TICKS",
+    "MAX_FRONTIER_RECIPE_DEPTH",
     "ContractCandidate",
     "DEFAULT_TEMPLATE_BANK",
     "DifficultyModel",

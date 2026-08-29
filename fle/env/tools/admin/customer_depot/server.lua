@@ -7,12 +7,20 @@ storage.customer = storage.customer or {
     depots = {},           -- unit_number -> LuaEntity reference
     depot_specs = {},      -- unit_number -> {position = {x, y}, surface = name}
     delivered_total = {},  -- item -> cumulative count consumed by sinks
+    manual_delivered_total = {}, -- item -> direct agent insertions (not credited)
+    manual_pending = {},   -- unit_number -> item -> direct insertions awaiting drain
     delta_log = {},        -- array of {start_tick = t, items = {item = delta}}
     tamper_events = {},    -- array of {tick, unit_number, reason}
     tamper_reported = {},  -- unit_number -> true (dedupe)
     handlers_installed = false,
     epoch_tick = nil,      -- absolute game.tick at episode start
 }
+
+-- Populate fields added after an episode was created. Scenario tool files can
+-- be reloaded without reconstructing the shared storage table.
+storage.customer.delivered_total = storage.customer.delivered_total or {}
+storage.customer.manual_delivered_total = storage.customer.manual_delivered_total or {}
+storage.customer.manual_pending = storage.customer.manual_pending or {}
 
 local BUCKET_TICKS = 60
 local DRAIN_EVERY_TICKS = 6
@@ -68,6 +76,8 @@ local function clear_depots()
     storage.customer.depots = {}
     storage.customer.depot_specs = {}
     storage.customer.delivered_total = {}
+    storage.customer.manual_delivered_total = {}
+    storage.customer.manual_pending = {}
     storage.customer.delta_log = {}
     storage.customer.tamper_events = {}
     storage.customer.tamper_reported = {}
@@ -112,18 +122,31 @@ local function drain_depots(tick)
             local inventory = entity.get_inventory(defines.inventory.chest)
             if inventory then
                 local contents = sink_contents(inventory)
+                local pending = storage.customer.manual_pending[unit_number] or {}
                 local has_items = false
                 for name, count in pairs(contents) do
                     has_items = true
                     active_bucket = active_bucket or ensure_bucket(tick)
-                    active_bucket.items[name] =
-                        (active_bucket.items[name] or 0) + count
-                    storage.customer.delivered_total[name] =
-                        (storage.customer.delivered_total[name] or 0) + count
+                    active_bucket.manual_items = active_bucket.manual_items or {}
+                    local manual_count = math.min(pending[name] or 0, count)
+                    local automated_count = count - manual_count
+                    if automated_count > 0 then
+                        active_bucket.items[name] =
+                            (active_bucket.items[name] or 0) + automated_count
+                        storage.customer.delivered_total[name] =
+                            (storage.customer.delivered_total[name] or 0) + automated_count
+                    end
+                    if manual_count > 0 then
+                        active_bucket.manual_items[name] =
+                            (active_bucket.manual_items[name] or 0) + manual_count
+                        storage.customer.manual_delivered_total[name] =
+                            (storage.customer.manual_delivered_total[name] or 0) + manual_count
+                    end
                 end
                 if has_items then
                     inventory.clear()
                 end
+                storage.customer.manual_pending[unit_number] = nil
             end
         end
     end
@@ -194,20 +217,76 @@ storage.actions.customer_depot = function(player_index, command, x, y, chest_cou
         storage.customer.delta_log = {}
         local depot_summary = {}
         for unit_number, entity in pairs(storage.customer.depots) do
+            local spec = storage.customer.depot_specs[unit_number] or {}
             table.insert(depot_summary, {
                 unit_number = unit_number,
                 valid = entity.valid,
+                entity_name = "steel-chest",
+                position = spec.position,
+                surface = spec.surface,
+                customer_owned = true,
+                consumes_deliveries = true,
             })
         end
         return {
             tick = episode_tick(),
             epoch_tick = storage.customer.epoch_tick,
+            delivery_bucket_ticks = BUCKET_TICKS,
+            -- Automated traffic is the crediting channel. Direct insertion is
+            -- exposed separately for audit and cannot satisfy a contract.
+            raw_delivery_totals = storage.customer.delivered_total,
             delivered_total = storage.customer.delivered_total,
+            manual_delivery_totals = storage.customer.manual_delivered_total,
             buckets = buckets,
             depots = depot_summary,
             tamper_events = storage.customer.tamper_events,
             last_error = storage.customer.last_error,
         }
+    elseif command == "adopt" then
+        -- Reattach verifier state after GameState restores the physical world
+        -- into an isolated audit instance. No new entities are created.
+        local specs = x or {}
+        storage.customer.depots = {}
+        storage.customer.depot_specs = {}
+        storage.customer.delivered_total = {}
+        storage.customer.manual_delivered_total = {}
+        storage.customer.manual_pending = {}
+        storage.customer.delta_log = {}
+        storage.customer.tamper_events = {}
+        storage.customer.tamper_reported = {}
+        storage.customer.epoch_tick = game.tick
+        local adopted = 0
+        for _, spec in pairs(specs) do
+            local surface = game.surfaces[spec.surface or 1]
+            local position = spec.position
+            if surface and position then
+                local entities = surface.find_entities_filtered({
+                    position = position,
+                    name = "steel-chest",
+                    force = game.forces.player,
+                })
+                local entity = entities[1]
+                if entity and entity.valid then
+                    local inventory = entity.get_inventory(defines.inventory.chest)
+                    if inventory then
+                        -- Snapshot state cannot carry manual-delivery provenance.
+                        -- Discard candidate-time contents conservatively so a
+                        -- preloaded depot cannot become autonomous audit credit.
+                        inventory.clear()
+                    end
+                    entity.destructible = false
+                    entity.operable = false
+                    pcall(function() entity.minable_flag = false end)
+                    storage.customer.depots[entity.unit_number] = entity
+                    storage.customer.depot_specs[entity.unit_number] = {
+                        position = {x = entity.position.x, y = entity.position.y},
+                        surface = surface.name,
+                    }
+                    adopted = adopted + 1
+                end
+            end
+        end
+        return {adopted = adopted, requested = #specs}
     elseif command == "clear" then
         clear_depots()
         return {cleared = true}

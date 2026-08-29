@@ -16,6 +16,9 @@ from fle.envd.errors import (
     InterventionLimitReached,
     LeaseFinalized,
     LeaseNotFound,
+    MemoryConflict,
+    MemoryLimitExceeded,
+    MemoryNotFound,
 )
 from fle.envd.models import (
     ActionEvent,
@@ -33,6 +36,7 @@ from fle.envd.models import (
     VerificationSnapshot,
     VerifierEvent,
 )
+from fle.envd.memory import SessionMemory
 from fle.envd.program_policy import ProgramPolicyViolation, validate_program
 
 
@@ -53,6 +57,9 @@ class _LeaseRecord:
     active_commitment_hash: str | None = None
     epoch_request_cache: dict[tuple[str, str], Any] = field(default_factory=dict)
     session_summary: ContractSessionSummary | None = None
+    # Model-managed memory is lease-scoped so it survives MCP subprocess
+    # restarts while remaining isolated from every other evaluation session.
+    memory: SessionMemory = field(default_factory=SessionMemory)
 
 
 class EnvironmentService:
@@ -63,6 +70,7 @@ class EnvironmentService:
         workers: list[FactorioWorker],
         lease_ttl_seconds: int = 900,
         capabilities: CapabilityManifest | None = None,
+        audit_workers: list[FactorioWorker] | None = None,
     ):
         if not workers:
             raise ValueError("EnvironmentService requires at least one worker")
@@ -71,13 +79,66 @@ class EnvironmentService:
         worker_ids = [worker.worker_id for worker in workers]
         if len(worker_ids) != len(set(worker_ids)):
             raise ValueError("Factorio worker ids must be unique")
+        audit_workers = list(audit_workers or [])
+        audit_ids = [worker.worker_id for worker in audit_workers]
+        if len(audit_ids) != len(set(audit_ids)):
+            raise ValueError("Factorio audit worker ids must be unique")
+        if set(worker_ids) & set(audit_ids):
+            raise ValueError("Lease and audit worker ids must be disjoint")
 
         self._workers = {worker.worker_id: worker for worker in workers}
+        self._audit_workers = {
+            worker.worker_id: worker for worker in audit_workers
+        }
+        self._busy_audit_workers: set[str] = set()
         self._leases: dict[str, _LeaseRecord] = {}
         self._busy_workers: set[str] = set()
         self._lease_ttl = timedelta(seconds=lease_ttl_seconds)
         self._lock = threading.RLock()
+        self._audit_condition = threading.Condition(self._lock)
         self.capabilities = capabilities or CapabilityManifest()
+        if audit_workers:
+            features = dict(self.capabilities.features)
+            features.update(
+                {
+                    "clone": True,
+                    "autonomous_throughput_audits": True,
+                    "reserved_audit_workers": True,
+                }
+            )
+            self.capabilities = self.capabilities.model_copy(
+                update={"features": features}
+            )
+        for worker in workers:
+            worker.set_throughput_audit_enabled(bool(audit_workers))
+
+    def _run_throughput_audit(self, candidate):
+        if not self._audit_workers:
+            return None
+        deadline = time.monotonic() + 30.0
+        with self._audit_condition:
+            while True:
+                worker = next(
+                    (
+                        candidate_worker
+                        for worker_id, candidate_worker in self._audit_workers.items()
+                        if worker_id not in self._busy_audit_workers
+                    ),
+                    None,
+                )
+                if worker is not None:
+                    self._busy_audit_workers.add(worker.worker_id)
+                    break
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError("No throughput audit worker became available")
+                self._audit_condition.wait(timeout=remaining)
+        try:
+            return worker.run_throughput_audit(candidate)
+        finally:
+            with self._audit_condition:
+                self._busy_audit_workers.discard(worker.worker_id)
+                self._audit_condition.notify()
 
     def _now(self) -> datetime:
         return datetime.now(timezone.utc)
@@ -249,6 +310,42 @@ class EnvironmentService:
                 )
             else:
                 result = record.worker.execute(lease_id, code, sequence=sequence)
+                candidate = record.worker.pop_throughput_audit_candidate()
+                if candidate is not None:
+                    try:
+                        audit = self._run_throughput_audit(candidate)
+                    except Exception as exc:  # audit failure is not policy failure
+                        result.events.append(
+                            VerifierEvent(
+                                event_id=f"throughput-audit-error:{sequence}",
+                                kind="custom",
+                                tick=result.event.ticks,
+                                source="verifier",
+                                payload={
+                                    "event": "throughput_audit_error",
+                                    "error": f"{type(exc).__name__}: {exc}",
+                                },
+                            )
+                        )
+                    else:
+                        if audit is not None:
+                            record.worker.record_throughput_audit(audit)
+                            result.events.append(
+                                VerifierEvent(
+                                    event_id=f"throughput-audit:{sequence}",
+                                    kind="custom",
+                                    tick=result.event.ticks,
+                                    source="verifier",
+                                    payload={
+                                        "event": "throughput_audit_passed"
+                                        if audit.passed
+                                        else "throughput_audit_failed",
+                                    },
+                                )
+                            )
+                            if audit.passed:
+                                record.worker.accept_throughput_audit(audit)
+                                result.terminal_reason = "throughput_audit_passed"
             if (
                 result.event.error
                 and record.lease.tool_error_retries_used
@@ -266,14 +363,168 @@ class EnvironmentService:
             self._renew(record)
             return result
 
-    def observe(self, lease_id: str) -> Observation:
+    def observe(
+        self,
+        lease_id: str,
+        *,
+        cursor: str | None = None,
+        force_keyframe: bool = False,
+    ) -> Observation:
         record = self._record(lease_id)
         with record.lock:
             if record.released:
                 raise LeaseNotFound(f"Released lease: {lease_id}")
-            observation = record.worker.observe(lease_id)
+            if cursor is None and not force_keyframe:
+                # Keep existing worker implementations (and lightweight test
+                # doubles) source-compatible.  FLEWorker still emits the
+                # revisioned stream when the cursor is omitted.
+                observation = record.worker.observe(lease_id)
+            else:
+                observation = record.worker.observe(
+                    lease_id,
+                    cursor=cursor,
+                    force_keyframe=force_keyframe,
+                )
             self._renew(record)
             return observation
+
+    def query_state(
+        self,
+        lease_id: str,
+        *,
+        kind: str,
+        item: str | None = None,
+        window_seconds: int | None = None,
+        since_revision: int | None = None,
+        entity_type: str | None = None,
+        area: dict[str, Any] | None = None,
+        changed_since: int | None = None,
+        limit: int = 32,
+    ) -> dict[str, Any]:
+        """Return bounded public state history from the leased worker."""
+
+        record = self._live_record(lease_id)
+        with record.lock:
+            query = getattr(record.worker, "query_state", None)
+            if query is None:
+                raise NotImplementedError("state history is unavailable for this worker")
+            result = query(
+                lease_id,
+                kind=kind,
+                item=item,
+                window_seconds=window_seconds,
+                since_revision=since_revision,
+                entity_type=entity_type,
+                area=area,
+                changed_since=changed_since,
+                limit=limit,
+            )
+            self._renew(record)
+            return result
+
+    def check_contract_throughput(
+        self,
+        lease_id: str,
+        *,
+        authoritative: bool = False,
+        request_id: str | None = None,
+    ):
+        """Run one idempotent, intervention-free depot-throughput probe."""
+
+        record = self._live_record(lease_id)
+        method = "qualify-throughput" if authoritative else "check-throughput"
+        with record.lock:
+            cached_hit, cached = self._replay(record, method, request_id)
+            if cached_hit:
+                self._renew(record)
+                return cached
+            result = record.worker.check_contract_throughput(
+                lease_id, authoritative=authoritative
+            )
+            if request_id:
+                record.epoch_request_cache[(method, request_id)] = result
+            self._renew(record)
+            return result
+
+    # -- model-managed session memory ---------------------------------------
+
+    def memory_list(
+        self,
+        lease_id: str,
+        *,
+        prefix: str = "",
+        limit: int = 50,
+        cursor: str | int | None = None,
+    ):
+        record = self._live_record(lease_id)
+        with record.lock:
+            self._renew(record)
+            return record.memory.list(prefix=prefix, limit=limit, cursor=cursor)
+
+    def memory_read(self, lease_id: str, key: str):
+        record = self._live_record(lease_id)
+        with record.lock:
+            self._renew(record)
+            return record.memory.read(key)
+
+    def memory_write(
+        self,
+        lease_id: str,
+        key: str,
+        content: str,
+        *,
+        expected_revision: int | None = None,
+    ):
+        record = self._live_record(lease_id)
+        with record.lock:
+            result = record.memory.write(
+                key,
+                content,
+                expected_revision=expected_revision,
+            )
+            self._renew(record)
+            return result
+
+    def memory_delete(
+        self,
+        lease_id: str,
+        key: str,
+        *,
+        expected_revision: int | None = None,
+    ):
+        record = self._live_record(lease_id)
+        with record.lock:
+            result = record.memory.delete(
+                key,
+                expected_revision=expected_revision,
+            )
+            self._renew(record)
+            return result
+
+    def memory_search(
+        self,
+        lease_id: str,
+        query: str,
+        *,
+        limit: int = 20,
+        cursor: str | int | None = None,
+    ):
+        record = self._live_record(lease_id)
+        with record.lock:
+            self._renew(record)
+            return record.memory.search(query, limit=limit, cursor=cursor)
+
+    def memory_trace(
+        self,
+        lease_id: str,
+        *,
+        limit: int = 100,
+        cursor: str | int | None = None,
+    ):
+        record = self._live_record(lease_id)
+        with record.lock:
+            self._renew(record)
+            return record.memory.trace(limit=limit, cursor=cursor)
 
     def finalize(self, lease_id: str) -> VerificationSnapshot:
         record = self._record(lease_id)
@@ -387,6 +638,9 @@ class EnvironmentService:
             if record.released:
                 raise LeaseNotFound(f"Released lease: {lease_id}")
             state = record.worker.get_contract_session_state()
+            # The adaptive benchmark polls this endpoint as its lease
+            # keepalive while a provider call or retry backoff is in flight.
+            self._renew(record)
             return state.model_copy(
                 update={"active_commitment_hash": record.active_commitment_hash}
             )
@@ -424,3 +678,12 @@ class EnvironmentService:
             lease_ids = list(self._leases)
         for lease_id in lease_ids:
             self.release(lease_id)
+        deadline = time.monotonic() + 30.0
+        with self._audit_condition:
+            while self._busy_audit_workers:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return
+                self._audit_condition.wait(timeout=remaining)
+        for worker in self._audit_workers.values():
+            worker.release()

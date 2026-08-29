@@ -141,8 +141,9 @@ assembler = place_entity(Prototype.AssemblingMachine1,
                             direction = Direction.DOWN)
 print(f"Placed assembling machine at {assembler.position}")
 
-# Set recipe
-set_entity_recipe(assembler, Prototype.CopperCable)
+# Set recipe. Recipes always use the RecipeName namespace; Prototype names
+# identify entities/items and are not accepted by set_entity_recipe.
+set_entity_recipe(assembler, RecipeName.CopperCable)
 
 # Add input inserter
 # place it to the right as we added to the width of the building box

@@ -28,6 +28,10 @@ furnace = insert_item(Prototype.IronOre, furnace, quantity=50)
 
 ## Important Rules
 
+Direct insertion into a customer depot is recorded as manual audit traffic and
+does not fulfill customer contracts. Route factory output into a depot with an
+inserter; belts may supply the inserter.
+
 1. **Always update the target variable with the return value:**
 
 ```python

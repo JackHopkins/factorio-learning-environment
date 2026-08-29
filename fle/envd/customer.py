@@ -31,13 +31,62 @@ from fle.envd.models import (
 )
 
 SLICE_TICKS = 3600
+MIN_ITEMS_PER_SERVICE_WINDOW = 2
 # Width of the sink-side delivery aggregation window.  Must match BUCKET_TICKS
 # in fle/env/tools/admin/customer_depot/server.lua.  A bucket is attributed at
 # its END tick: deliveries count only toward orders already open when the
 # bucket closes, which can under-credit by at most one bucket but never grants
 # credit before physical delivery.
 DELIVERY_BUCKET_TICKS = 60
-CUSTOMER_ENGINE_VERSION = "customer-engine-v1"
+CUSTOMER_ENGINE_VERSION = "customer-engine-v3"
+
+
+def _sustained_service_details(
+    products: list[ProductDemandSpec] | tuple[ProductDemandSpec, ...],
+    credits_by_product: dict[str, list[tuple[int, float]]],
+    *,
+    start_tick: int,
+    deadline_ticks: int,
+) -> dict[str, dict[str, Any]]:
+    """Compute the canonical per-line sustained score and its audit slices."""
+
+    window = max(int(deadline_ticks), 1)
+    details: dict[str, dict[str, Any]] = {}
+    for product in products:
+        credits = sorted(credits_by_product.get(product.product, []))
+        quantity = max(int(round(product.quantity)), 1)
+        time_windows = max(1, math.ceil(window / SLICE_TICKS))
+        quantity_windows = max(1, quantity // MIN_ITEMS_PER_SERVICE_WINDOW)
+        window_count = min(time_windows, quantity_windows)
+        weighted_score = 0.0
+        slice_scores: list[float] = []
+        window_quotas: list[int] = []
+        for index in range(window_count):
+            slice_start = start_tick + (index * window) // window_count
+            slice_end = start_tick + ((index + 1) * window) // window_count
+            slice_len = max(slice_end - slice_start, 0)
+            if slice_len <= 0:
+                continue
+            requested = (
+                ((index + 1) * quantity) // window_count
+                - (index * quantity) // window_count
+            )
+            delivered = sum(
+                amount
+                for tick, amount in credits
+                if slice_start <= tick < slice_end
+            )
+            ratio = min(delivered / max(requested, 1e-9), 1.0)
+            slice_scores.append(round(ratio, 6))
+            window_quotas.append(requested)
+            weighted_score += ratio * slice_len / window
+        details[product.product] = {
+            "score": weighted_score,
+            "slice_scores": slice_scores,
+            "window_count": window_count,
+            "window_quotas": window_quotas,
+        }
+    return details
 
 
 def _canonical(payload: Any) -> bytes:
@@ -298,6 +347,7 @@ class OrderResult:
     ratio: float
     lateness_penalty: float
     completion_tick: int | None = None
+    delivery_telemetry: dict[str, Any] = field(default_factory=dict)
 
     def as_payload(self) -> dict[str, Any]:
         return {
@@ -311,6 +361,7 @@ class OrderResult:
             "ratio": self.ratio,
             "lateness_penalty": self.lateness_penalty,
             "completion_tick": self.completion_tick,
+            "delivery_telemetry": self.delivery_telemetry,
         }
 
 
@@ -327,6 +378,7 @@ class ContractEvaluationResult:
     unattributed: dict[str, float]
     receipt: dict[str, Any]
     receipt_mac: str
+    delivery_telemetry: dict[str, Any] = field(default_factory=dict)
 
 
 class ContractEngine:
@@ -362,9 +414,13 @@ class ContractEngine:
                     }
                 )
             if state.status == "open" and spec.close_tick <= self._current_tick:
-                complete = all(
-                    state.fulfilled.get(p.product, 0.0) >= p.quantity - 1e-9
-                    for p in spec.products
+                complete = (
+                    self._sustained_ratio(state) >= 1.0 - 1e-9
+                    if spec.kind == "sustained"
+                    else all(
+                        state.fulfilled.get(p.product, 0.0) >= p.quantity - 1e-9
+                        for p in spec.products
+                    )
                 )
                 state.status = "fulfilled" if complete else "expired"
                 if state.completion_tick is None and complete:
@@ -406,15 +462,18 @@ class ContractEngine:
         for product, amount in sorted(bucket.items.items()):
             remaining = float(amount)
             for state in self._states_open_for(product, tick):
-                capacity = self._absorb_capacity(state, product)
-                if capacity <= 1e-9:
-                    continue
-                credit = min(capacity, remaining)
+                if state.spec.kind == "sustained":
+                    credit = remaining
+                else:
+                    capacity = self._absorb_capacity(state, product)
+                    if capacity <= 1e-9:
+                        continue
+                    credit = min(capacity, remaining)
                 state.absorbed[product] = state.absorbed.get(product, 0.0) + credit
                 state.fulfilled[product] = state.fulfilled.get(product, 0.0) + credit
                 state.credits.setdefault(product, []).append((tick, credit))
                 remaining -= credit
-                if self._order_complete(state):
+                if state.spec.kind == "one_shot" and self._order_complete(state):
                     state.completion_tick = tick
                 if remaining <= 1e-9:
                     break
@@ -438,6 +497,49 @@ class ContractEngine:
             for p in state.spec.products
         )
 
+    @staticmethod
+    def _delivery_telemetry(state: _OrderState) -> dict[str, Any]:
+        """Expose raw bucket coverage separately from sustained service."""
+
+        spec = state.spec
+        window = max(spec.due_tick - spec.issue_tick, 1)
+        bucket_count = max(1, math.ceil(window / DELIVERY_BUCKET_TICKS))
+        service = _sustained_service_details(
+            spec.products,
+            state.credits,
+            start_tick=spec.issue_tick,
+            deadline_ticks=window,
+        )
+        lines: dict[str, Any] = {}
+        for product in spec.products:
+            credits = sorted(state.credits.get(product.product, []))
+            active_buckets = {
+                int(tick // DELIVERY_BUCKET_TICKS)
+                for tick, amount in credits
+                if amount > 0
+            }
+            line_service = service[product.product]
+            lines[product.product] = {
+                "requested": float(product.quantity),
+                "accepted": round(
+                    min(state.fulfilled.get(product.product, 0.0), product.quantity),
+                    6,
+                ),
+                "raw_bucket_count": len(active_buckets),
+                "raw_bucket_coverage_ratio": round(
+                    len(active_buckets) / bucket_count, 6
+                ),
+                "slice_scores": line_service["slice_scores"],
+                "service_window_count": line_service["window_count"],
+                "service_window_quotas": line_service["window_quotas"],
+                "sustained_service_score": round(line_service["score"], 6),
+            }
+        return {
+            "bucket_ticks": DELIVERY_BUCKET_TICKS,
+            "window_ticks": window,
+            "lines": lines,
+        }
+
     # -- observation --------------------------------------------------------
 
     def student_view(self) -> list[OpenContractView]:
@@ -455,8 +557,21 @@ class ContractEngine:
                     due_tick=spec.due_tick,
                     grace_ticks=spec.grace_ticks,
                     status=state.status,
+                    completion_ratio=round(
+                        self._sustained_ratio(state)
+                        if spec.kind == "sustained"
+                        else self._one_shot_ratio(state),
+                        6,
+                    ),
                     fulfilled={
                         p.product: round(state.fulfilled.get(p.product, 0.0), 4)
+                        for p in spec.products
+                    },
+                    remaining={
+                        p.product: round(
+                            max(p.quantity - state.fulfilled.get(p.product, 0.0), 0.0),
+                            4,
+                        )
                         for p in spec.products
                     },
                 )
@@ -485,29 +600,14 @@ class ContractEngine:
 
         spec = state.spec
         window = max(spec.due_tick - spec.issue_tick, 1)
-        total_score = 0.0
-        for product in spec.products:
-            credits = sorted(state.credits.get(product.product, []))
-            slice_count = max(1, math.ceil(window / SLICE_TICKS))
-            per_slice_requested = product.quantity * SLICE_TICKS / window
-            product_score = 0.0
-            for index in range(slice_count):
-                slice_start = spec.issue_tick + index * SLICE_TICKS
-                slice_end = slice_start + SLICE_TICKS
-                delivered = sum(
-                    qty for tick, qty in credits if slice_start <= tick < slice_end
-                )
-                slice_len = min(SLICE_TICKS, max(spec.due_tick - slice_start, 0))
-                if slice_len <= 0:
-                    continue
-                slice_ratio = (
-                    min(1.0, delivered / per_slice_requested)
-                    if per_slice_requested > 0
-                    else 1.0
-                )
-                product_score += slice_ratio * (slice_len / window)
-            total_score += product_score
-        return total_score / len(spec.products) if spec.products else 1.0
+        details = _sustained_service_details(
+            spec.products,
+            state.credits,
+            start_tick=spec.issue_tick,
+            deadline_ticks=window,
+        )
+        scores = [details[product.product]["score"] for product in spec.products]
+        return sum(scores) / len(scores) if scores else 1.0
 
     def evaluate(
         self,
@@ -548,6 +648,7 @@ class ContractEngine:
                     ratio=ratio,
                     lateness_penalty=lateness,
                     completion_tick=state.completion_tick,
+                    delivery_telemetry=self._delivery_telemetry(state),
                 )
             )
             weighted_ratio += spec.weight * ratio
@@ -587,6 +688,9 @@ class ContractEngine:
             unattributed=dict(self._unattributed),
             receipt=receipt_payload,
             receipt_mac=mac,
+            delivery_telemetry={
+                result.order_id: result.delivery_telemetry for result in results
+            },
         )
 
 
@@ -635,7 +739,7 @@ def _order_success_floor(spec: CustomerContractSpec) -> float:
 # Single active order (adaptive contract epochs)
 # ---------------------------------------------------------------------------
 
-ACTIVE_ORDER_ENGINE_VERSION = "active-order-v1"
+ACTIVE_ORDER_ENGINE_VERSION = "active-order-v4"
 
 
 @dataclass
@@ -646,6 +750,8 @@ class ActiveOrderOutcome:
     item_name: str
     requested_quantity: int
     delivered_quantity: float
+    requested_by_product: dict[str, float]
+    delivered_by_product: dict[str, float]
     completion_ratio: float
     status: str  # fulfilled | partial | expired | abandoned
     activation_tick: int
@@ -653,6 +759,7 @@ class ActiveOrderOutcome:
     first_delivery_tick: int | None
     completion_tick: int | None
     unattributed_delivered: float
+    delivery_telemetry: dict[str, Any] = field(default_factory=dict)
 
 
 class ActiveOrder:
@@ -666,15 +773,19 @@ class ActiveOrder:
     __slots__ = (
         "item_name",
         "requested_quantity",
+        "order_kind",
+        "products",
         "deadline_ticks",
         "_activation_tick",
         "_delivered",
         "_unattributed",
+        "_credits",
         "_first_delivery_tick",
         "_completion_tick",
         "_status",
         "_terminal_tick",
         "_now",
+        "_qualification",
     )
 
     def __init__(
@@ -684,22 +795,35 @@ class ActiveOrder:
         deadline_ticks: int,
         *,
         activation_tick: int,
+        products: list[ProductDemandSpec] | tuple[ProductDemandSpec, ...] | None = None,
+        order_kind: str = "one_shot",
     ):
         if requested_quantity <= 0:
             raise ValueError("requested_quantity must be positive")
         if deadline_ticks <= 0:
             raise ValueError("deadline_ticks must be positive")
-        self.item_name = item_name
-        self.requested_quantity = requested_quantity
+        lines = tuple(products or (ProductDemandSpec(product=item_name, quantity=float(requested_quantity)),))
+        if len(lines) != len({line.product for line in lines}):
+            raise ValueError("adaptive order products must be unique")
+        if order_kind not in {"one_shot", "sustained"}:
+            raise ValueError("order_kind must be one_shot or sustained")
+        self.item_name = lines[0].product
+        self.requested_quantity = round(sum(line.quantity for line in lines))
+        self.order_kind = order_kind
+        self.products = lines
         self.deadline_ticks = deadline_ticks
         self._activation_tick = activation_tick
-        self._delivered = 0.0
-        self._unattributed = 0.0
+        self._delivered = {line.product: 0.0 for line in lines}
+        self._unattributed = {line.product: 0.0 for line in lines}
+        self._credits: dict[str, list[tuple[int, float]]] = {
+            line.product: [] for line in lines
+        }
         self._first_delivery_tick: int | None = None
         self._completion_tick: int | None = None
         self._status: str = "open"
         self._terminal_tick: int | None = None
         self._now: int | None = None
+        self._qualification: dict[str, Any] | None = None
 
     # -- clock ---------------------------------------------------------------
 
@@ -729,7 +853,7 @@ class ActiveOrder:
             return None
         self._now = max(current_tick, self._activation_tick)
         if (current_tick - self._activation_tick) >= self.deadline_ticks:
-            complete = self._delivered >= self.requested_quantity - 1e-9
+            complete = self._completion_ratio() >= 1.0 - 1e-9
             self._status = "fulfilled" if complete else "expired"
             self._terminal_tick = self._activation_tick + self.deadline_ticks
             if complete and self._completion_tick is None:
@@ -737,49 +861,121 @@ class ActiveOrder:
             return {
                 "event": ("contract_fulfilled" if complete else "contract_expired"),
                 "item": self.item_name,
+                "products": [line.product for line in self.products],
                 "tick": self._terminal_tick,
             }
         return None
 
     # -- deliveries ------------------------------------------------------------
 
-    def attribute(self, amount: float, tick: int) -> dict[str, Any] | None:
+    def attribute(
+        self, amount: float, tick: int, product: str | None = None
+    ) -> dict[str, Any] | None:
         """Credit sink-verified units while the order remains open."""
 
+        product = product or self.item_name
+        if product not in self._delivered:
+            return None
         if self._status != "open" or amount <= 0:
             if amount > 0 and self._status == "fulfilled":
-                self._unattributed += amount
+                self._unattributed[product] += amount
             return None
         # The order closes at its deadline.  Buckets are attributed at their
         # end tick, so a bucket that closes on/after the due boundary is late
         # even if it was opened while the order was active.
         if tick < self._activation_tick or tick >= self._activation_tick + self.deadline_ticks:
-            self._unattributed += amount
+            self._unattributed[product] += amount
             return None
         self._now = max(self._now or self._activation_tick, tick)
-        capacity = max(self.requested_quantity - self._delivered, 0.0)
-        credit = min(capacity, amount)
+        requested = next(line.quantity for line in self.products if line.product == product)
+        capacity = max(requested - self._delivered[product], 0.0)
+        credit = amount if self.order_kind == "sustained" else min(capacity, amount)
         overflow = amount - credit
         if credit <= 1e-9:
-            self._unattributed += overflow
+            self._unattributed[product] += overflow
             return None
-        self._delivered += credit
+        self._delivered[product] += credit
+        self._credits[product].append((tick, credit))
         if self._first_delivery_tick is None:
             self._first_delivery_tick = tick
         event = {
             "event": "contract_progress",
-            "item": self.item_name,
+            "item": product,
             "amount": credit,
             "tick": tick,
         }
-        if self._delivered >= self.requested_quantity - 1e-9:
+        if self.order_kind == "one_shot" and self._all_lines_filled():
             self._status = "fulfilled"
             self._completion_tick = tick
             self._terminal_tick = tick
             event["event"] = "contract_fulfilled"
         if overflow > 1e-9:
-            self._unattributed += overflow
+            self._unattributed[product] += overflow
         return event
+
+    def _all_lines_filled(self) -> bool:
+        return all(
+            self._delivered[line.product] >= line.quantity - 1e-9
+            for line in self.products
+        )
+
+    def _completion_ratio(self) -> float:
+        if self._qualification is not None:
+            return 1.0
+        if self.order_kind == "one_shot":
+            ratios = [
+                min(self._delivered[line.product] / line.quantity, 1.0)
+                for line in self.products
+            ]
+            return sum(ratios) / len(ratios)
+        details = _sustained_service_details(
+            self.products,
+            self._credits,
+            start_tick=self._activation_tick,
+            deadline_ticks=self.deadline_ticks,
+        )
+        product_scores = [details[line.product]["score"] for line in self.products]
+        return sum(product_scores) / len(product_scores)
+
+    def _delivery_telemetry(self) -> dict[str, Any]:
+        """Return raw bucket coverage and service scores for every line."""
+
+        bucket_count = max(1, math.ceil(self.deadline_ticks / DELIVERY_BUCKET_TICKS))
+        service = _sustained_service_details(
+            self.products,
+            self._credits,
+            start_tick=self._activation_tick,
+            deadline_ticks=self.deadline_ticks,
+        )
+        lines: dict[str, Any] = {}
+        for line in self.products:
+            credits = sorted(self._credits[line.product])
+            active_buckets = {
+                int(tick // DELIVERY_BUCKET_TICKS)
+                for tick, amount in credits
+                if amount > 0
+            }
+            line_service = service[line.product]
+            lines[line.product] = {
+                "requested": float(line.quantity),
+                "accepted": round(
+                    min(self._delivered[line.product], line.quantity), 6
+                ),
+                "raw_bucket_count": len(active_buckets),
+                "raw_bucket_coverage_ratio": round(
+                    len(active_buckets) / bucket_count, 6
+                ),
+                "slice_scores": line_service["slice_scores"],
+                "service_window_count": line_service["window_count"],
+                "service_window_quotas": line_service["window_quotas"],
+                "sustained_service_score": round(line_service["score"], 6),
+            }
+        return {
+            "bucket_ticks": DELIVERY_BUCKET_TICKS,
+            "window_ticks": self.deadline_ticks,
+            "lines": lines,
+            "autonomous_qualification": self._qualification,
+        }
 
     # -- lifecycle ---------------------------------------------------------
 
@@ -790,13 +986,33 @@ class ActiveOrder:
             self._status = "abandoned"
             self._terminal_tick = tick
 
+    def certify_sustained(self, tick: int, evidence: dict[str, Any]) -> dict[str, Any]:
+        """Close a sustained order from a privileged autonomous audit."""
+
+        if self.order_kind != "sustained":
+            raise ValueError("Only sustained orders can be audit-certified")
+        if self._status != "open":
+            raise ValueError("Only an open sustained order can be certified")
+        self._now = max(self._now or self._activation_tick, tick)
+        self._status = "fulfilled"
+        self._completion_tick = tick
+        self._terminal_tick = tick
+        self._qualification = dict(evidence)
+        return {
+            "event": "contract_fulfilled",
+            "item": self.item_name,
+            "products": [line.product for line in self.products],
+            "tick": tick,
+            "qualification": "autonomous_clone",
+        }
+
     @property
     def status(self) -> str:
         return self._status
 
     @property
     def delivered(self) -> float:
-        return self._delivered
+        return sum(self._delivered.values())
 
     @property
     def first_delivery_tick(self) -> int | None:
@@ -810,22 +1026,29 @@ class ActiveOrder:
         """Student-visible projection: no difficulty or rating internals."""
         return OpenContractView(
             order_id="epoch-order",
-            kind="one_shot",
-            products=[
-                ProductDemandSpec(
-                    product=self.item_name,
-                    quantity=float(self.requested_quantity),
-                )
-            ],
+            kind=self.order_kind,
+            products=list(self.products),
             issued_at_tick=self._activation_tick,
             due_tick=self._activation_tick + self.deadline_ticks,
             grace_ticks=0,
+            completion_ratio=round(self._completion_ratio(), 6),
             status=(
                 "fulfilled"
                 if self._status == "fulfilled"
                 else ("open" if self._status == "open" else "expired")
             ),
-            fulfilled={self.item_name: round(self._delivered, 4)},
+            fulfilled={
+                line.product: round(
+                    min(self._delivered[line.product], line.quantity), 4
+                )
+                for line in self.products
+            },
+            remaining={
+                line.product: round(
+                    max(line.quantity - self._delivered[line.product], 0.0), 4
+                )
+                for line in self.products
+            },
         )
 
     def evaluate(self, terminal_tick: int | None = None) -> ActiveOrderOutcome:
@@ -837,7 +1060,7 @@ class ActiveOrder:
             tick = self._now
         else:
             tick = self._activation_tick
-        ratio = min(self._delivered / self.requested_quantity, 1.0)
+        ratio = self._completion_ratio()
         status = self._status
         if status == "open":
             status = "fulfilled" if ratio >= 1.0 - 1e-9 else "partial"
@@ -845,14 +1068,19 @@ class ActiveOrder:
             engine_version=ACTIVE_ORDER_ENGINE_VERSION,
             item_name=self.item_name,
             requested_quantity=self.requested_quantity,
-            delivered_quantity=self._delivered,
+            delivered_quantity=sum(self._delivered.values()),
+            requested_by_product={
+                line.product: float(line.quantity) for line in self.products
+            },
+            delivered_by_product=dict(self._delivered),
             completion_ratio=ratio,
             status=status,
             activation_tick=self._activation_tick,
             terminal_tick=tick,
             first_delivery_tick=self._first_delivery_tick,
             completion_tick=self._completion_tick,
-            unattributed_delivered=self._unattributed,
+            unattributed_delivered=sum(self._unattributed.values()),
+            delivery_telemetry=self._delivery_telemetry(),
         )
 
 

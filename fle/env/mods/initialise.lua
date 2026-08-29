@@ -54,6 +54,10 @@ if not storage.crafted_items then
     storage.crafted_items = {}
 end
 
+-- Timestamped provenance used by the privileged rolling-rate detector.
+-- It is intentionally separate from the cumulative achievement ledgers.
+storage.manual_production_events = {}
+
 if not storage.walking_queues then
     storage.walking_queues = {}
 end

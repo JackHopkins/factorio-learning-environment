@@ -124,6 +124,12 @@ storage.actions.craft_item = function(player_index, entity, count)
                 craft_stats.outputs[product.name] = product.amount * crafts_count
             end
         end
+        storage.manual_production_events = storage.manual_production_events or {}
+        table.insert(storage.manual_production_events, {
+            tick = game.tick,
+            kind = "crafted",
+            outputs = craft_stats.outputs,
+        })
         table.insert(storage.crafted_items, craft_stats)
     end
 

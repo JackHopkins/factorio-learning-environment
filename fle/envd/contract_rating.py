@@ -17,6 +17,7 @@ from typing import Literal, Protocol
 from fle.envd.models import (
     CapabilityRating,
     CalibrationManifest,
+    CONTRACT_RATER_MODEL_VERSION,
     ContractDifficultyFeatures,
     ContractEpochOutcome,
 )
@@ -31,6 +32,12 @@ _RATING_TAU = 0.03  # per-epoch skill dynamics
 _RATING_DRAW_PROBABILITY = 0.10
 _INITIAL_SIGMA = 2.0  # two performance betas
 _MIN_CONTRACT_SIGMA = 1e-3
+
+# Keep one wire-level default for the rater and the saved CapabilityRating.
+# Previously the implementation defaulted to a stale v1 string while models
+# advertised v2, making otherwise identical runs look like different rating
+# series in downstream aggregation.
+DEFAULT_RATER_MODEL_VERSION = CONTRACT_RATER_MODEL_VERSION
 
 
 class OutcomeThresholds:
@@ -71,7 +78,32 @@ def map_outcome(
     ratio = outcome.completion_ratio
     if ratio <= cuts.partial_floor:
         return "loss"
+    if ratio >= cuts.partial_ceiling:
+        return "win"
     return "draw"
+
+
+def performance_score(outcome: ContractEpochOutcome) -> float | None:
+    """Continuous, delivery-grounded result used by the rating update."""
+
+    if outcome.status in ("infrastructure_error", "invalid"):
+        return None
+    if outcome.status == "abandoned":
+        return 0.0
+    if outcome.status == "fulfilled":
+        return 1.0
+    value = (
+        outcome.performance_score
+        if outcome.performance_score is not None
+        else outcome.completion_ratio
+    )
+    return min(max(float(value), 0.0), 1.0)
+
+
+def outcome_is_ratable(outcome: ContractEpochOutcome) -> bool:
+    """Return whether an outcome is eligible to update capability rating."""
+
+    return outcome.status not in {"infrastructure_error", "invalid"}
 
 
 # ---------------------------------------------------------------------------
@@ -295,6 +327,14 @@ class ContractRater(Protocol):
         result: Literal["win", "draw", "loss"],
     ) -> CapabilityRating: ...
 
+    def update_continuous(
+        self,
+        rating: CapabilityRating,
+        difficulty_mean: float,
+        difficulty_sigma: float,
+        score: float,
+    ) -> CapabilityRating: ...
+
 
 class TrueskillContractRater:
     """Pinned ``trueskill==0.4.5`` behind the ContractRater interface.
@@ -308,7 +348,7 @@ class TrueskillContractRater:
     def __init__(
         self,
         *,
-        model_version: str = "trueskill-contract-v1",
+        model_version: str = DEFAULT_RATER_MODEL_VERSION,
         beta: float = _RATING_BETA,
         tau: float = _RATING_TAU,
         draw_probability: float = _RATING_DRAW_PROBABILITY,
@@ -373,12 +413,44 @@ class TrueskillContractRater:
             rated_epoch_count=rating.rated_epoch_count + 1,
         )
 
+    def update_continuous(
+        self,
+        rating: CapabilityRating,
+        difficulty_mean: float,
+        difficulty_sigma: float,
+        score: float,
+    ) -> CapabilityRating:
+        """Interpolate TrueSkill posteriors across continuous completion.
+
+        This retains the pinned TrueSkill match model and uncertainty update
+        while avoiding the information-destroying 3-bin outcome collapse.
+        """
+
+        score = min(max(float(score), 0.0), 1.0)
+        loss = self.update(rating, difficulty_mean, difficulty_sigma, "loss")
+        draw = self.update(rating, difficulty_mean, difficulty_sigma, "draw")
+        win = self.update(rating, difficulty_mean, difficulty_sigma, "win")
+        if score <= 0.5:
+            low, high, weight = loss, draw, score / 0.5
+        else:
+            low, high, weight = draw, win, (score - 0.5) / 0.5
+        mu = low.mu + (high.mu - low.mu) * weight
+        sigma = max(low.sigma + (high.sigma - low.sigma) * weight, 0.0)
+        return CapabilityRating(
+            model_version=rating.model_version or self.model_version,
+            mu=round(mu, 6),
+            sigma=round(sigma, 6),
+            conservative_score=round(mu - 3.0 * sigma, 6),
+            rated_epoch_count=rating.rated_epoch_count + 1,
+        )
+
 
 __all__ = [
     "DEFAULT_PARTIAL_CEILING",
     "DEFAULT_PARTIAL_FLOOR",
     "CalibratedDifficultyModel",
     "ContractRater",
+    "DEFAULT_RATER_MODEL_VERSION",
     "DifficultyModel",
     "OutcomeThresholds",
     "RAW_FEATURE_KEYS",
@@ -387,5 +459,7 @@ __all__ = [
     "UncalibratedDifficultyModel",
     "contract_uncertainty",
     "map_outcome",
+    "outcome_is_ratable",
+    "performance_score",
     "supply_pressure_ratio",
 ]

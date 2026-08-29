@@ -75,7 +75,7 @@ training substrate. The REPL workflow above is unchanged; new work targets the
 ```bash
 # Start the Factorio pool, then the environment service
 fle cluster start -n 4
-uv run python -m fle.envd --runtime local --rcon-ports 27000 --port 8172
+uv run python -m fle.envd --runtime local --rcon-ports 27000 --audit-rcon-ports 27001 --port 8172
 ```
 
 - **Customer contracts** — hidden, deterministically-generated demand streams;

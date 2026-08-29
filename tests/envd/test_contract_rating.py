@@ -6,6 +6,7 @@ import pytest
 
 from fle.envd.contract_rating import (
     CalibratedDifficultyModel,
+    DEFAULT_RATER_MODEL_VERSION,
     OutcomeThresholds,
     TrueskillContractRater,
     UncalibratedDifficultyModel,
@@ -14,6 +15,7 @@ from fle.envd.contract_rating import (
 )
 from fle.envd.models import (
     CalibrationManifest,
+    CONTRACT_RATER_MODEL_VERSION,
     ContractDifficultyFeatures,
     ContractEpochOutcome,
 )
@@ -66,6 +68,12 @@ def test_golden_values_against_pinned_reference(rater):
     assert loss.mu == pytest.approx(-1.349991, abs=1e-4)
     assert draw.mu == pytest.approx(0.0, abs=1e-4)
     assert draw.sigma == pytest.approx(1.201997, abs=1e-4)
+
+
+def test_default_rater_version_matches_wire_model_constant(rater):
+    assert DEFAULT_RATER_MODEL_VERSION == CONTRACT_RATER_MODEL_VERSION
+    assert rater.model_version == CONTRACT_RATER_MODEL_VERSION
+    assert rater.initial_rating().model_version == CONTRACT_RATER_MODEL_VERSION
 
 
 # ---------------------------------------------------------------------------
@@ -138,8 +146,8 @@ def test_map_outcome_threshold_bands():
         return _outcome(completion_ratio=ratio, status=status)
 
     assert map_outcome(at(1.0, status="fulfilled")) == "win"
-    assert map_outcome(at(0.95), thresholds) == "draw"
-    assert map_outcome(at(0.90), thresholds) == "draw"
+    assert map_outcome(at(0.95), thresholds) == "win"
+    assert map_outcome(at(0.90), thresholds) == "win"
     assert map_outcome(at(0.50), thresholds) == "draw"
     assert map_outcome(at(0.26), thresholds) == "draw"
     assert map_outcome(at(0.25), thresholds) == "loss"
@@ -148,6 +156,17 @@ def test_map_outcome_threshold_bands():
     assert map_outcome(_outcome(status="abandoned")) == "loss"
     assert map_outcome(_outcome(status="infrastructure_error")) is None
     assert map_outcome(_outcome(status="invalid")) is None
+
+
+def test_continuous_rating_distinguishes_partial_completion():
+    rater = TrueskillContractRater()
+    initial = rater.initial_rating()
+    low = rater.update_continuous(initial, 2.0, 0.7, 0.26)
+    high = rater.update_continuous(initial, 2.0, 0.7, 0.99)
+
+    assert high.mu > low.mu
+    assert high.conservative_score > low.conservative_score
+    assert high.rated_epoch_count == low.rated_epoch_count == 1
 
 
 def test_invalid_threshold_configuration_rejected():

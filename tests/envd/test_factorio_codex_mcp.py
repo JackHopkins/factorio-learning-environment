@@ -15,16 +15,67 @@ def reset_repetition_state():
     factorio_codex_mcp._reset_repetition_state()
 
 
-def test_mcp_tool_schemas_expose_observe_and_code_only_execute():
+def test_mcp_tool_schemas_expose_world_and_throughput_controls():
     tools = {tool["name"]: tool for tool in factorio_codex_mcp.TOOLS}
 
     assert set(tools) == {
         "factorio_observe_factory",
         "factorio_execute_program",
+        "factorio_check_throughput",
     }
     execute_schema = tools["factorio_execute_program"]["inputSchema"]
     assert execute_schema["required"] == ["code"]
     assert execute_schema["additionalProperties"] is False
+    throughput_schema = tools["factorio_check_throughput"]["inputSchema"]
+    assert throughput_schema["properties"] == {}
+    assert throughput_schema["additionalProperties"] is False
+
+
+def test_mcp_state_query_schema_is_typed_and_available_in_full_profile():
+    tools = {
+        tool["name"]: tool
+        for tool in factorio_codex_mcp.tools_for_profile(memory_enabled=False)
+    }
+
+    query = tools["factorio_query_state"]
+    schema = query["inputSchema"]
+    assert schema["required"] == ["kind"]
+    assert schema["properties"]["kind"]["enum"] == [
+        "inventory",
+        "production",
+        "delivery",
+        "entities",
+        "research",
+        "contracts",
+        "errors",
+    ]
+    assert schema["properties"]["limit"]["maximum"] == 128
+    assert schema["properties"]["area"]["additionalProperties"] is False
+
+
+def test_mcp_throughput_check_uses_dedicated_idempotent_endpoint(monkeypatch):
+    calls = []
+
+    def fake_envd(method, path, payload=None):
+        calls.append((method, path, payload))
+        return {"contract_status": "open", "performance_score": 0.75}
+
+    monkeypatch.setenv("LEASE_ID", "lease-throughput")
+    monkeypatch.setattr(factorio_codex_mcp, "_envd", fake_envd)
+
+    text, is_error = factorio_codex_mcp._call_tool(
+        "factorio_check_throughput", {}, request_id="check-1"
+    )
+
+    assert is_error is False
+    assert json.loads(text)["performance_score"] == 0.75
+    assert calls == [
+        (
+            "POST",
+            "/v1/leases/lease-throughput/throughput-check",
+            {"request_id": "mcp-throughput:check-1"},
+        )
+    ]
 
 
 def test_mcp_execute_uses_lease_path_and_code_only_body(monkeypatch):
@@ -85,6 +136,140 @@ def test_mcp_large_payload_is_a_valid_bounded_json_envelope():
     assert bounded["original_json_chars"] > 100_000
     assert len(bounded["original_json_sha256"]) == 64
     assert result["structuredContent"] == bounded
+
+
+def test_model_observation_aggregates_unbounded_craft_history():
+    history = [
+        {
+            "crafted_count": 2,
+            "inputs": {"iron-plate": 4},
+            "outputs": {"iron-gear-wheel": 2},
+        }
+        for _ in range(2_000)
+    ]
+    payload = {
+        "lease_id": "lease-observe",
+        "ticks": 12_000,
+        "production": {
+            "input": {"iron-gear-wheel": 4_000},
+            "output": {"iron-plate": 8_000},
+            "crafted": history,
+        },
+    }
+
+    shaped = json.loads(factorio_codex_mcp._bounded_json_text(payload))
+    crafted = shaped["production"]["crafted"]
+
+    assert crafted["total_operations"] == len(history)
+    assert crafted["total_crafts"] == 4_000
+    assert crafted["inputs"] == {"iron-plate": 8_000}
+    assert crafted["outputs"] == {"iron-gear-wheel": 4_000}
+    assert len(crafted["recent"]) <= factorio_codex_mcp.MAX_MODEL_CRAFT_ITEMS
+    assert crafted["recent_truncated"] is True
+    # The object retained for privileged consumers is not rewritten in place.
+    assert isinstance(payload["production"]["crafted"], list)
+    assert len(payload["production"]["crafted"]) == len(history)
+
+
+def test_mcp_execute_bounds_large_event_stream_and_keeps_terminal_error(monkeypatch):
+    events = [
+        {
+            "event_id": f"event-{index}",
+            "kind": "contract_progress",
+            "tick": index,
+            "source": "verifier",
+            "payload": {"delivered": index},
+        }
+        for index in range(1_000)
+    ]
+    events[400] = {
+        "event_id": "event-error",
+        "kind": "invalid_action",
+        "tick": 400,
+        "source": "environment",
+        "payload": {"error": "corrective detail"},
+    }
+    events[-1] = {
+        "event_id": "event-terminal",
+        "kind": "contract_expired",
+        "tick": 999,
+        "source": "verifier",
+        "payload": {"reason": "deadline"},
+    }
+
+    monkeypatch.setenv("LEASE_ID", "lease-events")
+    monkeypatch.setattr(
+        factorio_codex_mcp,
+        "_envd",
+        lambda method, path, payload=None: {
+            "lease_id": "lease-events",
+            "event": {"error": False, "result": "ok"},
+            "events": events,
+            "terminal_reason": "contract_expired",
+        },
+    )
+
+    text, is_error = factorio_codex_mcp._call_tool(
+        "factorio_execute_program", {"code": "wait(1)"}
+    )
+    shaped = json.loads(text)
+
+    assert is_error is False
+    assert len(text) <= factorio_codex_mcp.MAX_TOOL_RESULT_CHARS
+    assert shaped["event_count"] == len(events)
+    assert shaped["events_truncated"] is True
+    assert len(shaped["events"]) <= factorio_codex_mcp.MAX_MODEL_EVENT_ITEMS
+    assert shaped["terminal_reason"] == "contract_expired"
+    assert any(event["kind"] == "invalid_action" for event in shaped["events"])
+    assert any(event["kind"] == "contract_expired" for event in shaped["events"])
+    assert shaped["event_kind_counts"]["contract_progress"] == 998
+
+
+def test_mcp_execute_large_error_result_keeps_corrective_tail(monkeypatch):
+    monkeypatch.setenv("LEASE_ID", "lease-error-tail")
+    monkeypatch.setattr(
+        factorio_codex_mcp,
+        "_envd",
+        lambda method, path, payload=None: {
+            "event": {
+                "error": True,
+                "result": "prefix " + ("x" * 20_000) + " corrective detail",
+            }
+        },
+    )
+
+    text, is_error = factorio_codex_mcp._call_tool(
+        "factorio_execute_program", {"code": "bad_action()"}
+    )
+    shaped = json.loads(text)
+
+    assert is_error is True
+    assert shaped["event"]["result_truncated"] is True
+    assert "prefix" in shaped["event"]["result"]
+    assert "corrective detail" in shaped["event"]["result"]
+
+
+def test_small_generic_bound_preserves_terminal_and_error_summary():
+    payload = {
+        "lease_id": "lease-small-bound",
+        "terminal_reason": "contract_expired",
+        "event": {"error": True, "result": "action failed: fix the inserter"},
+        "events": [
+            {"kind": "contract_progress", "tick": index}
+            for index in range(1_000)
+        ],
+        "inventory": {"iron-plate": "x" * 100_000},
+    }
+
+    text = factorio_codex_mcp._bounded_json_text(payload, max_chars=1_000)
+    bounded = json.loads(text)
+
+    assert len(text) <= 1_000
+    assert bounded["truncated"] is True
+    assert bounded["summary"]["terminal_reason"] == "contract_expired"
+    assert bounded["summary"]["event"]["error"] is True
+    assert "fix the inserter" in bounded["summary"]["event"]["result"]
+    assert bounded["summary"]["event_count"] == 1_000
 
 
 def test_mcp_envd_retries_keyed_ambiguous_transport_failure(monkeypatch):
@@ -224,6 +409,64 @@ def test_mcp_observe_and_unknown_tool(monkeypatch):
     text, is_error = factorio_codex_mcp._call_tool("missing", {})
     assert is_error is True
     assert "unknown tool" in text
+
+
+def test_mcp_observe_forwards_cursor_and_keyframe_request(monkeypatch):
+    calls = []
+
+    def fake_envd(method, path, payload=None):
+        calls.append((method, path, payload))
+        return {"contracts": []}
+
+    monkeypatch.setenv("LEASE_ID", "lease-cursor")
+    monkeypatch.setattr(factorio_codex_mcp, "_envd", fake_envd)
+
+    text, is_error = factorio_codex_mcp._call_tool(
+        "mcp__factorio__factorio_observe_factory",
+        {"cursor": "nonce.4", "keyframe": True},
+    )
+
+    assert is_error is False
+    assert json.loads(text) == {"contracts": []}
+    assert calls == [
+        (
+            "GET",
+            "/v1/leases/lease-cursor/observe?cursor=nonce.4&keyframe=true",
+            None,
+        )
+    ]
+
+
+def test_mcp_state_query_forwards_bounded_filters(monkeypatch):
+    calls = []
+
+    def fake_envd(method, path, payload=None):
+        calls.append((method, path, payload))
+        return {"kind": "entities", "mutations": []}
+
+    monkeypatch.setenv("LEASE_ID", "lease-query")
+    monkeypatch.setattr(factorio_codex_mcp, "_envd", fake_envd)
+
+    text, is_error = factorio_codex_mcp._call_tool(
+        "factorio_query_state",
+        {
+            "kind": "entities",
+            "entity_type": "assembling-machine-1",
+            "area": {"x": 1, "y": -2, "radius": 40},
+            "changed_since": 7,
+            "limit": 8,
+        },
+    )
+
+    assert is_error is False
+    assert json.loads(text)["kind"] == "entities"
+    assert calls == [
+        (
+            "GET",
+            "/v1/leases/lease-query/state/query?kind=entities&entity_type=assembling-machine-1&area=%7B%22x%22%3A1%2C%22y%22%3A-2%2C%22radius%22%3A40%7D&changed_since=7&limit=8",
+            None,
+        )
+    ]
 
 
 def test_mcp_accepts_prefixed_names_and_rejects_empty_program(monkeypatch):

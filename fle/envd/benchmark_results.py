@@ -17,7 +17,10 @@ from pydantic import Field, model_validator
 
 from fle.envd.benchmark import BENCHMARK_VERSION, benchmark_catalog
 from fle.envd.models import (
+    CapabilityDelta,
+    CapabilityGraphSnapshot,
     CapabilityRating,
+    ContractContextSnapshot,
     ContractEpochOutcome,
     ContractEpochSpec,
     ParticipantIdentity,
@@ -520,6 +523,10 @@ class AdaptiveEpochRecord(WireModel):
     rating_after: CapabilityRating | None = None  # None when unrated
     mapped_result: Literal["win", "draw", "loss", "unrated"] = "unrated"
     extrapolation_flagged: bool = False
+    post_context: ContractContextSnapshot | None = None
+    capability_graph_before: CapabilityGraphSnapshot | None = None
+    capability_graph_after: CapabilityGraphSnapshot | None = None
+    capability_delta: CapabilityDelta | None = None
 
     @model_validator(mode="after")
     def validate_commitment(self) -> "AdaptiveEpochRecord":
@@ -632,6 +639,27 @@ def summarize_adaptive_session(
 
     total_requested = sum(e.outcome.requested_quantity for e in epochs)
     total_delivered = sum(e.outcome.delivered_quantity for e in epochs)
+    capability_deltas = [
+        delta
+        for epoch in epochs
+        for delta in (epoch.capability_delta or epoch.outcome.capability_delta,)
+        if delta is not None
+    ]
+    follow_up_reasons = {
+        reason: sum(
+            1
+            for epoch in epochs
+            if epoch.spec.follow_up is not None
+            and epoch.spec.follow_up.reason == reason
+        )
+        for reason in sorted(
+            {
+                epoch.spec.follow_up.reason
+                for epoch in epochs
+                if epoch.spec.follow_up is not None
+            }
+        )
+    }
 
     return {
         "run_id": record.run_id,
@@ -671,6 +699,13 @@ def summarize_adaptive_session(
         "runner_wall_seconds": round(record.runner_wall_seconds, 3),
         "infrastructure_error_count": record.infrastructure_error_count,
         "extrapolation_count": record.extrapolation_count,
+        "capability_progress_epochs": sum(
+            int(delta.meaningful_progress) for delta in capability_deltas
+        ),
+        "capability_path_nodes_crossed": sum(
+            delta.path_progress for delta in capability_deltas
+        ),
+        "follow_up_reasons": follow_up_reasons,
         "final_rating": (
             record.final_rating.model_dump(mode="json") if record.final_rating else None
         ),

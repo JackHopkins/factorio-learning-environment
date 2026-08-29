@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import sys
 from types import TracebackType
 
@@ -23,8 +24,14 @@ from fle.envd.models import (
     HealthStatus,
     Lease,
     LeaseForkResult,
+    MemoryEntry,
+    MemoryListResponse,
+    MemoryMutationResponse,
+    MemorySearchResponse,
+    MemoryTraceResponse,
     Observation,
     RuntimeCheckpoint,
+    ThroughputCheckResult,
     VerificationSnapshot,
 )
 
@@ -114,9 +121,158 @@ class HTTPEnvironmentClient:
                     raise
         return ExecutionResult.model_validate(data)
 
-    async def observe(self, lease_id: str) -> Observation:
-        data = await self._request("GET", f"/v1/leases/{lease_id}/observe")
+    async def observe(
+        self,
+        lease_id: str,
+        *,
+        cursor: str | None = None,
+        force_keyframe: bool = False,
+    ) -> Observation:
+        params = {}
+        if cursor is not None:
+            params["cursor"] = cursor
+        if force_keyframe:
+            params["keyframe"] = "true"
+        data = await self._request(
+            "GET", f"/v1/leases/{lease_id}/observe", params=params or None
+        )
         return Observation.model_validate(data)
+
+    async def query_state(
+        self,
+        lease_id: str,
+        *,
+        kind: str,
+        item: str | None = None,
+        window_seconds: int | None = None,
+        since_revision: int | None = None,
+        entity_type: str | None = None,
+        area: dict[str, object] | None = None,
+        changed_since: int | None = None,
+        limit: int = 32,
+    ) -> dict[str, object]:
+        params = {
+            key: value
+            for key, value in {
+                "kind": kind,
+                "item": item,
+                "window_seconds": window_seconds,
+                "since_revision": since_revision,
+                "entity_type": entity_type,
+                "area": json.dumps(area, separators=(",", ":"))
+                if area is not None
+                else None,
+                "changed_since": changed_since,
+                "limit": limit,
+            }.items()
+            if value is not None
+        }
+        return await self._request(
+            "GET", f"/v1/leases/{lease_id}/state/query", params=params
+        )
+
+    async def check_contract_throughput(
+        self,
+        lease_id: str,
+        *,
+        authoritative: bool = False,
+        request_id: str | None = None,
+    ) -> ThroughputCheckResult:
+        endpoint = (
+            "contract/qualify-throughput" if authoritative else "throughput-check"
+        )
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/{endpoint}",
+            json={"request_id": request_id},
+        )
+        return ThroughputCheckResult.model_validate(data)
+
+    # -- model-managed session memory ---------------------------------------
+
+    async def memory_list(
+        self,
+        lease_id: str,
+        *,
+        prefix: str = "",
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> MemoryListResponse:
+        params = {"prefix": prefix, "limit": limit}
+        if cursor is not None:
+            params["cursor"] = cursor
+        data = await self._request("GET", f"/v1/leases/{lease_id}/memory", params=params)
+        return MemoryListResponse.model_validate(data)
+
+    async def memory_read(self, lease_id: str, key: str) -> MemoryEntry:
+        data = await self._request(
+            "GET", f"/v1/leases/{lease_id}/memory/read", params={"key": key}
+        )
+        return MemoryEntry.model_validate(data)
+
+    async def memory_write(
+        self,
+        lease_id: str,
+        key: str,
+        content: str,
+        *,
+        expected_revision: int | None = None,
+    ) -> MemoryMutationResponse:
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/memory/write",
+            json={
+                "key": key,
+                "content": content,
+                "expected_revision": expected_revision,
+            },
+        )
+        return MemoryMutationResponse.model_validate(data)
+
+    async def memory_delete(
+        self,
+        lease_id: str,
+        key: str,
+        *,
+        expected_revision: int | None = None,
+    ) -> MemoryMutationResponse:
+        data = await self._request(
+            "POST",
+            f"/v1/leases/{lease_id}/memory/delete",
+            json={"key": key, "expected_revision": expected_revision},
+        )
+        return MemoryMutationResponse.model_validate(data)
+
+    async def memory_search(
+        self,
+        lease_id: str,
+        query: str,
+        *,
+        limit: int = 20,
+        cursor: str | None = None,
+    ) -> MemorySearchResponse:
+        params = {"query": query, "limit": limit}
+        if cursor is not None:
+            params["cursor"] = cursor
+        data = await self._request(
+            "GET", f"/v1/leases/{lease_id}/memory/search", params=params
+        )
+        return MemorySearchResponse.model_validate(data)
+
+    async def memory_trace(
+        self,
+        lease_id: str,
+        *,
+        limit: int = 100,
+        cursor: str | None = None,
+    ) -> MemoryTraceResponse:
+        params = {"limit": limit}
+        if cursor is not None:
+            params["cursor"] = cursor
+        data = await self._request(
+            "GET", f"/v1/leases/{lease_id}/memory/trace", params=params
+        )
+        return MemoryTraceResponse.model_validate(data)
 
     async def finalize(self, lease_id: str) -> VerificationSnapshot:
         data = await self._request("POST", f"/v1/leases/{lease_id}/finalize")

@@ -9,8 +9,10 @@ actions, rewards, and verification.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import uuid
+from urllib.parse import urlencode
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
@@ -25,6 +27,11 @@ from fle.envd.models import (
     HealthStatus,
     Lease,
     LeaseForkResult,
+    MemoryEntry,
+    MemoryListResponse,
+    MemoryMutationResponse,
+    MemorySearchResponse,
+    MemoryTraceResponse,
     Observation,
     RuntimeCheckpoint,
     VerificationSnapshot,
@@ -428,18 +435,188 @@ class AgentEnvEnvironmentGateway:
             await self._touch(record)
             return result.model_copy(update={"lease_id": lease_id})
 
-    async def observe(self, lease_id: str) -> Observation:
+    async def observe(
+        self,
+        lease_id: str,
+        *,
+        cursor: str | None = None,
+        force_keyframe: bool = False,
+    ) -> Observation:
         record = await self._record(lease_id)
         async with record.lock:
+            params = {
+                key: value
+                for key, value in {
+                    "cursor": cursor,
+                    "keyframe": "true" if force_keyframe else None,
+                }.items()
+                if value is not None
+            }
+            query = "?" + urlencode(params) if params else ""
             result = Observation.model_validate(
                 await self.control.guest_request(
                     record.sandbox_id,
                     "GET",
-                    f"/v1/leases/{record.inner_lease_id}/observe",
+                    f"/v1/leases/{record.inner_lease_id}/observe{query}",
                 )
             )
             await self._touch(record)
             return result.model_copy(update={"lease_id": lease_id})
+
+    async def query_state(
+        self,
+        lease_id: str,
+        *,
+        kind: str,
+        item: str | None = None,
+        window_seconds: int | None = None,
+        since_revision: int | None = None,
+        entity_type: str | None = None,
+        area: dict[str, Any] | None = None,
+        changed_since: int | None = None,
+        limit: int = 32,
+    ) -> dict[str, Any]:
+        record = await self._record(lease_id)
+        async with record.lock:
+            params = {
+                key: value
+                for key, value in {
+                    "kind": kind,
+                    "item": item,
+                    "window_seconds": window_seconds,
+                    "since_revision": since_revision,
+                    "entity_type": entity_type,
+                    "area": json.dumps(area, separators=(",", ":"))
+                    if area is not None
+                    else None,
+                    "changed_since": changed_since,
+                    "limit": limit,
+                }.items()
+                if value is not None
+            }
+            result = await self.control.guest_request(
+                record.sandbox_id,
+                "GET",
+                f"/v1/leases/{record.inner_lease_id}/state/query?{urlencode(params)}",
+            )
+            await self._touch(record)
+            return dict(result)
+
+    # Memory remains authoritative in the guest envd; forwarding these calls
+    # keeps the AgentENV gateway identical to the local evaluation surface.
+    async def memory_list(self, lease_id: str, *, prefix: str = "", limit: int = 50, cursor: str | None = None) -> MemoryListResponse:
+        record = await self._record(lease_id)
+        async with record.lock:
+            params = "?" + urlencode(
+                {
+                    key: value
+                    for key, value in {
+                        "prefix": prefix,
+                        "limit": limit,
+                        "cursor": cursor,
+                    }.items()
+                    if value is not None
+                },
+                doseq=False,
+            )
+            result = MemoryListResponse.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "GET",
+                    f"/v1/leases/{record.inner_lease_id}/memory{params}",
+                )
+            )
+            await self._touch(record)
+            return result
+
+    async def memory_read(self, lease_id: str, key: str) -> MemoryEntry:
+        record = await self._record(lease_id)
+        async with record.lock:
+            result = MemoryEntry.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "GET",
+                    "/v1/leases/"
+                    f"{record.inner_lease_id}/memory/read?"
+                    + urlencode({"key": key}),
+                )
+            )
+            await self._touch(record)
+            return result
+
+    async def memory_write(self, lease_id: str, key: str, content: str, *, expected_revision: int | None = None) -> MemoryMutationResponse:
+        record = await self._record(lease_id)
+        async with record.lock:
+            result = MemoryMutationResponse.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "POST",
+                    f"/v1/leases/{record.inner_lease_id}/memory/write",
+                    json={"key": key, "content": content, "expected_revision": expected_revision},
+                )
+            )
+            await self._touch(record)
+            return result
+
+    async def memory_delete(self, lease_id: str, key: str, *, expected_revision: int | None = None) -> MemoryMutationResponse:
+        record = await self._record(lease_id)
+        async with record.lock:
+            result = MemoryMutationResponse.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "POST",
+                    f"/v1/leases/{record.inner_lease_id}/memory/delete",
+                    json={"key": key, "expected_revision": expected_revision},
+                )
+            )
+            await self._touch(record)
+            return result
+
+    async def memory_search(self, lease_id: str, query: str, *, limit: int = 20, cursor: str | None = None) -> MemorySearchResponse:
+        record = await self._record(lease_id)
+        async with record.lock:
+            params = "?" + urlencode(
+                {
+                    key: value
+                    for key, value in {
+                        "query": query,
+                        "limit": limit,
+                        "cursor": cursor,
+                    }.items()
+                    if value is not None
+                },
+                doseq=False,
+            )
+            result = MemorySearchResponse.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "GET",
+                    f"/v1/leases/{record.inner_lease_id}/memory/search{params}",
+                )
+            )
+            await self._touch(record)
+            return result
+
+    async def memory_trace(self, lease_id: str, *, limit: int = 100, cursor: str | None = None) -> MemoryTraceResponse:
+        record = await self._record(lease_id)
+        async with record.lock:
+            params = "?" + urlencode(
+                {
+                    key: value
+                    for key, value in {"limit": limit, "cursor": cursor}.items()
+                    if value is not None
+                },
+                doseq=False,
+            )
+            result = MemoryTraceResponse.model_validate(
+                await self.control.guest_request(
+                    record.sandbox_id,
+                    "GET",
+                    f"/v1/leases/{record.inner_lease_id}/memory/trace{params}",
+                )
+            )
+            await self._touch(record)
+            return result
 
     async def finalize(self, lease_id: str) -> VerificationSnapshot:
         record = await self._record(lease_id)

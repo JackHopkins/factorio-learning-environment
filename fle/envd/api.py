@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from typing import Any
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from fle.envd.errors import (
@@ -13,6 +14,9 @@ from fle.envd.errors import (
     InterventionLimitReached,
     LeaseFinalized,
     LeaseNotFound,
+    MemoryConflict,
+    MemoryLimitExceeded,
+    MemoryNotFound,
     RuntimeBackendError,
 )
 from fle.envd.models import (
@@ -59,6 +63,21 @@ class ContractEpochFinalizeRequest(RequestModel):
     request_id: str | None = None
 
 
+class ThroughputCheckRequest(RequestModel):
+    request_id: str | None = Field(default=None, min_length=1, max_length=128)
+
+
+class MemoryWriteRequest(RequestModel):
+    key: str = Field(min_length=1, max_length=256)
+    content: str
+    expected_revision: int | None = Field(default=None, ge=0)
+
+
+class MemoryDeleteRequest(RequestModel):
+    key: str = Field(min_length=1, max_length=256)
+    expected_revision: int | None = Field(default=None, ge=0)
+
+
 def _register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(CapacityExhausted)
     async def capacity_error(_, exc: CapacityExhausted):
@@ -90,6 +109,18 @@ def _register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(IdempotencyConflict)
     async def idempotency_error(_, exc: IdempotencyConflict):
         return _error(409, str(exc))
+
+    @app.exception_handler(MemoryConflict)
+    async def memory_conflict_error(_, exc: MemoryConflict):
+        return _error(409, str(exc))
+
+    @app.exception_handler(MemoryNotFound)
+    async def memory_not_found_error(_, exc: MemoryNotFound):
+        return _error(404, str(exc))
+
+    @app.exception_handler(MemoryLimitExceeded)
+    async def memory_limit_error(_, exc: MemoryLimitExceeded):
+        return _error(413, str(exc))
 
     @app.exception_handler(EnvironmentServiceError)
     async def service_error(_, exc: EnvironmentServiceError):
@@ -129,8 +160,99 @@ def create_app(service: EnvironmentService) -> FastAPI:
         )
 
     @app.get("/v1/leases/{lease_id}/observe")
-    def observe(lease_id: str):
-        return service.observe(lease_id)
+    def observe(
+        lease_id: str,
+        cursor: str | None = None,
+        keyframe: bool = False,
+    ):
+        return service.observe(
+            lease_id,
+            cursor=cursor,
+            force_keyframe=keyframe,
+        )
+
+    @app.get("/v1/leases/{lease_id}/state/query")
+    def query_state(
+        lease_id: str,
+        kind: str,
+        item: str | None = None,
+        window_seconds: int | None = None,
+        since_revision: int | None = None,
+        entity_type: str | None = None,
+        area: str | None = None,
+        changed_since: int | None = None,
+        limit: int = 32,
+    ):
+        area_payload: dict[str, Any] | None = None
+        if area:
+            import json
+
+            try:
+                decoded = json.loads(area)
+            except json.JSONDecodeError as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail="area must be a JSON object with x, y, radius",
+                ) from exc
+            if not isinstance(decoded, dict):
+                raise HTTPException(
+                    status_code=422,
+                    detail="area must be a JSON object with x, y, radius",
+                )
+            area_payload = decoded
+        try:
+            return service.query_state(
+                lease_id,
+                kind=kind,
+                item=item,
+                window_seconds=window_seconds,
+                since_revision=since_revision,
+                entity_type=entity_type,
+                area=area_payload,
+                changed_since=changed_since,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/v1/leases/{lease_id}/throughput-check")
+    def throughput_check(lease_id: str, request: ThroughputCheckRequest):
+        return service.check_contract_throughput(
+            lease_id, request_id=request.request_id
+        ).model_dump(mode="json")
+
+    # -- model-managed memory; lease-scoped and never a host filesystem API --
+
+    @app.get("/v1/leases/{lease_id}/memory")
+    def memory_list(lease_id: str, prefix: str = "", limit: int = 50, cursor: str | None = None):
+        return service.memory_list(lease_id, prefix=prefix, limit=limit, cursor=cursor)
+
+    @app.get("/v1/leases/{lease_id}/memory/read")
+    def memory_read(lease_id: str, key: str):
+        return service.memory_read(lease_id, key)
+
+    @app.post("/v1/leases/{lease_id}/memory/write")
+    def memory_write(lease_id: str, request: MemoryWriteRequest):
+        return service.memory_write(
+            lease_id,
+            request.key,
+            request.content,
+            expected_revision=request.expected_revision,
+        )
+
+    @app.post("/v1/leases/{lease_id}/memory/delete")
+    def memory_delete(lease_id: str, request: MemoryDeleteRequest):
+        return service.memory_delete(
+            lease_id, request.key, expected_revision=request.expected_revision
+        )
+
+    @app.get("/v1/leases/{lease_id}/memory/search")
+    def memory_search(lease_id: str, query: str, limit: int = 20, cursor: str | None = None):
+        return service.memory_search(lease_id, query, limit=limit, cursor=cursor)
+
+    @app.get("/v1/leases/{lease_id}/memory/trace")
+    def memory_trace(lease_id: str, limit: int = 100, cursor: str | None = None):
+        return service.memory_trace(lease_id, limit=limit, cursor=cursor)
 
     @app.post("/v1/leases/{lease_id}/finalize")
     def finalize(lease_id: str):
@@ -158,6 +280,16 @@ def create_app(service: EnvironmentService) -> FastAPI:
             request.commitment_hash,
             abandon=request.abandon,
             infrastructure_interrupt=request.infrastructure_interrupt,
+            request_id=request.request_id,
+        ).model_dump(mode="json")
+
+    @app.post("/v1/leases/{lease_id}/contract/qualify-throughput")
+    def contract_qualify_throughput(
+        lease_id: str, request: ThroughputCheckRequest
+    ):
+        return service.check_contract_throughput(
+            lease_id,
+            authoritative=True,
             request_id=request.request_id,
         ).model_dump(mode="json")
 
@@ -215,8 +347,91 @@ def create_agentenv_app(service) -> FastAPI:
         )
 
     @app.get("/v1/leases/{lease_id}/observe")
-    async def observe(lease_id: str):
-        return await service.observe(lease_id)
+    async def observe(
+        lease_id: str,
+        cursor: str | None = None,
+        keyframe: bool = False,
+    ):
+        return await service.observe(
+            lease_id,
+            cursor=cursor,
+            force_keyframe=keyframe,
+        )
+
+    @app.get("/v1/leases/{lease_id}/state/query")
+    async def query_state(
+        lease_id: str,
+        kind: str,
+        item: str | None = None,
+        window_seconds: int | None = None,
+        since_revision: int | None = None,
+        entity_type: str | None = None,
+        area: str | None = None,
+        changed_since: int | None = None,
+        limit: int = 32,
+    ):
+        area_payload: dict[str, Any] | None = None
+        if area:
+            import json
+
+            try:
+                decoded = json.loads(area)
+            except json.JSONDecodeError as exc:
+                raise HTTPException(
+                    status_code=422,
+                    detail="area must be a JSON object with x, y, radius",
+                ) from exc
+            if not isinstance(decoded, dict):
+                raise HTTPException(
+                    status_code=422,
+                    detail="area must be a JSON object with x, y, radius",
+                )
+            area_payload = decoded
+        try:
+            return await service.query_state(
+                lease_id,
+                kind=kind,
+                item=item,
+                window_seconds=window_seconds,
+                since_revision=since_revision,
+                entity_type=entity_type,
+                area=area_payload,
+                changed_since=changed_since,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/v1/leases/{lease_id}/memory")
+    async def memory_list(lease_id: str, prefix: str = "", limit: int = 50, cursor: str | None = None):
+        return await service.memory_list(lease_id, prefix=prefix, limit=limit, cursor=cursor)
+
+    @app.get("/v1/leases/{lease_id}/memory/read")
+    async def memory_read(lease_id: str, key: str):
+        return await service.memory_read(lease_id, key)
+
+    @app.post("/v1/leases/{lease_id}/memory/write")
+    async def memory_write(lease_id: str, request: MemoryWriteRequest):
+        return await service.memory_write(
+            lease_id,
+            request.key,
+            request.content,
+            expected_revision=request.expected_revision,
+        )
+
+    @app.post("/v1/leases/{lease_id}/memory/delete")
+    async def memory_delete(lease_id: str, request: MemoryDeleteRequest):
+        return await service.memory_delete(
+            lease_id, request.key, expected_revision=request.expected_revision
+        )
+
+    @app.get("/v1/leases/{lease_id}/memory/search")
+    async def memory_search(lease_id: str, query: str, limit: int = 20, cursor: str | None = None):
+        return await service.memory_search(lease_id, query, limit=limit, cursor=cursor)
+
+    @app.get("/v1/leases/{lease_id}/memory/trace")
+    async def memory_trace(lease_id: str, limit: int = 100, cursor: str | None = None):
+        return await service.memory_trace(lease_id, limit=limit, cursor=cursor)
 
     @app.post("/v1/leases/{lease_id}/finalize")
     async def finalize(lease_id: str):
@@ -252,6 +467,7 @@ def build_live_service(
     tcp_ports: list[int],
     address: str = "localhost",
     lease_ttl_seconds: int = 900,
+    audit_tcp_ports: list[int] | None = None,
 ) -> EnvironmentService:
     from fle.envd.backend import FLEWorker
 
@@ -259,4 +475,12 @@ def build_live_service(
         FLEWorker.connect(f"factorio-{index}", port, address)
         for index, port in enumerate(tcp_ports)
     ]
-    return EnvironmentService(workers, lease_ttl_seconds=lease_ttl_seconds)
+    audit_workers = [
+        FLEWorker.connect(f"factorio-audit-{index}", port, address)
+        for index, port in enumerate(audit_tcp_ports or [])
+    ]
+    return EnvironmentService(
+        workers,
+        lease_ttl_seconds=lease_ttl_seconds,
+        audit_workers=audit_workers,
+    )

@@ -16,6 +16,7 @@ from fle.envd.models import (
     FactorioTaskSpec,
     KnowledgeSourceSpec,
     ObjectiveSpec,
+    ThroughputAuditSpec,
     VerifierSpec,
 )
 from fle.eval.tasks.task_definitions.task_registry import get_task_config
@@ -162,9 +163,19 @@ def build_task_spec(
             ),
         ],
         verifier=VerifierSpec(
+            implementation=(
+                "objective_engine_v1"
+                if task_type == "throughput"
+                else "legacy_fle_task"
+            ),
             mode="all_required",
             scalarization="backend_override",
             holdout_windows=1,
+        ),
+        throughput_audit=(
+            ThroughputAuditSpec(require_depot_service=False)
+            if task_type == "throughput"
+            else None
         ),
         curriculum=CurriculumSpec(
             stage="lab" if task_type == "throughput" else "open-play",

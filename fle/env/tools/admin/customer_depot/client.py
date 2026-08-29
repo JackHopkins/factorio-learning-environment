@@ -27,3 +27,9 @@ class CustomerDepot(Tool):
 
     def clear(self) -> dict[str, Any]:
         return self.__call__("clear")
+
+    def adopt(self, depot_specs: list[dict[str, Any]]) -> dict[str, Any]:
+        response, _ = self.execute(
+            self.player_index, "adopt", depot_specs, 0, 0, False
+        )
+        return response

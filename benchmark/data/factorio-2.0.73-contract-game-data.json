@@ -1,5 +1,2903 @@
 {
   "factorio_version": "2.0.73",
+  "prototypes": [
+    {
+      "crafting_categories": {},
+      "name": "1x2-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "accumulator",
+      "type": "accumulator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "accumulator-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "accumulator-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-spitter-behemoth",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-spitter-big",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-spitter-medium",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-spitter-small",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-worm-behemoth",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-worm-big",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-worm-medium",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-splash-fire-worm-small",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-sticker-behemoth",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-sticker-big",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-sticker-medium",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-sticker-small",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-spitter-behemoth",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-spitter-big",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-spitter-medium",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-spitter-small",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-worm-behemoth",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-worm-big",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-worm-medium",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "acid-stream-worm-small",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "active-provider-chest",
+      "type": "logistic-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "active-provider-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "active-provider-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 16.666666666666668,
+      "name": "arithmetic-combinator",
+      "type": "arithmetic-combinator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "arithmetic-combinator-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "arithmetic-combinator-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-cannon-muzzle-flash",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-flare",
+      "type": "artillery-flare"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-projectile",
+      "type": "artillery-projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-turret",
+      "type": "artillery-turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-turret-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-turret-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-wagon",
+      "type": "artillery-wagon"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-wagon-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "artillery-wagon-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "advanced-crafting",
+        "basic-crafting",
+        "crafting",
+        "parameters"
+      ],
+      "energy_usage": 1250,
+      "name": "assembling-machine-1",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-1-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-1-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "advanced-crafting",
+        "basic-crafting",
+        "crafting",
+        "crafting-with-fluid",
+        "parameters"
+      ],
+      "energy_usage": 2500,
+      "name": "assembling-machine-2",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-2-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-2-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "advanced-crafting",
+        "basic-crafting",
+        "crafting",
+        "crafting-with-fluid",
+        "parameters"
+      ],
+      "energy_usage": 6250,
+      "name": "assembling-machine-3",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-3-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "assembling-machine-3-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-ground-zero-projectile",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-wave",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-wave-spawns-cluster-nuke-explosion",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-wave-spawns-fire-smoke-explosion",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-wave-spawns-nuclear-smoke",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-bomb-wave-spawns-nuke-shockwave-explosion",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-fire-smoke",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-nuke-shockwave",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "atomic-rocket",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 8000,
+      "name": "beacon",
+      "type": "beacon"
+    },
+    {
+      "crafting_categories": {},
+      "name": "beacon-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "beacon-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-biter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-biter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-biter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-spitter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-spitter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-spitter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-worm-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-worm-corpse-burrowed",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-worm-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "behemoth-worm-turret",
+      "type": "turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-artillery-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-biter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-biter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-biter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-electric-pole",
+      "type": "electric-pole"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-electric-pole-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-electric-pole-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-rock",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-sand-rock",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-scorchmark",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-scorchmark-tintable",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-spitter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-spitter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-spitter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-worm-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-worm-corpse-burrowed",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-worm-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "big-worm-turret",
+      "type": "turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "biter-spawner",
+      "type": "unit-spawner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "biter-spawner-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "biter-spawner-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-explosion-big",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-explosion-huge",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-explosion-small",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-fountain",
+      "type": "particle-source"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-fountain-big",
+      "type": "particle-source"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blood-fountain-hit-spray",
+      "type": "particle-source"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blue-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "blue-laser",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "boiler",
+      "type": "boiler"
+    },
+    {
+      "crafting_categories": {},
+      "name": "boiler-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "boiler-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "bottomless-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "buffer-chest",
+      "type": "logistic-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "buffer-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "buffer-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "bulk-inserter",
+      "type": "inserter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "bulk-inserter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "bulk-inserter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-generator",
+      "type": "burner-generator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-inserter",
+      "type": "inserter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-inserter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-inserter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 2500,
+      "name": "burner-mining-drill",
+      "type": "mining-drill"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-mining-drill-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "burner-mining-drill-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cannon-projectile",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "car",
+      "type": "car"
+    },
+    {
+      "crafting_categories": {},
+      "name": "car-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "car-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-landing-pad",
+      "type": "cargo-landing-pad"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-landing-pad-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-pod",
+      "type": "cargo-pod"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-pod-container",
+      "type": "temporary-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-pod-container-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-pod-container-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-pod-shadow",
+      "type": "rocket-silo-rocket-shadow"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-wagon",
+      "type": "cargo-wagon"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-wagon-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cargo-wagon-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "centrifuging",
+        "parameters"
+      ],
+      "energy_usage": 5833.333333333333,
+      "name": "centrifuge",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "centrifuge-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "centrifuge-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "crafting"
+      ],
+      "name": "character",
+      "type": "character"
+    },
+    {
+      "crafting_categories": {},
+      "name": "character-corpse",
+      "type": "character-corpse"
+    },
+    {
+      "crafting_categories": [
+        "chemistry",
+        "parameters"
+      ],
+      "energy_usage": 3500,
+      "name": "chemical-plant",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "chemical-plant-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "chemical-plant-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cliff",
+      "type": "cliff"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cliff-explosives",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cluster-grenade",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "cluster-nuke-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "coal",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": {},
+      "name": "compi-speech-bubble",
+      "type": "speech-bubble"
+    },
+    {
+      "crafting_categories": {},
+      "name": "constant-combinator",
+      "type": "constant-combinator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "constant-combinator-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "constant-combinator-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "construction-robot",
+      "type": "construction-robot"
+    },
+    {
+      "crafting_categories": {},
+      "name": "construction-robot-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "construction-robot-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "copper-ore",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-chest-1",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-chest-2",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-explosion-smoke",
+      "type": "smoke-with-trigger"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-fire-flame",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-fire-smoke",
+      "type": "smoke-with-trigger"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-big-1",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-big-2",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-medium-1",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-medium-2",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-medium-3",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-1",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-2",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-3",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-4",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-5",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crash-site-spaceship-wreck-small-6",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "crude-oil",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": {},
+      "name": "curved-rail-a",
+      "type": "curved-rail-a"
+    },
+    {
+      "crafting_categories": {},
+      "name": "curved-rail-a-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "curved-rail-b",
+      "type": "curved-rail-b"
+    },
+    {
+      "crafting_categories": {},
+      "name": "curved-rail-b-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dead-dry-hairy-tree",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dead-grey-trunk",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dead-tree-desert",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 16.666666666666668,
+      "name": "decider-combinator",
+      "type": "decider-combinator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "decider-combinator-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "decider-combinator-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "deconstructible-tile-proxy",
+      "type": "deconstructible-tile-proxy"
+    },
+    {
+      "crafting_categories": {},
+      "name": "defender",
+      "type": "combat-robot"
+    },
+    {
+      "crafting_categories": {},
+      "name": "defender-capsule",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "defender-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "defender-robot-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "destroyer",
+      "type": "combat-robot"
+    },
+    {
+      "crafting_categories": {},
+      "name": "destroyer-capsule",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "destroyer-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "destroyer-robot-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "display-panel",
+      "type": "display-panel"
+    },
+    {
+      "crafting_categories": {},
+      "name": "display-panel-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "display-panel-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "distractor",
+      "type": "combat-robot"
+    },
+    {
+      "crafting_categories": {},
+      "name": "distractor-capsule",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "distractor-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "distractor-robot-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dry-hairy-tree",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dry-tree",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-elevated-curved-rail-a",
+      "type": "elevated-curved-rail-a"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-elevated-curved-rail-b",
+      "type": "elevated-curved-rail-b"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-elevated-half-diagonal-rail",
+      "type": "elevated-half-diagonal-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-elevated-straight-rail",
+      "type": "elevated-straight-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-rail-ramp",
+      "type": "rail-ramp"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-rail-support",
+      "type": "rail-support"
+    },
+    {
+      "crafting_categories": {},
+      "name": "dummy-spider-unit",
+      "type": "spider-unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-beam",
+      "type": "beam"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-beam-no-sound",
+      "type": "beam"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-energy-interface",
+      "type": "electric-energy-interface"
+    },
+    {
+      "crafting_categories": [
+        "smelting"
+      ],
+      "energy_usage": 3000,
+      "name": "electric-furnace",
+      "type": "furnace"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-furnace-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-furnace-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-mini-stun",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 1500,
+      "name": "electric-mining-drill",
+      "type": "mining-drill"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-mining-drill-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "electric-mining-drill-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "enemy-damaged-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "entity-ghost",
+      "type": "entity-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "entity-unknown",
+      "type": "entity-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosion-gunshot",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosion-gunshot-small",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosion-hit",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosive-cannon-projectile",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosive-rocket",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "explosive-uranium-cannon-projectile",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-loader",
+      "type": "loader"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-splitter",
+      "type": "splitter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-splitter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-splitter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-transport-belt",
+      "type": "transport-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-transport-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-transport-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-transport-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-underground-belt",
+      "type": "underground-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-underground-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-underground-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "express-underground-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "factorio-logo-11tiles",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "factorio-logo-16tiles",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "factorio-logo-22tiles",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fake-selection-box-2x2",
+      "type": "arrow"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-inserter",
+      "type": "inserter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-inserter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-inserter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-loader",
+      "type": "loader"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-splitter",
+      "type": "splitter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-splitter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-splitter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-transport-belt",
+      "type": "transport-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-transport-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-transport-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-transport-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-underground-belt",
+      "type": "underground-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-underground-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-underground-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fast-underground-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fire-flame",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fire-flame-on-tree",
+      "type": "fire"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fire-sticker",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fish",
+      "type": "fish"
+    },
+    {
+      "crafting_categories": {},
+      "name": "flamethrower-fire-stream",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "flamethrower-turret",
+      "type": "fluid-turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "flamethrower-turret-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "flamethrower-turret-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fluid-wagon",
+      "type": "fluid-wagon"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fluid-wagon-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "fluid-wagon-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "flying-robot-damaged-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gate",
+      "type": "gate"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gate-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gate-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "grenade",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "grenade-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "ground-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gun-turret",
+      "type": "ammo-turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gun-turret-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "gun-turret-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "half-diagonal-rail",
+      "type": "half-diagonal-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "half-diagonal-rail-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "handheld-flamethrower-fire-stream",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-exchanger",
+      "type": "boiler"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-exchanger-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-exchanger-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-interface",
+      "type": "heat-interface"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-pipe",
+      "type": "heat-pipe"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-pipe-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "heat-pipe-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "hidden-electric-energy-interface",
+      "type": "electric-energy-interface"
+    },
+    {
+      "crafting_categories": {},
+      "name": "highlight-box",
+      "type": "highlight-box"
+    },
+    {
+      "crafting_categories": {},
+      "name": "huge-rock",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "huge-scorchmark",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "huge-scorchmark-tintable",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "infinity-cargo-wagon",
+      "type": "infinity-cargo-wagon"
+    },
+    {
+      "crafting_categories": {},
+      "name": "infinity-chest",
+      "type": "infinity-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "infinity-pipe",
+      "type": "infinity-pipe"
+    },
+    {
+      "crafting_categories": {},
+      "name": "inserter",
+      "type": "inserter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "inserter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "inserter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "iron-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "iron-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "iron-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "iron-ore",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": {},
+      "name": "item-on-ground",
+      "type": "item-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "item-request-proxy",
+      "type": "item-request-proxy"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 1000,
+      "name": "lab",
+      "type": "lab"
+    },
+    {
+      "crafting_categories": {},
+      "name": "lab-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "lab-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "lamp-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "lamp-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "land-mine",
+      "type": "land-mine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "land-mine-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "land-mine-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "lane-splitter",
+      "type": "lane-splitter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser-beam",
+      "type": "beam"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser-bubble",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser-turret",
+      "type": "electric-turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser-turret-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "laser-turret-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "legacy-curved-rail",
+      "type": "legacy-curved-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "legacy-curved-rail-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "legacy-straight-rail",
+      "type": "legacy-straight-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "legacy-straight-rail-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "linked-belt",
+      "type": "linked-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "linked-chest",
+      "type": "linked-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "loader",
+      "type": "loader"
+    },
+    {
+      "crafting_categories": {},
+      "name": "loader-1x1",
+      "type": "loader-1x1"
+    },
+    {
+      "crafting_categories": {},
+      "name": "locomotive",
+      "type": "locomotive"
+    },
+    {
+      "crafting_categories": {},
+      "name": "locomotive-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "locomotive-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "logistic-robot",
+      "type": "logistic-robot"
+    },
+    {
+      "crafting_categories": {},
+      "name": "logistic-robot-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "logistic-robot-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "long-handed-inserter",
+      "type": "inserter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "long-handed-inserter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "long-handed-inserter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "market",
+      "type": "market"
+    },
+    {
+      "crafting_categories": {},
+      "name": "massive-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-biter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-biter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-biter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-electric-pole",
+      "type": "electric-pole"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-electric-pole-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-electric-pole-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-scorchmark",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-scorchmark-tintable",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-small-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-spitter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-spitter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-spitter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-worm-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-worm-corpse-burrowed",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-worm-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "medium-worm-turret",
+      "type": "turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuclear-reactor",
+      "type": "reactor"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuclear-reactor-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuclear-reactor-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuclear-smouldering-smoke-source",
+      "type": "particle-source"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuke-effects-nauvis",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "nuke-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 1000,
+      "name": "offshore-pump",
+      "type": "offshore-pump"
+    },
+    {
+      "crafting_categories": {},
+      "name": "offshore-pump-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "offshore-pump-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "oil-processing",
+        "parameters"
+      ],
+      "energy_usage": 7000,
+      "name": "oil-refinery",
+      "type": "assembling-machine"
+    },
+    {
+      "crafting_categories": {},
+      "name": "oil-refinery-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "oil-refinery-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "one-way-valve",
+      "type": "valve"
+    },
+    {
+      "crafting_categories": {},
+      "name": "orange-arrow-with-circle",
+      "type": "arrow"
+    },
+    {
+      "crafting_categories": {},
+      "name": "overflow-valve",
+      "type": "valve"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-0",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-1",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-2",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-3",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-4",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-5",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-6",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-7",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-8",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "parameter-9",
+      "type": "simple-entity"
+    },
+    {
+      "crafting_categories": {},
+      "name": "passive-provider-chest",
+      "type": "logistic-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "passive-provider-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "passive-provider-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "piercing-shotgun-pellet",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe",
+      "type": "pipe"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-to-ground",
+      "type": "pipe-to-ground"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-to-ground-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-to-ground-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pipe-to-ground-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "poison-capsule",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "poison-cloud",
+      "type": "smoke-with-trigger"
+    },
+    {
+      "crafting_categories": {},
+      "name": "poison-cloud-visual-dummy",
+      "type": "smoke-with-trigger"
+    },
+    {
+      "crafting_categories": {},
+      "name": "power-switch",
+      "type": "power-switch"
+    },
+    {
+      "crafting_categories": {},
+      "name": "power-switch-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "power-switch-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 33.333333333333336,
+      "name": "programmable-speaker",
+      "type": "programmable-speaker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "programmable-speaker-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "programmable-speaker-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "proxy-container",
+      "type": "proxy-container"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 483.3333333333333,
+      "name": "pump",
+      "type": "pump"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pump-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pump-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 1500,
+      "name": "pumpjack",
+      "type": "mining-drill"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pumpjack-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "pumpjack-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 5000,
+      "name": "radar",
+      "type": "radar"
+    },
+    {
+      "crafting_categories": {},
+      "name": "radar-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "radar-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-chain-signal",
+      "type": "rail-chain-signal"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-chain-signal-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-chain-signal-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-ending-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-signal",
+      "type": "rail-signal"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-signal-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rail-signal-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "red-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "requester-chest",
+      "type": "logistic-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "requester-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "requester-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 833.3333333333334,
+      "name": "roboport",
+      "type": "roboport"
+    },
+    {
+      "crafting_categories": {},
+      "name": "roboport-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "roboport-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rock-damaged-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rocket",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": [
+        "parameters",
+        "rocket-building"
+      ],
+      "energy_usage": 4166.666666666667,
+      "name": "rocket-silo",
+      "type": "rocket-silo"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rocket-silo-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rocket-silo-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rocket-silo-rocket",
+      "type": "rocket-silo-rocket"
+    },
+    {
+      "crafting_categories": {},
+      "name": "rocket-silo-rocket-shadow",
+      "type": "rocket-silo-rocket-shadow"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 16.666666666666668,
+      "name": "selector-combinator",
+      "type": "selector-combinator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "selector-combinator-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "selector-combinator-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "shotgun-pellet",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "simple-entity-with-force",
+      "type": "simple-entity-with-force"
+    },
+    {
+      "crafting_categories": {},
+      "name": "simple-entity-with-owner",
+      "type": "simple-entity-with-owner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "slowdown-capsule",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "slowdown-capsule-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "slowdown-sticker",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-biter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-biter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-biter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-electric-pole",
+      "type": "electric-pole"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-electric-pole-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-electric-pole-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "energy_usage": 83.33333333333333,
+      "name": "small-lamp",
+      "type": "lamp"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-scorchmark",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-scorchmark-tintable",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-spitter",
+      "type": "unit"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-spitter-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-spitter-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-worm-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-worm-corpse-burrowed",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-worm-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "small-worm-turret",
+      "type": "turret"
+    },
+    {
+      "crafting_categories": {},
+      "name": "solar-panel",
+      "type": "solar-panel"
+    },
+    {
+      "crafting_categories": {},
+      "name": "solar-panel-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "solar-panel-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spark-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spark-explosion-higher",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron",
+      "type": "spider-vehicle"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-1",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-2",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-3",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-4",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-5",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-6",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-7",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-leg-8",
+      "type": "spider-leg"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spidertron-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spitter-spawner",
+      "type": "unit-spawner"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spitter-spawner-corpse",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "spitter-spawner-die",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "splitter",
+      "type": "splitter"
+    },
+    {
+      "crafting_categories": {},
+      "name": "splitter-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "splitter-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-engine",
+      "type": "generator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-engine-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-engine-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-turbine",
+      "type": "generator"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-turbine-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steam-turbine-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steel-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steel-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steel-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": [
+        "smelting"
+      ],
+      "energy_usage": 1500,
+      "name": "steel-furnace",
+      "type": "furnace"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steel-furnace-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "steel-furnace-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "stone",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": [
+        "smelting"
+      ],
+      "energy_usage": 1500,
+      "name": "stone-furnace",
+      "type": "furnace"
+    },
+    {
+      "crafting_categories": {},
+      "name": "stone-furnace-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "stone-furnace-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "stone-wall",
+      "type": "wall"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-chest",
+      "type": "logistic-container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-chest-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-tank",
+      "type": "storage-tank"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-tank-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "storage-tank-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "straight-rail",
+      "type": "straight-rail"
+    },
+    {
+      "crafting_categories": {},
+      "name": "straight-rail-remnants",
+      "type": "rail-remnants"
+    },
+    {
+      "crafting_categories": {},
+      "name": "stun-sticker",
+      "type": "sticker"
+    },
+    {
+      "crafting_categories": {},
+      "name": "substation",
+      "type": "electric-pole"
+    },
+    {
+      "crafting_categories": {},
+      "name": "substation-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "substation-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tank",
+      "type": "car"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tank-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tank-flamethrower-fire-stream",
+      "type": "stream"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tank-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tile-ghost",
+      "type": "tile-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tile-proxy",
+      "type": "entity-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "top-up-valve",
+      "type": "valve"
+    },
+    {
+      "crafting_categories": {},
+      "name": "train-stop",
+      "type": "train-stop"
+    },
+    {
+      "crafting_categories": {},
+      "name": "train-stop-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "train-stop-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "transport-belt",
+      "type": "transport-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "transport-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "transport-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "transport-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-01",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-01-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-02",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-02-red",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-02-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-03",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-03-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-04",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-04-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-05",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-05-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-06",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-06-brown",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-06-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-07",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-07-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-08",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-08-brown",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-08-red",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-08-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-09",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-09-brown",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-09-red",
+      "type": "tree"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-09-stump",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-dying-proxy",
+      "type": "entity-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "tree-proxy",
+      "type": "entity-ghost"
+    },
+    {
+      "crafting_categories": {},
+      "name": "underground-belt",
+      "type": "underground-belt"
+    },
+    {
+      "crafting_categories": {},
+      "name": "underground-belt-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "underground-belt-explosion-base",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "underground-belt-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "uranium-cannon-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "uranium-cannon-projectile",
+      "type": "projectile"
+    },
+    {
+      "crafting_categories": {},
+      "name": "uranium-cannon-shell-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "uranium-ore",
+      "type": "resource"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wall-damaged-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wall-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wall-remnants",
+      "type": "corpse"
+    },
+    {
+      "crafting_categories": {},
+      "name": "water-splash",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wooden-chest",
+      "type": "container"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wooden-chest-explosion",
+      "type": "explosion"
+    },
+    {
+      "crafting_categories": {},
+      "name": "wooden-chest-remnants",
+      "type": "corpse"
+    }
+  ],
   "recipes": [
     {
       "category": "crafting",

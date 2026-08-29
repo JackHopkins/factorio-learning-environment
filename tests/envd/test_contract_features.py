@@ -178,6 +178,23 @@ class FakeNamespace:
         return {"output": {"iron-plate": 600}}
 
 
+class ProvenanceAwareFakeNamespace(FakeNamespace):
+    """Fake FLE namespace exposing the manual-adjusted rate query."""
+
+    def __init__(self):
+        super().__init__()
+        self.recent_rate_calls = []
+
+    def _get_recent_rate(self, item_name, window_seconds):
+        self.recent_rate_calls.append((item_name, window_seconds))
+        return {
+            "item_name": item_name,
+            "total_per_minute": 600.0,
+            "manual_per_minute": 575.0,
+            "dynamic_per_minute": 25.0 if window_seconds == 300 else 40.0,
+        }
+
+
 def test_capture_is_deterministic():
     namespace = FakeNamespace()
     first = capture_context_snapshot(
@@ -227,6 +244,74 @@ def test_capture_computes_window_rates_passively():
     )
     # 600 plates produced over the one-minute window -> ~600/min.
     assert snapshot.production_rates_60s["iron-plate"] == pytest.approx(600.0, abs=0.5)
+
+
+def test_capture_uses_manual_adjusted_recent_rate_for_capacity_fields():
+    namespace = ProvenanceAwareFakeNamespace()
+    snapshot = capture_context_snapshot(
+        namespace,
+        session_id="s",
+        epoch_index=0,
+        captured_tick=17600,
+        map_seed_hash="msh",
+        flow_history=[(14000, {"iron-plate": 0.0})],
+    )
+
+    assert namespace.recent_rate_calls == [
+        ("iron-plate", 300),
+        ("iron-plate", 60),
+    ]
+    assert snapshot.raw_production_rates_60s["iron-plate"] == pytest.approx(600.0)
+    assert snapshot.raw_production_rates_300s["iron-plate"] == pytest.approx(600.0)
+    assert snapshot.automated_production_rates_60s["iron-plate"] == pytest.approx(40.0)
+    assert snapshot.automated_production_rates_300s["iron-plate"] == pytest.approx(25.0)
+    # The compatibility production fields are provenance-safe for live FLE
+    # captures, so downstream policy/generator consumers cannot scale from the
+    # hand-crafted portion of the raw flow statistics.
+    assert snapshot.production_rates_60s["iron-plate"] == pytest.approx(40.0)
+    assert snapshot.production_rates_300s["iron-plate"] == pytest.approx(25.0)
+
+
+def test_capture_preserves_delivery_telemetry_and_separates_factory_target_band():
+    snapshot = capture_context_snapshot(
+        FakeNamespace(),
+        session_id="s",
+        epoch_index=0,
+        captured_tick=500,
+        map_seed_hash="msh",
+        factory_band=1,
+        target_band=2,
+        delivery_telemetry={
+            "observed_until_tick": 500,
+            "bucket_ticks": 60,
+            "sample_count": 2,
+            "raw_totals": {"iron-plate": 120},
+            "raw_rates_60s": {"iron-plate": 120.0},
+            "raw_rates_300s": {"iron-plate": 24.0},
+            "recent_buckets": [
+                {"start_tick": 420, "end_tick": 479, "items": {"iron-plate": 60}},
+                {"start_tick": 480, "end_tick": 500, "items": {"iron-plate": 60}},
+            ],
+        },
+    )
+    assert snapshot.factory_band == 1
+    assert snapshot.target_band == 2
+    assert snapshot.delivery_totals == {"iron-plate": 120.0}
+    assert snapshot.delivery_rates_60s["iron-plate"] == pytest.approx(120.0)
+    assert snapshot.delivery_telemetry is not None
+    assert snapshot.delivery_telemetry.raw_rates_300s["iron-plate"] == pytest.approx(24.0)
+
+    features = extract_difficulty_features(
+        snapshot=snapshot,
+        product_id="iron-plate",
+        quantity=100,
+        deadline_ticks=3600,
+        catalog=_catalog(),
+    )
+    assert features.factory_band == 1
+    assert features.target_band == 2
+    assert features.stage_band == 2
+    assert features.existing_delivery_rate_per_minute == pytest.approx(120.0)
 
 
 def test_window_rate_has_no_rate_for_a_single_cumulative_sample():

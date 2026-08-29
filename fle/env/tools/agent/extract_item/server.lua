@@ -33,10 +33,14 @@ local function get_entity_item_count(entity, item_name)
     }
 
     local total_count = 0
+    local seen_inventory_types = {}
     for _, inv_type in ipairs(inventory_types) do
-        local inventory = entity.get_inventory(inv_type)
-        if inventory then
-            total_count = total_count + entity.get_item_count(item_name)
+        if not seen_inventory_types[inv_type] then
+            seen_inventory_types[inv_type] = true
+            local inventory = entity.get_inventory(inv_type)
+            if inventory then
+                total_count = total_count + inventory.get_item_count(item_name)
+            end
         end
     end
     return total_count
@@ -78,18 +82,22 @@ local function remove_items_from_entity(entity, stack)
 
     local items_remaining = stack.count
     local total_removed = 0
+    local seen_inventory_types = {}
 
     for _, inv_type in ipairs(inventory_types) do
         if items_remaining <= 0 then
             break
         end
 
-        local inventory = entity.get_inventory(inv_type)
-        if inventory then
-            local current_stack = {name = stack.name, count = items_remaining}
-            local removed = entity.remove_item(current_stack)
-            total_removed = total_removed + removed
-            items_remaining = items_remaining - removed
+        if not seen_inventory_types[inv_type] then
+            seen_inventory_types[inv_type] = true
+            local inventory = entity.get_inventory(inv_type)
+            if inventory then
+                local current_stack = {name = stack.name, count = items_remaining}
+                local removed = inventory.remove(current_stack)
+                total_removed = total_removed + removed
+                items_remaining = items_remaining - removed
+            end
         end
     end
 
@@ -178,7 +186,8 @@ storage.actions.extract_item = function(player_index, extract_item, count, x, y,
 
     if number_extracted > 0 then
         -- Insert items into player inventory
-        local inserted = player.insert(stack)
+        local transfer_stack = {name=extract_item, count=number_extracted}
+        local inserted = player.insert(transfer_stack)
 
         -- If we couldn't insert all items, put them back in the container
         if inserted < number_extracted then

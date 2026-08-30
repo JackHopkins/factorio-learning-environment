@@ -319,6 +319,8 @@ def format_saved_variables(namespace) -> str:
         "Pipe",
         "RecipeName",
         "prototype_by_name",
+        "prototype_by_title",
+        "technology_by_name",
         # Entity classes
         "Entity",
         "Inserter",

@@ -22,6 +22,8 @@ from fle.env.game_types import (
     Resource,
     Technology,
     prototype_by_name,
+    prototype_by_title,
+    technology_by_name,
 )
 
 
@@ -144,6 +146,8 @@ class FactorioNamespace:
         # TODO - We need to add all entity objects to the namespace, e.g 'Chest'
 
         self.prototype_by_name = prototype_by_name
+        self.prototype_by_title = prototype_by_title
+        self.technology_by_name = technology_by_name
         for name, value in self.prototype_by_name.items():
             if value.entity_class:
                 setattr(self, value.name, value.entity_class)

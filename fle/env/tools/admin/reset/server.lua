@@ -22,6 +22,12 @@ storage.actions.reset = function(inventories_json, reset_position, all_technolog
 	-- Clear alerts, reset game state, and production stats
 	game.reset_game_state()
 	storage.alerts = {}
+	-- Async path requests belong to the previous episode. Factorio may cancel
+	-- them during reset without emitting a completion event, so do not retain
+	-- permanently pending handles across server reuse.
+	storage.paths = {}
+	storage.path_requests = {}
+	storage.clearance_entities = {}
 	storage.actions.reset_production_stats()
 	storage.elapsed_ticks = 0
 

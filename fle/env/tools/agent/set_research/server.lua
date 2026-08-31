@@ -15,10 +15,25 @@ storage.actions.set_research = function(player_index, technology_name)
         error(string.format("\"Technology %s is not enabled\"", technology_name))
     end
 
-    -- Cancel current research if any
+    local missing_prerequisites = {}
+    for _, prerequisite in pairs(tech.prerequisites or {}) do
+        if not prerequisite.researched then
+            table.insert(missing_prerequisites, prerequisite.name)
+        end
+    end
+
+    if #missing_prerequisites > 0 then
+        table.sort(missing_prerequisites)
+        error(string.format(
+            "\"Cannot start research for %s. Missing prerequisites: %s\"",
+            technology_name,
+            table.concat(missing_prerequisites, ", ")
+        ))
+    end
+
+    -- Only switch away from valid current research after validation succeeds.
     force.cancel_current_research()
 
-    -- Set new research using add_research
     local success = force.add_research(technology_name)
     if not success then
         error(string.format("\"Failed to start research for %s\"", technology_name))

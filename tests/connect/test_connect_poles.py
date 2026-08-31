@@ -19,10 +19,33 @@ def game(instance):
         "coal": 100,
         "wooden-chest": 1,
         "assembling-machine-1": 10,
+        "chemical-plant": 10,
     }
     instance.reset()
     yield instance.namespace
     # instance.reset()
+
+
+def test_connect_adjacent_chemical_plant_and_inserter(game):
+    game.move_to(Position(x=5, y=5))
+    plant = game.place_entity(
+        Prototype.ChemicalPlant,
+        position=Position(x=5.5, y=5.5),
+    )
+    inserter = game.place_entity_next_to(
+        Prototype.Inserter,
+        reference_position=plant.position,
+        direction=Direction.LEFT,
+        spacing=0,
+    )
+
+    poles = game.connect_entities(
+        plant,
+        inserter,
+        connection_type=Prototype.MediumElectricPole,
+    )
+
+    assert poles.poles
 
 
 def test_connect_steam_engine_to_assembler_with_electricity_poles(game):

@@ -61,6 +61,8 @@ class TaskABC:
     def setup(self, instance):
         """setup function"""
         instance.initial_inventory = self.starting_inventory
+        # Persist the task's reset policy on the instance.
+        instance.all_technologies_researched = self.all_technology_reserached
         instance.reset(all_technologies_researched=self.all_technology_reserached)
         self.setup_instance(instance)
         self.starting_game_state = GameState.from_instance(instance)

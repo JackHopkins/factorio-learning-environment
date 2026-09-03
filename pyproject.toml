@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "factorio-learning-environment"
-version = "0.4.5"
+version = "0.4.6"
 description = "Factorio Learning Environment"
 authors = [
     {name = "Jack Hopkins", email = "noreply@github.com"},
@@ -89,7 +89,8 @@ all = [
     "scikit-image>=0.25.2",
 ]
 mcp = [
-    "mcp[cli]",
+    "mcp[cli]>=1.24.0,<2",
+    "fastmcp>=2.14.0",
     "dulwich",
 ]
 env = [

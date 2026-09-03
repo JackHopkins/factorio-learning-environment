@@ -35,10 +35,16 @@ setup_platform() {
 
 # Function to check for docker compose command
 setup_compose_cmd() {
-    if command -v docker &> /dev/null; then
-        COMPOSE_CMD="docker compose"
-    else
+    if ! command -v docker &> /dev/null; then
         echo "Error: Docker not found. Please install Docker."
+        exit 1
+    fi
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        echo "Error: Docker Compose not found. Please install Docker Compose."
         exit 1
     fi
 }

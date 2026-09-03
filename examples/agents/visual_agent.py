@@ -5,7 +5,7 @@ from tenacity import retry_if_exception_type, wait_exponential
 
 from fle.agents.llm.parsing import Policy
 from fle.agents.agent_abc import AgentABC
-from fle.agents.basic_agent import FINAL_INSTRUCTION, GENERAL_INSTRUCTIONS
+from examples.agents.basic_agent import FINAL_INSTRUCTION, GENERAL_INSTRUCTIONS
 from fle.agents.formatters import RecursiveReportFormatter
 from fle.agents.models import CompletionResult, Response
 from fle.commons.models.conversation import Conversation

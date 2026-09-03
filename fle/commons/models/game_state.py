@@ -167,13 +167,35 @@ class GameState:
             agent_messages=cls.parse_agent_messages(data),
         )
 
+    @staticmethod
+    def _inventory_to_dict(inventory) -> Any:
+        """Serialize an inventory to a plain dict of item counts.
+
+        Inventory is a pydantic model with extra="allow": item counts are
+        stored in __pydantic_extra__, so `inventory.__dict__` is always {}.
+        Serializing via __dict__ silently wiped every agent inventory in
+        saved game states. (It worked historically because Inventory once
+        populated self.__dict__ directly in a custom __init__ — see the
+        commented-out constructor in fle/env/entities.py — and broke when
+        that constructor was removed.)
+        """
+        if hasattr(inventory, "model_dump"):
+            return inventory.model_dump()
+        if hasattr(inventory, "items"):
+            try:
+                return dict(inventory.items())
+            except Exception:
+                pass
+        if hasattr(inventory, "__dict__"):
+            return inventory.__dict__
+        return inventory
+
     def to_raw(self) -> str:
         """Convert state to JSON string"""
         data = {
             "entities": self.entities,
             "inventories": [
-                inventory.__dict__ if hasattr(inventory, "__dict__") else inventory
-                for inventory in self.inventories
+                self._inventory_to_dict(inventory) for inventory in self.inventories
             ],
             "timestamp": self.timestamp,
             "namespaces": [ns.hex() if ns else "" for ns in self.namespaces],

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional
 
-from a2a.types import AgentCard, Message, Part, TextPart
+from a2a.types import AgentCard, Message, Part
 from fle.agents.agent_abc import create_default_agent_card
 
 from fle.env.namespace import FactorioNamespace
@@ -136,7 +136,7 @@ class A2AFactorioNamespace(FactorioNamespace):
                 a2a_message = Message(
                     messageId=msg["messageId"],
                     role="user",
-                    parts=[Part(root=TextPart(text=msg["message"]))],
+                    parts=[Part(text=msg["message"])],
                     metadata={
                         "sender": str(msg["sender"]),
                         "message_type": "text",

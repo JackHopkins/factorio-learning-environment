@@ -35,7 +35,7 @@ python env/src/gym_env/example_usage.py --list
 ### 2. Create an Environment
 
 ```python
-import gym
+import gymnasium as gym
 
 # Create any available environment
 env = gym.make("Factorio-iron_ore_throughput_16-v0")
@@ -192,7 +192,7 @@ To add a new task:
 Here's a complete example that demonstrates the full workflow:
 
 ```python
-import gym
+import gymnasium as gym
 from gym_env.registry import list_available_environments, get_environment_info
 from gym_env.action import Action
 

@@ -62,7 +62,7 @@ from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
 
 import importlib.resources
-import gym
+import gymnasium as gym
 
 
 logger = logging.getLogger(__name__)
@@ -181,7 +181,9 @@ async def _base_solver_loop(
             logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
         # Create gym environment
-        gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+        gym_env: FactorioGymEnv = gym.make(
+            gym_env_id, disable_env_checker=True, run_idx=run_idx
+        )
         gym_env.reset()
 
         logger.info("Connected to Factorio server")
@@ -912,7 +914,9 @@ def factorio_fat_hud_solver():
                 logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")
@@ -1453,7 +1457,9 @@ def factorio_reasoning_only_solver():
             logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")
@@ -2015,7 +2021,9 @@ def factorio_pruned_gamestate_solver():
             logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")
@@ -2528,7 +2536,9 @@ def factorio_condensed_prompt_latest_image_solver():
             logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")
@@ -2975,7 +2985,9 @@ def factorio_condensed_prompt_solver():
             logger.warning(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")

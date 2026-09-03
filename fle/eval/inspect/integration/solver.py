@@ -48,7 +48,7 @@ from fle.env.tools.agent.sleep.client import Sleep
 import importlib.resources
 from pathlib import Path
 from jinja2 import Template
-import gym
+import gymnasium as gym
 
 
 def _load_prompt_template(filename: str) -> Template:
@@ -237,7 +237,9 @@ def factorio_controlled_solver():
                 logger.info(f"📡 Allocated server factorio_{run_idx}")
 
             # Create gym environment
-            gym_env: FactorioGymEnv = gym.make(env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("🎮 Connected to Factorio server")
@@ -385,15 +387,13 @@ Analyze the current state and write a Python program using the FLE API to progre
                     # Generate response using Inspect's model with reasoning support
                     generation_config = {
                         "max_tokens": 4096,  # More tokens for complex programs
-                        "transforms": ["middle-out"],
                         "reasoning_effort": "minimal",
                         # "temperature": 0.1
                     }
 
-                    state.output = await get_model().generate(
+                    state.output = await get_model(transforms=["middle-out"]).generate(
                         input=state.messages,
                         config=generation_config,
-                        # transforms = ['middle-out']
                     )
 
                     # Log reasoning usage if available
@@ -761,7 +761,9 @@ def factorio_unbounded_solver():
 
             # Create gym environment - always use open_play for unbounded tasks
             # open_play uses DefaultTask which has no throughput requirements
-            gym_env: FactorioGymEnv = gym.make(gym_env_id, run_idx=run_idx)
+            gym_env: FactorioGymEnv = gym.make(
+                gym_env_id, disable_env_checker=True, run_idx=run_idx
+            )
             gym_env.reset()
 
             logger.info("Connected to Factorio server")

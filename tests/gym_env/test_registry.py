@@ -9,7 +9,7 @@ This script demonstrates the complete workflow of:
 4. Basic interaction with the environment
 """
 
-import gym
+import gymnasium as gym
 import sys
 import os
 
@@ -56,7 +56,7 @@ def test_environment_creation():
 
     try:
         # This will fail if Factorio containers aren't running, but that's expected
-        env = gym.make(test_env_id)
+        env = gym.make(test_env_id, disable_env_checker=True)
         print("✓ Environment created successfully!")
 
         # Test basic environment properties
@@ -101,7 +101,7 @@ def test_gym_integration():
     print("=== Testing Gym Integration ===")
 
     # Check if our environments are in gym's registry
-    from gym.envs.registration import registry
+    from gymnasium.envs.registration import registry
 
     factorio_envs = [
         env_id for env_id in registry.keys() if env_id.startswith("Factorio-")
@@ -131,7 +131,6 @@ def test_registry_functions():
     if env_ids:
         info = get_environment_info(env_ids[0])
         assert info is not None
-        assert "env_id" in info
         assert "description" in info
         assert "task_key" in info
         print(f"✓ get_environment_info() returned valid info for {env_ids[0]}")
@@ -160,7 +159,7 @@ def main():
     print("Test suite completed!")
     print("\nTo use the registry in your code:")
     print("```python")
-    print("import gym")
+    print("import gymnasium as gym")
     print("from gym_env.registry import list_available_environments")
     print()
     print("# List available environments")

@@ -1,5 +1,5 @@
 import pytest
-from gym import spaces
+from gymnasium import spaces
 
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.action import Action

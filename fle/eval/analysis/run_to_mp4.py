@@ -21,7 +21,7 @@ import math
 # Add parent directories to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent.parent))
 
-import gym
+import gymnasium as gym
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.registry import list_available_environments
@@ -133,7 +133,7 @@ def create_gym_environment(version: int) -> FactorioGymEnv:
                     raise ValueError("No gym environments available!")
 
             try:
-                gym_env = gym.make(env_id, run_idx=0)
+                gym_env = gym.make(env_id, disable_env_checker=True, run_idx=0)
                 print(f"Successfully created gym environment: {env_id}")
                 return gym_env
             except Exception as e:
@@ -142,7 +142,9 @@ def create_gym_environment(version: int) -> FactorioGymEnv:
                 if available_envs and env_id != available_envs[0]:
                     fallback_env_id = available_envs[0]
                     print(f"Trying final fallback environment: {fallback_env_id}")
-                    gym_env = gym.make(fallback_env_id, run_idx=0)
+                    gym_env = gym.make(
+                        fallback_env_id, disable_env_checker=True, run_idx=0
+                    )
                     return gym_env
                 else:
                     raise e

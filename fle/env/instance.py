@@ -76,19 +76,32 @@ class GameControl:
         return self._speed
 
     def pause(self):
-        """Pause the game (preserves speed setting)"""
-        if not self._is_paused:
-            self._is_paused = True
-            self.rcon_client.send_command("/sc game.tick_paused = true")
+        """Pause the game (preserves speed setting).
+
+        Always write the authoritative Factorio state. A server can outlive the
+        ``GameControl`` instance that last paused it, so the local flag is only
+        useful for deciding whether to render a transition message.
+        """
+        was_paused = self._is_paused
+        self._is_paused = True
+        self.rcon_client.send_command("/sc game.tick_paused = true")
+        if not was_paused:
             timestamp = datetime.datetime.now().strftime("%H:%M:%S")
             self._render_pause_message(f"[{timestamp}] Game paused")
 
     def unpause(self):
-        """Unpause the game (restores previous speed)"""
-        if self._is_paused:
-            self._is_paused = False
-            self.rcon_client.send_command("/sc game.tick_paused = false")
-            self.rcon_client.send_command(f"/sc game.speed = {self._speed}")
+        """Unpause the game and restore the configured speed.
+
+        The command is intentionally unconditional. Inspect reuses persistent
+        Factorio servers across fresh Python environment objects; trusting a
+        newly initialized local flag can otherwise leave the reused server
+        paused forever.
+        """
+        was_paused = self._is_paused
+        self._is_paused = False
+        self.rcon_client.send_command("/sc game.tick_paused = false")
+        self.rcon_client.send_command(f"/sc game.speed = {self._speed}")
+        if was_paused:
             timestamp = datetime.datetime.now().strftime("%H:%M:%S")
             self._render_pause_message(
                 f"[{timestamp}] Game unpaused (speed: {self._speed}x)"

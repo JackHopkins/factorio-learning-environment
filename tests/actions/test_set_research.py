@@ -14,9 +14,19 @@ def test_set_research(game):
 
 
 def test_fail_to_research_locked_technology(game):
-    try:
+    current_research_ingredients = game.set_research(Technology.Automation)
+
+    with pytest.raises(Exception) as exc_info:
         game.set_research(Technology.Automation2)
-    except Exception:
-        assert True
-        return
-    assert False, "Was able to research locked technology. Expected exception."
+
+    message = str(exc_info.value)
+    assert message.startswith(
+        "Cannot start research for automation-2. Missing prerequisites:"
+    )
+    assert "automation" in message
+
+    # A rejected research request must not cancel the research already underway.
+    remaining_ingredients = game.get_research_progress()
+    assert [ingredient.model_dump() for ingredient in remaining_ingredients] == [
+        ingredient.model_dump() for ingredient in current_research_ingredients
+    ]

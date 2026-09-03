@@ -4,7 +4,7 @@ from fle.env.tools import Tool
 from fle.env.tools.admin.render_message.client import RenderMessage
 import logging
 import uuid
-from a2a.types import Message, Part, TextPart
+from a2a.types import Message, Part
 
 
 class SendMessage(Tool):
@@ -46,7 +46,7 @@ class SendMessage(Tool):
             a2a_message = Message(
                 messageId=str(uuid.uuid4()),
                 role="agent",
-                parts=[Part(root=TextPart(text=message))],
+                parts=[Part(text=message)],
                 metadata={
                     "sender": self.namespace.agent_id,
                     "message_type": "text",

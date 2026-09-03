@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional
 
 from fle.env.a2a_instance import A2AFactorioInstance
-import gym
+import gymnasium as gym
 
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.commons.asyncio_utils import run_async_safely
@@ -78,6 +78,7 @@ class FactorioGymRegistry:
             id=task_key,
             entry_point="fle.env.gym_env.registry:make_factorio_env",
             kwargs={"spec": spec},
+            order_enforce=False,
         )
 
     def list_environments(self) -> List[str]:

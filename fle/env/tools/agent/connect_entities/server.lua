@@ -738,6 +738,16 @@ local function connect_entities(player_index, source_x, source_y, target_x, targ
 
     local path = storage.utils.normalise_path(raw_path, start_position, end_position)
 
+    if #path == 0 then
+        error(string.format(
+            "\"Could not connect entities from (%.1f, %.1f) to (%.1f, %.1f): no placeable positions in normalized path\"",
+            source_x,
+            source_y,
+            target_x,
+            target_y
+        ))
+    end
+
     -- Get default and underground connection types
     local default_connection_type = default_connect_types[connection_types[1]] or connection_types[1]
     local underground_type = nil

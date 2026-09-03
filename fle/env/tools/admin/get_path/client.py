@@ -10,7 +10,11 @@ from fle.env.tools import Tool
 # chunk-generation before A* can start; 10 polls is not enough, and
 # empirically 30 and 60 still miss occasionally. Override at runtime with
 # `FLE_GETPATH_MAX_ATTEMPTS`.
-_DEFAULT_MAX_ATTEMPTS = int(v) if (v := os.environ.get("FLE_GETPATH_MAX_ATTEMPTS", "120")).isdigit() and int(v) > 0 else 120
+_DEFAULT_MAX_ATTEMPTS = (
+    int(v)
+    if (v := os.environ.get("FLE_GETPATH_MAX_ATTEMPTS", "120")).isdigit() and int(v) > 0
+    else 120
+)
 
 
 class GetPath(Tool):

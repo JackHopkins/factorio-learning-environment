@@ -639,8 +639,11 @@ Examples:
             "text_only",
             "minimal_context",
             "hud",
+            "hud_text_only",
+            "fat_hud",
             "balanced",
             "reasoning_only",
+            "pruned_gamestate",
         ],
         help="Solver variant to use (default depends on task type)",
     )

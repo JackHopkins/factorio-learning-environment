@@ -112,6 +112,30 @@ def automation_science_pack_throughput():
 
 
 @task
+def chemical_science_pack_throughput():
+    """Chemical science pack throughput task"""
+    return _throughput("chemical_science_pack_throughput", 16)
+
+
+@task
+def military_science_pack_throughput():
+    """Military science pack throughput task"""
+    return _throughput("military_science_pack_throughput", 16)
+
+
+@task
+def production_science_pack_throughput():
+    """Production science pack throughput task"""
+    return _throughput("production_science_pack_throughput", 16)
+
+
+@task
+def utility_science_pack_throughput():
+    """Utility science pack throughput task"""
+    return _throughput("utility_science_pack_throughput", 16)
+
+
+@task
 def inserter_throughput():
     """Inserter throughput task"""
     return _throughput("inserter_throughput", 16)
@@ -121,6 +145,24 @@ def inserter_throughput():
 def iron_gear_wheel_throughput():
     """Iron gear wheel throughput task"""
     return _throughput("iron_gear_wheel_throughput", 16)
+
+
+@task
+def battery_throughput():
+    """Battery throughput task"""
+    return _throughput("battery_throughput", 16)
+
+
+@task
+def engine_unit_throughput():
+    """Engine unit throughput task"""
+    return _throughput("engine_unit_throughput", 16)
+
+
+@task
+def low_density_structure_throughput():
+    """Low density structure throughput task"""
+    return _throughput("low_density_structure_throughput", 16)
 
 
 @task

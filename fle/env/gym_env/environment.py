@@ -567,9 +567,11 @@ class FactorioGymEnv(gym.Env):
         3. Request to generate more chunks of the map.
         """
         try:
-            # Kill all enemy units - this is the fast approach
-            kill_cmd = '/c local surface = game.player.surface; for key, entity in pairs(surface.find_entities_filtered({force="enemy"})) do; entity.destroy(); end'
-            chunk_cmd = f"/c game.players[0].surface.request_to_generate_chunks({{x=0,y=0}}, {step})"
+            # Headless RCON has no game.player, and Factorio player indices are
+            # 1-based. Neither operation needs a player, so address the surface
+            # directly instead.
+            kill_cmd = '/silent-command local surface = game.surfaces[1]; for _, entity in pairs(surface.find_entities_filtered({force="enemy"})) do entity.destroy() end'
+            chunk_cmd = f"/silent-command game.surfaces[1].request_to_generate_chunks({{x=0,y=0}}, {step})"
             self.instance.rcon_client.send_commands(
                 {"kill_cmd": kill_cmd, "chunk_cmd": chunk_cmd}
             )

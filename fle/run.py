@@ -191,11 +191,10 @@ def fle_inspect_eval(args):
         if hasattr(args, "limit") and args.limit:
             cmd.extend(["--limit", str(args.limit)])
 
-        if args.model:
-            cmd.extend(["--model", args.model])
-        else:
+        if not args.model:
             # Default to a working model for testing
-            cmd.extend(["--model", "openai/gpt-4o-mini"])
+            args.model = "openai/gpt-4o-mini"
+        cmd.extend(["--model", args.model])
 
         # Add reasoning configuration for reasoning models
         if hasattr(args, "reasoning_effort") and args.reasoning_effort:

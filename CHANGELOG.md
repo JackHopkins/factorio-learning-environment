@@ -5,6 +5,13 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2026-09-03
+
+### Fixed
+
+- Restore Python <3.12 compatibility in `solver_variants.py` (f-string expressions cannot contain backslashes before PEP 701; the repo supports Python >=3.10) (#389)
+- `fle inspect-eval` no longer crashes with a `TypeError` when `--model` is omitted; the default model is assigned before use (#385)
+
 ## [0.4.4] - 2026-09-03
 
 ### Fixed

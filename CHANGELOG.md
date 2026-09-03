@@ -5,6 +5,23 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-09-03
+
+### Fixed
+
+- Dependency compatibility: work with a2a-sdk 1.1.x (`TextPart` removal) and migrate `gym` imports to `gymnasium`; this unblocks the test suite on current lockfile (#372)
+- `GameState` serialization no longer wipes agent inventories (pydantic `extra="allow"` items live in `__pydantic_extra__`, not `__dict__`) (#374)
+- Lua tool error messages are no longer truncated at colons; only the Lua source prefix is stripped (#398)
+- Factorio server reuse lifecycle: pause/unpause always writes authoritative server state, headless-safe RCON commands in `background_step`, and stale async path requests cleared on reset (#397)
+- An invalid research request no longer cancels the research already underway; missing prerequisites are reported explicitly (#399)
+- `connect_entities` power pole placement now avoids world collisions with the connected entities (#400)
+- Factorio 2.0 technology enum parity: corrected renamed/removed technology identifiers (`advanced-circuit`, `processing-unit`, `bulk-inserter`, `energy-shield-equipment`, ...) (#396)
+- Reused task instances persist `all_technologies_researched`, so later resets keep the task's technology policy (#401)
+
+### Added
+
+- Missing Inspect throughput task definitions (chemical/military/production/utility science packs, battery, engine unit, low density structure), with a sync test against `THROUGHPUT_TASKS` (#402)
+
 ## [0.4.2] - 2026-03-27
 
 ### Added

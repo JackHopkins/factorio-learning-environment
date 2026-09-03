@@ -1,5 +1,11 @@
 from typing import Union, Tuple, List, Set
-from fle.env.entities import Position, Entity, ElectricityGroup, FluidHandler
+from fle.env.entities import (
+    Position,
+    Entity,
+    ElectricityGroup,
+    ElectricityPole,
+    FluidHandler,
+)
 from fle.env.tools.agent.connect_entities.resolver import Resolver
 
 
@@ -81,20 +87,50 @@ class PowerConnectionResolver(Resolver):
 
         return [pos.down(0.5).right(0.5) for pos in positions]
 
-    def _get_valid_connection_points(self, entity: Entity) -> List[Position]:
-        """Get valid connection points for an entity, avoiding predefined points."""
-        # First check for predefined connection points
+    @staticmethod
+    def _position_overlaps_entity(position: Position, entity: Entity) -> bool:
+        """Return whether a 1x1 pole at ``position`` overlaps ``entity``."""
+        half_width = entity.tile_dimensions.tile_width / 2 + 0.5
+        half_height = entity.tile_dimensions.tile_height / 2 + 0.5
+        return (
+            abs(position.x - entity.position.x) < half_width
+            and abs(position.y - entity.position.y) < half_height
+        )
+
+    def _get_valid_connection_points(
+        self, entity: Entity, excluded_entities: Tuple[Entity, ...] = ()
+    ) -> List[Position]:
+        """Get deterministic pole positions that do not overlap either endpoint."""
         predefined_points = self._get_entity_connection_points(entity)
-        # If no predefined points exist, use adjacent tiles
         adjacent_tiles = self._get_adjacent_tiles(entity)
 
-        ignore_points = set()
+        valid_points = []
+        seen = set()
         for tile in adjacent_tiles:
-            for point in predefined_points:
-                if tile.is_close(point, tolerance=0.707):
-                    ignore_points.add(point)
+            key = (tile.x, tile.y)
+            if key in seen:
+                continue
+            seen.add(key)
 
-        return list(set(adjacent_tiles) - ignore_points)
+            if any(
+                tile.is_close(point, tolerance=0.707) for point in predefined_points
+            ):
+                continue
+            if any(
+                self._position_overlaps_entity(tile, excluded)
+                for excluded in excluded_entities
+            ):
+                continue
+            valid_points.append(tile)
+
+        return sorted(valid_points, key=lambda point: (point.x, point.y))
+
+    def _get_power_connection_points(
+        self, entity: Entity, excluded_entities: Tuple[Entity, ...] = ()
+    ) -> List[Position]:
+        if isinstance(entity, ElectricityPole):
+            return [entity.position]
+        return self._get_valid_connection_points(entity, excluded_entities)
 
     def resolve(
         self,
@@ -111,13 +147,14 @@ class PowerConnectionResolver(Resolver):
             positions = []
             if isinstance(target, Entity):
                 # Get valid connection points for the target entity
-                target_positions = self._get_valid_connection_points(target)
+                target_positions = self._get_power_connection_points(target)
                 # For each pole in the source group, connect to the nearest valid point
                 for pole in source.poles:
                     nearest_point = min(
                         target_positions,
-                        key=lambda pos: abs(pos.x - pole.position.x)
-                        + abs(pos.y - pole.position.y),
+                        key=lambda pos: (
+                            abs(pos.x - pole.position.x) + abs(pos.y - pole.position.y)
+                        ),
                     )
                     positions.append((pole.position, nearest_point))
             else:
@@ -137,6 +174,33 @@ class PowerConnectionResolver(Resolver):
                     positions.append((pole.position, target_pos))
             return positions
         else:
+            if isinstance(source, Entity) and isinstance(target, Entity):
+                source_positions = self._get_power_connection_points(source, (target,))
+                target_positions = self._get_power_connection_points(target, (source,))
+                candidate_pairs = [
+                    (source_position, target_position)
+                    for source_position in source_positions
+                    for target_position in target_positions
+                ]
+                if not candidate_pairs:
+                    raise ValueError(
+                        "No non-overlapping positions are available for a power connection"
+                    )
+
+                nearest_pair = min(
+                    candidate_pairs,
+                    key=lambda pair: (
+                        abs(pair[0].x - pair[1].x) + abs(pair[0].y - pair[1].y),
+                        pair[0].distance(source.position)
+                        + pair[1].distance(target.position),
+                        pair[0].x,
+                        pair[0].y,
+                        pair[1].x,
+                        pair[1].y,
+                    ),
+                )
+                return [nearest_pair]
+
             source_pos = source.position if isinstance(source, Entity) else source
             # Round source position to nearest half-tile
             source_pos = Position(
@@ -145,12 +209,13 @@ class PowerConnectionResolver(Resolver):
 
             if isinstance(target, Entity):
                 # Get valid connection points for the target entity
-                target_positions = self._get_valid_connection_points(target)
+                target_positions = self._get_power_connection_points(target)
                 # Connect to the nearest valid point
                 nearest_point = min(
                     target_positions,
-                    key=lambda pos: abs(pos.x - source_pos.x)
-                    + abs(pos.y - source_pos.y),
+                    key=lambda pos: (
+                        abs(pos.x - source_pos.x) + abs(pos.y - source_pos.y)
+                    ),
                 )
                 return [(source_pos, nearest_point)]
             else:

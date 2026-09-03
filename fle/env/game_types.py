@@ -321,9 +321,14 @@ class Technology(enum.Enum):
     Logistics3 = "logistics-3"  # Unlocks express belts and inserters
 
     # Circuit technologies
-    # CircuitNetwork = "circuit-network"
-    AdvancedElectronics = "advanced-electronics"
-    AdvancedElectronics2 = "advanced-electronics-2"
+    CircuitNetwork = "circuit-network"
+    AdvancedCircuit = "advanced-circuit"
+    ProcessingUnit = "processing-unit"
+
+    # Backwards-compatible aliases for the Factorio 1.x names. The values must
+    # still resolve to real Factorio 2.0 technology prototypes.
+    AdvancedElectronics = "advanced-circuit"
+    AdvancedElectronics2 = "processing-unit"
 
     # Power technologies
     Electronics = "electronics"
@@ -332,7 +337,7 @@ class Technology(enum.Enum):
     SolarEnergy = "solar-energy"
     ElectricEngineering = "electric-engine"
     BatteryTechnology = "battery"
-    # AdvancedBattery = "battery-mk2-equipment"
+    AdvancedBattery = "battery-mk2-equipment"
     NuclearPower = "nuclear-power"
 
     # Mining technologies
@@ -342,7 +347,7 @@ class Technology(enum.Enum):
 
     # Military technologies
     MilitaryScience = "military"
-    # MilitaryScience2 = "military-2"
+    MilitaryScience2 = "military-2"
     # MilitaryScience3 = "military-3"
     # MilitaryScience4 = "military-4"
     # Artillery = "artillery"
@@ -357,8 +362,8 @@ class Technology(enum.Enum):
     PowerArmor = "power-armor"
     PowerArmor2 = "power-armor-mk2"
     NightVision = "night-vision-equipment"
-    EnergyShield = "energy-shields"
-    EnergyShield2 = "energy-shields-mk2-equipment"
+    EnergyShield = "energy-shield-equipment"
+    EnergyShield2 = "energy-shield-mk2-equipment"
 
     # Train technologies
     RailwayTransportation = "railway"
@@ -366,6 +371,7 @@ class Technology(enum.Enum):
     # RailSignals = "rail-signals"
 
     # Oil processing
+    OilGathering = "oil-gathering"
     OilProcessing = "oil-processing"
     AdvancedOilProcessing = "advanced-oil-processing"
     SulfurProcessing = "sulfur-processing"
@@ -397,18 +403,18 @@ class Technology(enum.Enum):
     MilitarySciencePack = "military-science-pack"
     ChemicalSciencePack = "chemical-science-pack"
     ProductionSciencePack = "production-science-pack"
-    # UtilitySciencePack = "utility-science-pack"
+    UtilitySciencePack = "utility-science-pack"
     # SpaceSciencePack = "space-science-pack"
 
     # Inserter technologies
     FastInserter = "fast-inserter"
-    StackInserter = "stack-inserter"
-    StackInserterCapacity1 = "stack-inserter-capacity-bonus-1"
-    StackInserterCapacity2 = "stack-inserter-capacity-bonus-2"
+    BulkInserter = "bulk-inserter"
+    StackInserter = "bulk-inserter"
+    StackInserterCapacity1 = "inserter-capacity-bonus-1"
+    StackInserterCapacity2 = "inserter-capacity-bonus-2"
 
     # Storage technologies
     StorageTanks = "fluid-handling"
-    BarrelFilling = "barrel-filling"
     # Warehouses = "warehousing"
 
     # Vehicle technologies
@@ -417,7 +423,7 @@ class Technology(enum.Enum):
     # SpiderVehicle = "spidertron"
 
     # Weapon technologies
-    Grenades = "grenades"
+    Grenades = "military-2"
     # ClusterGrenades = "cluster-grenades"
     # RocketLauncher = "rocketry"
     # ExplosiveRocketry = "explosive-rocketry"
@@ -428,15 +434,15 @@ class Technology(enum.Enum):
 
     # Misc technologies
     Landfill = "landfill"
-    CharacterInventorySlots = "character-inventory-slots"
-    ResearchSpeed = "research-speed"
-    # Toolbelt = "toolbelt"
+    Toolbelt = "toolbelt"
+    ResearchSpeed = "research-speed-1"
+    StoneWall = "stone-wall"
+    Engine = "engine"
     # BrakinPower = "braking-force"
 
     # # Endgame technologies
     SpaceScience = "space-science-pack"
     RocketFuel = "rocket-fuel"
-    RocketControl = "rocket-control-unit"
     LowDensityStructure = "low-density-structure"
     RocketSiloTechnology = "rocket-silo"
 

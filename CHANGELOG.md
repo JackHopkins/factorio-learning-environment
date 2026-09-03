@@ -5,6 +5,19 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2026-09-03
+
+### Fixed
+
+- Example agents import from `examples.agents` instead of the nonexistent `fle.agents` modules (#386)
+- `fle inspect-eval --solver` now exposes `hud_text_only`, `fat_hud`, and `pruned_gamestate`, matching `SOLVER_MAP` (with a sync test) (#387)
+- The `[mcp]` extra is installable (declares `fastmcp>=2.14.0`, pins `mcp[cli]>=1.24.0,<2`) and the MCP server's lifespan is attached via the `FastMCP` constructor instead of a silently ignored post-hoc assignment (#388)
+- `fle/cluster/run-envs.sh` falls back to the standalone `docker-compose` binary when the `docker compose` plugin is unavailable (#365)
+
+### Added
+
+- `--model-base-url` passthrough on `fle inspect-eval` for custom model API endpoints (#391)
+
 ## [0.4.5] - 2026-09-03
 
 ### Fixed

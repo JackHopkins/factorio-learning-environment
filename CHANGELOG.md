@@ -5,6 +5,12 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2026-09-04
+
+### Added
+
+- Opt-in retry of transient Factorio env-init failures via `fle inspect-eval --init-retries N` (or `FLE_INIT_RETRIES`). Disabled by default (single attempt, previous behavior). On retry, Lua scripts are force re-uploaded (`cache_scripts=False`) to clear stale server-side state on recycled containers; configuration errors are never retried (#367)
+
 ## [0.4.6] - 2026-09-03
 
 ### Fixed

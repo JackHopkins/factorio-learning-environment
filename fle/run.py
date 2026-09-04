@@ -254,6 +254,11 @@ def fle_inspect_eval(args):
             os.environ["FLE_VISION"] = "true"
             print("Vision mode enabled")
 
+        # Opt-in retry of transient env-init failures (recycled containers)
+        if hasattr(args, "init_retries") and args.init_retries:
+            os.environ["FLE_INIT_RETRIES"] = str(args.init_retries)
+            print(f"Init retries enabled: up to {args.init_retries} attempts")
+
         # Set scenario for sandbox containers
         if hasattr(args, "scenario") and args.scenario:
             os.environ["FLE_SCENARIO"] = args.scenario
@@ -633,6 +638,13 @@ Examples:
     )
     parser_inspect.add_argument(
         "--env-id", help="Specific environment/task to evaluate (default: all tasks)"
+    )
+    parser_inspect.add_argument(
+        "--init-retries",
+        type=int,
+        help="Retry transient Factorio env-init failures up to N attempts with "
+        "backoff (default: 1, no retry). Helps when reused containers fail "
+        "their first reset, e.g. 'Could not save research state'",
     )
     parser_inspect.add_argument(
         "--tasks",

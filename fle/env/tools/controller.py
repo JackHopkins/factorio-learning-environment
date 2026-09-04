@@ -1,5 +1,7 @@
+import base64
 import json
 import time
+import zlib
 from timeit import default_timer as timer
 from typing import List, Tuple, Dict, Any
 
@@ -16,6 +18,25 @@ from fle.env.namespace import FactorioNamespace
 from fle.env.utils.rcon import _lua2python
 
 COMMAND = "/silent-command"
+
+# Tool responses are zlib+base64 compressed in Lua (helpers.encode_string)
+# before rcon.print. Factorio's RCON stalls ~40ms per 4KB fragment on large
+# responses (Nagle/delayed-ACK), so a 1MB payload takes ~10s uncompressed
+# but a few ms compressed. The Lua side falls back to the raw dump if
+# encode_string fails, so decoding falls back to the raw response too.
+_RESPONSE_WRAPPER = "local _d = dump({a=a, b=b}); rcon.print(helpers.encode_string(_d) or _d)"
+
+
+def _decode_response(response: str) -> str:
+    """Decode a compressed tool response; pass through anything else."""
+    if not response:
+        return response
+    try:
+        return zlib.decompress(base64.b64decode(response, validate=True)).decode(
+            "utf-8"
+        )
+    except Exception:
+        return response
 
 # Maximum retries for RCON [processing] errors
 MAX_PROCESSING_RETRIES = 3
@@ -175,8 +196,10 @@ class Controller:
         start = time.time()
         parameters = [lua.encode(arg) for arg in args]
         invocation = f"pcall(storage.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
-        wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-        lua_response = self.connection.rcon_client.send_command(wrapped)
+        wrapped = f"{COMMAND} a, b = {invocation}; {_RESPONSE_WRAPPER}"
+        lua_response = _decode_response(
+            self.connection.rcon_client.send_command(wrapped)
+        )
 
         # Check for [processing] error from RCON layer
         if self._check_for_processing_error(lua_response):
@@ -262,8 +285,10 @@ class Controller:
             start = time.time()
             parameters = [lua.encode(arg) for arg in args]
             invocation = f"pcall(storage.actions.{self.name}{(', ' if parameters else '') + ','.join(parameters)})"
-            wrapped = f"{COMMAND} a, b = {invocation}; rcon.print(dump({{a=a, b=b}}))"
-            lua_response = self.connection.rcon_client.send_command(wrapped)
+            wrapped = f"{COMMAND} a, b = {invocation}; {_RESPONSE_WRAPPER}"
+            lua_response = _decode_response(
+                self.connection.rcon_client.send_command(wrapped)
+            )
             parsed, elapsed = _lua2python(invocation, lua_response, start=start)
             if not parsed["a"] and "b" in parsed and isinstance(parsed["b"], str):
                 parts = lua_response.split('["b"] = ')

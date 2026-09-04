@@ -5,6 +5,14 @@ All notable changes to the Factorio Learning Environment will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.8] - 2026-09-04
+
+### Fixed
+
+- Tool responses are compressed in Lua (`helpers.encode_string`, zlib+base64) before RCON transfer and decoded in Python ahead of the existing parser. Factorio's RCON stalls ~40 ms per 4 KB response fragment, so large responses were dominated by transfer: saving a 1,600-entity factory took 10.5 s (~97% transfer) and scaled quadratically. Now linear: 0.52 s at 1,600 entities, 3.7 s at 10,000. `get_entities()` on large factories gets the same fix (7.9 s → 0.77 s at 1,600 entities)
+- `dump()` in `mods/utils.lua` builds its output via `table.concat` instead of O(N²) repeated string concatenation; output is byte-identical
+- Removed duplicate global `dump()` definitions from the `score` tools that clobbered the shared implementation
+
 ## [0.4.7] - 2026-09-04
 
 ### Added

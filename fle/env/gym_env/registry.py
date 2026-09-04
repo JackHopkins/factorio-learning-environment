@@ -99,8 +99,9 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
     """Factory function to create a Factorio gym environment.
 
     The instance-creation block (FactorioInstance build + task.setup +
-    FactorioGymEnv wrap) is retried up to ``FLE_INIT_RETRIES`` times
-    (default 3) with backoff. Transient failures like
+    FactorioGymEnv wrap) can be retried with backoff by setting
+    ``FLE_INIT_RETRIES`` > 1 (default 1, i.e. retries disabled; enable
+    via ``fle inspect-eval --init-retries N``). Transient failures like
     ``"Could not save research state"`` happen when a Factorio container
     is recycled across samples and its RCON server returns malformed
     data on the first reset; a short wait + fresh attempt clears it.
@@ -159,7 +160,9 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
     # ``cache_scripts=False`` so all scripts are freshly re-uploaded
     # (re-initializing their global Lua state). Plus longer backoff
     # so containers have time to settle.
-    max_attempts = int(os.getenv("FLE_INIT_RETRIES", "5"))
+    # Retries are opt-in: default is a single attempt (previous behavior).
+    # Enable with `fle inspect-eval --init-retries N` or FLE_INIT_RETRIES=N.
+    max_attempts = max(1, int(os.getenv("FLE_INIT_RETRIES", "1")))
     backoff = [int(x) for x in os.getenv("FLE_INIT_BACKOFF", "2,5,10,20,30").split(",")]
     last_err: Optional[Exception] = None
     for attempt in range(1, max_attempts + 1):

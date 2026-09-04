@@ -175,7 +175,9 @@ def make_factorio_env(spec: GymEnvironmentSpec, run_idx: int) -> FactorioGymEnv:
                 attempt_kwargs["cache_scripts"] = False
 
             if spec.num_agents > 1:
-                instance = run_async_safely(A2AFactorioInstance.create(**attempt_kwargs))
+                instance = run_async_safely(
+                    A2AFactorioInstance.create(**attempt_kwargs)
+                )
             else:
                 instance = FactorioInstance(**attempt_kwargs)
 

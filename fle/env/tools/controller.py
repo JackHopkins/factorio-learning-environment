@@ -24,7 +24,9 @@ COMMAND = "/silent-command"
 # responses (Nagle/delayed-ACK), so a 1MB payload takes ~10s uncompressed
 # but a few ms compressed. The Lua side falls back to the raw dump if
 # encode_string fails, so decoding falls back to the raw response too.
-_RESPONSE_WRAPPER = "local _d = dump({a=a, b=b}); rcon.print(helpers.encode_string(_d) or _d)"
+_RESPONSE_WRAPPER = (
+    "local _d = dump({a=a, b=b}); rcon.print(helpers.encode_string(_d) or _d)"
+)
 
 
 def _decode_response(response: str) -> str:
@@ -37,6 +39,7 @@ def _decode_response(response: str) -> str:
         )
     except Exception:
         return response
+
 
 # Maximum retries for RCON [processing] errors
 MAX_PROCESSING_RETRIES = 3

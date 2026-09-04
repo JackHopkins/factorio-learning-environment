@@ -20,25 +20,35 @@ from fle.env.utils.rcon import _lua2python
 COMMAND = "/silent-command"
 
 # Tool responses are zlib+base64 compressed in Lua (helpers.encode_string)
-# before rcon.print. Factorio's RCON stalls ~40ms per 4KB fragment on large
-# responses (Nagle/delayed-ACK), so a 1MB payload takes ~10s uncompressed
-# but a few ms compressed. The Lua side falls back to the raw dump if
-# encode_string fails, so decoding falls back to the raw response too.
+# before rcon.print, marked with an explicit sentinel prefix. Factorio's RCON
+# stalls ~40ms per 4KB fragment on large responses (Nagle/delayed-ACK), so a
+# 1MB payload takes ~10s uncompressed but a few ms compressed. The sentinel
+# makes decoding deterministic: only lines the wrapper actually encoded are
+# decoded, and anything else (Lua fallback, engine messages, debug prints
+# from tool scripts) passes through untouched.
+_SENTINEL = "FLEZ1:"
 _RESPONSE_WRAPPER = (
-    "local _d = dump({a=a, b=b}); rcon.print(helpers.encode_string(_d) or _d)"
+    "local _d = dump({a=a, b=b}); local _e = helpers.encode_string(_d); "
+    f"if _e then rcon.print('{_SENTINEL}' .. _e) else rcon.print(_d) end"
 )
 
 
 def _decode_response(response: str) -> str:
-    """Decode a compressed tool response; pass through anything else."""
-    if not response:
+    """Decode sentinel-marked compressed lines; pass everything else through."""
+    if not response or _SENTINEL not in response:
         return response
-    try:
-        return zlib.decompress(base64.b64decode(response, validate=True)).decode(
-            "utf-8"
-        )
-    except Exception:
-        return response
+    decoded_lines = []
+    for line in response.split("\n"):
+        if line.strip().startswith(_SENTINEL):
+            blob = line.strip()[len(_SENTINEL) :]
+            try:
+                line = zlib.decompress(base64.b64decode(blob, validate=True)).decode(
+                    "utf-8"
+                )
+            except Exception:
+                line = blob
+        decoded_lines.append(line)
+    return "\n".join(decoded_lines)
 
 
 # Maximum retries for RCON [processing] errors

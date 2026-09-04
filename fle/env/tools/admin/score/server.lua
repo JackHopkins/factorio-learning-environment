@@ -330,18 +330,7 @@ production_score.get_production_scores = function(_price_list)
   return scores
 end
 
-function dump(o)
-  if type(o) == 'table' then
-     local s = '{ '
-     for k,v in pairs(o) do
-        if type(k) ~= 'number' then k = '"'..k..'"' end
-        s = s .. '['..k..'] = ' .. dump(v) .. ','
-     end
-     return s .. '} '
-  else
-     return tostring(o)
-  end
-end
+-- dump() is provided globally by mods/utils.lua; do not redefine it here.
 
 storage.goal = nil
 

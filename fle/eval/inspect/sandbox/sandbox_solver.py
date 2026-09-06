@@ -33,6 +33,7 @@ from jinja2 import Template
 from fle.eval.inspect.integration.solver import (
     TrajectoryData,
 )
+from fle.eval.inspect.model_utils import configure_model_generation
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
 from fle.env.gym_env.observation import Observation
@@ -241,10 +242,13 @@ Analyze the current state and write a Python program using the FLE API to progre
                     # Generate LLM response (host-side)
                     generation_config = {
                         "max_tokens": 4096,
-                        "transforms": ["middle-out"],
                         "reasoning_effort": "minimal",
                     }
-                    state.output = await get_model().generate(
+                    _model = get_model()
+                    generation_config = configure_model_generation(
+                        _model, generation_config
+                    )
+                    state.output = await _model.generate(
                         input=state.messages,
                         config=generation_config,
                     )
@@ -594,11 +598,9 @@ def factorio_sandbox_unbounded_solver():
                         "cache": CachePolicy(per_epoch=False),
                     }
                     _model = get_model()
-                    model_name_str = (
-                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    generation_config = configure_model_generation(
+                        _model, generation_config
                     )
-                    if model_name_str and "openrouter" in model_name_str:
-                        generation_config["transforms"] = ["middle-out"]
 
                     inference_start = time.time()
                     try:

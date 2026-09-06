@@ -226,6 +226,11 @@ def fle_inspect_eval(args):
             # Unbounded tasks use mean reducer by default
             cmd.extend(["--epochs-reducer", "mean"])
 
+        # Fail the eval loudly if any sample errors (e.g. no Factorio server
+        # for a rollout) instead of reporting scores over partial rollouts.
+        if not (hasattr(args, "no_fail_on_error") and args.no_fail_on_error):
+            cmd.extend(["--fail-on-error"])
+
         if "openrouter" in args.model:
             cmd.extend(["-M", "transforms=['middle-out']"])
         # Set environment variables for dynamic task configuration
@@ -638,6 +643,12 @@ Examples:
     )
     parser_inspect.add_argument(
         "--env-id", help="Specific environment/task to evaluate (default: all tasks)"
+    )
+    parser_inspect.add_argument(
+        "--no-fail-on-error",
+        action="store_true",
+        help="Allow the eval to complete even if some samples error "
+        "(default: any errored sample fails the eval)",
     )
     parser_inspect.add_argument(
         "--init-retries",

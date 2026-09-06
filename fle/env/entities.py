@@ -975,12 +975,82 @@ class EntityGroup(BaseModel):
     position: Position
     name: str = "entity-group"
 
+    def _position_dict(
+        self, position: Optional[Position]
+    ) -> Optional[Dict[str, float]]:
+        if position is None:
+            return None
+        return {"x": position.x, "y": position.y}
+
+    def _status_name(self, status: Optional[EntityStatus]) -> Optional[str]:
+        if status is None:
+            return None
+        return status.value
+
+    def _direction_name(self, entity: Any) -> Optional[str]:
+        direction = getattr(entity, "direction", None)
+        if direction is None:
+            return None
+        return getattr(direction, "name", str(direction))
+
+    def _prototype_dict(self, prototype: Any) -> Optional[Dict[str, str]]:
+        if prototype is None:
+            return None
+        rule_name = None
+        if hasattr(prototype, "value") and isinstance(prototype.value, tuple):
+            rule_name = prototype.value[0]
+        return {
+            "id": getattr(prototype, "name", str(prototype)),
+            "name": rule_name or str(prototype),
+        }
+
+    def _inventory_dict(self, inventory: Any) -> Dict[str, Any]:
+        if inventory is None:
+            return {}
+        if isinstance(inventory, Inventory):
+            return dict(inventory.items())
+        if isinstance(inventory, dict):
+            return {
+                str(key): (
+                    self._inventory_dict(value)
+                    if isinstance(value, (Inventory, dict))
+                    else value
+                )
+                for key, value in inventory.items()
+            }
+        return {}
+
+    def _entity_dict(self, entity: Any) -> Dict[str, Any]:
+        return {
+            "name": getattr(entity, "name", None),
+            "prototype": self._prototype_dict(getattr(entity, "prototype", None)),
+            "position": self._position_dict(getattr(entity, "position", None)),
+            "direction": self._direction_name(entity),
+            "status": self._status_name(getattr(entity, "status", None)),
+            "warnings": list(getattr(entity, "warnings", []) or []),
+        }
+
+    def to_connection_dict(self) -> Dict[str, Any]:
+        """Return a stable, machine-readable summary of this connection group."""
+        return {
+            "type": self.name,
+            "id": self.id,
+            "status": self._status_name(self.status),
+            "position": self._position_dict(self.position),
+        }
+
 
 class WallGroup(EntityGroup):
     """A wall"""
 
     name: str = "wall-group"
     entities: List[Entity]
+
+    def to_connection_dict(self) -> Dict[str, Any]:
+        data = super().to_connection_dict()
+        data["entities"] = [self._entity_dict(entity) for entity in self.entities]
+        data["entity_count"] = len(self.entities)
+        return data
 
 
 class BeltGroup(EntityGroup):
@@ -998,6 +1068,33 @@ class BeltGroup(EntityGroup):
 
     def __str__(self):
         return self.__repr__()
+
+    def _belt_dict(self, belt: TransportBelt) -> Dict[str, Any]:
+        data = self._entity_dict(belt)
+        data.update(
+            {
+                "input_position": self._position_dict(belt.input_position),
+                "output_position": self._position_dict(belt.output_position),
+                "is_source": belt.is_source,
+                "is_terminus": belt.is_terminus,
+                "inventory": self._inventory_dict(belt.inventory),
+            }
+        )
+        return data
+
+    def to_connection_dict(self) -> Dict[str, Any]:
+        data = super().to_connection_dict()
+        data.update(
+            {
+                "connection_kind": "transport",
+                "inventory": self._inventory_dict(self.inventory),
+                "inputs": [self._belt_dict(entity) for entity in self.inputs],
+                "outputs": [self._belt_dict(entity) for entity in self.outputs],
+                "belts": [self._belt_dict(belt) for belt in self.belts],
+                "belt_count": len(self.belts),
+            }
+        )
+        return data
 
 
 class PipeGroup(EntityGroup):
@@ -1021,6 +1118,30 @@ class PipeGroup(EntityGroup):
     def __str__(self):
         return self.__repr__()
 
+    def _pipe_dict(self, pipe: Pipe) -> Dict[str, Any]:
+        data = self._entity_dict(pipe)
+        data.update(
+            {
+                "fluidbox_id": pipe.fluidbox_id,
+                "flow_rate": pipe.flow_rate,
+                "contents": pipe.contents,
+                "fluid": pipe.fluid,
+            }
+        )
+        return data
+
+    def to_connection_dict(self) -> Dict[str, Any]:
+        data = super().to_connection_dict()
+        data.update(
+            {
+                "connection_kind": "fluid",
+                "fluid": self.pipes[0].fluid if self.pipes else None,
+                "pipes": [self._pipe_dict(pipe) for pipe in self.pipes],
+                "pipe_count": len(self.pipes),
+            }
+        )
+        return data
+
 
 class ElectricityGroup(EntityGroup):
     """Represents a connected power network."""
@@ -1041,6 +1162,32 @@ class ElectricityGroup(EntityGroup):
 
     def __str__(self):
         return self.__repr__()
+
+    def _pole_dict(self, pole: ElectricityPole) -> Dict[str, Any]:
+        data = self._entity_dict(pole)
+        data.update(
+            {
+                "electrical_id": pole.electrical_id,
+                "flow_rate": pole.flow_rate,
+            }
+        )
+        return data
+
+    def to_connection_dict(self) -> Dict[str, Any]:
+        flow_rates = [
+            pole.flow_rate for pole in self.poles if pole.flow_rate is not None
+        ]
+        data = super().to_connection_dict()
+        data.update(
+            {
+                "connection_kind": "power",
+                "electrical_id": self.id,
+                "poles": [self._pole_dict(pole) for pole in self.poles],
+                "pole_count": len(self.poles),
+                "max_flow_rate": max(flow_rates) if flow_rates else None,
+            }
+        )
+        return data
 
 
 # =============================================================================

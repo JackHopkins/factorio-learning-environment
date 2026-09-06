@@ -64,6 +64,10 @@ belts = connect_entities(
 
 # Belt groups are returned for management
 print(f"Created belt line with {len(belts.belts)} belts")
+
+# Use structured summaries for validation or machine-readable agent logs.
+summary = belts.to_connection_dict()
+print(summary["connection_kind"], summary["belt_count"], summary["inputs"], summary["outputs"])
 ```
 
 Key points:
@@ -100,6 +104,9 @@ poles = connect_entities(
     Prototype.SmallElectricPole
 )
 print(f"Created the connection to power drill at {drill.position} with steam engine at {steam_engine.position}: {poles}")
+
+summary = poles.to_connection_dict()
+print(summary["connection_kind"], summary["pole_count"], summary["max_flow_rate"])
 ```
 
 Key points:

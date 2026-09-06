@@ -191,17 +191,28 @@ storage.utils.ensure_valid_character = function(player_index)
     return char
 end
 
+-- Serializes a value to the same format the Python client parses.
+-- Accumulates parts in a table and concatenates once: repeated `s = s .. x`
+-- reallocates the whole string per append, which made serializing large
+-- tool responses (e.g. save_entity_state on big factories) O(N^2).
 function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. '['..k..'] = ' .. dump(v) .. ','
+   local parts = {}
+   local function walk(v)
+      if type(v) == 'table' then
+         parts[#parts + 1] = '{ '
+         for k, item in pairs(v) do
+            if type(k) ~= 'number' then k = '"'..k..'"' end
+            parts[#parts + 1] = '['..k..'] = '
+            walk(item)
+            parts[#parts + 1] = ','
+         end
+         parts[#parts + 1] = '} '
+      else
+         parts[#parts + 1] = tostring(v)
       end
-      return s .. '} '
-   else
-      return tostring(o)
    end
+   walk(o)
+   return table.concat(parts)
 end
 
 function storage.utils.inspect(player, radius, position)

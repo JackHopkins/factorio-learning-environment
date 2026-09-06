@@ -40,6 +40,7 @@ from fle.env.utils.controller_loader.system_prompt_generator import (
 from fle.eval.inspect.integration.simple_server_pool import (
     get_simple_server_pool,
 )
+from fle.eval.inspect.model_utils import configure_model_generation
 from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 from fle.agents.llm.parsing import parse_response
 from fle.env.tools.agent.sleep.client import Sleep
@@ -391,7 +392,11 @@ Analyze the current state and write a Python program using the FLE API to progre
                         # "temperature": 0.1
                     }
 
-                    state.output = await get_model(transforms=["middle-out"]).generate(
+                    _model = get_model()
+                    generation_config = configure_model_generation(
+                        _model, generation_config
+                    )
+                    state.output = await _model.generate(
                         input=state.messages,
                         config=generation_config,
                     )
@@ -920,12 +925,9 @@ def factorio_unbounded_solver():
                         # "reasoning_effort": "minimal",
                     }
                     _model = get_model()
-                    # Safely access model name - handle cases where get_model() returns unexpected types
-                    model_name_str = (
-                        getattr(_model, "name", "") if hasattr(_model, "name") else ""
+                    generation_config = configure_model_generation(
+                        _model, generation_config
                     )
-                    if model_name_str and "openrouter" in model_name_str:
-                        generation_config["transforms"] = ["middle-out"]
 
                     # Track inference latency
                     inference_start = time.time()

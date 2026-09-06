@@ -3,6 +3,7 @@ import datetime
 import enum
 import os
 import signal
+import sys
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import threading
 import time
@@ -34,6 +35,26 @@ NONE = "nil"
 
 global var
 var = {}
+
+
+class _EvaluationCancelled(BaseException):
+    """Stop a timed-out worker without being caught by agent code."""
+
+
+def _eval_with_cancellation(namespace, expr, cancel_event: threading.Event):
+    """Evaluate an expression with cooperative cancellation in its worker."""
+
+    def cancel_on_trace(frame, event, arg):
+        if cancel_event.is_set():
+            raise _EvaluationCancelled()
+        return cancel_on_trace
+
+    previous_trace = sys.gettrace()
+    sys.settrace(cancel_on_trace)
+    try:
+        return namespace.eval_with_timeout(expr)
+    finally:
+        sys.settrace(previous_trace)
 
 
 class GameControl:
@@ -435,16 +456,24 @@ class FactorioInstance:
     def eval_with_error(self, expr, agent_idx=0, timeout=60):
         """Evaluate an expression with a timeout, and return the result without error handling"""
 
+        cancel_event = threading.Event()
+
         # Submit the evaluation to the thread pool
         future = self._executor.submit(
-            self.namespaces[agent_idx].eval_with_timeout, expr
+            _eval_with_cancellation,
+            self.namespaces[agent_idx],
+            expr,
+            cancel_event,
         )
 
         try:
             # Wait for the result with timeout
             return future.result(timeout=timeout)
         except FutureTimeoutError:
-            # Cancel the future if it's still running
+            # Future.cancel() only prevents work that has not started. Signal
+            # an already-running evaluation so it exits at its next Python
+            # execution boundary instead of continuing to mutate the world.
+            cancel_event.set()
             future.cancel()
             raise TimeoutError()
         except Exception:

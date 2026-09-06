@@ -72,6 +72,35 @@ class SimpleServerPool:
                     "No Anthropic API keys found. Set ANTHROPIC_API_KEYS or ANTHROPIC_API_KEY"
                 )
 
+    @staticmethod
+    def _server_reachable(idx: int, timeout: float = 1.0) -> bool:
+        """Check whether the Factorio container for run_idx is reachable."""
+        import socket
+
+        try:
+            with socket.create_connection(("localhost", 27000 + idx), timeout=timeout):
+                return True
+        except OSError:
+            return False
+
+    def _probe_reachable_indices(self) -> List[int]:
+        """Return the run_idx values in range whose servers actually respond.
+
+        Previously every index in range was assumed to exist; allocating a
+        run_idx with no container behind it made that sample fail deep inside
+        make_factorio_env, and Inspect recorded it as an errored sample while
+        the eval as a whole "completed" — silently degrading results (e.g.
+        1/8 real rollouts with a single container).
+        """
+        # External server override: make_factorio_env ignores run_idx, so any
+        # index is valid and there is nothing to probe on localhost.
+        if os.getenv("FACTORIO_SERVER_ADDRESS") or os.getenv("FACTORIO_SERVER_PORT"):
+            return list(range(self.start_idx, self.end_idx))
+
+        return [
+            i for i in range(self.start_idx, self.end_idx) if self._server_reachable(i)
+        ]
+
     async def initialize(self):
         """Initialize the pool with available run_idx values"""
         if self._initialized:
@@ -80,12 +109,29 @@ class SimpleServerPool:
         # Load API keys
         self._load_api_keys()
 
-        # Populate queue with available run_idx values in the configured range
-        for i in range(self.start_idx, self.end_idx):
+        # Only hand out indices whose servers are actually reachable, so
+        # rollouts queue for real containers instead of crashing on ghosts.
+        reachable = self._probe_reachable_indices()
+        if not reachable:
+            raise RuntimeError(
+                f"No reachable Factorio servers in configured range "
+                f"{self.start_idx}-{self.end_idx - 1} (probed localhost tcp "
+                f"{27000 + self.start_idx}-{27000 + self.end_idx - 1}). "
+                f"Start containers with 'fle cluster start -n N' and retry."
+            )
+        if len(reachable) < self.max_servers:
+            logger.warning(
+                f"Only {len(reachable)}/{self.max_servers} Factorio servers in range "
+                f"{self.start_idx}-{self.end_idx - 1} are reachable: {reachable}. "
+                f"Rollouts will share the reachable servers."
+            )
+        self.max_servers = len(reachable)
+
+        for i in reachable:
             await self.available_indices.put(i)
 
         logger.info(
-            f"Initialized SimpleServerPool with servers {self.start_idx}-{self.end_idx - 1} "
+            f"Initialized SimpleServerPool with servers {reachable} "
             f"({self.max_servers} total) and {len(self._api_keys)} API keys"
         )
         self._initialized = True
@@ -111,16 +157,36 @@ class SimpleServerPool:
         """
         await self.initialize()
 
-        if self.available_indices.empty():
-            raise RuntimeError(
-                f"All {self.max_servers} servers are in use. "
-                f"Consider reducing --max-connections or starting more containers with 'fle cluster start -n N'"
-            )
-
-        run_idx = await self.available_indices.get()
-        self.allocated_indices.add(run_idx)
-
+        run_idx = await self._acquire_index()
         logger.info(f"Allocated run_idx {run_idx} (server factorio_{run_idx})")
+        return run_idx
+
+    # How long a rollout may wait for a free server before the sample fails.
+    ACQUIRE_TIMEOUT_SECONDS = 1800
+
+    async def _acquire_index(self) -> int:
+        """Take a run_idx, waiting for one to free up if all are in use.
+
+        Waiting (rather than raising immediately) lets rollouts share a
+        smaller server fleet — e.g. 8 epochs on 1 container run sequentially
+        instead of 7 of them erroring out.
+        """
+        if self.available_indices.empty():
+            logger.warning(
+                f"All {self.max_servers} reachable servers in use; waiting for a "
+                f"free one (start more with 'fle cluster start -n N' to parallelize)"
+            )
+        try:
+            run_idx = await asyncio.wait_for(
+                self.available_indices.get(), timeout=self.ACQUIRE_TIMEOUT_SECONDS
+            )
+        except asyncio.TimeoutError:
+            raise RuntimeError(
+                f"Timed out after {self.ACQUIRE_TIMEOUT_SECONDS}s waiting for a free "
+                f"Factorio server ({self.max_servers} reachable, all busy). "
+                f"Start more containers with 'fle cluster start -n N' or reduce --max-connections."
+            )
+        self.allocated_indices.add(run_idx)
         return run_idx
 
     async def get_server_allocation(self) -> ServerAllocation:
@@ -136,14 +202,7 @@ class SimpleServerPool:
         """
         await self.initialize()
 
-        if self.available_indices.empty():
-            raise RuntimeError(
-                f"All {self.max_servers} servers are in use. "
-                f"Consider reducing --max-connections or starting more containers with 'fle cluster start -n N'"
-            )
-
-        run_idx = await self.available_indices.get()
-        self.allocated_indices.add(run_idx)
+        run_idx = await self._acquire_index()
 
         # Get next API key
         api_key, key_index = await self._get_next_api_key()

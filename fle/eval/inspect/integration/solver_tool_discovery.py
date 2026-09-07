@@ -202,7 +202,11 @@ def factorio_tool_discovery_solver():
                 output = await get_model().generate(
                     input=_trim_messages(messages),
                     tools=tools,
-                    config=GenerateConfig(max_tokens=4096),
+                    # timeout: a hung provider request otherwise stalls the
+                    # epoch indefinitely (observed with OpenRouter).
+                    config=GenerateConfig(
+                        max_tokens=4096, timeout=300, max_retries=3
+                    ),
                 )
                 messages.append(output.message)
 

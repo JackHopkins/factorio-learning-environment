@@ -39,6 +39,24 @@ storage.actions.reset = function(inventories_json, reset_position, all_technolog
 
 	local inventories = safe_json_to_table(inventories_json)
 
+	-- Recovery from a lost storage reference can leave an unregistered character
+	-- on the surface. Preserve every active agent and remove only those orphans.
+	local active_characters = {}
+	if storage.agent_characters then
+		for _, character in pairs(storage.agent_characters) do
+			if character and character.valid and character.unit_number then
+				active_characters[character.unit_number] = true
+			end
+		end
+	end
+	for _, surface in pairs(game.surfaces) do
+		for _, character in pairs(surface.find_entities_filtered{type = "character"}) do
+			if not active_characters[character.unit_number] then
+				character.destroy()
+			end
+		end
+	end
+
 	-- Re-generate resources per agent (mirrors instance _reset)
 	if storage.agent_characters then
 		for i, character in pairs(storage.agent_characters) do

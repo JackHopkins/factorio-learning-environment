@@ -360,6 +360,10 @@ class FactorioInstance:
         """Get the number of ticks elapsed since the game started"""
         return self.game_control.get_elapsed_ticks()
 
+    def get_production_stats(self) -> Dict:
+        """Return the current item and fluid production statistics."""
+        return self.first_namespace._get_production_stats()
+
     def _reset_elapsed_ticks(self):
         """Reset the elapsed ticks counter to 0."""
         self.game_control._reset_elapsed_ticks()

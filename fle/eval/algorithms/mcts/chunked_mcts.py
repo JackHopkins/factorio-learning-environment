@@ -33,9 +33,6 @@ class ChunkedMCTS(MCTS):
         # Try to parse AST to find docstrings
         try:
             module = ast.parse(program_code)
-            # Top-level string expressions are used as task boundaries.  AST
-            # constants contain the string value without its quote markers, so
-            # checking for a leading ``\"\"\"`` can never succeed.
             docstring_nodes = [
                 node
                 for node in module.body

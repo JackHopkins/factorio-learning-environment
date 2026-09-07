@@ -27,9 +27,7 @@ def game(configure_game):
     )
 
 
-def test_solar_panel_charge_accumulator(game):
-    # Place the consumer near its water source. The test is about fluid input,
-    # not the amount of pipe required by a particular generated map.
+def test_assembler_receives_water_from_offshore_pump(game):
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)

@@ -1,7 +1,10 @@
 import pytest
+from math import isqrt
 from time import monotonic
 from fle.env.entities import Position, ResourcePatch, Direction, BuildingBox
 from fle.env.game_types import Prototype, Resource
+
+FACTORIO_MAP_BOUNDARY = 1_000_000
 
 
 @pytest.fixture()
@@ -10,7 +13,7 @@ def game(instance):
         "stone-furnace": 10,
         "burner-mining-drill": 10,
         "electric-mining-drill": 5,
-        "transport-belt": 200,
+        "transport-belt": 1000,
         "underground-belt": 20,
         "splitter": 10,
         "burner-inserter": 50,
@@ -35,7 +38,7 @@ def game(instance):
 def test_edge_case_entity_placement(game):
     """Test placement of entities at the edge of the map and in tight spaces."""
     # Place entity at map edge
-    edge_position = Position(x=1_000_000, y=1_000_000)
+    edge_position = Position(x=FACTORIO_MAP_BOUNDARY, y=FACTORIO_MAP_BOUNDARY)
     with pytest.raises(Exception):
         game.place_entity(Prototype.StoneFurnace, position=edge_position)
 
@@ -71,8 +74,6 @@ def test_complex_resource_patch_interaction(game):
         drill = game.place_entity(Prototype.ElectricMiningDrill, position=pos)
         assert drill is not None
 
-    # Verify that all drills were placed on the requested resource patch.
-    # ElectricMiningDrill no longer exposes the old ``mining_target`` field.
     drills = [
         entity
         for entity in game.get_entities(
@@ -81,6 +82,8 @@ def test_complex_resource_patch_interaction(game):
         if entity.name == Prototype.ElectricMiningDrill.value[0]
     ]
     assert len(drills) == len(drill_positions)
+    for drill in drills:
+        assert {resource.name for resource in drill.resources} == {Resource.IronOre[0]}
 
 
 def test_error_handling_and_invalid_inputs(game):
@@ -102,25 +105,31 @@ def test_performance_under_load(game):
     start_time = monotonic()
 
     # Place a large number of transport belts
-    belt_count = 25
+    belt_count = 1000
+    row_width = isqrt(belt_count)
+    build_distance = int(
+        float(
+            game.instance.rcon_client.send_command(
+                '/sc rcon.print(prototypes.entity["character"].build_distance)'
+            )
+        )
+    )
+    placements_per_move = max(1, build_distance - 1)
     for i in range(belt_count):
-        position = Position(x=i, y=0)
-        game.move_to(position)
+        row, column = divmod(i, row_width)
+        position = Position(x=column, y=row)
+        if column % placements_per_move == 0:
+            game.move_to(position.down())
         game.place_entity(Prototype.TransportBelt, position=position)
 
     # Rotate all belts
-    belt_groups = game.get_entities(
-        Prototype.TransportBelt, Position(x=0, y=0), radius=belt_count
-    )
-    belts = [belt for group in belt_groups for belt in group.belts]
+    belts = game.get_entities(Prototype.TransportBelt)
     assert len(belts) == belt_count
     for belt in belts:
         game.rotate_entity(belt, Direction.LEFT)
 
     end_time = monotonic()
-    assert (
-        end_time - start_time < 60
-    )  # Ensure operation completed in less than 1 minute of game time
+    assert end_time - start_time < 120
 
 
 def test_entity_interactions(game):
@@ -129,11 +138,21 @@ def test_entity_interactions(game):
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
     offshore_pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
-    boiler = game.place_entity_next_to(
-        Prototype.Boiler, offshore_pump.position, Direction.RIGHT, spacing=1
+    boiler_box = game.nearest_buildable(
+        Prototype.Boiler,
+        BuildingBox(width=3, height=2),
+        center_position=offshore_pump.position,
     )
-    steam_engine = game.place_entity_next_to(
-        Prototype.SteamEngine, boiler.position, Direction.RIGHT, spacing=1
+    game.move_to(boiler_box.center)
+    boiler = game.place_entity(Prototype.Boiler, position=boiler_box.center)
+    steam_engine_box = game.nearest_buildable(
+        Prototype.SteamEngine,
+        BuildingBox(width=3, height=5),
+        center_position=boiler.position,
+    )
+    game.move_to(steam_engine_box.center)
+    steam_engine = game.place_entity(
+        Prototype.SteamEngine, position=steam_engine_box.center
     )
     game.connect_entities(offshore_pump, boiler, Prototype.Pipe)
     game.connect_entities(boiler, steam_engine, Prototype.Pipe)
@@ -144,21 +163,54 @@ def test_entity_interactions(game):
     )
     game.set_entity_recipe(assembler, Prototype.IronGearWheel)
 
-    # Connect power
+    input_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        assembler.position,
+        Direction.LEFT,
+        spacing=0,
+    )
+    input_inserter = game.rotate_entity(input_inserter, Direction.RIGHT)
+    input_chest = game.place_entity_next_to(
+        Prototype.IronChest,
+        input_inserter.position,
+        Direction.LEFT,
+        spacing=0,
+    )
+    output_inserter = game.place_entity_next_to(
+        Prototype.BurnerInserter,
+        assembler.position,
+        Direction.RIGHT,
+        spacing=0,
+    )
+    output_chest = game.place_entity_next_to(
+        Prototype.IronChest,
+        output_inserter.position,
+        Direction.RIGHT,
+        spacing=0,
+    )
+
     game.connect_entities(steam_engine, assembler, Prototype.SmallElectricPole)
 
-    # Insert materials directly so this test covers powered assembling without
-    # also depending on inserter/chest timing (covered by dedicated tests).
-    game.insert_item(Prototype.IronPlate, assembler, 50)
+    game.insert_item(Prototype.Coal, input_inserter, 10)
+    game.insert_item(Prototype.Coal, output_inserter, 10)
+    game.insert_item(Prototype.IronPlate, input_chest, 50)
     game.insert_item(Prototype.Coal, boiler, 50)
 
-    # Advance deterministic simulation time, rather than sleeping wall time.
-    game.sleep(10)
+    game.sleep(30)
 
-    # Check if iron gear wheels were produced
-    output_inventory = game.inspect_inventory(assembler)
+    output_inventory = game.inspect_inventory(output_chest)
+    assembler = game.get_entity(Prototype.AssemblingMachine1, assembler.position)
+    input_inserter = game.get_entity(Prototype.BurnerInserter, input_inserter.position)
+    output_inserter = game.get_entity(
+        Prototype.BurnerInserter, output_inserter.position
+    )
     assert output_inventory[Prototype.IronGearWheel] > 0, (
-        "No iron gear wheels were produced"
+        "No iron gear wheels reached the output chest: "
+        f"assembler_status={assembler.status}, "
+        f"input_inserter_status={input_inserter.status}, "
+        f"output_inserter_status={output_inserter.status}, "
+        f"input_inventory={game.inspect_inventory(input_chest)}, "
+        f"output_inventory={output_inventory}"
     )
 
 

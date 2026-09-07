@@ -1,6 +1,54 @@
 import math
+
+import pytest
+
 from fle.env import FactorioInstance
-from fle.env.utils.profits import eval_program_with_profits
+from fle.env.utils.profits import eval_program_with_profits, get_profits
+
+
+def _flows(*, output=None, input=None, crafted=None, harvested=None):
+    return {
+        "output": output or {},
+        "input": input or {},
+        "crafted": crafted or [],
+        "harvested": harvested or {},
+        "price_list": {
+            "iron-ore": 1,
+            "iron-plate": 2,
+            "iron-gear-wheel": 5,
+        },
+    }
+
+
+def test_static_profits_from_fixed_flows():
+    pre = _flows()
+    post = _flows(
+        output={"iron-gear-wheel": 2},
+        input={"iron-plate": 4},
+        crafted=[
+            {
+                "crafted_count": 2,
+                "outputs": {"iron-gear-wheel": 2},
+                "inputs": {"iron-plate": 4},
+            }
+        ],
+    )
+
+    profits = get_profits(pre, post)
+
+    assert profits == pytest.approx({"static": 2, "dynamic": 0, "total": 2})
+
+
+def test_dynamic_profits_from_fixed_flows():
+    pre = _flows()
+    post = _flows(
+        output={"iron-plate": 10},
+        input={"iron-ore": 10},
+    )
+
+    profits = get_profits(pre, post)
+
+    assert profits == pytest.approx({"static": 0, "dynamic": 100, "total": 100})
 
 
 def test_profits():

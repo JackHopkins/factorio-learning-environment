@@ -228,11 +228,6 @@ def test_end_to_end_lubricant_tanks(game):
         if point.type == "crude-oil"
     ][0]
     game.connect_entities(
-        pumpjack.connection_points[0],
-        input_crude_oil,
-        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
-    )
-    game.connect_entities(
         pump.connection_points[0],
         input_water,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
@@ -284,6 +279,12 @@ def test_end_to_end_lubricant_tanks(game):
     game.connect_entities(
         output_heavy_oil,
         storage_tank_3,
+        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
+    )
+
+    game.connect_entities(
+        pumpjack.connection_points[0],
+        input_crude_oil,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
 
@@ -409,20 +410,10 @@ def test_multiple_positions_to_tanks_with_positions(game):
         x for x in oil_refinery.input_connection_points if x.type == "crude-oil"
     ][0]
     game.connect_entities(
-        pumpjack.connection_points[0],
-        input_oil_connection_point,
-        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
-    )
-    game.connect_entities(
         pump.connection_points[0],
         input_water_connection_point,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
-
-    game.sleep(5)
-    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
-    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
-    assert len(fluids) >= 2, "Not all fluids are detected"
 
     storage_tank_1_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y)
     game.move_to(storage_tank_1_pos)
@@ -467,6 +458,17 @@ def test_multiple_positions_to_tanks_with_positions(game):
         storage_tank_2,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
+
+    game.connect_entities(
+        pumpjack.connection_points[0],
+        input_oil_connection_point,
+        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
+    )
+
+    game.sleep(5)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
+    assert len(fluids) >= 2, "Not all fluids are detected"
 
     storage_tank_1 = wait_for_tank_fluid(game, storage_tank_1, "heavy-oil")
 
@@ -544,24 +546,14 @@ def test_direct_lubricant_with_positions(game):
     input_water_connection_point = [
         x for x in oil_refinery.input_connection_points if x.type == "water"
     ][0]
-    input_oil_connection_point = [
+    input_crude_oil_connection_point = [
         x for x in oil_refinery.input_connection_points if x.type == "crude-oil"
     ][0]
-    game.connect_entities(
-        pumpjack.connection_points[0],
-        input_oil_connection_point,
-        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
-    )
     game.connect_entities(
         pump.connection_points[0],
         input_water_connection_point,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
-
-    game.sleep(5)
-    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
-    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
-    assert len(fluids) >= 2, "Not all fluids are detected"
 
     output_heavy_oil_connection_point = [
         x for x in oil_refinery.output_connection_points if x.type == "heavy-oil"
@@ -582,6 +574,17 @@ def test_direct_lubricant_with_positions(game):
         input_oil_connection_point,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
+
+    game.connect_entities(
+        pumpjack.connection_points[0],
+        input_crude_oil_connection_point,
+        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
+    )
+
+    game.sleep(5)
+    oil_refinery = game.get_entity(Prototype.OilRefinery, oil_refinery.position)
+    fluids = [x for x in oil_refinery.fluid_box if x["amount"] > 0]
+    assert len(fluids) >= 2, "Not all fluids are detected"
 
     game.sleep(10)
     chem_plant = game.get_entity(Prototype.ChemicalPlant, chem_plant.position)

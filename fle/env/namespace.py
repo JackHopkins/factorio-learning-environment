@@ -14,6 +14,8 @@ from pydantic import BaseModel
 from fle.commons.models.serializable_function import SerializableFunction
 from fle.env import entities as ent
 
+sys.modules.setdefault("factorio_entities", ent)
+
 from fle.env.entities import Entity
 from fle.env.exceptions.hinting_name_error import get_value_type_str
 from fle.env.game_types import (

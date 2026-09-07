@@ -9,10 +9,6 @@ from fle.env.gym_env.action import Action
 def env(instance):
     env = FactorioGymEnv(instance, pause_after_action=False)
     yield env
-    # ``instance`` is the session-scoped test fixture.  Closing the environment
-    # here shuts down that shared instance's executor and breaks every later
-    # test which evaluates agent code.  The owning fixture performs cleanup at
-    # the end of the session.
 
 
 def test_gym_env_interface(env):

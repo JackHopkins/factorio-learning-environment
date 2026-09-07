@@ -175,8 +175,6 @@ print(x)
         self.assertIn("x = 5", code)
         self.assertNotIn("```", code)
 
-        # Fenced responses prefer executable blocks; prose remains available
-        # to callers through the original response.
         self.assertNotIn("Some explanation here", code)
         self.assertIn("Some explanation here", original)
 

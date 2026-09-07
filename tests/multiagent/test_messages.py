@@ -1,5 +1,8 @@
 """Integration tests for the current A2A namespace messaging API."""
 
+from fle.env.gym_env.environment import FactorioGymEnv
+from fle.env.gym_env.observation_formatter import BasicObservationFormatter
+
 
 def messages_for(instance, agent_idx):
     return instance.namespaces[agent_idx].get_messages()
@@ -49,10 +52,27 @@ def test_send_message_to_all_agents(multi_instance):
 
 def test_message_collection_in_conversation(multi_instance):
     multi_instance.namespaces[0].send_message("Hello Agent 1", recipient=1)
-    received_text = "\n".join(
-        message["message"] for message in messages_for(multi_instance, 1)
+    gym_env = FactorioGymEnv(multi_instance, pause_after_action=False)
+
+    observation = gym_env.get_observation(1)
+    assert [(message.sender, message.content) for message in observation.messages] == [
+        ("0", "Hello Agent 1")
+    ]
+
+    formatted = BasicObservationFormatter.format_messages(
+        [
+            {
+                "sender": message.sender,
+                "content": message.content,
+                "timestamp": message.timestamp,
+            }
+            for message in observation.messages
+        ]
     )
-    assert "Hello Agent 1" in received_text
+    assert "Agent 0" in formatted
+    assert "Hello Agent 1" in formatted
+
+    assert gym_env.get_observation(1).messages == []
 
 
 def test_message_queue_can_be_cleared(multi_instance):

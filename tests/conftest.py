@@ -178,8 +178,9 @@ def _restore_destructive_terrain_tests(instance, request, _reset_between_tests):
 
     snapshot_command = r"""
 local surface = game.surfaces[1]
+local snapshot_area = {{-64, -64}, {192, 64}}
 storage.pytest_terrain_snapshot = {tiles = {}, entities = {}}
-for x = -64, 64 do
+for x = -64, 192 do
     for y = -64, 64 do
         local tile = surface.get_tile(x, y)
         table.insert(storage.pytest_terrain_snapshot.tiles, {
@@ -188,28 +189,21 @@ for x = -64, 64 do
         })
     end
 end
-for _, entity in pairs(surface.find_entities_filtered{type = "cliff"}) do
-    table.insert(storage.pytest_terrain_snapshot.entities, {
-        name = entity.name,
-        position = {x = entity.position.x, y = entity.position.y},
-        cliff_orientation = entity.cliff_orientation
-    })
-end
-for _, entity in pairs(surface.find_entities_filtered{type = "simple-entity"}) do
-    if string.find(entity.name, "rock") then
-        table.insert(storage.pytest_terrain_snapshot.entities, {
-            name = entity.name,
-            position = {x = entity.position.x, y = entity.position.y}
-        })
-    end
-end
 for _, entity in pairs(surface.find_entities_filtered{
-    type = "tree", area = {{-64, -64}, {64, 64}}
+    type = {"cliff", "simple-entity", "tree", "resource"}, area = snapshot_area
 }) do
-    table.insert(storage.pytest_terrain_snapshot.entities, {
+    if entity.type ~= "simple-entity" or string.find(entity.name, "rock") then
+        local initial = {
         name = entity.name,
         position = {x = entity.position.x, y = entity.position.y}
-    })
+        }
+        if entity.type == "cliff" then
+            initial.cliff_orientation = entity.cliff_orientation
+        elseif entity.type == "resource" then
+            initial.amount = entity.amount
+        end
+        table.insert(storage.pytest_terrain_snapshot.entities, initial)
+    end
 end
 """
     instance.rcon_client.send_command("/silent-command " + snapshot_command)
@@ -218,17 +212,14 @@ end
 local surface = game.surfaces[1]
 local snapshot = storage.pytest_terrain_snapshot
 if snapshot then
+    local snapshot_area = {{-64, -64}, {192, 64}}
     surface.set_tiles(snapshot.tiles, true)
-    for _, entity in pairs(surface.find_entities_filtered{type = "cliff"}) do
-        entity.destroy()
-    end
-    for _, entity in pairs(surface.find_entities_filtered{type = "simple-entity"}) do
-        if string.find(entity.name, "rock") then entity.destroy() end
-    end
     for _, entity in pairs(surface.find_entities_filtered{
-        type = "tree", area = {{-64, -64}, {64, 64}}
+        type = {"cliff", "simple-entity", "tree", "resource"}, area = snapshot_area
     }) do
-        entity.destroy()
+        if entity.type ~= "simple-entity" or string.find(entity.name, "rock") then
+            entity.destroy()
+        end
     end
     for _, initial in pairs(snapshot.entities) do
         pcall(function() surface.create_entity(initial) end)

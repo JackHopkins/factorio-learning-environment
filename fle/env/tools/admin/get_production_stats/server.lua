@@ -11,14 +11,12 @@ storage.actions.production_stats = function(player)
     local item_stats = force.get_item_production_statistics(surface)
     local fluid_stats = force.get_fluid_production_statistics(surface)
 
-    -- Factorio names flows from the production-statistics GUI's perspective:
-    -- input_counts are items produced and output_counts are items consumed.
-    local item_production_counts = item_stats.input_counts
-    local item_consumption_counts = item_stats.output_counts
-    local fluid_production_counts = fluid_stats.input_counts
-    local fluid_consumption_counts = fluid_stats.output_counts
+    local item_input_counts = item_stats.input_counts
+    local item_production_counts = item_stats.output_counts
+    local fluid_input_counts = fluid_stats.input_counts
+    local fluid_production_counts = fluid_stats.output_counts
 
-    for name, count in pairs(item_consumption_counts) do
+    for name, count in pairs(item_input_counts) do
         consumption_diff[name] = count
     end
 
@@ -26,7 +24,7 @@ storage.actions.production_stats = function(player)
         production_diff[name] = count
     end
 
-    for name, count in pairs(fluid_consumption_counts) do
+    for name, count in pairs(fluid_input_counts) do
         consumption_diff[name] = count
     end
 
@@ -34,8 +32,8 @@ storage.actions.production_stats = function(player)
         production_diff[name] = count
     end
     return {
-        output = production_diff,
-        input = consumption_diff,
+        output = consumption_diff,
+        input = production_diff,
         harvested = harvested_items,
         crafted = crafted_items,
         price_list = storage.price_list or {}

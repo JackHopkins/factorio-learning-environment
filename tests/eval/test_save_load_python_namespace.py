@@ -180,7 +180,7 @@ assert prototype == Prototype.Coal
         )
         assert "Error" not in response
 
-    def _legacy_python_39_pickle_fixture(self):
+    def test_load_legacy_python_39_pickle_fixture(self):
         game_state_raw = {
             "entities": "eJyrrgUAAXUA+Q==",
             "inventory": {"coal": 50, "iron-ore": 50},
@@ -255,6 +255,7 @@ pickup_entity(miner)
         assert (
             self.instance.namespace.inspect_inventory()[Prototype.TransportBelt] == 10
         )
+        assert self.instance.namespace.inspect_inventory()[Prototype.IronOre] > 0
 
     def test_save_load_simple_variable_namespace_with_exception(self):
         _, _, response = self.instance.eval(
@@ -381,8 +382,16 @@ pickup_entity(miner)
         researched = {tech.name: tech.researched for tech in game_state_techs}
         unresearched = {tech.name: tech.researched for tech in n_game_state_techs}
         assert researched.keys() == unresearched.keys()
-        assert any(researched.values())
-        assert any(not value for value in unresearched.values())
+        for tech in game_state_techs:
+            if "space-science-pack" not in tech.prerequisites:
+                assert researched[tech.name], (
+                    f"Technology {tech.name} should be researched"
+                )
+
+        trigger_technologies = {"automation-science-pack"}
+        assert {
+            name for name, is_researched in unresearched.items() if is_researched
+        } == trigger_technologies
 
         self.instance.reset(game_state)
         k_game_state = GameState.from_instance(self.instance)

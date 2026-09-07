@@ -130,12 +130,16 @@ def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int
             trajectory.current_score = score
             trajectory.production_score = score
 
+            program_output = (info.get("result") if info else "") or "(no output)"
+
             observation = gym_env.get_observation()
             remaining = budget - trajectory.total_steps
             return (
                 f"[step {trajectory.total_steps}/{budget}, "
-                f"production score {score:.1f}]\n"
-                f"{_format_observation(observation)}\n"
+                f"production score {score:.1f}]\n\n"
+                f"Program output (STDOUT/STDERR):\n"
+                f"```\n{program_output}\n```\n\n"
+                f"Game state:\n{_format_observation(observation)}\n"
                 f"({remaining} run_code calls remaining)"
             )
 

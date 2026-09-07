@@ -149,10 +149,19 @@ def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int
 
 
 def _trim_messages(messages, keep_last: int = 40):
-    """Keep the system prompt, the opening user message, and the recent tail."""
+    """Keep the system prompt, the opening user message, and the recent tail.
+
+    The tail must not begin with tool-result messages: their parent
+    assistant tool_call message would be trimmed away, and OpenAI rejects
+    histories containing a function result with no matching call ("No tool
+    call found for function call output with call_id ...").
+    """
     if len(messages) <= keep_last + 2:
         return messages
-    return messages[:2] + messages[-keep_last:]
+    tail = messages[-keep_last:]
+    while tail and getattr(tail[0], "role", None) == "tool":
+        tail = tail[1:]
+    return messages[:2] + tail
 
 
 @solver

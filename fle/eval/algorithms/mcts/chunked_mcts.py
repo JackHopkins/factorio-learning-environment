@@ -33,71 +33,42 @@ class ChunkedMCTS(MCTS):
         # Try to parse AST to find docstrings
         try:
             module = ast.parse(program_code)
-            # Get all nodes that look like docstrings
             docstring_nodes = [
                 node
                 for node in module.body
                 if isinstance(node, ast.Expr)
                 and isinstance(node.value, ast.Constant)
                 and isinstance(node.value.value, str)
-                and node.value.value.strip().startswith('"""')
             ]
 
-            if docstring_nodes:
-                # If we have docstrings, split based on their line numbers
+            has_numbered_comments = any(
+                re.match(r"^#\s*\d+\.", line.strip())
+                for line in program_code.splitlines()
+            )
+            if docstring_nodes and not (
+                len(docstring_nodes) == 1 and has_numbered_comments
+            ):
                 chunks = []
                 lines = program_code.splitlines()
-                last_end = 0
+                starts = [node.lineno - 1 for node in docstring_nodes]
 
-                for node in docstring_nodes:
-                    # Get the start line (1-based in AST)
-                    start_line = node.lineno - 1  # Convert to 0-based
-
-                    # Get the chunk from last_end to this docstring
-                    if start_line > last_end:
-                        chunk_lines = lines[last_end:start_line]
-                        chunk_content = "\n".join(chunk_lines).strip()
-                        if chunk_content:
-                            chunks.append(
-                                Program(
-                                    code=chunk_content,
-                                    conversation=Conversation(messages=[]),
-                                )
-                            )
-
-                    # Add all lines until we find the closing docstring
-                    current_chunk = []
-                    docstring_quotes = 1
-
-                    for line in lines[start_line:]:
-                        current_chunk.append(line)
-                        docstring_quotes += line.strip().count('"""')
-                        if docstring_quotes % 2 == 0:
-                            break
-
-                    last_end = start_line + len(current_chunk)
-
-                    # Continue collecting lines until next docstring or end
-                    while last_end < len(lines):
-                        line = lines[last_end]
-                        if line.strip().startswith('"""'):
-                            break
-                        current_chunk.append(line)
-                        last_end += 1
-
-                    chunk_content = "\n".join(current_chunk).strip()
-                    if chunk_content:
+                # Preserve imports or setup code before the first task marker.
+                if starts[0] > 0:
+                    prefix = "\n".join(lines[: starts[0]]).strip()
+                    if prefix:
                         chunks.append(
-                            Program(
-                                code=chunk_content,
-                                conversation=Conversation(messages=[]),
-                            )
+                            Program(code=prefix, conversation=Conversation(messages=[]))
                         )
 
-                # Add any remaining code as final chunk
-                if last_end < len(lines):
-                    chunk_content = "\n".join(lines[last_end:]).strip()
-                    if chunk_content:
+                for index, start_line in enumerate(starts):
+                    end_line = (
+                        starts[index + 1] if index + 1 < len(starts) else len(lines)
+                    )
+                    chunk_content = "\n".join(lines[start_line:end_line]).strip()
+                    chunk_module = ast.parse(chunk_content)
+                    # A marker with no code before the next marker is not a
+                    # useful executable chunk.
+                    if chunk_content and len(chunk_module.body) > 1:
                         chunks.append(
                             Program(
                                 code=chunk_content,

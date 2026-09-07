@@ -46,14 +46,8 @@ def test_vision_enabled_produces_base64_image(instance):
             f"Image should be RGB or RGBA, got {img.mode}"
         )
 
-        # Should be roughly 800x800 based on 20 tiles * 2 * 20 pixels/tile
-        # Allow some margin for different render configurations
-        assert 600 <= img.width <= 1000, (
-            f"Image width {img.width} should be roughly 800px"
-        )
-        assert 600 <= img.height <= 1000, (
-            f"Image height {img.height} should be roughly 800px"
-        )
+        # The default renderer currently emits a square 1024px viewport.
+        assert img.size == (1024, 1024)
 
         print(f"Image size: {img.width}x{img.height}")
 

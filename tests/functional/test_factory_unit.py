@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 from fle.env import BurnerMiningDrill, Layer
@@ -209,7 +207,7 @@ def test_auto_driller(game: FactorioInstance):
 
     game.get_entities()
     start_score, _ = game.score()
-    time.sleep(10)
+    game.sleep(10)
     end_score, _ = game.score()
 
     assert end_score > start_score

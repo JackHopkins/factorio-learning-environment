@@ -35,7 +35,8 @@ storage.actions.production_stats = function(player)
         output = consumption_diff,
         input = production_diff,
         harvested = harvested_items,
-        crafted = crafted_items
+        crafted = crafted_items,
+        price_list = storage.price_list or {}
     }
 end
 
@@ -53,4 +54,3 @@ storage.actions.reset_production_stats = function(player)
     storage.harvested_items = {}
     storage.crafted_items = {}
 end
-

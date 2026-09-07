@@ -60,6 +60,7 @@ class Renderer:
         sprites_dir: Optional[Path] = None,
         max_render_radius: Optional[float] = None,
         center_on_player: bool = True,
+        center_position: Optional[Position] = None,
     ):
         """Initialize renderer with blueprint data.
 
@@ -70,6 +71,7 @@ class Renderer:
             sprites_dir: Optional directory path for sprite files
             max_render_radius: Optional maximum radius to render (for trimming captured area)
             center_on_player: Whether to center the rendering on the player position
+            center_position: Optional world position on which to center the rendering
         """
         self.icons = []
         self.max_render_radius = max_render_radius
@@ -77,7 +79,6 @@ class Renderer:
 
         flattened_entities = list(flatten_entities(entities))
 
-        # Find player position if centering on player
         self.player_position = None
         if center_on_player:
             for entity in flattened_entities:
@@ -92,11 +93,16 @@ class Renderer:
                     }
                     break
 
+        self.center_position = (
+            {"x": center_position.x, "y": center_position.y}
+            if center_position is not None
+            else self.player_position
+        )
+
         # Determine normalization offset
-        if self.player_position and center_on_player:
-            # Center on player position
-            self.offset_x = self.player_position["x"]
-            self.offset_y = self.player_position["y"]
+        if self.center_position:
+            self.offset_x = self.center_position["x"]
+            self.offset_y = self.center_position["y"]
         else:
             # Original behavior: normalize to minimum coordinates
             min_x, min_y = self._find_min_coordinates(

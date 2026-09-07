@@ -84,9 +84,17 @@ class RecursiveFormatter(ConversationFormatter):
                 return None
         return None
 
-    def _save_summary_cache(self, chunk_hash: str, summary: Message):
+    def _save_summary_cache(
+        self,
+        chunk_hash: str,
+        summary: Message,
+        start_idx: Optional[int] = None,
+        end_idx: Optional[int] = None,
+    ):
         """Save a generated summary to the cache."""
         cache_path = self._get_cache_path(chunk_hash)
+        if "summary_range" not in summary.metadata and start_idx is not None:
+            summary.metadata["summary_range"] = f"[{start_idx}-{end_idx}]"
         try:
             with open(cache_path, "w") as f:
                 json.dump(
@@ -160,7 +168,7 @@ class RecursiveFormatter(ConversationFormatter):
         messages: List[Message],
         start_idx: int,
         end_idx: int,
-        system_message: Message,
+        system_message: Optional[Message] = None,
     ) -> Message:
         """Summarize a chunk of messages, using cache if available."""
         # Truncate entity data before generating cache hash

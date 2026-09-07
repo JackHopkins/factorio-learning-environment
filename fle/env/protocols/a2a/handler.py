@@ -6,6 +6,7 @@ import asyncio
 from pydantic import BaseModel
 import requests
 from a2a.types import Message, Part, AgentCard, Role
+from google.protobuf.json_format import MessageToDict
 
 
 class A2AMessage(BaseModel):
@@ -133,7 +134,12 @@ class A2AProtocolHandler:
         try:
             await self._make_request(
                 "register",
-                {"agent_id": self.agent_id, "agent_card": self.agent_card.dict()},
+                {
+                    "agent_id": self.agent_id,
+                    "agent_card": MessageToDict(
+                        self.agent_card, preserving_proto_field_name=True
+                    ),
+                },
             )
             self._is_registered = True
         except Exception as e:
@@ -166,18 +172,17 @@ class A2AProtocolHandler:
 
     def send_message(self, message: Message) -> None:
         """Send a message to another agent through the A2A server"""
+        metadata = MessageToDict(message.metadata)
         self._make_sync_request(
             "send_message",
             {
                 "sender_id": self.agent_id,
-                "recipient_id": message.metadata.get("recipient"),
+                "recipient_id": metadata.get("recipient"),
                 "message": {
-                    "messageId": message.messageId,
-                    "role": str(message.role),
-                    "parts": [
-                        {"root": {"text": part.root.text}} for part in message.parts
-                    ],
-                    "metadata": message.metadata,
+                    "messageId": message.message_id,
+                    "role": Role.Name(message.role),
+                    "parts": [{"root": {"text": part.text}} for part in message.parts],
+                    "metadata": metadata,
                 },
             },
         )
@@ -188,8 +193,8 @@ class A2AProtocolHandler:
         messages = result.get("messages", [])
         return [
             Message(
-                messageId=msg.get("messageId", str(uuid.uuid4())),
-                role=Role.agent,  # Default to "agent" if not specified
+                message_id=msg.get("messageId", str(uuid.uuid4())),
+                role=Role.ROLE_AGENT,
                 parts=[Part(text=msg.get("content", ""))],
                 metadata=msg.get("metadata", {}),
             )
@@ -207,12 +212,13 @@ class A2AProtocolHandler:
         # Convert Message objects to server format
         server_messages = []
         for msg in messages:
+            metadata = MessageToDict(msg.metadata)
             server_messages.append(
                 {
-                    "messageId": msg.messageId,
-                    "role": str(msg.role),
-                    "parts": [{"root": {"text": part.root.text}} for part in msg.parts],
-                    "metadata": msg.metadata,
+                    "messageId": msg.message_id,
+                    "role": Role.Name(msg.role),
+                    "parts": [{"root": {"text": part.text}} for part in msg.parts],
+                    "metadata": metadata,
                 }
             )
 

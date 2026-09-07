@@ -6,7 +6,7 @@ replacing the previous JSON-based definitions for better type safety,
 validation, and code reusability.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Literal, Dict, Any, Union, Optional, List
 from fle.env.game_types import Prototype
 
@@ -32,14 +32,11 @@ class MultiagentUnboundedThroughputTaskConfig(BaseModel):
     task_key: str
     agent_instructions: Optional[List[str]] = None
 
-    class Config:
-        frozen = True
-        extra = "forbid"
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        data = self.dict()
+        data = self.model_dump()
         # Convert Prototype to string if necessary
         if isinstance(self.throughput_entity, Prototype):
             data["throughput_entity"] = self.throughput_entity.value

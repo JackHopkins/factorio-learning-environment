@@ -1,9 +1,27 @@
+from math import ceil, hypot
+
 from fle.env.gym_env.environment import FactorioGymEnv
 from fle.env.gym_env.action import Action
 
 # from fle.env.gym_env.validation import validate_observation
 from fle.env.entities import Position, Direction
 from fle.env.game_types import Prototype, Resource
+
+
+def _movement_tick_bounds(
+    instance, start: Position, target: Position
+) -> tuple[int, int]:
+    running_speed = float(
+        instance.rcon_client.send_command(
+            "/sc rcon.print(storage.agent_characters[1].character_running_speed)"
+        )
+    )
+    x_distance = abs(target.x - start.x)
+    y_distance = abs(target.y - start.y)
+    return (
+        ceil(hypot(x_distance, y_distance) / running_speed),
+        ceil((x_distance + y_distance) / running_speed),
+    )
 
 
 def test_reset_observation(instance):
@@ -48,12 +66,12 @@ def test_inventory_observation(instance):
     observation, reward, terminated, truncated, info = env.step(action)
 
     # Verify chest in observation
-    chest_entities = [e for e in observation["entities"] if "iron-chest" in e]
+    chest_entities = [e for e in observation["entities"] if e["name"] == "iron-chest"]
     assert len(chest_entities) == 1
     # Verify the chest string representation contains the expected information
-    chest_str = chest_entities[0]
-    assert "iron-chest" in chest_str
-    assert "x=2.5, y=2.5" in chest_str
+    chest_data = chest_entities[0]
+    assert chest_data["position"].x == 2.5
+    assert chest_data["position"].y == 2.5
 
 
 def test_entity_placement_observation(instance):
@@ -81,13 +99,14 @@ def test_entity_placement_observation(instance):
     observation, reward, terminated, truncated, info = env.step(action)
 
     # Verify furnace in observation
-    furnace_entities = [e for e in observation["entities"] if "stone-furnace" in e]
+    furnace_entities = [
+        e for e in observation["entities"] if e["name"] == "stone-furnace"
+    ]
     assert len(furnace_entities) == 1
-    furnace_str = furnace_entities[0]
-    # Verify the furnace string representation contains the expected information
-    assert "stone-furnace" in furnace_str
-    assert "x=3.0, y=3.0" in furnace_str
-    assert "Direction.UP" in furnace_str
+    furnace_data = furnace_entities[0]
+    assert furnace_data["position"].x == 3.0
+    assert furnace_data["position"].y == 3.0
+    assert furnace_data["direction"] == Direction.UP
 
 
 def test_research_observation(instance):
@@ -256,12 +275,14 @@ def test_game_info_elapsed_ticks_move_to(instance):
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
+    target = Position(x=3, y=3)
+    minimum_ticks, maximum_ticks = _movement_tick_bounds(
+        instance, instance.namespace.player_location, target
+    )
 
-    # Move to a position 3 tiles away
-    # Movement should add ticks based on distance and player speed (~35 ticks for 3 tiles)
     move_action = Action(
         agent_idx=0,
-        code="move_to(Position(x=3, y=3))",
+        code=f"move_to(Position(x={target.x}, y={target.y}))",
         game_state=None,
     )
     observation, reward, terminated, truncated, info = env.step(move_action)
@@ -269,10 +290,7 @@ def test_game_info_elapsed_ticks_move_to(instance):
     final_ticks = observation["game_info"]["tick"]
     ticks_added = final_ticks - initial_ticks
 
-    # Movement ticks depend on distance/speed, allow reasonable range
-    assert 30 <= ticks_added <= 40, (
-        f"Expected ~35 ticks for 3-tile movement, got {ticks_added}"
-    )
+    assert minimum_ticks <= ticks_added <= maximum_ticks
 
 
 def test_game_info_elapsed_ticks_harvest_resource(instance):
@@ -317,12 +335,16 @@ def test_game_info_elapsed_ticks_multiple_actions(instance):
     observation, info = env.reset()
 
     initial_ticks = observation["game_info"]["tick"]
+    move_target = Position(x=2, y=2)
+    minimum_move_ticks, maximum_move_ticks = _movement_tick_bounds(
+        instance, instance.namespace.player_location, move_target
+    )
 
     # Perform multiple actions in sequence
     actions = [
         "sleep(1)",  # Should add 60 ticks
         "craft_item(Prototype.IronGearWheel, 1)",  # Should add 30 ticks
-        "move_to(Position(x=2, y=2))",  # Should add ~25 ticks
+        f"move_to(Position(x={move_target.x}, y={move_target.y}))",
     ]
 
     for i, code in enumerate(actions):
@@ -333,16 +355,14 @@ def test_game_info_elapsed_ticks_multiple_actions(instance):
         ticks_since_start = current_ticks - initial_ticks
 
         if i == 0:  # After sleep
-            assert 55 <= ticks_since_start <= 65, (
-                f"Expected ~60 ticks after sleep, got {ticks_since_start}"
-            )
+            assert ticks_since_start == 60
         elif i == 1:  # After sleep + craft
-            assert 85 <= ticks_since_start <= 95, (
-                f"Expected ~90 ticks after sleep+craft, got {ticks_since_start}"
-            )
+            assert ticks_since_start == 90
         elif i == 2:  # After sleep + craft + move
-            assert 110 <= ticks_since_start <= 120, (
-                f"Expected ~115 ticks after all actions, got {ticks_since_start}"
+            assert (
+                90 + minimum_move_ticks
+                <= ticks_since_start
+                <= (90 + maximum_move_ticks)
             )
 
 

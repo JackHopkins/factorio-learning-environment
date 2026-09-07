@@ -266,8 +266,13 @@ class ConnectEntities(Tool):
                         return connection[0]
                     else:
                         # No entities were created but pathing was successful - get existing group at target
-                        return self._get_existing_connection_group(
+                        existing_group = self._get_existing_connection_group(
                             target_pos, list(connection_types)[0], target
+                        )
+                        if existing_group is not None:
+                            return existing_group
+                        raise Exception(
+                            "Failed to find a path: no connection entities were created"
                         )
                 else:
                     return connection
@@ -349,9 +354,11 @@ class ConnectEntities(Tool):
                         return connection[0]
                     else:
                         # No entities were created but pathing was successful - get existing group at target
-                        return self._get_existing_connection_group(
+                        existing_group = self._get_existing_connection_group(
                             target_pos, list(connection_types)[0], target
                         )
+                        if existing_group is not None:
+                            return existing_group
                 except Exception:
                     continue
 
@@ -1336,6 +1343,22 @@ class ConnectEntities(Tool):
                 groups = self.get_entities(
                     {Prototype.Pipe, Prototype.UndergroundPipe}, target_pos, radius=5
                 )
+                source_pos = getattr(self, "_last_source_pos", None)
+                if source_pos is None:
+                    return None
+                for group in groups:
+                    pipes = group.pipes if isinstance(group, PipeGroup) else [group]
+                    reaches_source = any(
+                        pipe.position.is_close(source_pos, tolerance=0.75)
+                        for pipe in pipes
+                    )
+                    reaches_target = any(
+                        pipe.position.is_close(target_pos, tolerance=0.75)
+                        for pipe in pipes
+                    )
+                    if reaches_source and reaches_target:
+                        return group
+                return None
             else:
                 groups = []
 

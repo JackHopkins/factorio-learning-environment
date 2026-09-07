@@ -9,7 +9,6 @@ from fle.env.gym_env.action import Action
 def env(instance):
     env = FactorioGymEnv(instance, pause_after_action=False)
     yield env
-    env.close()
 
 
 def test_gym_env_interface(env):

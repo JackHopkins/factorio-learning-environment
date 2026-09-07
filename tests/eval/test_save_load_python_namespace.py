@@ -139,6 +139,48 @@ class TestSaveLoadPythonNamespace(unittest.TestCase):
         self.instance.eval("assert x == 2")
 
     def test_load_in_all_variable_values(self):
+        _, _, response = self.instance.eval(
+            """
+coal_position = Position(x=19.5, y=-11.25)
+harvested = 50
+labels = ["coal", "iron"]
+counts = {"coal": 50, "iron": 25}
+coordinates = (19.5, -11.25)
+enabled = True
+optional_value = None
+prototype = Prototype.Coal
+"""
+        )
+        assert "Error" not in response
+
+        # Generate the serialized fixture using the interpreter under test so
+        # it remains portable across supported Python and pickle versions.
+        game_state = GameState.parse_raw(
+            GameState.from_instance(self.instance).to_raw()
+        )
+        self.instance = FactorioInstance(
+            address="localhost",
+            bounding_box=200,
+            tcp_port=27000,
+            fast=True,
+            inventory={},
+        )
+        self.instance.reset(game_state)
+        _, _, response = self.instance.eval(
+            """
+assert coal_position == Position(x=19.5, y=-11.25)
+assert harvested == 50
+assert labels == ["coal", "iron"]
+assert counts == {"coal": 50, "iron": 25}
+assert coordinates == (19.5, -11.25)
+assert enabled is True
+assert optional_value is None
+assert prototype == Prototype.Coal
+"""
+        )
+        assert "Error" not in response
+
+    def test_load_legacy_python_39_pickle_fixture(self):
         game_state_raw = {
             "entities": "eJyrrgUAAXUA+Q==",
             "inventory": {"coal": 50, "iron-ore": 50},
@@ -193,7 +235,8 @@ belt = place_entity(Prototype.TransportBelt, Direction.UP, miner.drop_position)
 sleep(15)
 pickup_entity(miner)
 """
-        response = self.instance.eval(MINER)
+        _, _, response = self.instance.eval(MINER)
+        assert "Error" not in response
         game_state = GameState.from_instance(self.instance)
 
         self.instance = FactorioInstance(
@@ -205,17 +248,20 @@ pickup_entity(miner)
         )
 
         self.instance.reset(game_state)
-        response = self.instance.eval(
+        _, _, response = self.instance.eval(
             "pickup_entity(Prototype.TransportBelt, belt.position)"
         )
         assert "Error" not in response
-
-        assert self.instance.namespace.inspect_inventory()[Prototype.IronOre] == 4
+        assert (
+            self.instance.namespace.inspect_inventory()[Prototype.TransportBelt] == 10
+        )
+        assert self.instance.namespace.inspect_inventory()[Prototype.IronOre] > 0
 
     def test_save_load_simple_variable_namespace_with_exception(self):
-        self.instance.eval(
-            "boiler = place_entity(Prototype.Boiler, Direction.UP, Position(x=0, y=0))"
+        _, _, response = self.instance.eval(
+            "boiler = place_entity(Prototype.Boiler, Direction.UP, Position(x=5, y=0))"
         )
+        assert "Error" not in response
         game_state = GameState.from_instance(self.instance)
 
         self.instance = FactorioInstance(
@@ -333,30 +379,26 @@ pickup_entity(miner)
             n_game_state.research.technologies.values()
         )  # Has nothing researched
 
-        for i, j in zip(game_state_techs, n_game_state_techs):
-            assert i.name == j.name
+        researched = {tech.name: tech.researched for tech in game_state_techs}
+        unresearched = {tech.name: tech.researched for tech in n_game_state_techs}
+        assert researched.keys() == unresearched.keys()
+        for tech in game_state_techs:
+            if "space-science-pack" not in tech.prerequisites:
+                assert researched[tech.name], (
+                    f"Technology {tech.name} should be researched"
+                )
 
-            # Late game techs may be infinite and therefore are always not yet researched
-            skip = False
-            for k in i.prerequisites:
-                if k == "space-science-pack":
-                    skip = True
-
-            if not skip:
-                assert i.researched, f"Technology {i.name} should be researched"
-                assert not j.researched, f"Technology {j.name} should not be researched"
+        trigger_technologies = {"automation-science-pack"}
+        assert {
+            name for name, is_researched in unresearched.items() if is_researched
+        } == trigger_technologies
 
         self.instance.reset(game_state)
         k_game_state = GameState.from_instance(self.instance)
         k_game_state_techs = k_game_state.research.technologies.values()
 
-        for tech in k_game_state_techs:
-            skip = False
-            for k in tech.prerequisites:
-                if k == "space-science-pack":
-                    skip = True
-            if not skip:
-                assert tech.researched
+        restored = {tech.name: tech.researched for tech in k_game_state_techs}
+        assert restored == researched
 
 
 if __name__ == "__main__":

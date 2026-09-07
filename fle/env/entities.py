@@ -532,6 +532,22 @@ class Entity(EntityCore):
     status: EntityStatus = EntityStatus.NORMAL
     # game: Optional[Any] = None # RCON connection for refreshing attributes
 
+    def __getstate__(self):
+        """Serialize entity data without its live RCON connection."""
+        state = super().__getstate__()
+        state["__dict__"] = {
+            key: value
+            for key, value in state.get("__dict__", {}).items()
+            if key != "game"
+        }
+        if state.get("__pydantic_extra__"):
+            state["__pydantic_extra__"] = {
+                key: value
+                for key, value in state["__pydantic_extra__"].items()
+                if key != "game"
+            }
+        return state
+
     def __repr__(self) -> str:
         # Only includes the fields we want to present to the agent
         # Get all instance attributes

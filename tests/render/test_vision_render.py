@@ -2,6 +2,7 @@
 
 import pytest
 from fle.env import Prototype, Position
+from fle.env.tools.admin.render.utils import find_fle_sprites_dir
 
 
 @pytest.fixture
@@ -16,13 +17,15 @@ def game_with_entities(instance):
     # Place some entities to ensure there's something to render
     namespace.place_entity(Prototype.IronChest, position=Position(x=2, y=0))
     namespace.place_entity(Prototype.IronChest, position=Position(x=4, y=0))
-    namespace.place_entity(Prototype.StoneFurnace, position=Position(x=0, y=2))
+    namespace.place_entity(Prototype.StoneFurnace, position=Position(x=2, y=2))
 
     return game
 
 
 def test_vision_render_basic(game_with_entities):
     """Test basic vision rendering."""
+    if not any(find_fle_sprites_dir().glob("*.png")):
+        pytest.skip("Factorio sprites are not installed")
     game = game_with_entities
     namespace = game.namespaces[0]
 
@@ -54,7 +57,7 @@ def test_vision_render_basic(game_with_entities):
     # Get pixel colors to check if image is just empty grid
     # Sample from the center of the image where entities are rendered,
     # not the top row which may land entirely on a grid line
-    pixels = list(img.getdata())
+    pixels = list(img.get_flattened_data())
     center_row = img.size[1] // 2
     center_start = center_row * img.size[0]
     center_pixels = pixels[center_start : center_start + img.size[0]]

@@ -4,7 +4,7 @@ from fle.env.tools import Tool
 from fle.env.tools.admin.render_message.client import RenderMessage
 import logging
 import uuid
-from a2a.types import Message, Part
+from a2a.types import Message, Part, Role
 
 
 class SendMessage(Tool):
@@ -44,14 +44,14 @@ class SendMessage(Tool):
         try:
             # Create message payload using A2A Message schema
             a2a_message = Message(
-                messageId=str(uuid.uuid4()),
-                role="agent",
+                message_id=str(uuid.uuid4()),
+                role=Role.ROLE_AGENT,
                 parts=[Part(text=message)],
                 metadata={
                     "sender": self.namespace.agent_id,
                     "message_type": "text",
                     "timestamp": time.time(),
-                    "recipient": recipient,
+                    "recipient": str(recipient) if recipient is not None else None,
                 },
             )
 

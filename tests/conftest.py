@@ -1,11 +1,41 @@
 import os
 import sys
+from functools import wraps
 from pathlib import Path
 
 import pytest
 
 from fle.commons.cluster_ips import get_local_container_ips
 from fle.env import FactorioInstance
+
+
+def pytest_configure(config):
+    """Route every local Factorio instance to each xdist worker's server."""
+    worker_input = getattr(config, "workerinput", None)
+    if not worker_input:
+        return
+
+    worker_id = worker_input["workerid"]
+    worker_index = int(worker_id[2:])
+    _, _, tcp_ports = get_local_container_ips()
+    cluster_ports = set(tcp_ports)
+    selected_port = sorted(cluster_ports)[worker_index]
+    os.environ["FACTORIO_RCON_PORT"] = str(selected_port)
+
+    original_init = FactorioInstance.__init__
+
+    @wraps(original_init)
+    def worker_scoped_init(self, *args, **kwargs):
+        args = list(args)
+        if len(args) >= 3:
+            if args[2] in cluster_ports:
+                args[2] = selected_port
+        elif kwargs.get("tcp_port", 27000) in cluster_ports:
+            kwargs["tcp_port"] = selected_port
+        return original_init(self, *args, **kwargs)
+
+    FactorioInstance.__init__ = worker_scoped_init
+
 
 # Add the src directory to the Python path
 src_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -133,6 +163,71 @@ def _reset_between_tests(instance, request):
             instance.initial_inventory = instance.default_initial_inventory
     instance.reset(reset_position=True)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _restore_destructive_terrain_tests(instance, request, _reset_between_tests):
+    """Roll back terrain edits made by render and blueprint setup helpers."""
+    test_path = str(request.node.path)
+    mutates_terrain = "clear_terrain" in getattr(
+        request, "fixturenames", []
+    ) or test_path.endswith("tests/blueprints/test_blueprint_based_policies.py")
+    if not mutates_terrain:
+        yield
+        return
+
+    snapshot_command = r"""
+local surface = game.surfaces[1]
+local snapshot_area = {{-64, -64}, {192, 64}}
+storage.pytest_terrain_snapshot = {tiles = {}, entities = {}}
+for x = -64, 192 do
+    for y = -64, 64 do
+        local tile = surface.get_tile(x, y)
+        table.insert(storage.pytest_terrain_snapshot.tiles, {
+            name = tile.name,
+            position = {x = x, y = y}
+        })
+    end
+end
+for _, entity in pairs(surface.find_entities_filtered{
+    type = {"cliff", "simple-entity", "tree", "resource"}, area = snapshot_area
+}) do
+    if entity.type ~= "simple-entity" or string.find(entity.name, "rock") then
+        local initial = {
+        name = entity.name,
+        position = {x = entity.position.x, y = entity.position.y}
+        }
+        if entity.type == "cliff" then
+            initial.cliff_orientation = entity.cliff_orientation
+        elseif entity.type == "resource" then
+            initial.amount = entity.amount
+        end
+        table.insert(storage.pytest_terrain_snapshot.entities, initial)
+    end
+end
+"""
+    instance.rcon_client.send_command("/silent-command " + snapshot_command)
+    yield
+    restore_command = r"""
+local surface = game.surfaces[1]
+local snapshot = storage.pytest_terrain_snapshot
+if snapshot then
+    local snapshot_area = {{-64, -64}, {192, 64}}
+    surface.set_tiles(snapshot.tiles, true)
+    for _, entity in pairs(surface.find_entities_filtered{
+        type = {"cliff", "simple-entity", "tree", "resource"}, area = snapshot_area
+    }) do
+        if entity.type ~= "simple-entity" or string.find(entity.name, "rock") then
+            entity.destroy()
+        end
+    end
+    for _, initial in pairs(snapshot.entities) do
+        pcall(function() surface.create_entity(initial) end)
+    end
+    storage.pytest_terrain_snapshot = nil
+end
+"""
+    instance.rcon_client.send_command("/silent-command " + restore_command)
 
 
 # Provide a lightweight fixture that yields the game namespace derived from the

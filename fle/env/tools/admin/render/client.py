@@ -182,6 +182,7 @@ class Render(Tool):
             water_tiles=water_tiles,
             resources=resources,
             max_render_radius=max_render_radius,
+            center_position=position,
         )
         return renderer
 

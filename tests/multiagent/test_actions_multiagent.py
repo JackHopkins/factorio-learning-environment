@@ -1,163 +1,102 @@
-import pytest
+"""Multi-agent action, persistence, and messaging integration tests."""
 
-from fle.commons.models.program import Program
-from fle.commons.models.conversation import Conversation
-from fle.commons.models.message import Message
+from fle.commons.models.game_state import GameState
 
 
-@pytest.fixture
-def basic_conversation():
-    """Create a basic conversation object for testing"""
-    return Conversation(
-        messages=[
-            Message(role="system", content="You are a helpful assistant"),
-            Message(role="user", content="Hello"),
-            Message(role="assistant", content="Hi there!"),
-        ]
-    )
+def _entity_signature(entity):
+    return entity.name, round(entity.position.x, 3), round(entity.position.y, 3)
 
 
-@pytest.mark.asyncio
-async def test_concurrent_agent_actions_with_messages(
-    trajectory_runner, mock_config, basic_conversation
-):
-    """Test that agents can perform actions, send messages, and maintain namespace state"""
-    # Create programs for each agent that include message sending and namespace persistence
-    agent0_program1 = Program(
-        code="""
-# Agent 0 defines a utility function and places a burner inserter
+def _assert_position(entity, x, y):
+    assert abs(entity.position.x - x) <= 0.5
+    assert abs(entity.position.y - y) <= 0.5
+
+
+def test_multiagent_actions_with_messages(multi_instance):
+    programs = [
+        (
+            0,
+            """
 def place_inserter_at(x, y):
-    return place_entity(
-        Prototype.BurnerInserter,
-        direction=Direction.RIGHT,
-        position=Position(x=x, y=y)
-    )
-
-# Place first inserter
+    return place_entity(Prototype.BurnerInserter, Direction.RIGHT, Position(x=x, y=y))
 inserter1 = place_inserter_at(-5, -5)
-
-# Send message to Agent 1 about placement
 send_message("I've placed a burner inserter at (-5, -5)", recipient=1)
 """,
-        conversation=basic_conversation,
-    )
-
-    agent0_program2 = Program(
-        code="""
-# Use the persisted function to place another inserter
-inserter2 = place_inserter_at(0, 0)
-
-# Send message to Agent 1 about second placement
-send_message("I've placed another burner inserter at (0, 0)", recipient=1)
-""",
-        conversation=basic_conversation,
-    )
-
-    agent1_program1 = Program(
-        code="""
-# Agent 1 defines a utility function for placing stone furnaces
+        ),
+        (
+            1,
+            """
 def place_furnace_at(x, y):
-    return place_entity(
-        Prototype.StoneFurnace,
-        direction=Direction.RIGHT,
-        position=Position(x=x, y=y)
-    )
-
-# Place first furnace
+    return place_entity(Prototype.StoneFurnace, Direction.RIGHT, Position(x=x, y=y))
 furnace1 = place_furnace_at(5, 5)
-
-# Send message to Agent 0 about placement
 send_message("I've placed a stone furnace at (5, 5)", recipient=0)
 """,
-        conversation=basic_conversation,
-    )
-
-    agent1_program2 = Program(
-        code="""
-# Use the persisted function to place another furnace
-furnace2 = place_furnace_at(5, -5)
-
-# Send message to Agent 0 about second placement
-send_message("I've placed another stone furnace at (5, -5)", recipient=0)
-
-# Check if Agent 0's inserters are in the expected positions
-entities = get_entities()
-inserter_positions = [(e.position.x, e.position.y) for e in entities if e.type == "inserter"]
-print(f"Found inserters at positions: {inserter_positions}")
+        ),
+        (
+            0,
+            """
+inserter2 = place_inserter_at(0, -5)
+send_message("I've placed another burner inserter at (0, -5)", recipient=1)
 """,
-        conversation=basic_conversation,
-    )
+        ),
+        (
+            1,
+            """
+furnace2 = place_furnace_at(5, -5)
+send_message("I've placed another stone furnace at (5, -5)", recipient=0)
+""",
+        ),
+    ]
 
-    programs = [agent0_program1, agent1_program1, agent0_program2, agent1_program2]
-    current_state = mock_config.task.starting_game_state
+    for agent_idx, code in programs:
+        _, _, response = multi_instance.eval(code, agent_idx=agent_idx)
+        assert "error" not in response.lower()
+        multi_instance.reset(GameState.from_instance(multi_instance))
 
-    # Execute programs in sequence
-    instance = trajectory_runner.evaluator.instance
-    for step in range(4):
-        i = step % 2
-        instance.reset(current_state)
-        evaluated_program, _ = await trajectory_runner.evaluator.evaluate(
-            programs[step], current_state, mock_config.task, i
-        )
-        current_state = evaluated_program.state
+    namespace_0, namespace_1 = multi_instance.namespaces
+    assert callable(namespace_0.persistent_vars["place_inserter_at"])
+    assert "place_furnace_at" not in namespace_0.persistent_vars
+    assert callable(namespace_1.persistent_vars["place_furnace_at"])
+    assert "place_inserter_at" not in namespace_1.persistent_vars
 
-    # Get instances
-    namespace0 = instance.namespaces[0]
-    namespace1 = instance.namespaces[1]
+    placed_entities = [
+        namespace_0.persistent_vars["inserter1"],
+        namespace_0.persistent_vars["inserter2"],
+        namespace_1.persistent_vars["furnace1"],
+        namespace_1.persistent_vars["furnace2"],
+    ]
+    assert [entity.name for entity in placed_entities] == [
+        "burner-inserter",
+        "burner-inserter",
+        "stone-furnace",
+        "stone-furnace",
+    ]
+    for entity, position in zip(placed_entities, [(-5, -5), (0, -5), (5, 5), (5, -5)]):
+        _assert_position(entity, *position)
 
-    # Check agent 0's namespace for persisted functions
-    assert "place_inserter_at" in namespace0.persistent_vars
-    assert "place_furnace_at" not in namespace0.persistent_vars
-    assert callable(namespace0.persistent_vars["place_inserter_at"])
+    expected_entities = {_entity_signature(entity) for entity in placed_entities}
+    for namespace in (namespace_0, namespace_1):
+        visible_entities = namespace.get_entities()
+        actual_entities = {
+            _entity_signature(entity)
+            for entity in visible_entities
+            if entity.name in {"burner-inserter", "stone-furnace"}
+        }
+        assert actual_entities == expected_entities
 
-    # Check agent 1's namespace for persisted functions
-    assert "place_furnace_at" in namespace1.persistent_vars
-    assert "place_inserter_at" not in namespace1.persistent_vars
-    assert callable(namespace1.persistent_vars["place_furnace_at"])
-
-    # Check entities
-    entities0 = namespace0.get_entities()
-    entities1 = namespace1.get_entities()
-
-    print(entities0)
-    print(entities1)
-
-    # Verify both agents have the expected entities
-    inserter_count0 = sum(1 for e in entities0 if e.type == "inserter")
-    inserter_count1 = sum(1 for e in entities1 if e.type == "inserter")
-    furnace_count0 = sum(1 for e in entities0 if e.type == "furnace")
-    furnace_count1 = sum(1 for e in entities1 if e.type == "furnace")
-
-    assert inserter_count0 == 2, (
-        f"Expected 2 inserters for agent 0, found {inserter_count0}"
-    )
-    assert inserter_count1 == 2, (
-        f"Expected 2 inserters for agent 1, found {inserter_count1}"
-    )
-    assert furnace_count0 == 2, (
-        f"Expected 2 stone furnaces for agent 0, found {furnace_count0}"
-    )
-    assert furnace_count1 == 2, (
-        f"Expected 2 stone furnaces for agent 1, found {furnace_count1}"
-    )
-
-    # Check messages
-    trajectory_runner._collect_new_messages(0)
-    trajectory_runner._collect_new_messages(1)
-
-    # Verify messages were received
-    assert len(trajectory_runner.agent_messages[1]) == 2, (
-        "Agent 1 should have received 2 messages"
-    )
-    assert len(trajectory_runner.agent_messages[0]) == 2, (
-        "Agent 0 should have received 2 messages"
-    )
-
-    # Check message content
-    agent0_messages = [msg.content for msg in trajectory_runner.agent_messages[0]]
-    agent1_messages = [msg.content for msg in trajectory_runner.agent_messages[1]]
-
-    assert any("stone furnace at (5, 5)" in msg for msg in agent0_messages)
-    assert any("stone furnace at (5, -5)" in msg for msg in agent0_messages)
-    assert any("burner inserter at (-5, -5)" in msg for msg in agent1_messages)
-    assert any("burner inserter at (0, 0)" in msg for msg in agent1_messages)
+    agent_0_messages = namespace_0.get_messages()
+    agent_1_messages = namespace_1.get_messages()
+    assert {
+        (message["sender"], str(message["recipient"]), message["message"])
+        for message in agent_0_messages
+    } == {
+        ("1", "0", "I've placed a stone furnace at (5, 5)"),
+        ("1", "0", "I've placed another stone furnace at (5, -5)"),
+    }
+    assert {
+        (message["sender"], str(message["recipient"]), message["message"])
+        for message in agent_1_messages
+    } == {
+        ("0", "1", "I've placed a burner inserter at (-5, -5)"),
+        ("0", "1", "I've placed another burner inserter at (0, -5)"),
+    }

@@ -39,6 +39,9 @@ def clear_terrain(game):
         "for _, rock in pairs(game.surfaces[1].find_entities_filtered{type='simple-entity'}) do "
         "if rock.name:find('rock') then rock.destroy() end "
         "end "
+        "for _, tree in pairs(game.surfaces[1].find_entities_filtered{type='tree'}) do "
+        "tree.destroy() "
+        "end "
         "local tiles = {} "
         "for x = -30, 30 do "
         "for y = -30, 30 do "
@@ -59,8 +62,8 @@ def test_boiler_to_steam_engine_connection(clear_terrain):
     """Test that pipes correctly connect boiler to steam engine using connect_entities."""
     game = clear_terrain
 
-    # Place steam engine
-    game.move_to(Position(x=0, y=0))
+    # Stand within build range without occupying the steam engine footprint.
+    game.move_to(Position(x=-5, y=0))
     engine = game.place_entity(Prototype.SteamEngine, position=Position(x=0, y=0))
 
     # Place boiler

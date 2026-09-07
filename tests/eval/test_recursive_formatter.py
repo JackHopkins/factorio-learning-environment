@@ -9,7 +9,7 @@ from fle.commons.models.message import Message
 from fle.agents.llm.api_factory import APIFactory
 
 
-class TestRecursiveFormatter(unittest.TestCase):
+class TestRecursiveFormatter(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         # Create a temporary directory for cache
         self.temp_dir = tempfile.mkdtemp()
@@ -76,7 +76,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         """Test basic summarization of a conversation chunk."""
         # Mock LLM response
         mock_response = Mock()
-        mock_response.content = "Summarized content"
+        mock_response.choices = [Mock(message=Mock(content="Summarized content"))]
         self.mock_llm.acall.return_value = mock_response
 
         messages = [Message(role="user", content=f"Message {i}") for i in range(5)]
@@ -91,7 +91,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         """Test recursive summarization of a longer conversation."""
         # Mock LLM response
         mock_response = Mock()
-        mock_response.content = "Summarized chunk"
+        mock_response.choices = [Mock(message=Mock(content="Summarized chunk"))]
         self.mock_llm.acall.return_value = mock_response
 
         # Create conversation with 9 messages (system + 4 exchanges)
@@ -111,7 +111,7 @@ class TestRecursiveFormatter(unittest.TestCase):
         """Test handling of a conversation requiring multiple levels of recursion."""
         # Mock LLM response
         mock_response = Mock()
-        mock_response.content = "Summarized content"
+        mock_response.choices = [Mock(message=Mock(content="Summarized content"))]
         self.mock_llm.acall.return_value = mock_response
 
         # Create conversation with 33 messages (system + 16 exchanges)

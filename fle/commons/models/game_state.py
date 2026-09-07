@@ -261,26 +261,29 @@ def filter_serializable_vars(vars_dict: Dict[str, Any]) -> Dict[str, Any]:
 def is_serializable(obj: Any) -> bool:
     """Test if an object can be serialized with pickle"""
     try:
-        if obj == True or obj == False:  # noqa
+        if obj is None or isinstance(obj, (int, float, str, bool, bytes)):
             return True
 
         # Skip type objects
         if isinstance(obj, type):
             return False
 
-        # Skip builtin types
-        if obj.__module__ == "builtins":
+        # Builtin functions technically pickle by name, but restoring the
+        # interpreter-provided namespace is unnecessary and brittle.
+        if callable(obj) and getattr(obj, "__module__", None) == "builtins":
             return False
 
         if isinstance(obj, Enum):
             return True
 
-        if isinstance(obj, (list, dict)):
-            return all(is_serializable(item) for item in obj)
+        if isinstance(obj, dict):
+            return all(
+                is_serializable(key) and is_serializable(value)
+                for key, value in obj.items()
+            )
 
-        # Common built-in types that are always serializable
-        if isinstance(obj, (int, float, str, bool, list, dict, tuple, set)):
-            return True
+        if isinstance(obj, (list, tuple, set)):
+            return all(is_serializable(item) for item in obj)
 
         pickle.dumps(obj)
         return True

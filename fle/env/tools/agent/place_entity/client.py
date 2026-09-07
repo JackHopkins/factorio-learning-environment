@@ -33,8 +33,8 @@ class PlaceObject(Tool):
         :return: Entity object
         """
 
-        # if not isinstance(entity, Prototype):
-        #    raise ValueError("The first argument must be a Prototype object")
+        if not isinstance(entity, Prototype):
+            raise ValueError("The first argument must be a Prototype object")
 
         # If position is a tuple, cast it to a Position object:
         if isinstance(position, tuple):
@@ -47,12 +47,9 @@ class PlaceObject(Tool):
             raise ValueError("The second argument must be a Direction object")
 
         x, y = self.get_position(position)
-        try:
-            name, metaclass = entity.value
-            while isinstance(metaclass, tuple):
-                metaclass = metaclass[1]
-        except Exception as e:
-            raise Exception(f"Passed in {entity} argument is not a valid Prototype", e)
+        name, metaclass = entity.value
+        while isinstance(metaclass, tuple):
+            metaclass = metaclass[1]
 
         factorio_direction = DirectionInternal.to_factorio_direction(direction)
 

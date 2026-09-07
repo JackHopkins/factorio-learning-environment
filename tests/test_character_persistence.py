@@ -996,6 +996,18 @@ class TestCharacterDamageAndDeath:
         print(f"Character status after recovery attempt: {result}")
         assert result == "valid", f"Character should be recovered, got: {result}"
 
+        corpse_count = instance.rcon_client.send_command(
+            '/silent-command rcon.print(#game.surfaces[1].find_entities_filtered{name="character-corpse"})'
+        )
+        assert int(corpse_count) > 0
+
+        instance.reset()
+
+        corpse_count = instance.rcon_client.send_command(
+            '/silent-command rcon.print(#game.surfaces[1].find_entities_filtered{name="character-corpse"})'
+        )
+        assert int(corpse_count) == 0
+
     def test_destroy_character_entity(self, instance):
         """Directly destroy the character entity."""
         # Destroy the character
@@ -1037,10 +1049,8 @@ class TestCharacterDamageAndDeath:
             f"/silent-command game.surfaces[1].create_entity{{name='small-biter', position={{x={float(x) + 5}, y={float(y)}}}, force='enemy'}}"
         )
 
-        # Wait a moment (in-game ticks)
-        instance.rcon_client.send_command("/silent-command game.tick_paused = false")
-
-        time.sleep(0.5)
+        # Advance the simulation deterministically instead of relying on wall time.
+        instance.namespace.sleep(0.5)
 
         # Check character health
         health = instance.rcon_client.send_command(
@@ -1085,6 +1095,18 @@ class TestCharacterInvalidation:
             "/silent-command rcon.print(storage.agent_characters[1] and storage.agent_characters[1].valid and 'valid' or 'invalid')"
         )
         assert result == "valid", f"Should recover from nil reference, got: {result}"
+
+        character_count = instance.rcon_client.send_command(
+            '/silent-command rcon.print(#game.surfaces[1].find_entities_filtered{type="character"})'
+        )
+        assert int(character_count) > instance.num_agents
+
+        instance.reset()
+
+        character_count = instance.rcon_client.send_command(
+            '/silent-command rcon.print(#game.surfaces[1].find_entities_filtered{type="character"})'
+        )
+        assert int(character_count) == instance.num_agents
 
     def test_move_to_after_character_death(self, game, instance):
         """Test that move_to works after character has been killed and recovered."""

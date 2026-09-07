@@ -32,7 +32,7 @@ storage.actions.clear_entities = function(player_index)
                 -- Vehicles
                 "car", "spider-vehicle",
                 -- Misc
-                "lamp", "market", "simple-entity-with-owner"
+                "lamp", "market", "simple-entity-with-owner", "corpse", "character-corpse"
             }
         }
 

@@ -665,6 +665,7 @@ Examples:
             "balanced",
             "reasoning_only",
             "pruned_gamestate",
+            "tool_discovery",
         ],
         help="Solver variant to use (default depends on task type)",
     )

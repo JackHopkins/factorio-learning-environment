@@ -1,14 +1,17 @@
 """Tool-discovery solver: the agent is not given the API manual up front.
 
 Every other solver injects the full SystemPromptGenerator manual into the
-system prompt and ablates observations/images. This solver inverts that:
-a minimal system prompt plus Inspect-native tools that let the agent look
-the rules up itself (the same content the MCP server exposes via ls/man),
-so the cost of acquiring the rules becomes part of the measured behavior.
+system prompt and streams the entire game state back after every step.
+This solver inverts both: a minimal system prompt, and a set of
+Inspect-native tools through which the agent pulls what it needs —
+documentation (list_methods/manual), state (entities/inventory/summary),
+its objective (task), and execution (run_code). run_code returns only the
+program's own STDOUT/STDERR; observing the world is a deliberate,
+separate act.
 
 Budget semantics: only `run_code` calls count against trajectory_length.
-Reading manuals and observing are free actions, so scores stay comparable
-with the controlled solver's step budget; the discovery cost shows up as
+Documentation and state queries are free, so scores stay comparable with
+the controlled solver's step budget; the discovery cost shows up as
 extra tokens and wall-clock, not lost game actions.
 """
 
@@ -31,11 +34,10 @@ from inspect_ai.util import store_as
 
 from fle.env.gym_env.action import Action
 from fle.env.gym_env.environment import FactorioGymEnv
-from fle.env.gym_env.observation import Observation
-from fle.env.gym_env.observation_formatter import TreeObservationFormatter
 from fle.env.gym_env.registry import get_environment_info
 from fle.eval.inspect.integration.simple_server_pool import get_simple_server_pool
 from fle.eval.inspect.integration.solver import TrajectoryData
+from fle.eval.tasks.task_definitions.lab_play.throughput_tasks import THROUGHPUT_TASKS
 
 logger = logging.getLogger(__name__)
 
@@ -45,29 +47,37 @@ AGENT_TOOLS_DIR = Path(
 
 SYSTEM_PROMPT = """You control a character in a Factorio world by writing Python programs.
 
-You have NOT been given the API documentation. Discover it with your tools:
+You have NOT been given the API documentation or the game state. Pull what
+you need through your tools:
+
+Documentation (free):
 - list_methods() lists every method in the environment API
 - manual(method) returns the full documentation for one method
-- observe() shows your inventory, position, and nearby entities (free)
-- run_code(code) executes a Python program in the environment and returns \
-the resulting game state (counts against your step budget)
 
-Goal: {goal}
+State (free):
+- task() shows your objective, current score, and remaining step budget
+- entities() lists entities on the map
+- inventory() shows what you are carrying
+- summary() gives a one-glance situational overview
 
-You have {budget} run_code calls. Reading manuals and observing are free.
-Read the manuals for methods before using them; API misuse wastes steps.
-Programs run in a persistent namespace: variables survive between run_code calls."""
+Action (budgeted):
+- run_code(code) executes a Python program in the environment and returns
+  its STDOUT/STDERR. You have {budget} run_code calls.
 
-
-def _format_observation(observation: Observation) -> str:
-    formatted = TreeObservationFormatter(
-        include_research=False, include_flows=False
-    ).format(observation)
-    return formatted.raw_str.replace("\\n", "\n")
+The Python namespace persists between run_code calls. Read the manual for a
+method before using it; API misuse wastes budget. Check state deliberately —
+run_code will not echo the world back at you."""
 
 
-def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int):
+def _make_tools(
+    gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int, task_meta: dict
+):
     """Build per-sample tool closures over the live gym environment."""
+    ns = (
+        gym_env.unwrapped.instance.namespace
+        if hasattr(gym_env, "unwrapped")
+        else gym_env.instance.namespace
+    )
 
     @tool
     def list_methods():
@@ -100,11 +110,58 @@ def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int
         return execute
 
     @tool
-    def observe():
+    def task():
         async def execute() -> str:
-            """Show current inventory, position, and nearby entities. Free."""
-            observation = gym_env.get_observation()
-            return _format_observation(observation)
+            """Show the objective, target quota, current score, and remaining budget."""
+            return (
+                f"Objective: {task_meta['goal']}\n"
+                f"Target: {task_meta['quota']}\n"
+                f"Current production score: {trajectory.current_score:.1f}\n"
+                f"run_code calls used: {trajectory.total_steps}/{budget}"
+            )
+
+        return execute
+
+    @tool
+    def entities():
+        async def execute() -> str:
+            """List the entities currently on the map."""
+            found = ns.get_entities()
+            if not found:
+                return "No entities on the map yet."
+            return "\n".join(repr(e) for e in found)
+
+        return execute
+
+    @tool
+    def inventory():
+        async def execute() -> str:
+            """Show the contents of your inventory."""
+            inv = ns.inspect_inventory()
+            items = dict(inv.items()) if hasattr(inv, "items") else dict(inv)
+            if not items:
+                return "Inventory is empty."
+            return "\n".join(
+                f"{name}: {count}" for name, count in sorted(items.items())
+            )
+
+        return execute
+
+    @tool
+    def summary():
+        async def execute() -> str:
+            """One-glance overview: position, score, budget, entity and item counts."""
+            found = ns.get_entities()
+            inv = ns.inspect_inventory()
+            items = dict(inv.items()) if hasattr(inv, "items") else dict(inv)
+            pos = getattr(ns, "player_location", None)
+            return (
+                f"Position: {pos}\n"
+                f"Production score: {trajectory.current_score:.1f} (target {task_meta['quota']})\n"
+                f"run_code budget: {budget - trajectory.total_steps} of {budget} remaining\n"
+                f"Entities on map: {len(found)}\n"
+                f"Inventory: {sum(items.values())} items across {len(items)} types"
+            )
 
         return execute
 
@@ -114,7 +171,8 @@ def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int
             """Execute a Python program in the environment.
 
             Counts against the step budget. The namespace persists between
-            calls. Returns program output and the updated game state.
+            calls. Returns the program's STDOUT/STDERR only — use the state
+            tools to observe the world.
 
             Args:
                 code: Python source using the environment API.
@@ -131,21 +189,19 @@ def _make_tools(gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int
             trajectory.production_score = score
 
             program_output = (info.get("result") if info else "") or "(no output)"
-
-            observation = gym_env.get_observation()
-            remaining = budget - trajectory.total_steps
-            return (
-                f"[step {trajectory.total_steps}/{budget}, "
-                f"production score {score:.1f}]\n\n"
-                f"Program output (STDOUT/STDERR):\n"
-                f"```\n{program_output}\n```\n\n"
-                f"Game state:\n{_format_observation(observation)}\n"
-                f"({remaining} run_code calls remaining)"
-            )
+            return f"{program_output}\n[step {trajectory.total_steps}/{budget} used]"
 
         return execute
 
-    return [list_methods(), manual(), observe(), run_code()]
+    return [
+        list_methods(),
+        manual(),
+        task(),
+        entities(),
+        inventory(),
+        summary(),
+        run_code(),
+    ]
 
 
 def _trim_messages(messages, keep_last: int = 40):
@@ -166,7 +222,7 @@ def _trim_messages(messages, keep_last: int = 40):
 
 @solver
 def factorio_tool_discovery_solver():
-    """Solver where the agent discovers the API through tools instead of the prompt."""
+    """Solver where the agent discovers the API and state through tools."""
 
     async def solve(state: AgentState, *args, **kwargs) -> AgentState:
         run_idx = None
@@ -187,24 +243,28 @@ def factorio_tool_discovery_solver():
             gym_env.reset()
 
             env_info = get_environment_info(env_id) or {}
-            goal = env_info.get("description", f"complete the task {env_id}")
+            task_config = THROUGHPUT_TASKS.get(env_id)
+            task_meta = {
+                "goal": env_info.get("description")
+                or (task_config.goal_description if task_config else env_id),
+                "quota": task_config.quota if task_config else "n/a",
+            }
 
             trajectory = store_as(TrajectoryData)
-            tools = _make_tools(gym_env, trajectory, budget)
+            tools = _make_tools(gym_env, trajectory, budget, task_meta)
 
             messages = [
-                ChatMessageSystem(
-                    content=SYSTEM_PROMPT.format(goal=goal, budget=budget)
-                ),
+                ChatMessageSystem(content=SYSTEM_PROMPT.format(budget=budget)),
                 ChatMessageUser(
-                    content="Begin. Discover the API, then work toward the goal."
+                    content="Begin. Check task(), discover the API, then work toward the goal."
                 ),
             ]
 
-            # Free tool calls (manuals, observe) mean more generations than
-            # steps; cap generations so a model that never acts still halts.
+            # Free tool calls mean more generations than steps; cap
+            # generations so a model that never acts still halts.
             max_generations = budget * 3
             generations = 0
+            output = None
 
             while trajectory.total_steps < budget and generations < max_generations:
                 generations += 1
@@ -223,7 +283,7 @@ def factorio_tool_discovery_solver():
                 else:
                     messages.append(
                         ChatMessageUser(
-                            content="Use your tools: read manuals, observe, or run_code."
+                            content="Use your tools: read manuals, check state, or run_code."
                         )
                     )
 
@@ -235,7 +295,8 @@ def factorio_tool_discovery_solver():
             )
 
             state.messages = messages
-            state.output = output if generations else state.output
+            if output is not None:
+                state.output = output
             return state
 
         finally:

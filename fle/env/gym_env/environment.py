@@ -1,4 +1,5 @@
 import logging
+import time
 
 import gymnasium as gym
 import numpy as np
@@ -304,12 +305,24 @@ class FactorioGymEnv(gym.Env):
         if self.enable_vision:
             map_image = namespace._render().to_base64()
 
-        # Get entity observations
-        try:
-            entities = namespace.get_entities()
-        except Exception as e:
-            logger.warning(f"Error getting entities: {e}")
-            raise Exception("Error getting entities while getting observation") from e
+        # Get entity observations. A single transient failure (engine busy,
+        # RCON hiccup) must not kill a multi-hour rollout, so retry briefly;
+        # include the underlying error so real failures stay diagnosable.
+        entities = None
+        last_entity_error = None
+        for attempt, delay in enumerate((0, 2, 5), start=1):
+            if delay:
+                time.sleep(delay)
+            try:
+                entities = namespace.get_entities()
+                break
+            except Exception as e:
+                last_entity_error = e
+                logger.warning(f"Error getting entities (attempt {attempt}/3): {e}")
+        if entities is None:
+            raise Exception(
+                f"Error getting entities while getting observation: {last_entity_error}"
+            ) from last_entity_error
 
         entity_obs = [e.__dict__ for e in entities]
 

@@ -6,7 +6,7 @@ replacing the previous JSON-based definitions for better type safety,
 validation, and code reusability.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal, Dict, Any, Union
 from fle.env.game_types import Prototype
 
@@ -52,14 +52,11 @@ class ThroughputTaskConfig(BaseModel):
     goal_description: str
     task_key: str
 
-    class Config:
-        frozen = True  # Make instances immutable
-        extra = "forbid"  # Don't allow extra fields
-        arbitrary_types_allowed = True  # Allow Prototype enum
+    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        data = self.dict()
+        data = self.model_dump()
         # Convert Prototype to string if necessary
         if isinstance(self.throughput_entity, Prototype):
             data["throughput_entity"] = self.throughput_entity.value

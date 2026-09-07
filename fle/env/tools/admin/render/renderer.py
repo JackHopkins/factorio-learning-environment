@@ -60,6 +60,7 @@ class Renderer:
         sprites_dir: Optional[Path] = None,
         max_render_radius: Optional[float] = None,
         center_on_player: bool = True,
+        center_position: Optional[Position] = None,
     ):
         """Initialize renderer with blueprint data.
 
@@ -77,9 +78,15 @@ class Renderer:
 
         flattened_entities = list(flatten_entities(entities))
 
-        # Find player position if centering on player
+        # An explicit render position takes precedence over the character
+        # found in the map snapshot.
         self.player_position = None
-        if center_on_player:
+        if center_position is not None:
+            self.player_position = {
+                "x": center_position.x,
+                "y": center_position.y,
+            }
+        elif center_on_player:
             for entity in flattened_entities:
                 if isinstance(entity, dict) and entity.get("name") == "character":
                     pos = entity.get("position", {})

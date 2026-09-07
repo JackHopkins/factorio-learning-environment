@@ -1,17 +1,46 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, patch
 from collections import Counter
+from datetime import datetime
 
 import numpy as np
-from psycopg2.extras import DictRow
 
 from fle.commons.models.program import Program
 from fle.eval.algorithms.mcts import KLDiversityAchievementSampler
 
 
-class TestKLDiversityAchievementSampler(unittest.TestCase):
+def program_row(program_id, achievements):
+    """Return the complete row selected by Program.from_row."""
+    return {
+        "id": program_id,
+        "code": "pass",
+        "conversation_json": {"messages": []},
+        "value": 0.0,
+        "visits": 0,
+        "parent_id": None,
+        "state_json": None,
+        "raw_reward": None,
+        "holdout_value": None,
+        "created_at": datetime.now(),
+        "prompt_token_usage": None,
+        "completion_token_usage": None,
+        "token_usage": None,
+        "response": None,
+        "version": 1,
+        "version_description": "",
+        "meta": {},
+        "achievements_json": achievements,
+        "instance": -1,
+        "depth": 0,
+        "advantage": 0.0,
+        "ticks": 0,
+        "timing_metrics_json": [],
+    }
+
+
+class TestKLDiversityAchievementSampler(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.db_client = Mock()
+        self.db_client = MagicMock()
         self.sampler = KLDiversityAchievementSampler(
             db_client=self.db_client, window_size=3, temperature=1.0
         )
@@ -89,10 +118,12 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
         ]
 
         # Mock the database connection and cursor
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_cursor.fetchall.return_value = [DictRow(row) for row in mock_results]
-        mock_cursor.fetchone.return_value = mock_results[0]
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = mock_results
+        mock_cursor.fetchone.return_value = program_row(
+            1, mock_results[0]["achievements_json"]
+        )
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         self.db_client.get_connection.return_value.__enter__.return_value = mock_conn
 
@@ -106,22 +137,18 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
         self.assertEqual(program.id, 1)
 
         # Verify database queries were called correctly
-        mock_cursor.execute.assert_any_call(
-            """
-                        SELECT id, achievements_json
-                        FROM programs
-                        WHERE version = %s 
-                        AND achievements_json IS NOT NULL
-                        ORDER BY created_at DESC
-                        LIMIT %s
-                    """,
-            (1, 3),
+        query, params = mock_cursor.execute.call_args_list[0].args
+        self.assertEqual(
+            " ".join(query.split()),
+            "SELECT id, achievements_json FROM programs WHERE version = %s "
+            "AND achievements_json IS NOT NULL ORDER BY created_at DESC LIMIT %s",
         )
+        self.assertEqual(params, (1, 3))
 
     async def test_sample_parent_no_results(self):
         # Mock empty database results
-        mock_conn = Mock()
-        mock_cursor = Mock()
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         self.db_client.get_connection.return_value.__enter__.return_value = mock_conn
@@ -142,10 +169,12 @@ class TestKLDiversityAchievementSampler(unittest.TestCase):
             "conversation_json": {"messages": []},
         }
 
-        mock_conn = Mock()
-        mock_cursor = Mock()
-        mock_cursor.fetchall.return_value = [DictRow(mock_result)]
-        mock_cursor.fetchone.return_value = mock_result
+        mock_conn = MagicMock()
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = [mock_result]
+        mock_cursor.fetchone.return_value = program_row(
+            1, mock_result["achievements_json"]
+        )
         mock_conn.cursor.return_value.__enter__.return_value = mock_cursor
         self.db_client.get_connection.return_value.__enter__.return_value = mock_conn
 

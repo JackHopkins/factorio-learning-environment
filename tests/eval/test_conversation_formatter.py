@@ -92,11 +92,11 @@ class TestStructurePreservingFormatter(unittest.TestCase):
         # Check user execution results are formatted correctly
         user1 = formatted[3]
         self.assertEqual(user1.role, "user")
-        self.assertEqual(user1.content, "Execution result:\n1: 0\n2: 1")
+        self.assertEqual(user1.content, "1: 0\n2: 1")
 
         user2 = formatted[5]
         self.assertEqual(user2.role, "user")
-        self.assertEqual(user2.content, "Execution result:\n3: 0\n4: 1")
+        self.assertEqual(user2.content, "3: 0\n4: 1")
 
     def test_format_single_message(self):
         # Test formatting of a non-last assistant message

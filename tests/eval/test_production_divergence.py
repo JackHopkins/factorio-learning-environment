@@ -19,7 +19,7 @@ move_to(pos)
 furnace = place_entity(Prototype.StoneFurnace, position = pos)
 insert_item(Prototype.CopperOre, furnace, 5)
 insert_item(Prototype.Coal, furnace, 5)
-sleep(16)
+sleep(20)
 """
 
 test_string_1 = """
@@ -38,7 +38,7 @@ move_to(pos)
 furnace = place_entity(Prototype.StoneFurnace, position = pos)
 insert_item(Prototype.IronOre, furnace, 5)
 insert_item(Prototype.Coal, furnace, 5)
-sleep(16)
+sleep(20)
 extract_item(Prototype.IronPlate, furnace.position, 10)
 """
 
@@ -62,6 +62,7 @@ class TestProductionDivergence(unittest.TestCase):
         }
 
         assert achievements == ground_truth_achievement
+        instance.reset()
         _, _, _, achievements = eval_program_with_achievements(instance, test_string)
         ground_truth_achievement = {
             "static": {"stone-furnace": 1, "coal": 10, "stone": 10, "copper-ore": 10},

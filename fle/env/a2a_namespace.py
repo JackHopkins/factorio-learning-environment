@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, List, Optional
 
-from a2a.types import AgentCard, Message, Part
+from a2a.types import AgentCard, Message, Part, Role
 from fle.agents.agent_abc import create_default_agent_card
 
 from fle.env.namespace import FactorioNamespace
@@ -89,15 +89,16 @@ class A2AFactorioNamespace(FactorioNamespace):
             formatted_messages = []
             for msg in messages:
                 # Extract text content from the first part
-                content = msg.parts[0].root.text if msg.parts else ""
+                content = msg.parts[0].text if msg.parts else ""
+                metadata = dict(msg.metadata)
 
                 formatted_messages.append(
                     {
-                        "messageId": msg.messageId,
-                        "sender": msg.metadata.get("sender", ""),
+                        "messageId": msg.message_id,
+                        "sender": metadata.get("sender", ""),
                         "message": content,
-                        "timestamp": int(msg.metadata.get("timestamp", 0)),
-                        "recipient": msg.metadata.get("recipient"),
+                        "timestamp": float(metadata.get("timestamp", 0)),
+                        "recipient": metadata.get("recipient"),
                     }
                 )
 
@@ -134,8 +135,8 @@ class A2AFactorioNamespace(FactorioNamespace):
 
                 # Create Message object with proper structure
                 a2a_message = Message(
-                    messageId=msg["messageId"],
-                    role="user",
+                    message_id=msg["messageId"],
+                    role=Role.ROLE_USER,
                     parts=[Part(text=msg["message"])],
                     metadata={
                         "sender": str(msg["sender"]),

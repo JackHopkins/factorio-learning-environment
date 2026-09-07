@@ -5,6 +5,30 @@ from fle.env import DirectionInternal as Direction
 from fle.env.game_types import Prototype
 
 
+def _create_test_ore_patch(game, center: Position) -> None:
+    """Provision deterministic ore for blueprints larger than the lab patch."""
+    left = int(center.x - 24)
+    right = int(center.x + 24)
+    top = int(center.y - 8)
+    bottom = int(center.y + 8)
+    command = f"""
+/sc local surface=game.surfaces[1];
+local area={{{{{left},{top}}},{{{right},{bottom}}}}};
+for _,entity in pairs(surface.find_entities_filtered{{area=area}}) do
+  if entity.type == "resource" or entity.type == "tree" or entity.type == "cliff" then entity.destroy() end
+end;
+local tiles={{}};
+for x={left},{right - 1} do for y={top},{bottom - 1} do
+  table.insert(tiles,{{name="grass-1",position={{x,y}}}})
+end end;
+surface.set_tiles(tiles,true);
+for x={left},{right - 1} do for y={top},{bottom - 1} do
+  surface.create_entity{{name="iron-ore",position={{x+0.5,y+0.5}},amount=10000}}
+end end
+"""
+    game.instance.rcon_client.send_command(command)
+
+
 @pytest.fixture()
 def game(instance):
     instance.initial_inventory = {
@@ -100,6 +124,8 @@ def test_mining_blueprint_1(game):
 
 
 def test_mining_blueprint_2(game):
+    patch_center = Position(x=128, y=0)
+    _create_test_ore_patch(game, patch_center)
     # Calculate bounding box
     left_top = Position(x=0, y=0)
     right_bottom = Position(x=29.0, y=4.0)
@@ -112,11 +138,11 @@ def test_mining_blueprint_2(game):
         right_top=right_top,
     )
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(
-        Prototype.ElectricMiningDrill, miner_box, center_position=Position(x=0, y=0)
+    origin_box = game.nearest_buildable(
+        Prototype.ElectricMiningDrill, miner_box, center_position=patch_center
     )
-    assert origin, "Could not find valid position"
-    origin = origin + left_top + Position(x=0.5, y=0.5)
+    assert origin_box, "Could not find valid position"
+    origin = origin_box.left_top + Position(x=0.5, y=0.5)
     game.move_to(origin)
     # Place electric-mining-drill horizontally at y=0.0
     for i in range(4):
@@ -231,10 +257,12 @@ def test_mining_blueprint_2(game):
 
 
 def test_mining_blueprint_3(game):
+    patch_center = Position(x=128, y=0)
+    _create_test_ore_patch(game, patch_center)
     # Find suitable origin position for miners on ore
 
     # Calculate bounding box for miners
-    left_top = Position(x=-6.0, y=-50.0)
+    left_top = Position(x=-6.0, y=-2.0)
     right_bottom = Position(x=23.0, y=4.0)
     left_bottom = Position(x=left_top.x, y=right_bottom.y)
     right_top = Position(x=right_bottom.x, y=left_top.y)
@@ -247,11 +275,13 @@ def test_mining_blueprint_3(game):
     )
 
     # Find valid position for miners using nearest_buildable
-    origin = game.nearest_buildable(
-        Prototype.ElectricMiningDrill, miner_box, center_position=Position(x=0, y=0)
+    origin_box = game.nearest_buildable(
+        Prototype.ElectricMiningDrill, miner_box, center_position=patch_center
     )
 
-    assert origin, "Could not find valid position for miners"
+    assert origin_box, "Could not find valid position for miners"
+    # Offset the generated blueprint's local coordinates into the returned box.
+    origin = origin_box.left_top + Position(x=6.5, y=2.5)
 
     # Move to origin position
     game.move_to(origin)
@@ -371,12 +401,12 @@ def test_minig_blueprint_4(game):
     )
 
     # Find valid position using nearest_buildable
-    origin = game.nearest_buildable(
+    origin_box = game.nearest_buildable(
         Prototype.BurnerMiningDrill, miner_box, center_position=Position(x=0, y=0)
     )
 
-    assert origin, "Could not find valid position"
-    origin = origin + left_top + Position(x=0.5, y=0.5)
+    assert origin_box, "Could not find valid position"
+    origin = origin_box.left_top + Position(x=0.5, y=0.5)
     game.move_to(origin)
 
     # Place individual burner-mining-drill

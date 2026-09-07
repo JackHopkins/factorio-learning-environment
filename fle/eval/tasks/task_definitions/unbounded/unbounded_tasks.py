@@ -13,7 +13,7 @@ Task types:
 
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal, Dict, Any, Union
 from fle.env.game_types import Prototype
 
@@ -47,14 +47,11 @@ class UnboundedThroughputTaskConfig(BaseModel):
     goal_description: str
     task_key: str
 
-    class Config:
-        frozen = True
-        extra = "forbid"
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(frozen=True, extra="forbid", arbitrary_types_allowed=True)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        data = self.dict()
+        data = self.model_dump()
         # Convert Prototype to string if necessary
         if isinstance(self.throughput_entity, Prototype):
             data["throughput_entity"] = self.throughput_entity.value
@@ -74,13 +71,11 @@ class DefaultTaskConfig(BaseModel):
     goal_description: str
     task_key: str
 
-    class Config:
-        frozen = True
-        extra = "forbid"
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        return self.dict()
+        return self.model_dump()
 
 
 class UnboundedProductionTaskConfig(BaseModel):
@@ -105,13 +100,11 @@ class UnboundedProductionTaskConfig(BaseModel):
     goal_description: str
     task_key: str
 
-    class Config:
-        frozen = True
-        extra = "forbid"
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for compatibility with existing code."""
-        return self.dict()
+        return self.model_dump()
 
 
 # Define unbounded throughput tasks

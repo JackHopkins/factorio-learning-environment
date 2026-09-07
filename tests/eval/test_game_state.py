@@ -39,19 +39,10 @@ def test_game_state():
     pass
 
 
-def test_game_state_reserach():
+def test_game_state_reserach(instance):
     class DummyObject(BaseModel):
         game_state: GameState = None
 
-    instance = FactorioInstance(
-        address="localhost",
-        bounding_box=200,
-        tcp_port=27019,
-        fast=True,
-        # cache_scripts=False,
-        inventory={},
-        all_technologies_researched=True,
-    )
     zero_state = GameState.from_instance(instance)
     # this tests for validation errors in the original zero states
     new_object = DummyObject(game_state=zero_state)  # noqa

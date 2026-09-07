@@ -1,5 +1,5 @@
 def eval_program_with_profits(instance, program, profit_config):
-    pre_production_flows = instance.get_production_stats()
+    pre_production_flows = instance.first_namespace._get_production_stats()
     # evaluate the step
     try:
         score, goal, result = instance.eval_with_error(program, timeout=300)
@@ -11,7 +11,7 @@ def eval_program_with_profits(instance, program, profit_config):
         error = True
     # split result by newlines
     output_list = result.splitlines()
-    post_production_flows = instance.get_production_stats()
+    post_production_flows = instance.first_namespace._get_production_stats()
     profits = get_profits(
         pre_production_flows, post_production_flows, profit_config=profit_config
     )
@@ -149,7 +149,7 @@ def get_dynamic_profits(new_production_flows, price_list, dynamic_profit_multipl
 
 
 def eval_program_with_achievements(instance, program):
-    pre_production_flows = instance.get_production_stats()
+    pre_production_flows = instance.first_namespace._get_production_stats()
     # evaluate the step
     try:
         score, goal, result = instance.eval_with_error(program, timeout=300)
@@ -161,7 +161,7 @@ def eval_program_with_achievements(instance, program):
         error = True
     # split result by newlines
     output_list = result.splitlines()
-    post_production_flows = instance.get_production_stats()
+    post_production_flows = instance.first_namespace._get_production_stats()
     achievements = get_achievements(pre_production_flows, post_production_flows)
     return output_list, result, error, achievements
 

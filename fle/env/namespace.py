@@ -205,6 +205,7 @@ class FactorioNamespace:
         # Agent code that tries to define a function or variable with a protected name
         # will get an error instead of silently shadowing an FLE tool/builtin.
         self._protected_names = set()
+        self._protected_callables = {}
 
     def _freeze_protected_names(self):
         """Snapshot all current namespace names as protected.
@@ -215,6 +216,11 @@ class FactorioNamespace:
         """
         self._protected_names = {
             attr for attr in dir(self) if not attr.startswith("__")
+        }
+        self._protected_callables = {
+            attr: getattr(self, attr)
+            for attr in self._protected_names
+            if callable(getattr(self, attr))
         }
 
     def _check_protected(self, name: str):
@@ -274,6 +280,12 @@ class FactorioNamespace:
         Also reset internal state variables to ensure clean test isolation.
         @return:
         """
+        # State loading deliberately bypasses the agent-facing protected-name
+        # checks. Restore tools and builtins here so a malformed or legacy
+        # namespace cannot poison later episodes on a reused server.
+        for name, value in self._protected_callables.items():
+            setattr(self, name, value)
+
         # Reset internal state variables that are in _static_members but should be cleared
         self.logging_results = {}
         self.log_counter = 0
@@ -1199,4 +1211,8 @@ def unwrap_after_deserialization(instance, value):
     """Unwrap serialized values back to their original form"""
     if isinstance(value, SerializableFunction):
         return value.bind(instance)
+    if isinstance(value, Entity):
+        # Entity snapshots deliberately omit the unpickleable live socket.
+        # Point restored entities at the new instance instead.
+        value.game = instance.instance.lua_script_manager
     return value

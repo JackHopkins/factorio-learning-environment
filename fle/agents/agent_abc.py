@@ -1,6 +1,12 @@
 from abc import abstractmethod
 
-from a2a.types import AgentCapabilities, AgentCard, AgentProvider, AgentSkill
+from a2a.types import (
+    AgentCapabilities,
+    AgentCard,
+    AgentInterface,
+    AgentProvider,
+    AgentSkill,
+)
 
 from fle.commons.models.conversation import Conversation
 from fle.env.namespace import FactorioNamespace
@@ -73,12 +79,16 @@ def create_default_agent_card(name: str) -> AgentCard:
         name=name,
         version="1.0",
         description="An AI agent specialized in Factorio game automation and assistance",
-        url="https://github.com/JackHopkins/factorio-learning-environment",
-        capabilities=AgentCapabilities(
-            pushNotifications=False, stateTransitionHistory=False, streaming=False
-        ),
-        defaultInputModes=["text/plain", "application/json"],
-        defaultOutputModes=["text/plain", "application/json"],
+        supported_interfaces=[
+            AgentInterface(
+                url="https://github.com/JackHopkins/factorio-learning-environment",
+                protocol_binding="JSONRPC",
+                protocol_version="1.0",
+            )
+        ],
+        capabilities=AgentCapabilities(push_notifications=False, streaming=False),
+        default_input_modes=["text/plain", "application/json"],
+        default_output_modes=["text/plain", "application/json"],
         skills=[
             AgentSkill(
                 id="factorio_automation",

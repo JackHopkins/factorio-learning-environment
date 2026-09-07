@@ -28,17 +28,17 @@ def game(configure_game):
 
 
 def test_solar_panel_charge_accumulator(game):
-    assembly_pos = Position(x=0, y=0)
-    game.move_to(assembly_pos)
-    ass_machine = game.place_entity(Prototype.AssemblingMachine2, position=assembly_pos)
-    ass_machine = game.set_entity_recipe(ass_machine, Prototype.Concrete)
-    # Find water for power generation
+    # Place the consumer near its water source. The test is about fluid input,
+    # not the amount of pipe required by a particular generated map.
     water_pos = game.nearest(Resource.Water)
     game.move_to(water_pos)
-
-    # Place offshore pump
     pump = game.place_entity(Prototype.OffshorePump, position=water_pos)
     print(f"Placed offshore pump at {pump.position}")
+
+    ass_machine = game.place_entity_next_to(
+        Prototype.AssemblingMachine2, pump.position, Direction.RIGHT, spacing=2
+    )
+    ass_machine = game.set_entity_recipe(ass_machine, Prototype.Concrete)
     group = game.connect_entities(pump, ass_machine, Prototype.Pipe)
     print(f"Connected ass_machine to water {ass_machine.position} with {group}")
 

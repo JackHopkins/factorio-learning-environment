@@ -175,8 +175,10 @@ print(x)
         self.assertIn("x = 5", code)
         self.assertNotIn("```", code)
 
-        # Verify explanatory text is wrapped in docstrings
-        self.assertIn('"""Some explanation here"""', code.replace("\n", ""))
+        # Fenced responses prefer executable blocks; prose remains available
+        # to callers through the original response.
+        self.assertNotIn("Some explanation here", code)
+        self.assertIn("Some explanation here", original)
 
         # Check overall validity
         import ast

@@ -1037,10 +1037,8 @@ class TestCharacterDamageAndDeath:
             f"/silent-command game.surfaces[1].create_entity{{name='small-biter', position={{x={float(x) + 5}, y={float(y)}}}, force='enemy'}}"
         )
 
-        # Wait a moment (in-game ticks)
-        instance.rcon_client.send_command("/silent-command game.tick_paused = false")
-
-        time.sleep(0.5)
+        # Advance the simulation deterministically instead of relying on wall time.
+        instance.namespace.sleep(0.5)
 
         # Check character health
         health = instance.rcon_client.send_command(

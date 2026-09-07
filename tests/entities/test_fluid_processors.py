@@ -32,7 +32,14 @@ def game(instance):
     }
     instance.set_speed(10)
     instance.reset(all_technologies_researched=True)
+    instance.rcon_client.send_command(
+        "/silent-command game.surfaces[1].daytime = 0; "
+        "game.surfaces[1].freeze_daytime = true"
+    )
     yield instance.namespace
+    instance.rcon_client.send_command(
+        "/silent-command game.surfaces[1].freeze_daytime = false"
+    )
 
 
 def _insert_fluid_at_position(game, position, fluid="water"):
@@ -59,6 +66,24 @@ def create_filled_tank_at_position(game, position, fluid):
     game.place_entity(Prototype.StorageTank, Direction.UP, position)
     _insert_fluid_at_position(game, position, fluid)
     return game.get_entity(Prototype.StorageTank, position)
+
+
+def wait_for_tank_fluid(
+    game, tank: Entity, fluid_name: str, timeout: int = 60, poll_interval: int = 2
+) -> Entity:
+    """Advance game time until a tank contains the requested fluid."""
+    for _ in range(0, timeout, poll_interval):
+        game.sleep(poll_interval)
+        tank = game.get_entity(Prototype.StorageTank, tank.position)
+        if any(
+            fluid.get("name") == fluid_name and fluid.get("amount", 0) > 0
+            for fluid in tank.fluid_box
+            if isinstance(fluid, dict)
+        ):
+            return tank
+    raise AssertionError(
+        f"{fluid_name} did not reach the storage tank within {timeout}s"
+    )
 
 
 def setup_fluid_input(game, fluid_name: str, base_position: Position) -> Entity:
@@ -194,13 +219,23 @@ def test_end_to_end_lubricant_tanks(game):
 
     setup_power(game, oil_refinery_pos.down(10), oil_refinery)
 
+    input_water = [
+        point for point in oil_refinery.input_connection_points if point.type == "water"
+    ][0]
+    input_crude_oil = [
+        point
+        for point in oil_refinery.input_connection_points
+        if point.type == "crude-oil"
+    ][0]
     game.connect_entities(
-        pumpjack,
-        oil_refinery,
+        pumpjack.connection_points[0],
+        input_crude_oil,
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
     game.connect_entities(
-        pump, oil_refinery, connection_type={Prototype.Pipe, Prototype.UndergroundPipe}
+        pump.connection_points[0],
+        input_water,
+        connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
 
     storage_tank_1_pos = Position(oil_refinery_pos.x + 10, oil_refinery_pos.y)
@@ -258,8 +293,8 @@ def test_end_to_end_lubricant_tanks(game):
     chem_plant = game.set_entity_recipe(chem_plant, Prototype.Lubricant)
     setup_power(game, chemical_plant_pos.up(10), chem_plant)
 
-    # Wait for fluid to flow from the refinery to the storage tanks
-    game.sleep(15)
+    # Wait on the observable state rather than assuming a fixed production time.
+    storage_tank_3 = wait_for_tank_fluid(game, storage_tank_3, "heavy-oil")
 
     error = True
     try:
@@ -433,33 +468,7 @@ def test_multiple_positions_to_tanks_with_positions(game):
         connection_type={Prototype.Pipe, Prototype.UndergroundPipe},
     )
 
-    # Wait for fluid to flow from the refinery to the storage tanks
-    # Poll until storage_tank_1 has heavy-oil (which is what we need to verify)
-    # This is more reliable than a fixed sleep time
-    max_wait_time = 60  # seconds
-    poll_interval = 2  # seconds
-    waited = 0
-    while waited < max_wait_time:
-        game.sleep(poll_interval)
-        waited += poll_interval
-        storage_tank_1 = game.get_entity(Prototype.StorageTank, storage_tank_1.position)
-        # Check if storage tank has fluid by examining its connection points
-        has_fluid = any(
-            cp.type and cp.type != ""
-            for cp in storage_tank_1.connection_points
-            if hasattr(cp, "type")
-        )
-        # Also check fluid_box if available
-        if hasattr(storage_tank_1, "fluid_box") and storage_tank_1.fluid_box:
-            fluid_amounts = [
-                f.get("amount", 0)
-                for f in storage_tank_1.fluid_box
-                if isinstance(f, dict)
-            ]
-            if any(amt > 0 for amt in fluid_amounts):
-                has_fluid = True
-        if has_fluid:
-            break
+    storage_tank_1 = wait_for_tank_fluid(game, storage_tank_1, "heavy-oil")
 
     chemical_plant_pos = Position(x=52.5, y=45.5)
     game.move_to(chemical_plant_pos)

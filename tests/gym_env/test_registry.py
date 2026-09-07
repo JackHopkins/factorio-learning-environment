@@ -38,7 +38,7 @@ def test_registry_discovery():
         print(f"  ... and {len(env_ids) - 5} more environments")
 
     print()
-    return env_ids
+    assert env_ids
 
 
 def test_environment_creation():

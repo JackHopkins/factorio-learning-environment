@@ -151,7 +151,9 @@ class ConversationFormatter(ABC):
 
     @abstractmethod
     def format_conversation(
-        self, conversation: Conversation, namespace: FactorioNamespace
+        self,
+        conversation: Conversation,
+        namespace: Optional[FactorioNamespace] = None,
     ) -> List[Message]:
         """
         Format a conversation according to the specific strategy.
@@ -233,7 +235,9 @@ class StructurePreservingFormatter(ConversationFormatter):
         return None
 
     def format_conversation(
-        self, conversation: Conversation, namespace: FactorioNamespace
+        self,
+        conversation: Conversation,
+        namespace: Optional[FactorioNamespace] = None,
     ) -> List[Message]:
         formatted = []
 

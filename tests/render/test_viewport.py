@@ -86,7 +86,11 @@ def test_viewport_world_to_pixel(clear_terrain):
     chest = game.place_entity(Prototype.IronChest, position=Position(x=52, y=55))
 
     # Render
-    result = game._render(radius=64, max_render_radius=16)
+    result = game._render(
+        position=chest.position,
+        radius=64,
+        max_render_radius=16,
+    )
     viewport = result.viewport
 
     # Convert the chest's world position to pixel coordinates

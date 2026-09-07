@@ -30,6 +30,12 @@ storage.actions.reset = function(inventories_json, reset_position, all_technolog
 	storage.clearance_entities = {}
 	storage.actions.reset_production_stats()
 	storage.elapsed_ticks = 0
+	-- World time is shared by every episode on a reused server. Start each
+	-- episode at the same daytime so solar-powered behavior is deterministic.
+	for _, surface in pairs(game.surfaces) do
+		surface.freeze_daytime = false
+		surface.daytime = 0
+	end
 
 	local inventories = safe_json_to_table(inventories_json)
 

@@ -7,34 +7,12 @@ support from 93.1% to 100% for tested features.
 """
 
 import pytest
-import sys
-import os
-
-# Add the project root to Python path
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from fle.env import FactorioInstance
 
 
 @pytest.fixture
-def fle_instance():
-    """Create a test FLE instance"""
-    address = os.getenv("FACTORIO_HOST", "localhost")
-    port = int(os.getenv("FACTORIO_RCON_PORT", "27000"))
-    try:
-        instance = FactorioInstance(
-            address=address,
-            tcp_port=port,
-            num_agents=1,
-            fast=True,
-            cache_scripts=True,
-            inventory={},
-            all_technologies_researched=True,
-        )
-        yield instance
-    finally:
-        if "instance" in locals():
-            instance.cleanup()
+def fle_instance(instance):
+    """Use the worker-assigned instance so xdist workers never share a server."""
+    return instance
 
 
 def test_ast_return_statements(fle_instance):

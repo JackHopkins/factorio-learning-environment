@@ -37,6 +37,7 @@ local RECONCILE_INTERVAL = 47 -- ticks; avoids tools' on_nth_tick(5/15/60) slots
 local ENTITY_SLICE = 50 -- entities re-rowed per reconcile pass
 local RES_BUCKET = 100 -- ore units per amount bucket
 local RES_CHUNKS_PER_PASS = 4 -- resource chunks rescanned per reconcile pass
+local DISCOVERY_EVERY = 32 -- reconcile passes between untracked-entity sweeps
 local MAX_BUF = 50000 -- records; overflow => client full_sync
 
 local WATER_TILES = { "water", "deepwater", "water-green", "deepwater-green" }
@@ -238,6 +239,18 @@ end)
 
 script.on_nth_tick(RECONCILE_INTERVAL, function()
   local s = state()
+
+  -- Discovery sweep: entities created without raise_built never fire an
+  -- event, so periodically scan for player entities we aren't tracking.
+  s.discovery = (s.discovery or 0) + 1
+  if s.discovery >= DISCOVERY_EVERY then
+    s.discovery = 0
+    for _, e in ipairs(game.surfaces[1].find_entities_filtered{ force = "player" }) do
+      if e.unit_number and s.cache[e.unit_number] == nil then
+        upsert(e)
+      end
+    end
+  end
 
   for _ = 1, ENTITY_SLICE do
     s.cursor = s.cursor + 1

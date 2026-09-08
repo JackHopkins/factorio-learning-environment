@@ -24,6 +24,8 @@ class TieredClient:
         self.tick = 0
         self.research = None
         self.research_pct = 0
+        self.player_x = 0.0
+        self.player_y = 0.0
         self.techs_finished = []
         self.overflow = False
 
@@ -39,10 +41,13 @@ class TieredClient:
             elif tag == "r":
                 self.entities.pop(rec[1:], None)
             elif tag == "h":
-                tick, research, pct = rec[1:].split(":")
-                self.tick = int(tick)
-                self.research = None if research == "-" else research
-                self.research_pct = int(pct)
+                parts = rec[1:].split(":")
+                self.tick = int(parts[0])
+                self.research = None if parts[1] == "-" else parts[1]
+                self.research_pct = int(parts[2])
+                if len(parts) >= 5:
+                    self.player_x = float(parts[3])
+                    self.player_y = float(parts[4])
             elif tag == "q":
                 self.techs_finished.append(rec[1:])
             elif tag == "!":

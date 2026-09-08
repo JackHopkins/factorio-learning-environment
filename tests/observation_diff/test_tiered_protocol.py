@@ -416,3 +416,40 @@ rcon.print(e.unit_number)""".strip())
     assert len(set(ids)) == N_INV_SLOTS and all(i > 0 for i in ids)
     assert row[F_INV_TOTAL] == float(sum(range(10, 100, 10)))  # all 9 stacks
     assert row[F_INV_DISTINCT] == 9.0
+
+
+def test_egocentric_tracking(tiered_rcon):
+    """The grid window and table view track the player character: the header
+    carries its exact position, the grid recenters onto it, and observation()
+    reports player-relative coordinates."""
+    c = _tensor_client(tiered_rcon)
+    truth = tiered_rcon.send_command("""/sc local ch = game.surfaces[1].create_entity{
+    name = "character", position = {800, 100}, force = "player", raise_built = true}
+local chest = game.surfaces[1].create_entity{
+    name = "iron-chest", position = {810, 100}, force = "player", raise_built = true}
+rcon.print(ch.position.x .. "," .. ch.position.y .. "|" .. chest.unit_number
+    .. "|" .. chest.position.x .. "," .. chest.position.y)""".strip())
+    chpos, chest_unit, chestpos = truth.split("|")
+    chx, chy = map(float, chpos.split(","))
+    cx, cy = map(float, chestpos.split(","))
+    try:
+        assert poll_until(tiered_rcon, c, lambda: c.player_x == chx and c.player_y == chy), \
+            "header never reported the character position"
+        # grid recentered onto the character
+        assert abs(c.center_x - chx) <= 2 and abs(c.center_y - chy) <= 2
+        # chest at x=810 is far outside an origin-centered window but must be
+        # in the egocentric grid (channel 4 = iron-chest)
+        assert poll_until(tiered_rcon, c, lambda: chest_unit in c._slot_of)
+        assert float(c.grid[4].sum()) >= 1.0
+        # table view is player-relative; internal table stays absolute
+        _, gvec, view, _ = c.observation()
+        slot = c._slot_of[chest_unit]
+        assert (c.table[slot][F_X], c.table[slot][F_Y]) == (cx, cy)
+        assert view[slot][F_X] == pytest.approx(cx - chx)
+        assert view[slot][F_Y] == pytest.approx(cy - chy)
+        assert (gvec[8], gvec[9]) == (chx, chy)
+    finally:
+        # remove the character so earlier-region tests behave if re-run
+        tiered_rcon.send_command("""/sc for _, e in ipairs(game.surfaces[1].find_entities_filtered{
+    type = "character"}) do e.destroy{raise_destroy = true} end
+storage.obs_char = nil rcon.print(1)""".strip())

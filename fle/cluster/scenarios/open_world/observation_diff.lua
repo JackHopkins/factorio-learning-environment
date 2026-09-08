@@ -27,7 +27,7 @@
 --   obs_terrain_drain()      -- terrain records
 --
 -- Record types (";"-joined):
---   entity buffer:  h<tick>:<research|->:<pct>  u<id>,<row>  r<id>  q<tech>
+--   entity buffer:  h<tick>:<research|->:<pct>:<charx>:<chary>  u<id>,<row>  r<id>  q<tech>
 --   terrain buffer: c<cx>:<cy>:<waterhex>  o<name>:<x>:<y>:<bucket>  d<x>:<y>
 --                   t<x>:<y>  k<x>:<y>  x<x>:<y>  n<id>,<name>,<x>,<y>  m<id>
 --   either:         !overflow  (client must full_sync)
@@ -356,8 +356,27 @@ end)
 local function header()
   local force = game.forces.player
   local research = force.current_research
+  -- Track the agent character so clients can build egocentric views. The
+  -- reference is cached in storage and revalidated when it dies/despawns.
+  local char = storage.obs_char
+  if not (char and char.valid) then
+    char = nil
+    local players = game.connected_players
+    if #players > 0 and players[1].character then
+      char = players[1].character
+    else
+      local found = game.surfaces[1].find_entities_filtered{ type = "character", limit = 1 }
+      char = found[1]
+    end
+    storage.obs_char = char
+  end
+  local px, py = 0, 0
+  if char and char.valid then
+    px, py = char.position.x, char.position.y
+  end
   return "h" .. game.tick .. ":" .. (research and research.name or "-")
     .. ":" .. math.floor((force.research_progress or 0) * 100)
+    .. ":" .. px .. ":" .. py
 end
 
 function obs_diff_drain()

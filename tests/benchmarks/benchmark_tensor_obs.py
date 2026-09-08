@@ -4,9 +4,11 @@ Builds an MLP-ready float32 tensor from the tiered diff protocol and measures
 the full pipeline. The tensor is updated incrementally from diff records, so
 steady-state cost is O(changes), not O(world).
 
-Observation views: [C, H, W] spatial grid (CELL-tile cells centered on
-origin), a small global feature vector, and an object-level entity table
-(TABLE_ROWS x TABLE_FEATS) with exact positions and per-entity properties.
+Observation views: [C, H, W] spatial grid of CELL-tile cells tracking the
+player character (recentering when they leave a dead zone), a small global
+feature vector including the exact player position, and an object-level
+entity table (TABLE_ROWS x TABLE_FEATS) whose observation view reports
+player-relative coordinates (absolute positions stay available internally).
 
     channels 0-5   entity counts per type (furnace/belt/inserter/assembler/chest/other)
     channel  6     status sum (working=1.0 scale)
@@ -40,7 +42,8 @@ from benchmark_tiered_obs import TieredClient  # noqa: E402
 
 GRID = 96  # cells per side
 CELL = 3  # tiles per cell
-HALF = GRID * CELL // 2  # window covers [-HALF, HALF) tiles
+HALF = GRID * CELL // 2  # window covers [center - HALF, center + HALF) tiles
+RECENTER_DEADZONE = 24.0  # tiles the player may drift before the grid recenters
 N_CHANNELS = 17
 ENTITY_CHANNEL = {
     "stone-furnace": 0,
@@ -52,7 +55,7 @@ ENTITY_CHANNEL = {
 OTHER_CHANNEL = 5
 C_STATUS, C_SIN, C_COS, C_ENERGY, C_PROGRESS, C_INV = 6, 7, 8, 9, 10, 11
 C_WATER, C_TREE, C_ROCK, C_ORE, C_NEST = 12, 13, 14, 15, 16
-N_GLOBAL = 8
+N_GLOBAL = 10
 
 # Entity table: object-level view with exact positions and properties,
 # mirroring the fields of the fle.env.entities object model.
@@ -78,14 +81,6 @@ TABLE_ROWS = 2048
 TABLE_FEATS = F_INV_DISTINCT + 1
 
 
-def cell_of(x, y):
-    gx = int((x + HALF) // CELL)
-    gy = int((y + HALF) // CELL)
-    if 0 <= gx < GRID and 0 <= gy < GRID:
-        return gx, gy
-    return None
-
-
 class TensorClient(TieredClient):
     """TieredClient that incrementally maintains MLP observation tensors.
 
@@ -109,6 +104,25 @@ class TensorClient(TieredClient):
         self._slot_of = {}  # unit_number -> table row
         self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
         self._vocab = {}  # "kind:name" -> stable int id (session-scoped, >0)
+        self.center_x = 0  # grid window center, CELL-quantized world coords
+        self.center_y = 0
+
+    def _cell_of(self, x, y):
+        gx = int((x - self.center_x + HALF) // CELL)
+        gy = int((y - self.center_y + HALF) // CELL)
+        if 0 <= gx < GRID and 0 <= gy < GRID:
+            return gx, gy
+        return None
+
+    def _maybe_recenter(self):
+        """Recenter the grid on the player once they leave the dead zone.
+        Only grid contributions rebuild - table slots stay stable."""
+        if (abs(self.player_x - self.center_x) <= RECENTER_DEADZONE
+                and abs(self.player_y - self.center_y) <= RECENTER_DEADZONE):
+            return
+        self.center_x = CELL * round(self.player_x / CELL)
+        self.center_y = CELL * round(self.player_y / CELL)
+        self._rebuild_grid()
 
     # -- entity rows ---------------------------------------------------------
 
@@ -178,7 +192,7 @@ class TensorClient(TieredClient):
 
     def _entity_contrib(self, row):
         p = self._parse_row(row)
-        cell = cell_of(p["x"], p["y"])
+        cell = self._cell_of(p["x"], p["y"])
         if cell is None:
             return None
         gx, gy = cell
@@ -278,10 +292,14 @@ class TensorClient(TieredClient):
                 self._table_remove(key)
                 self.entities.pop(key, None)
             elif tag == "h":
-                tick, research, pct = rec[1:].split(":")
-                self.tick = int(tick)
-                self.research = None if research == "-" else research
-                self.research_pct = int(pct)
+                parts = rec[1:].split(":")
+                self.tick = int(parts[0])
+                self.research = None if parts[1] == "-" else parts[1]
+                self.research_pct = int(parts[2])
+                if len(parts) >= 5:
+                    self.player_x = float(parts[3])
+                    self.player_y = float(parts[4])
+                    self._maybe_recenter()
             elif tag == "q":
                 self.techs_finished.append(rec[1:])
             elif tag == "!":
@@ -302,8 +320,8 @@ class TensorClient(TieredClient):
                         dtype=np.uint32)
         tile_mask = (rows[:, None] >> np.arange(32, dtype=np.uint32)[None, :]) & 1
         dy, dx = np.nonzero(tile_mask)
-        wx = cx * 32 + dx + HALF
-        wy = cy * 32 + dy + HALF
+        wx = cx * 32 + dx - self.center_x + HALF
+        wy = cy * 32 + dy - self.center_y + HALF
         keep = (wx >= 0) & (wx < GRID * CELL) & (wy >= 0) & (wy < GRID * CELL)
         if not keep.any():
             return
@@ -326,7 +344,7 @@ class TensorClient(TieredClient):
         if new_value is None:
             return
         x, y = key.split(":")
-        cell = cell_of(float(x), float(y))
+        cell = self._cell_of(float(x), float(y))
         if cell is None:
             return
         gx, gy = cell
@@ -357,12 +375,12 @@ class TensorClient(TieredClient):
                 key = rec[1:]
                 if key not in self.trees:
                     self.trees.add(key)
-                    cell = cell_of(*map(float, key.split(":")))
+                    cell = self._cell_of(*map(float, key.split(":")))
                     if cell:
                         self.grid[C_TREE, cell[1], cell[0]] += 1
             elif tag == "x":
                 key = rec[1:]
-                cell = cell_of(*map(float, key.split(":")))
+                cell = self._cell_of(*map(float, key.split(":")))
                 if key in self.trees:
                     self.trees.discard(key)
                     if cell:
@@ -375,20 +393,20 @@ class TensorClient(TieredClient):
                 key = rec[1:]
                 if key not in self.obstacles:
                     self.obstacles.add(key)
-                    cell = cell_of(*map(float, key.split(":")))
+                    cell = self._cell_of(*map(float, key.split(":")))
                     if cell:
                         self.grid[C_ROCK, cell[1], cell[0]] += 1
             elif tag == "n":
                 key, name, x, y = rec[1:].split(",")
                 self.nests[key] = (name, float(x), float(y))
-                cell = cell_of(float(x), float(y))
+                cell = self._cell_of(float(x), float(y))
                 if cell:
                     self.grid[C_NEST, cell[1], cell[0]] += 1
             elif tag == "m":
                 key = rec[1:]
                 nest = self.nests.pop(key, None)
                 if nest:
-                    cell = cell_of(nest[1], nest[2])
+                    cell = self._cell_of(nest[1], nest[2])
                     if cell:
                         self.grid[C_NEST, cell[1], cell[0]] -= 1
             elif tag == "!":
@@ -406,48 +424,63 @@ class TensorClient(TieredClient):
         g[5] = len(self.nests) / 100.0
         g[6] = len(self.techs_finished) / 100.0
         g[7] = 1.0 if self.overflow else 0.0
+        g[8] = self.player_x
+        g[9] = self.player_y
 
     def observation(self):
-        """Observation views for an MLP/transformer policy (zero-copy):
-        (flat grid, global vec, entity table, table mask)."""
-        return self.grid.reshape(-1), self.global_vec, self.table, self.table_mask
+        """Observation views for an MLP/transformer policy: (flat grid,
+        global vec, entity table with player-RELATIVE x/y, table mask).
+        The internal table stays absolute, so exact world coordinates for
+        actions remain available via self.table."""
+        table_view = self.table.copy()
+        live = self.table_mask > 0
+        table_view[live, F_X] -= self.player_x
+        table_view[live, F_Y] -= self.player_y
+        return self.grid.reshape(-1), self.global_vec, table_view, self.table_mask
 
-    def rebuild(self):
-        """Full tensor rebuild from client dicts (recenter / recovery path).
-
-        Note: table slots are reallocated, so slot indices are NOT stable
-        across a rebuild (they are stable under incremental updates)."""
+    def _rebuild_grid(self):
+        """Rebuild grid contributions for the current window center. Table
+        slots are untouched, so slot indices stay stable across recenters."""
         self.grid[:] = 0.0
-        self.table[:] = 0.0
-        self.table_mask[:] = 0.0
         self._contrib.clear()
         self._ore_contrib.clear()
         self._water_contrib.clear()
-        self._slot_of.clear()
-        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
-        for key, row in sorted(self.entities.items()):
+        for key, row in self.entities.items():
             contrib = self._entity_contrib(row)
             if contrib is not None:
                 self._contrib[key] = contrib
                 self._apply_contrib(contrib, +1.0)
-            self._table_upsert(key, row)
         for key, (_, bucket) in self.ores.items():
             self._point_delta(key, C_ORE, float(bucket))
         for key in self.trees:
-            cell = cell_of(*map(float, key.split(":")))
+            cell = self._cell_of(*map(float, key.split(":")))
             if cell:
                 self.grid[C_TREE, cell[1], cell[0]] += 1
         for key in self.obstacles:
-            cell = cell_of(*map(float, key.split(":")))
+            cell = self._cell_of(*map(float, key.split(":")))
             if cell:
                 self.grid[C_ROCK, cell[1], cell[0]] += 1
         for _, x, y in self.nests.values():
-            cell = cell_of(x, y)
+            cell = self._cell_of(x, y)
             if cell:
                 self.grid[C_NEST, cell[1], cell[0]] += 1
         for (cx, cy), mask in self.water.items():
             hexmask = format(mask, "0256x") if mask else ""
             self._apply_water_chunk(cx, cy, hexmask)
+
+    def rebuild(self):
+        """Full tensor rebuild from client dicts (recovery path).
+
+        Note: table slots are reallocated, so slot indices are NOT stable
+        across a full rebuild (they are stable under incremental updates
+        and grid recenters)."""
+        self._rebuild_grid()
+        self.table[:] = 0.0
+        self.table_mask[:] = 0.0
+        self._slot_of.clear()
+        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
+        for key, row in sorted(self.entities.items()):
+            self._table_upsert(key, row)
 
 
 def main():

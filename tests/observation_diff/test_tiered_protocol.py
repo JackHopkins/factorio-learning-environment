@@ -269,3 +269,79 @@ def test_tensor_incremental_matches_rebuild(tiered_rcon):
     np.testing.assert_allclose(incremental, c.grid, atol=1e-4)
     n_tracked = len(c._contrib)
     assert float(c.grid[0:6].sum()) == pytest.approx(n_tracked)
+
+def _tensor_client(rc):
+    c = TensorClient()
+    c.apply_terrain(rc.send_command("/sc obs_terrain_full_sync()") or "")
+    c.apply_entity(rc.send_command("/sc obs_diff_full_sync()") or "")
+    return c
+
+
+def test_entity_table_exact_position_and_properties(tiered_rcon):
+    """The table row carries the exact server position and exact item counts
+    (wire rows transmit exact values; only the change trigger is bucketed)."""
+    c = _tensor_client(tiered_rcon)
+    unit = int(tiered_rcon.send_command("""/sc local e = game.surfaces[1].create_entity{
+    name = "iron-chest", position = {420, 100}, force = "player", raise_built = true}
+e.get_inventory(defines.inventory.chest).insert{name = "iron-plate", count = 37}
+rcon.print(e.unit_number .. "," .. e.position.x .. "," .. e.position.y)""".strip()).split(",")[0])
+    truth = tiered_rcon.send_command(f"""/sc for _, e in ipairs(game.surfaces[1].find_entities_filtered{{
+    name = "iron-chest", force = "player", area = {{{{419, 99}}, {{422, 102}}}}}}) do
+    if e.unit_number == {unit} then rcon.print(e.position.x .. "," .. e.position.y) end
+end""".strip())
+    tx, ty = map(float, truth.split(","))
+
+    # The build event fires during create_entity, BEFORE the insert, so the
+    # first row snapshot has an empty chest; the reconciler must then pick up
+    # the eventless insert. Poll until the exact count lands.
+    def has_exact_count():
+        slot = c._slot_of.get(str(unit))
+        return slot is not None and c.table[slot][15] == 37.0
+
+    assert poll_until(tiered_rcon, c, has_exact_count), \
+        "reconciler never delivered the exact inventory count"
+    row = c.table[c._slot_of[str(unit)]]
+    assert (row[0], row[1]) == (tx, ty), "table position is not exact"
+    assert row[10] == 37.0  # top inventory slot: exact count
+    assert c.table_mask[c._slot_of[str(unit)]] == 1.0
+
+
+def test_entity_table_slot_stability(tiered_rcon):
+    """Slots are stable for an entity's lifetime under incremental updates:
+    removing one entity must not move any other entity's row."""
+    c = _tensor_client(tiered_rcon)
+    spawn(tiered_rcon, 460, 100, 3, spacing=4)
+    absorb(tiered_rcon, c)
+    def in_region(row):
+        f = row.split(",")
+        return f[0] == "iron-chest" and 459 <= float(f[1]) <= 470 and 99 <= float(f[2]) <= 102
+
+    keys = sorted(k for k, r in c.entities.items() if in_region(r))
+    assert len(keys) == 3
+    slots_before = {k: c._slot_of[k] for k in keys}
+    victim = keys[1]
+    vx, vy = c.entities[victim].split(",")[1:3]
+    tiered_rcon.send_command(f"""/sc for _, e in ipairs(game.surfaces[1].find_entities_filtered{{
+    name = "iron-chest", position = {{{vx}, {vy}}}, radius = 0.5}}) do
+    e.destroy{{raise_destroy = true}}
+end rcon.print(1)""".strip())
+    assert poll_until(tiered_rcon, c, lambda: victim not in c._slot_of)
+    assert c.table_mask[slots_before[victim]] == 0.0
+    for k in (keys[0], keys[2]):
+        assert c._slot_of[k] == slots_before[k], "survivor slot moved"
+        assert c.table_mask[slots_before[k]] == 1.0
+
+
+def test_entity_table_tracks_rebuild_and_dict(tiered_rcon):
+    """Occupancy always equals the entity dict; a rebuild reproduces the same
+    set of (position, type) rows even though slot assignment may differ."""
+    c = _tensor_client(tiered_rcon)
+    spawn(tiered_rcon, 500, 100, 6)
+    absorb(tiered_rcon, c)
+    assert int(c.table_mask.sum()) == len(c.entities)
+    live = c.table[c.table_mask > 0]
+    rows_before = {tuple(r[[0, 1, 4]]) for r in live}
+    c.rebuild()
+    assert int(c.table_mask.sum()) == len(c.entities)
+    live = c.table[c.table_mask > 0]
+    assert {tuple(r[[0, 1, 4]]) for r in live} == rows_before

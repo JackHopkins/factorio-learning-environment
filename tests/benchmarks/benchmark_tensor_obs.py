@@ -4,15 +4,16 @@ Builds an MLP-ready float32 tensor from the tiered diff protocol and measures
 the full pipeline. The tensor is updated incrementally from diff records, so
 steady-state cost is O(changes), not O(world).
 
-Tensor layout: [C, H, W] spatial grid (CELL-tile cells centered on origin)
-plus a small global feature vector.
+Observation views: [C, H, W] spatial grid (CELL-tile cells centered on
+origin), a small global feature vector, and an object-level entity table
+(TABLE_ROWS x TABLE_FEATS) with exact positions and per-entity properties.
 
     channels 0-5   entity counts per type (furnace/belt/inserter/assembler/chest/other)
     channel  6     status sum (working=1.0 scale)
     channels 7-8   direction sin/cos sums
-    channel  9     energy (MJ buckets)
-    channel  10    crafting progress (deciles)
-    channel  11    inventory fullness (log2 bucket sum)
+    channel  9     energy (MJ)
+    channel  10    crafting progress (0-1)
+    channel  11    inventory fullness (log2 of total count)
     channel  12    water tile count
     channel  13    tree count
     channel  14    rock/cliff count
@@ -53,6 +54,21 @@ C_STATUS, C_SIN, C_COS, C_ENERGY, C_PROGRESS, C_INV = 6, 7, 8, 9, 10, 11
 C_WATER, C_TREE, C_ROCK, C_ORE, C_NEST = 12, 13, 14, 15, 16
 N_GLOBAL = 8
 
+# Entity table: object-level view with exact positions and properties.
+# Feature layout per row:
+#   0-1  x, y (exact tile coordinates)
+#   2-3  direction sin, cos
+#   4    type id (session vocab)
+#   5    status
+#   6    recipe id (0 = none)
+#   7    energy (exact joules)
+#   8    crafting progress (exact percent)
+#   9-12 top-2 inventory slots: item id, exact count (x2)
+#   13-14 fluid id, exact amount
+#   15   total item count
+TABLE_ROWS = 2048
+TABLE_FEATS = 16
+
 
 def cell_of(x, y):
     gx = int((x + HALF) // CELL)
@@ -63,51 +79,127 @@ def cell_of(x, y):
 
 
 class TensorClient(TieredClient):
-    """TieredClient that incrementally maintains an MLP observation tensor."""
+    """TieredClient that incrementally maintains MLP observation tensors.
+
+    Two views of the same lossless client state:
+      grid  (N_CHANNELS, GRID, GRID) - additive spatial context, cell-coarse
+      table (TABLE_ROWS, TABLE_FEATS) + mask - object-level view with EXACT
+            positions and per-entity properties; slot indices are stable for
+            an entity's lifetime (free-list allocation, no compaction), so a
+            policy can point at specific entities across steps.
+    """
 
     def __init__(self):
         super().__init__()
         self.grid = np.zeros((N_CHANNELS, GRID, GRID), dtype=np.float32)
         self.global_vec = np.zeros(N_GLOBAL, dtype=np.float32)
+        self.table = np.zeros((TABLE_ROWS, TABLE_FEATS), dtype=np.float32)
+        self.table_mask = np.zeros(TABLE_ROWS, dtype=np.float32)
         self._contrib = {}  # unit_number -> (gy, gx, channel_values dict)
         self._ore_contrib = {}  # "x:y" -> (gy, gx, bucket)
         self._water_contrib = {}  # (cx, cy) -> list of (gy, gx, count)
+        self._slot_of = {}  # unit_number -> table row
+        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
+        self._vocab = {}  # "kind:name" -> stable int id (session-scoped, >0)
 
     # -- entity rows ---------------------------------------------------------
 
     @staticmethod
     def _parse_row(row):
+        """Parse an exact-valued row: energy joules, progress percent,
+        items/fluids as (name, exact count) lists."""
         fields = row.split(",")
         name = fields[0]
         x, y = float(fields[1]), float(fields[2])
         direction, status = int(fields[3]), int(fields[4])
-        energy = progress = inv = 0.0
+        energy = progress = 0.0
+        recipe = None
+        items, fluids = [], []
         for f in fields[5:]:
             tag = f[:1]
             if tag == "E":
                 energy = float(f[1:])
             elif tag == "P":
                 progress = float(f[1:])
+            elif tag == "R":
+                recipe = f[1:]
             elif tag == "I":
-                inv += float(f.rsplit(":", 1)[1])
-        return name, x, y, direction, status, energy, progress, inv
+                item, count = f[1:].rsplit(":", 1)
+                items.append((item, float(count)))
+            elif tag == "F":
+                fluid, amount = f[1:].rsplit(":", 1)
+                fluids.append((fluid, float(amount)))
+        return name, x, y, direction, status, energy, progress, recipe, items, fluids
+
+    def _vid(self, kind, name):
+        key = kind + ":" + name
+        vid = self._vocab.get(key)
+        if vid is None:
+            vid = len(self._vocab) + 1
+            self._vocab[key] = vid
+        return vid
 
     def _entity_contrib(self, row):
-        name, x, y, direction, status, energy, progress, inv = self._parse_row(row)
+        name, x, y, direction, status, energy, progress, _, items, _ = \
+            self._parse_row(row)
         cell = cell_of(x, y)
         if cell is None:
             return None
         gx, gy = cell
         angle = direction / 16.0 * 2.0 * math.pi
+        total_items = sum(c for _, c in items)
         return gy, gx, {
             ENTITY_CHANNEL.get(name, OTHER_CHANNEL): 1.0,
             C_STATUS: status / 10.0,
             C_SIN: math.sin(angle),
             C_COS: math.cos(angle),
-            C_ENERGY: energy,
-            C_PROGRESS: progress / 10.0,
-            C_INV: inv,
+            C_ENERGY: energy / 1e6,
+            C_PROGRESS: progress / 100.0,
+            C_INV: math.log2(1.0 + total_items),
         }
+
+    # -- entity table --------------------------------------------------------
+
+    def _table_upsert(self, key, row):
+        name, x, y, direction, status, energy, progress, recipe, items, fluids = \
+            self._parse_row(row)
+        slot = self._slot_of.get(key)
+        if slot is None:
+            if not self._free_slots:
+                self.overflow = True
+                return
+            slot = self._free_slots.pop()
+            self._slot_of[key] = slot
+        angle = direction / 16.0 * 2.0 * math.pi
+        items = sorted(items, key=lambda kv: -kv[1])
+        r = self.table[slot]
+        r[0], r[1] = x, y  # exact tile positions
+        r[2], r[3] = math.sin(angle), math.cos(angle)
+        r[4] = self._vid("type", name)
+        r[5] = status
+        r[6] = self._vid("recipe", recipe) if recipe else 0.0
+        r[7] = energy
+        r[8] = progress
+        for i in range(2):  # top-2 inventory slots by count, exact
+            if i < len(items):
+                r[9 + 2 * i] = self._vid("item", items[i][0])
+                r[10 + 2 * i] = items[i][1]
+            else:
+                r[9 + 2 * i] = r[10 + 2 * i] = 0.0
+        if fluids:
+            r[13] = self._vid("fluid", fluids[0][0])
+            r[14] = fluids[0][1]
+        else:
+            r[13] = r[14] = 0.0
+        r[15] = sum(c for _, c in items)
+        self.table_mask[slot] = 1.0
+
+    def _table_remove(self, key):
+        slot = self._slot_of.pop(key, None)
+        if slot is not None:
+            self.table[slot] = 0.0
+            self.table_mask[slot] = 0.0
+            self._free_slots.append(slot)
 
     def _apply_contrib(self, contrib, sign):
         gy, gx, values = contrib
@@ -129,12 +221,14 @@ class TensorClient(TieredClient):
                 if contrib is not None:
                     self._contrib[key] = contrib
                     self._apply_contrib(contrib, +1.0)
+                self._table_upsert(key, row)
                 self.entities[key] = row
             elif tag == "r":
                 key = rec[1:]
                 old = self._contrib.pop(key, None)
                 if old is not None:
                     self._apply_contrib(old, -1.0)
+                self._table_remove(key)
                 self.entities.pop(key, None)
             elif tag == "h":
                 tick, research, pct = rec[1:].split(":")
@@ -267,20 +361,29 @@ class TensorClient(TieredClient):
         g[7] = 1.0 if self.overflow else 0.0
 
     def observation(self):
-        """Flat float32 vector for an MLP (zero-copy views)."""
-        return self.grid.reshape(-1), self.global_vec
+        """Observation views for an MLP/transformer policy (zero-copy):
+        (flat grid, global vec, entity table, table mask)."""
+        return self.grid.reshape(-1), self.global_vec, self.table, self.table_mask
 
     def rebuild(self):
-        """Full tensor rebuild from client dicts (recenter / recovery path)."""
+        """Full tensor rebuild from client dicts (recenter / recovery path).
+
+        Note: table slots are reallocated, so slot indices are NOT stable
+        across a rebuild (they are stable under incremental updates)."""
         self.grid[:] = 0.0
+        self.table[:] = 0.0
+        self.table_mask[:] = 0.0
         self._contrib.clear()
         self._ore_contrib.clear()
         self._water_contrib.clear()
-        for key, row in self.entities.items():
+        self._slot_of.clear()
+        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
+        for key, row in sorted(self.entities.items()):
             contrib = self._entity_contrib(row)
             if contrib is not None:
                 self._contrib[key] = contrib
                 self._apply_contrib(contrib, +1.0)
+            self._table_upsert(key, row)
         for key, (_, bucket) in self.ores.items():
             self._point_delta(key, C_ORE, float(bucket))
         for key in self.trees:
@@ -310,9 +413,11 @@ def main():
     rc.send_command("/sc game.speed = 10")
     client = TensorClient()
 
-    flat, gvec = client.observation()
-    print(f"tensor: grid {client.grid.shape} + global {gvec.shape} = "
-          f"{flat.size + gvec.size} float32 ({(flat.nbytes + gvec.nbytes) / 1024:.0f} KB)\n")
+    flat, gvec, table, mask = client.observation()
+    total = flat.size + gvec.size + table.size + mask.size
+    total_kb = (flat.nbytes + gvec.nbytes + table.nbytes + mask.nbytes) / 1024
+    print(f"tensor: grid {client.grid.shape} + global {gvec.shape} + "
+          f"table {table.shape} + mask {mask.shape} = {total} float32 ({total_kb:.0f} KB)\n")
 
     # --- 1. initial sync: terrain burst + entity snapshot -> tensor ---
     t0 = time.perf_counter()
@@ -401,7 +506,11 @@ def main():
           f" water cells {int((grid[C_WATER] > 0).sum())}")
     print(f"nonzero grid values: {int((grid != 0).sum())}/{grid.size} "
           f"({100 * (grid != 0).sum() / grid.size:.1f}%)")
+    n_slots = int(client.table_mask.sum())
+    print(f"entity table: {n_slots}/{TABLE_ROWS} slots occupied, "
+          f"vocab size {len(client._vocab)}")
     assert type_sum == n_in_window, "entity channel counts drifted from contrib map"
+    assert n_slots == len(client.entities), "table occupancy drifted from entity dict"
     print("PASS: incremental tensor consistent")
 
 

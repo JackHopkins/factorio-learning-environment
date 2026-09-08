@@ -15,9 +15,10 @@
 --   amounts, trees, rocks/cliffs, enemy structures. Ore amounts drift with no
 --   events, so the reconciler also rescans one resource chunk per pass.
 --
--- Hot per-tick fields are quantized (energy MJ, progress deciles, log2 item
--- counts, fluid buckets) so an active factory only emits records on bucket
--- transitions, keeping steady-state drains sparse.
+-- Hot per-tick fields use quantized change signatures (energy MJ, progress
+-- deciles, log2 item counts, fluid buckets): an active factory only emits
+-- records on bucket transitions, but each emitted row carries EXACT values,
+-- so client snapshots are precise with staleness bounded by bucket width.
 --
 -- RCON API (via /sc):
 --   obs_diff_full_sync()     -- entity snapshot; resets entity-tier state
@@ -31,7 +32,8 @@
 --                   t<x>:<y>  k<x>:<y>  x<x>:<y>  n<id>,<name>,<x>,<y>  m<id>
 --   either:         !overflow  (client must full_sync)
 --
--- Row: name,x,y,direction,status[,E<mj>][,P<decile>][,R<recipe>][,I<item>:<q>...][,F<fluid>:<q>...]
+-- Row: name,x,y,direction,status[,E<joules>][,P<pct>][,R<recipe>][,I<item>:<count>...][,F<fluid>:<amount>...]
+-- Rows carry exact values; emission triggers on quantized-signature change.
 
 local RECONCILE_INTERVAL = 47 -- ticks; avoids tools' on_nth_tick(5/15/60) slots
 local ENTITY_SLICE = 50 -- entities re-rowed per reconcile pass
@@ -73,27 +75,35 @@ local function push_t(s, rec)
 end
 
 local function rich_row(e)
-  local parts = {
-    e.name .. "," .. e.position.x .. "," .. e.position.y .. ","
-      .. (e.direction or 0) .. "," .. (e.status or 0),
-  }
+  -- Returns (row, sig). The row carries EXACT values (energy in joules,
+  -- progress in percent, raw item/fluid counts) so the client snapshot is
+  -- precise; the sig quantizes hot fields, and only a sig change triggers
+  -- emission, so drains stay sparse while transmitted values stay exact.
+  local base = e.name .. "," .. e.position.x .. "," .. e.position.y .. ","
+    .. (e.direction or 0) .. "," .. (e.status or 0)
+  local row = { base }
+  local sig = { base }
   local ok, energy = pcall(function() return e.energy end)
   if ok and energy and energy > 0 then
-    parts[#parts + 1] = "E" .. math.floor(energy / 1e6)
+    row[#row + 1] = "E" .. math.floor(energy)
+    sig[#sig + 1] = "E" .. math.floor(energy / 1e6)
   end
   local okp, progress = pcall(function() return e.crafting_progress end)
   if okp and progress and progress > 0 then
-    parts[#parts + 1] = "P" .. math.floor(progress * 10)
+    row[#row + 1] = "P" .. math.floor(progress * 100)
+    sig[#sig + 1] = "P" .. math.floor(progress * 10)
   end
   local okr, recipe = pcall(function() return e.get_recipe() end)
   if okr and recipe then
-    parts[#parts + 1] = "R" .. recipe.name
+    row[#row + 1] = "R" .. recipe.name
+    sig[#sig + 1] = "R" .. recipe.name
   end
   for idx = 1, 4 do
     local inv = e.get_inventory(idx)
     if inv then
       for _, item in ipairs(inv.get_contents()) do
-        parts[#parts + 1] = "I" .. item.name .. ":" .. qlog(item.count)
+        row[#row + 1] = "I" .. item.name .. ":" .. item.count
+        sig[#sig + 1] = "I" .. item.name .. ":" .. qlog(item.count)
       end
     end
   end
@@ -102,20 +112,21 @@ local function rich_row(e)
     for j = 1, #fb do
       local f = fb[j]
       if f then
-        parts[#parts + 1] = "F" .. f.name .. ":" .. qlog(f.amount)
+        row[#row + 1] = "F" .. f.name .. ":" .. math.floor(f.amount)
+        sig[#sig + 1] = "F" .. f.name .. ":" .. qlog(f.amount)
       end
     end
   end
-  return table.concat(parts, ",")
+  return table.concat(row, ","), table.concat(sig, ",")
 end
 
 local function upsert(e)
   if not (e and e.valid and e.unit_number) then return end
   local s = state()
   local key = e.unit_number
-  local row = rich_row(e)
-  if s.cache[key] ~= row then
-    s.cache[key] = row
+  local row, sig = rich_row(e)
+  if s.cache[key] ~= sig then
+    s.cache[key] = sig
     s.ents[key] = e
     push_e(s, "u" .. key .. "," .. row)
   end
@@ -268,9 +279,9 @@ script.on_nth_tick(RECONCILE_INTERVAL, function()
       if not e.valid then
         remove_key(s, key)
       else
-        local row = rich_row(e)
-        if s.cache[key] ~= row then
-          s.cache[key] = row
+        local row, sig = rich_row(e)
+        if s.cache[key] ~= sig then
+          s.cache[key] = sig
           push_e(s, "u" .. key .. "," .. row)
         end
       end
@@ -364,8 +375,8 @@ function obs_diff_full_sync()
     local e = ents[i]
     local key = e.unit_number
     if key then
-      local row = rich_row(e)
-      s.cache[key] = row
+      local row, sig = rich_row(e)
+      s.cache[key] = sig
       s.ents[key] = e
       n = n + 1
       out[n] = "u" .. key .. "," .. row

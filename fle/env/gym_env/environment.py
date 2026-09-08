@@ -28,6 +28,26 @@ from fle.eval.tasks import TaskABC
 
 logger = logging.getLogger(__name__)
 
+
+def _call_with_retry(fn, what: str, delays=(0, 2, 5)):
+    """Call fn(), retrying transient failures with short backoff.
+
+    A single transient failure (engine busy, RCON hiccup, malformed
+    response) must not kill a multi-hour rollout. The underlying error is
+    included in the raised exception so real failures stay diagnosable.
+    """
+    last_error = None
+    for attempt, delay in enumerate(delays, start=1):
+        if delay:
+            time.sleep(delay)
+        try:
+            return fn()
+        except Exception as e:
+            last_error = e
+            logger.warning(f"Error {what} (attempt {attempt}/{len(delays)}): {e}")
+    raise Exception(f"Error {what}: {last_error}") from last_error
+
+
 # need to do this since gym doesn't work with numpy>=2.0 otherwise.
 np.bool8 = np.dtype(np.bool)
 
@@ -305,24 +325,9 @@ class FactorioGymEnv(gym.Env):
         if self.enable_vision:
             map_image = namespace._render().to_base64()
 
-        # Get entity observations. A single transient failure (engine busy,
-        # RCON hiccup) must not kill a multi-hour rollout, so retry briefly;
-        # include the underlying error so real failures stay diagnosable.
-        entities = None
-        last_entity_error = None
-        for attempt, delay in enumerate((0, 2, 5), start=1):
-            if delay:
-                time.sleep(delay)
-            try:
-                entities = namespace.get_entities()
-                break
-            except Exception as e:
-                last_entity_error = e
-                logger.warning(f"Error getting entities (attempt {attempt}/3): {e}")
-        if entities is None:
-            raise Exception(
-                f"Error getting entities while getting observation: {last_entity_error}"
-            ) from last_entity_error
+        entities = _call_with_retry(
+            namespace.get_entities, "getting entities while getting observation"
+        )
 
         entity_obs = [e.__dict__ for e in entities]
 
@@ -476,7 +481,9 @@ class FactorioGymEnv(gym.Env):
             )
             terminated = task_success.success
 
-        production_score, automated_production_score = namespace.score()
+        production_score, automated_production_score = _call_with_retry(
+            namespace.score, "getting score after step"
+        )
         if not automated_production_score:
             automated_production_score = 0
         # Calculate reward

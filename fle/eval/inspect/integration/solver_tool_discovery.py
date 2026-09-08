@@ -214,20 +214,27 @@ def _make_tools(
     ]
 
 
-def _trim_messages(messages, keep_last: int = 40):
-    """Keep the system prompt, the opening user message, and the recent tail.
+def _trim_messages(messages, high_water: int = 120, low_water: int = 60):
+    """Trim with hysteresis: cut to the low-water mark only when the
+    high-water mark is exceeded, and mutate `messages` in place.
 
-    The tail must not begin with tool-result messages: their parent
+    A per-call sliding window shifts the prompt prefix on every
+    generation, which defeats provider prompt caching entirely (observed:
+    only the ~784-token system head ever cache-hits, everything else
+    re-billed each call). Trimming in blocks keeps the prefix stable for
+    ~(high_water - low_water) generations between trims.
+
+    The kept tail must not begin with tool-result messages: their parent
     assistant tool_call message would be trimmed away, and OpenAI rejects
-    histories containing a function result with no matching call ("No tool
-    call found for function call output with call_id ...").
+    histories containing a function result with no matching call.
     """
-    if len(messages) <= keep_last + 2:
+    if len(messages) <= high_water + 2:
         return messages
-    tail = messages[-keep_last:]
+    tail = messages[-low_water:]
     while tail and getattr(tail[0], "role", None) == "tool":
         tail = tail[1:]
-    return messages[:2] + tail
+    messages[:] = messages[:2] + tail
+    return messages
 
 
 @solver

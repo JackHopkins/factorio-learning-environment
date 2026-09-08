@@ -532,7 +532,14 @@ def trim_messages(
     Returns:
         Trimmed message list
     """
-    if len(messages) <= max_messages:
+    # Hysteresis: with a narrow gap between max_messages and trim_to the
+    # window re-trims every step or two, shifting the prompt prefix and
+    # defeating provider prompt caching (only the system head ever
+    # cache-hits). Widen the trigger so the prefix stays stable for many
+    # steps between trims; the kept context after a trim is unchanged
+    # (trim_to), so each variant's context ablation is preserved.
+    trigger = max(max_messages, 2 * trim_to + 1)
+    if len(messages) <= trigger:
         if strip_images:
             return strip_images_from_messages(messages)
         return messages

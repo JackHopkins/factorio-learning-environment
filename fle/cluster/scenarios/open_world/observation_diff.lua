@@ -32,7 +32,10 @@
 --                   t<x>:<y>  k<x>:<y>  x<x>:<y>  n<id>,<name>,<x>,<y>  m<id>
 --   either:         !overflow  (client must full_sync)
 --
--- Row: name,x,y,direction,status[,E<joules>][,P<pct>][,R<recipe>][,I<item>:<count>...][,F<fluid>:<amount>...]
+-- Row: name,x,y,direction,status followed by tagged optional fields:
+--   E<joules> P<pct> R<recipe> H<health> W<tilew>:<tileh> D<dropx>:<dropy>
+--   K<pickupx>:<pickupy> N<electric-network-id> T<temperature>
+--   I<invidx>.<item>:<count>... F<fluid>:<amount>...
 -- Rows carry exact values; emission triggers on quantized-signature change.
 
 local RECONCILE_INTERVAL = 47 -- ticks; avoids tools' on_nth_tick(5/15/60) slots
@@ -98,12 +101,48 @@ local function rich_row(e)
     row[#row + 1] = "R" .. recipe.name
     sig[#sig + 1] = "R" .. recipe.name
   end
+  local okh, health = pcall(function() return e.health end)
+  if okh and health then
+    row[#row + 1] = "H" .. math.floor(health)
+    sig[#sig + 1] = "H" .. math.floor(health / 50)
+  end
+  local okw, tw, th = pcall(function()
+    return e.prototype.tile_width, e.prototype.tile_height
+  end)
+  if okw and tw then
+    local dims = "W" .. tw .. ":" .. th
+    row[#row + 1] = dims
+    sig[#sig + 1] = dims
+  end
+  local okd, drop = pcall(function() return e.drop_position end)
+  if okd and drop then
+    local rec = "D" .. drop.x .. ":" .. drop.y
+    row[#row + 1] = rec
+    sig[#sig + 1] = rec
+  end
+  local okk, pickup = pcall(function() return e.pickup_position end)
+  if okk and pickup then
+    local rec = "K" .. pickup.x .. ":" .. pickup.y
+    row[#row + 1] = rec
+    sig[#sig + 1] = rec
+  end
+  local okn, netid = pcall(function() return e.electric_network_id end)
+  if okn and netid then
+    local rec = "N" .. netid
+    row[#row + 1] = rec
+    sig[#sig + 1] = rec
+  end
+  local okt, temp = pcall(function() return e.temperature end)
+  if okt and temp then
+    row[#row + 1] = "T" .. math.floor(temp)
+    sig[#sig + 1] = "T" .. math.floor(temp / 25)
+  end
   for idx = 1, 4 do
     local inv = e.get_inventory(idx)
     if inv then
       for _, item in ipairs(inv.get_contents()) do
-        row[#row + 1] = "I" .. item.name .. ":" .. item.count
-        sig[#sig + 1] = "I" .. item.name .. ":" .. qlog(item.count)
+        row[#row + 1] = "I" .. idx .. "." .. item.name .. ":" .. item.count
+        sig[#sig + 1] = "I" .. idx .. "." .. item.name .. ":" .. qlog(item.count)
       end
     end
   end

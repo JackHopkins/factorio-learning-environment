@@ -54,20 +54,28 @@ C_STATUS, C_SIN, C_COS, C_ENERGY, C_PROGRESS, C_INV = 6, 7, 8, 9, 10, 11
 C_WATER, C_TREE, C_ROCK, C_ORE, C_NEST = 12, 13, 14, 15, 16
 N_GLOBAL = 8
 
-# Entity table: object-level view with exact positions and properties.
-# Feature layout per row:
-#   0-1  x, y (exact tile coordinates)
-#   2-3  direction sin, cos
-#   4    type id (session vocab)
-#   5    status
-#   6    recipe id (0 = none)
-#   7    energy (exact joules)
-#   8    crafting progress (exact percent)
-#   9-12 top-2 inventory slots: item id, exact count (x2)
-#   13-14 fluid id, exact amount
-#   15   total item count
+# Entity table: object-level view with exact positions and properties,
+# mirroring the fields of the fle.env.entities object model.
+F_X, F_Y = 0, 1  # exact tile coordinates
+F_SIN, F_COS = 2, 3  # direction
+F_TYPE = 4  # type id (session vocab)
+F_STATUS = 5
+F_RECIPE = 6  # recipe id (0 = none)
+F_ENERGY = 7  # exact joules
+F_PROGRESS = 8  # exact crafting percent
+F_HEALTH = 9  # exact hit points
+F_TILE_W, F_TILE_H = 10, 11  # footprint (tile_dimensions)
+F_DROP_DX, F_DROP_DY = 12, 13  # drop_position relative to entity (0,0 = none)
+F_PICK_DX, F_PICK_DY = 14, 15  # pickup_position relative to entity
+F_ELEC_ID = 16  # electric network id (0 = not connected)
+F_TEMP = 17  # temperature
+F_FLUID_ID, F_FLUID_AMT = 18, 19  # first fluidbox: fluid id, exact amount
+F_INV_START = 20  # 8 slots x (item id, exact count), largest counts first
+N_INV_SLOTS = 8
+F_INV_TOTAL = F_INV_START + 2 * N_INV_SLOTS  # 36: total item count
+F_INV_DISTINCT = F_INV_TOTAL + 1  # 37: number of distinct item stacks
 TABLE_ROWS = 2048
-TABLE_FEATS = 16
+TABLE_FEATS = F_INV_DISTINCT + 1
 
 
 def cell_of(x, y):
@@ -106,30 +114,59 @@ class TensorClient(TieredClient):
 
     @staticmethod
     def _parse_row(row):
-        """Parse an exact-valued row: energy joules, progress percent,
-        items/fluids as (name, exact count) lists."""
+        """Parse an exact-valued row into a field dict. Items arrive as
+        I<invidx>.<name>:<count>; positions in D/K tags are absolute."""
         fields = row.split(",")
-        name = fields[0]
-        x, y = float(fields[1]), float(fields[2])
-        direction, status = int(fields[3]), int(fields[4])
-        energy = progress = 0.0
-        recipe = None
-        items, fluids = [], []
+        p = {
+            "name": fields[0],
+            "x": float(fields[1]),
+            "y": float(fields[2]),
+            "direction": int(fields[3]),
+            "status": int(fields[4]),
+            "energy": 0.0,
+            "progress": 0.0,
+            "recipe": None,
+            "health": 0.0,
+            "tile_w": 0.0,
+            "tile_h": 0.0,
+            "drop": None,
+            "pickup": None,
+            "elec_id": 0.0,
+            "temp": 0.0,
+            "items": [],  # (invidx, name, exact count)
+            "fluids": [],  # (name, exact amount)
+        }
         for f in fields[5:]:
             tag = f[:1]
             if tag == "E":
-                energy = float(f[1:])
+                p["energy"] = float(f[1:])
             elif tag == "P":
-                progress = float(f[1:])
+                p["progress"] = float(f[1:])
             elif tag == "R":
-                recipe = f[1:]
+                p["recipe"] = f[1:]
+            elif tag == "H":
+                p["health"] = float(f[1:])
+            elif tag == "W":
+                w, h = f[1:].split(":")
+                p["tile_w"], p["tile_h"] = float(w), float(h)
+            elif tag == "D":
+                dx, dy = f[1:].split(":")
+                p["drop"] = (float(dx), float(dy))
+            elif tag == "K":
+                kx, ky = f[1:].split(":")
+                p["pickup"] = (float(kx), float(ky))
+            elif tag == "N":
+                p["elec_id"] = float(f[1:])
+            elif tag == "T":
+                p["temp"] = float(f[1:])
             elif tag == "I":
-                item, count = f[1:].rsplit(":", 1)
-                items.append((item, float(count)))
+                slot, rest = f[1:].split(".", 1)
+                item, count = rest.rsplit(":", 1)
+                p["items"].append((int(slot), item, float(count)))
             elif tag == "F":
                 fluid, amount = f[1:].rsplit(":", 1)
-                fluids.append((fluid, float(amount)))
-        return name, x, y, direction, status, energy, progress, recipe, items, fluids
+                p["fluids"].append((fluid, float(amount)))
+        return p
 
     def _vid(self, kind, name):
         key = kind + ":" + name
@@ -140,29 +177,27 @@ class TensorClient(TieredClient):
         return vid
 
     def _entity_contrib(self, row):
-        name, x, y, direction, status, energy, progress, _, items, _ = \
-            self._parse_row(row)
-        cell = cell_of(x, y)
+        p = self._parse_row(row)
+        cell = cell_of(p["x"], p["y"])
         if cell is None:
             return None
         gx, gy = cell
-        angle = direction / 16.0 * 2.0 * math.pi
-        total_items = sum(c for _, c in items)
+        angle = p["direction"] / 16.0 * 2.0 * math.pi
+        total_items = sum(c for _, _, c in p["items"])
         return gy, gx, {
-            ENTITY_CHANNEL.get(name, OTHER_CHANNEL): 1.0,
-            C_STATUS: status / 10.0,
+            ENTITY_CHANNEL.get(p["name"], OTHER_CHANNEL): 1.0,
+            C_STATUS: p["status"] / 10.0,
             C_SIN: math.sin(angle),
             C_COS: math.cos(angle),
-            C_ENERGY: energy / 1e6,
-            C_PROGRESS: progress / 100.0,
+            C_ENERGY: p["energy"] / 1e6,
+            C_PROGRESS: p["progress"] / 100.0,
             C_INV: math.log2(1.0 + total_items),
         }
 
     # -- entity table --------------------------------------------------------
 
     def _table_upsert(self, key, row):
-        name, x, y, direction, status, energy, progress, recipe, items, fluids = \
-            self._parse_row(row)
+        p = self._parse_row(row)
         slot = self._slot_of.get(key)
         if slot is None:
             if not self._free_slots:
@@ -170,28 +205,40 @@ class TensorClient(TieredClient):
                 return
             slot = self._free_slots.pop()
             self._slot_of[key] = slot
-        angle = direction / 16.0 * 2.0 * math.pi
-        items = sorted(items, key=lambda kv: -kv[1])
+        angle = p["direction"] / 16.0 * 2.0 * math.pi
         r = self.table[slot]
-        r[0], r[1] = x, y  # exact tile positions
-        r[2], r[3] = math.sin(angle), math.cos(angle)
-        r[4] = self._vid("type", name)
-        r[5] = status
-        r[6] = self._vid("recipe", recipe) if recipe else 0.0
-        r[7] = energy
-        r[8] = progress
-        for i in range(2):  # top-2 inventory slots by count, exact
-            if i < len(items):
-                r[9 + 2 * i] = self._vid("item", items[i][0])
-                r[10 + 2 * i] = items[i][1]
-            else:
-                r[9 + 2 * i] = r[10 + 2 * i] = 0.0
-        if fluids:
-            r[13] = self._vid("fluid", fluids[0][0])
-            r[14] = fluids[0][1]
-        else:
-            r[13] = r[14] = 0.0
-        r[15] = sum(c for _, c in items)
+        r[:] = 0.0
+        r[F_X], r[F_Y] = p["x"], p["y"]  # exact tile positions
+        r[F_SIN], r[F_COS] = math.sin(angle), math.cos(angle)
+        r[F_TYPE] = self._vid("type", p["name"])
+        r[F_STATUS] = p["status"]
+        if p["recipe"]:
+            r[F_RECIPE] = self._vid("recipe", p["recipe"])
+        r[F_ENERGY] = p["energy"]
+        r[F_PROGRESS] = p["progress"]
+        r[F_HEALTH] = p["health"]
+        r[F_TILE_W], r[F_TILE_H] = p["tile_w"], p["tile_h"]
+        if p["drop"]:
+            r[F_DROP_DX] = p["drop"][0] - p["x"]
+            r[F_DROP_DY] = p["drop"][1] - p["y"]
+        if p["pickup"]:
+            r[F_PICK_DX] = p["pickup"][0] - p["x"]
+            r[F_PICK_DY] = p["pickup"][1] - p["y"]
+        r[F_ELEC_ID] = p["elec_id"]
+        r[F_TEMP] = p["temp"]
+        if p["fluids"]:
+            r[F_FLUID_ID] = self._vid("fluid", p["fluids"][0][0])
+            r[F_FLUID_AMT] = p["fluids"][0][1]
+        # merge duplicate items across inventories, then top-N by count
+        merged = {}
+        for _, item, count in p["items"]:
+            merged[item] = merged.get(item, 0.0) + count
+        ranked = sorted(merged.items(), key=lambda kv: -kv[1])
+        for i, (item, count) in enumerate(ranked[:N_INV_SLOTS]):
+            r[F_INV_START + 2 * i] = self._vid("item", item)
+            r[F_INV_START + 2 * i + 1] = count
+        r[F_INV_TOTAL] = sum(merged.values())
+        r[F_INV_DISTINCT] = len(merged)
         self.table_mask[slot] = 1.0
 
     def _table_remove(self, key):

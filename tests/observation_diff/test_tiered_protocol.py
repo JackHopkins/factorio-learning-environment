@@ -12,7 +12,23 @@ import numpy as np
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
-from benchmark_tensor_obs import TensorClient  # noqa: E402
+from benchmark_tensor_obs import (  # noqa: E402
+    F_DROP_DX,
+    F_DROP_DY,
+    F_HEALTH,
+    F_INV_DISTINCT,
+    F_INV_START,
+    F_INV_TOTAL,
+    F_PICK_DX,
+    F_PICK_DY,
+    F_TILE_H,
+    F_TILE_W,
+    F_TYPE,
+    F_X,
+    F_Y,
+    N_INV_SLOTS,
+    TensorClient,
+)
 from benchmark_tiered_obs import TieredClient  # noqa: E402
 
 
@@ -186,8 +202,8 @@ end rcon.print(1)""".strip())
 
     # a fueled furnace row carries quantized hot fields
     hot = [r for r in client.entities.values()
-           if r.startswith("stone-furnace") and ",Icoal:" in r]
-    assert hot, "expected fueled furnace rows with inventory buckets"
+           if r.startswith("stone-furnace") and ".coal:" in r]
+    assert hot, "expected fueled furnace rows with inventory contents"
 
     total_records = 0
     for _ in range(10):
@@ -296,13 +312,15 @@ end""".strip())
     # the eventless insert. Poll until the exact count lands.
     def has_exact_count():
         slot = c._slot_of.get(str(unit))
-        return slot is not None and c.table[slot][15] == 37.0
+        return slot is not None and c.table[slot][F_INV_TOTAL] == 37.0
 
     assert poll_until(tiered_rcon, c, has_exact_count), \
         "reconciler never delivered the exact inventory count"
     row = c.table[c._slot_of[str(unit)]]
-    assert (row[0], row[1]) == (tx, ty), "table position is not exact"
-    assert row[10] == 37.0  # top inventory slot: exact count
+    assert (row[F_X], row[F_Y]) == (tx, ty), "table position is not exact"
+    assert row[F_INV_START + 1] == 37.0  # top inventory slot: exact count
+    assert row[F_HEALTH] > 0.0
+    assert (row[F_TILE_W], row[F_TILE_H]) == (1.0, 1.0)
     assert c.table_mask[c._slot_of[str(unit)]] == 1.0
 
 
@@ -340,8 +358,61 @@ def test_entity_table_tracks_rebuild_and_dict(tiered_rcon):
     absorb(tiered_rcon, c)
     assert int(c.table_mask.sum()) == len(c.entities)
     live = c.table[c.table_mask > 0]
-    rows_before = {tuple(r[[0, 1, 4]]) for r in live}
+    rows_before = {tuple(r[[F_X, F_Y, F_TYPE]]) for r in live}
     c.rebuild()
     assert int(c.table_mask.sum()) == len(c.entities)
     live = c.table[c.table_mask > 0]
-    assert {tuple(r[[0, 1, 4]]) for r in live} == rows_before
+    assert {tuple(r[[F_X, F_Y, F_TYPE]]) for r in live} == rows_before
+
+
+def test_entity_table_interlink_fields(tiered_rcon):
+    """Inserters expose exact drop/pickup positions and footprints - the
+    fields needed to build interlinked factories."""
+    c = _tensor_client(tiered_rcon)
+    truth = tiered_rcon.send_command("""/sc local e = game.surfaces[1].create_entity{
+    name = "burner-inserter", position = {540, 100}, direction = defines.direction.east,
+    force = "player", raise_built = true}
+rcon.print(e.unit_number .. "|" .. e.position.x .. "," .. e.position.y
+    .. "|" .. e.drop_position.x .. "," .. e.drop_position.y
+    .. "|" .. e.pickup_position.x .. "," .. e.pickup_position.y)""".strip())
+    unit, epos, dpos, kpos = truth.split("|")
+    ex, ey = map(float, epos.split(","))
+    dx, dy = map(float, dpos.split(","))
+    kx, ky = map(float, kpos.split(","))
+    assert poll_until(tiered_rcon, c, lambda: unit in c._slot_of)
+    row = c.table[c._slot_of[unit]]
+    assert (row[F_X], row[F_Y]) == (ex, ey)
+    assert row[F_X] + row[F_DROP_DX] == pytest.approx(dx)
+    assert row[F_Y] + row[F_DROP_DY] == pytest.approx(dy)
+    assert row[F_X] + row[F_PICK_DX] == pytest.approx(kx)
+    assert row[F_Y] + row[F_PICK_DY] == pytest.approx(ky)
+    assert (row[F_DROP_DX], row[F_DROP_DY]) != (0.0, 0.0)
+    assert (row[F_TILE_W], row[F_TILE_H]) == (1.0, 1.0)
+
+
+def test_entity_table_top8_inventory(tiered_rcon):
+    """9 distinct item types in one chest: the 8 largest stacks fill the
+    slots exactly, the smallest is dropped, totals count everything."""
+    c = _tensor_client(tiered_rcon)
+    unit = tiered_rcon.send_command("""/sc local e = game.surfaces[1].create_entity{
+    name = "iron-chest", position = {580, 100}, force = "player", raise_built = true}
+local inv = e.get_inventory(defines.inventory.chest)
+local names = {"iron-plate", "copper-plate", "coal", "stone", "iron-ore",
+               "copper-ore", "iron-gear-wheel", "copper-cable", "stone-brick"}
+for i, name in ipairs(names) do
+    inv.insert{name = name, count = 10 * (10 - i)}  -- 90, 80, ..., 10
+end
+rcon.print(e.unit_number)""".strip())
+
+    def full_inventory():
+        slot = c._slot_of.get(unit)
+        return slot is not None and c.table[slot][F_INV_DISTINCT] == 9.0
+
+    assert poll_until(tiered_rcon, c, full_inventory)
+    row = c.table[c._slot_of[unit]]
+    counts = [row[F_INV_START + 2 * i + 1] for i in range(N_INV_SLOTS)]
+    ids = [row[F_INV_START + 2 * i] for i in range(N_INV_SLOTS)]
+    assert counts == [90.0, 80.0, 70.0, 60.0, 50.0, 40.0, 30.0, 20.0]
+    assert len(set(ids)) == N_INV_SLOTS and all(i > 0 for i in ids)
+    assert row[F_INV_TOTAL] == float(sum(range(10, 100, 10)))  # all 9 stacks
+    assert row[F_INV_DISTINCT] == 9.0

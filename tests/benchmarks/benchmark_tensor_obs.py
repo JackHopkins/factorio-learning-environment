@@ -568,6 +568,47 @@ def main():
           f"reconcile+tensor {statistics.median(t_applies):.3f} ms "
           f"(payload p50 {statistics.median(sizes):.0f} B)")
 
+    # --- 3b. egocentric tracking: stationary, walking, sprinting ---
+    rc.send_command("""/sc if #game.surfaces[1].find_entities_filtered{type = "character"} == 0 then
+    game.surfaces[1].create_entity{name = "character", position = {-100, -100}, force = "player", raise_built = true}
+end rcon.print(1)""".strip())
+
+    def measure_moving(step_tiles, label, iters=30):
+        totals, recenters = [], 0
+        last_center = (client.center_x, client.center_y)
+        for _ in range(iters):
+            if step_tiles:
+                rc.send_command(
+                    "/sc local ch = game.surfaces[1].find_entities_filtered{type = \"character\"}[1] "
+                    f"ch.teleport({{ch.position.x + {step_tiles}, ch.position.y}}) rcon.print(1)")
+            t0 = time.perf_counter()
+            resp = rc.send_command("/sc obs_all_drain()") or ""
+            epart, _, tpart = resp.partition("~")
+            client.apply_entity(epart)
+            client.apply_terrain(tpart)
+            _ = client.observation()
+            totals.append((time.perf_counter() - t0) * 1000)
+            center = (client.center_x, client.center_y)
+            if center != last_center:
+                recenters += 1
+                last_center = center
+        print(f"  {label:26s} mean {statistics.mean(totals):6.1f} ms  "
+              f"p50 {statistics.median(totals):6.1f}  max {max(totals):6.1f}  "
+              f"({recenters} recenters/{iters} polls)", flush=True)
+
+    print("\negocentric tracking (poll incl. drain + apply + observation()):")
+    measure_moving(0, "stationary player")
+    measure_moving(6, "walking (6 tiles/poll)")
+    measure_moving(60, "sprinting (60 tiles/poll)")
+
+    ts = []
+    for _ in range(50):
+        t0 = time.perf_counter()
+        _ = client.observation()
+        ts.append((time.perf_counter() - t0) * 1000)
+    print(f"  observation() view alone   mean {statistics.mean(ts):6.2f} ms  "
+          f"p50 {statistics.median(ts):6.2f} (table copy + relativize)")
+
     # --- 4. full rebuild (recenter / recovery path) ---
     ts = []
     for _ in range(10):
@@ -577,7 +618,14 @@ def main():
     print(f"\nfull tensor rebuild: mean {statistics.mean(ts):.1f} ms  p50 {statistics.median(ts):.1f} ms "
           f"(from {len(client.entities)} entities, {len(client.ores)} ores, {len(client.trees)} trees)")
 
-    # --- 5. sanity checks ---
+    # --- 5. sanity checks (bring the player back to the factory first) ---
+    rc.send_command("/sc local ch = game.surfaces[1].find_entities_filtered{type = \"character\"}[1] "
+                    "if ch then ch.teleport({0, 0}) end rcon.print(1)")
+    time.sleep(0.2)
+    resp = rc.send_command("/sc obs_all_drain()") or ""
+    epart, _, tpart = resp.partition("~")
+    client.apply_entity(epart)
+    client.apply_terrain(tpart)
     grid = client.grid
     n_in_window = sum(1 for c in client._contrib.values())
     type_sum = float(grid[0:6].sum())

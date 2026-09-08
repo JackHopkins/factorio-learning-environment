@@ -92,17 +92,17 @@ class TensorClient(TieredClient):
             policy can point at specific entities across steps.
     """
 
-    def __init__(self):
+    def __init__(self, table_rows=TABLE_ROWS):
         super().__init__()
         self.grid = np.zeros((N_CHANNELS, GRID, GRID), dtype=np.float32)
         self.global_vec = np.zeros(N_GLOBAL, dtype=np.float32)
-        self.table = np.zeros((TABLE_ROWS, TABLE_FEATS), dtype=np.float32)
-        self.table_mask = np.zeros(TABLE_ROWS, dtype=np.float32)
+        self.table = np.zeros((table_rows, TABLE_FEATS), dtype=np.float32)
+        self.table_mask = np.zeros(table_rows, dtype=np.float32)
         self._contrib = {}  # unit_number -> (gy, gx, channel_values dict)
         self._ore_contrib = {}  # "x:y" -> (gy, gx, bucket)
         self._water_contrib = {}  # (cx, cy) -> list of (gy, gx, count)
         self._slot_of = {}  # unit_number -> table row
-        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
+        self._free_slots = list(range(table_rows - 1, -1, -1))
         self._vocab = {}  # "kind:name" -> stable int id (session-scoped, >0)
         self.center_x = 0  # grid window center, CELL-quantized world coords
         self.center_y = 0
@@ -478,7 +478,7 @@ class TensorClient(TieredClient):
         self.table[:] = 0.0
         self.table_mask[:] = 0.0
         self._slot_of.clear()
-        self._free_slots = list(range(TABLE_ROWS - 1, -1, -1))
+        self._free_slots = list(range(self.table.shape[0] - 1, -1, -1))
         for key, row in sorted(self.entities.items()):
             self._table_upsert(key, row)
 

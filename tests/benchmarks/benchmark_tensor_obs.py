@@ -7,8 +7,9 @@ steady-state cost is O(changes), not O(world).
 Observation views: [C, H, W] spatial grid of CELL-tile cells tracking the
 player character (recentering when they leave a dead zone), a small global
 feature vector including the exact player position, and an object-level
-entity table (TABLE_ROWS x TABLE_FEATS) whose observation view reports
-player-relative coordinates (absolute positions stay available internally).
+entity view of the VIEW_K entities nearest the player, nearest-first with
+player-relative coordinates (the full absolute table stays available
+internally at table_rows capacity for actions and consistency checks).
 
     channels 0-5   entity counts per type (furnace/belt/inserter/assembler/chest/other)
     channel  6     status sum (working=1.0 scale)
@@ -79,6 +80,7 @@ F_INV_TOTAL = F_INV_START + 2 * N_INV_SLOTS  # 36: total item count
 F_INV_DISTINCT = F_INV_TOTAL + 1  # 37: number of distinct item stacks
 TABLE_ROWS = 2048
 TABLE_FEATS = F_INV_DISTINCT + 1
+VIEW_K = 2048  # observation() returns the K entities nearest the player
 
 
 class TensorClient(TieredClient):
@@ -92,16 +94,19 @@ class TensorClient(TieredClient):
             policy can point at specific entities across steps.
     """
 
-    def __init__(self, table_rows=TABLE_ROWS):
+    def __init__(self, table_rows=TABLE_ROWS, view_k=VIEW_K):
         super().__init__()
+        self.view_k = view_k
         self.grid = np.zeros((N_CHANNELS, GRID, GRID), dtype=np.float32)
         self.global_vec = np.zeros(N_GLOBAL, dtype=np.float32)
         self.table = np.zeros((table_rows, TABLE_FEATS), dtype=np.float32)
         self.table_mask = np.zeros(table_rows, dtype=np.float32)
+        self.view_units = []  # unit_number per view row, set by observation()
         self._contrib = {}  # unit_number -> (gy, gx, channel_values dict)
         self._ore_contrib = {}  # "x:y" -> (gy, gx, bucket)
         self._water_contrib = {}  # (cx, cy) -> list of (gy, gx, count)
         self._slot_of = {}  # unit_number -> table row
+        self._unit_at = {}  # table row -> unit_number
         self._free_slots = list(range(table_rows - 1, -1, -1))
         self._vocab = {}  # "kind:name" -> stable int id (session-scoped, >0)
         self.center_x = 0  # grid window center, CELL-quantized world coords
@@ -219,6 +224,7 @@ class TensorClient(TieredClient):
                 return
             slot = self._free_slots.pop()
             self._slot_of[key] = slot
+            self._unit_at[slot] = key
         angle = p["direction"] / 16.0 * 2.0 * math.pi
         r = self.table[slot]
         r[:] = 0.0
@@ -258,6 +264,7 @@ class TensorClient(TieredClient):
     def _table_remove(self, key):
         slot = self._slot_of.pop(key, None)
         if slot is not None:
+            self._unit_at.pop(slot, None)
             self.table[slot] = 0.0
             self.table_mask[slot] = 0.0
             self._free_slots.append(slot)
@@ -429,14 +436,36 @@ class TensorClient(TieredClient):
 
     def observation(self):
         """Observation views for an MLP/transformer policy: (flat grid,
-        global vec, entity table with player-RELATIVE x/y, table mask).
-        The internal table stays absolute, so exact world coordinates for
-        actions remain available via self.table."""
-        table_view = self.table.copy()
-        live = self.table_mask > 0
-        table_view[live, F_X] -= self.player_x
-        table_view[live, F_Y] -= self.player_y
-        return self.grid.reshape(-1), self.global_vec, table_view, self.table_mask
+        global vec, K-nearest entity view, view mask).
+
+        The view is a fixed (view_k, TABLE_FEATS) array holding the view_k
+        entities nearest the player, nearest-first, with player-RELATIVE
+        x/y. self.view_units gives the unit_number behind each view row
+        (distance ordering means view rows are not lifetime-stable), and
+        the full absolute table remains available via self.table."""
+        k = self.view_k
+        view = np.zeros((k, TABLE_FEATS), dtype=np.float32)
+        view_mask = np.zeros(k, dtype=np.float32)
+        live_idx = np.nonzero(self.table_mask)[0]
+        if live_idx.size:
+            dx = self.table[live_idx, F_X] - self.player_x
+            dy = self.table[live_idx, F_Y] - self.player_y
+            d2 = dx * dx + dy * dy
+            if live_idx.size > k:
+                sel = np.argpartition(d2, k - 1)[:k]
+                sel = sel[np.argsort(d2[sel])]
+            else:
+                sel = np.argsort(d2)
+            chosen = live_idx[sel]
+            n = chosen.size
+            view[:n] = self.table[chosen]
+            view[:n, F_X] -= self.player_x
+            view[:n, F_Y] -= self.player_y
+            view_mask[:n] = 1.0
+            self.view_units = [self._unit_at[int(s)] for s in chosen]
+        else:
+            self.view_units = []
+        return self.grid.reshape(-1), self.global_vec, view, view_mask
 
     def _rebuild_grid(self):
         """Rebuild grid contributions for the current window center. Table
@@ -478,6 +507,7 @@ class TensorClient(TieredClient):
         self.table[:] = 0.0
         self.table_mask[:] = 0.0
         self._slot_of.clear()
+        self._unit_at.clear()
         self._free_slots = list(range(self.table.shape[0] - 1, -1, -1))
         for key, row in sorted(self.entities.items()):
             self._table_upsert(key, row)

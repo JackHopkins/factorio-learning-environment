@@ -445,11 +445,48 @@ rcon.print(ch.position.x .. "," .. ch.position.y .. "|" .. chest.unit_number
         _, gvec, view, _ = c.observation()
         slot = c._slot_of[chest_unit]
         assert (c.table[slot][F_X], c.table[slot][F_Y]) == (cx, cy)
-        assert view[slot][F_X] == pytest.approx(cx - chx)
-        assert view[slot][F_Y] == pytest.approx(cy - chy)
+        vidx = c.view_units.index(chest_unit)
+        assert view[vidx][F_X] == pytest.approx(cx - chx)
+        assert view[vidx][F_Y] == pytest.approx(cy - chy)
         assert (gvec[8], gvec[9]) == (chx, chy)
     finally:
         # remove the character so earlier-region tests behave if re-run
+        tiered_rcon.send_command("""/sc for _, e in ipairs(game.surfaces[1].find_entities_filtered{
+    type = "character"}) do e.destroy{raise_destroy = true} end
+storage.obs_char = nil rcon.print(1)""".strip())
+
+
+def test_k_nearest_view(tiered_rcon):
+    """observation() returns the view_k entities nearest the player,
+    nearest-first, dropping distant ones - against a live server."""
+    c = TensorClient(view_k=5)
+    c.apply_entity(tiered_rcon.send_command("/sc obs_diff_full_sync()") or "")
+    truth = tiered_rcon.send_command("""/sc local ch = game.surfaces[1].create_entity{
+    name = "character", position = {1200, 100}, force = "player", raise_built = true}
+for i = 0, 3 do
+    game.surfaces[1].create_entity{name = "iron-chest",
+        position = {1202 + i * 2, 100}, force = "player", raise_built = true}
+end
+game.surfaces[1].create_entity{name = "iron-chest",
+    position = {1300, 100}, force = "player", raise_built = true}
+rcon.print(ch.position.x .. "," .. ch.position.y)""".strip())
+    chx, chy = map(float, truth.split(","))
+    try:
+        assert poll_until(tiered_rcon, c, lambda: c.player_x == chx)
+        _, _, view, mask = c.observation()
+        assert view.shape[0] == 5 and int(mask.sum()) == 5
+        # nearest-first: the character itself (distance 0), then the 4 close
+        # chests; the chest 100 tiles away must be excluded
+        rel_x = [float(view[i][F_X]) for i in range(5)]
+        assert rel_x[0] == pytest.approx(0.0)  # the character
+        assert all(abs(r) < 12 for r in rel_x), rel_x
+        assert sorted(rel_x) == sorted(rel_x, key=abs) or all(
+            abs(rel_x[i]) <= abs(rel_x[i + 1]) + 1e-6 for i in range(4))
+        # the far chest is tracked in the table, just not in the view
+        far_units = [u for u, row in c.entities.items()
+                     if row.startswith("iron-chest,1300")]
+        assert far_units and far_units[0] not in c.view_units
+    finally:
         tiered_rcon.send_command("""/sc for _, e in ipairs(game.surfaces[1].find_entities_filtered{
     type = "character"}) do e.destroy{raise_destroy = true} end
 storage.obs_char = nil rcon.print(1)""".strip())

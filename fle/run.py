@@ -53,6 +53,32 @@ def fle_eval(args):
         sys.exit(1)
 
 
+def _resolve_openrouter_provider(model: str):
+    """Resolve the current top tool-capable provider for an OpenRouter model.
+
+    Pinning consecutive requests to one provider keeps its prompt cache
+    warm; unpinned routing can bounce between providers (some without
+    caching at all). Best-effort: returns None on any failure.
+    """
+    import json
+    import urllib.request
+
+    slug = model.split("openrouter/", 1)[1]
+    try:
+        with urllib.request.urlopen(
+            f"https://openrouter.ai/api/v1/models/{slug}/endpoints", timeout=10
+        ) as r:
+            endpoints = json.load(r).get("data", {}).get("endpoints", [])
+        with_tools = [
+            e for e in endpoints if "tools" in (e.get("supported_parameters") or [])
+        ]
+        chosen = (with_tools or endpoints)[0] if endpoints else None
+        return chosen.get("provider_name") if chosen else None
+    except Exception as e:
+        print(f"OpenRouter provider pinning skipped: {e}")
+        return None
+
+
 def fle_inspect_eval(args):
     """New command: fle inspect-eval using Inspect framework"""
     _eval_integration_dir = Path(__file__).parent / "eval" / "inspect" / "integration"
@@ -226,8 +252,26 @@ def fle_inspect_eval(args):
             # Unbounded tasks use mean reducer by default
             cmd.extend(["--epochs-reducer", "mean"])
 
+        # Fail the eval loudly if any sample errors (e.g. no Factorio server
+        # for a rollout) instead of reporting scores over partial rollouts.
+        if not (hasattr(args, "no_fail_on_error") and args.no_fail_on_error):
+            cmd.extend(["--fail-on-error"])
+
         if "openrouter" in args.model:
             cmd.extend(["-M", "transforms=['middle-out']"])
+            # Pin routing to one provider so its prompt cache stays warm.
+            if not getattr(args, "no_pin_provider", False):
+                pin = getattr(
+                    args, "pin_provider", None
+                ) or _resolve_openrouter_provider(args.model)
+                if pin:
+                    cmd.extend(
+                        [
+                            "-M",
+                            f"provider={{'order': ['{pin}'], 'allow_fallbacks': False}}",
+                        ]
+                    )
+                    print(f"Pinned OpenRouter provider: {pin}")
         # Set environment variables for dynamic task configuration
         if args.env_id:
             os.environ["FLE_ENV_ID"] = args.env_id
@@ -640,6 +684,22 @@ Examples:
         "--env-id", help="Specific environment/task to evaluate (default: all tasks)"
     )
     parser_inspect.add_argument(
+        "--pin-provider",
+        help="Pin OpenRouter routing to this provider (default: auto-resolve "
+        "the top tool-capable provider to keep its prompt cache warm)",
+    )
+    parser_inspect.add_argument(
+        "--no-pin-provider",
+        action="store_true",
+        help="Disable automatic OpenRouter provider pinning",
+    )
+    parser_inspect.add_argument(
+        "--no-fail-on-error",
+        action="store_true",
+        help="Allow the eval to complete even if some samples error "
+        "(default: any errored sample fails the eval)",
+    )
+    parser_inspect.add_argument(
         "--init-retries",
         type=int,
         help="Retry transient Factorio env-init failures up to N attempts with "
@@ -665,6 +725,7 @@ Examples:
             "balanced",
             "reasoning_only",
             "pruned_gamestate",
+            "tool_discovery",
         ],
         help="Solver variant to use (default depends on task type)",
     )

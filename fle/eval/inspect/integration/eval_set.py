@@ -32,6 +32,9 @@ from fle.eval.inspect.integration.solver_variants import (
     factorio_reasoning_only_solver,
     factorio_pruned_gamestate_solver,
 )
+from fle.eval.inspect.integration.solver_tool_discovery import (
+    factorio_tool_discovery_solver,
+)
 from fle.eval.inspect.integration.scorers import (
     throughput_proportion_scorer,
     production_score_tracker,
@@ -57,6 +60,7 @@ SOLVER_MAP = {
     "balanced": factorio_balanced_solver,
     "reasoning_only": factorio_reasoning_only_solver,
     "pruned_gamestate": factorio_pruned_gamestate_solver,
+    "tool_discovery": factorio_tool_discovery_solver,
 }
 
 

@@ -15,6 +15,7 @@ the controlled solver's step budget; the discovery cost shows up as
 extra tokens and wall-clock, not lost game actions.
 """
 
+import asyncio
 import importlib.resources
 import logging
 from pathlib import Path
@@ -73,6 +74,11 @@ def _make_tools(
     gym_env: FactorioGymEnv, trajectory: TrajectoryData, budget: int, task_meta: dict
 ):
     """Build per-sample tool closures over the live gym environment."""
+    # The RCON client is not safe for concurrent calls ("The client is
+    # already busy with another call"), and Inspect may execute multiple
+    # tool calls from one assistant message in parallel. Serialize every
+    # env-touching tool on one lock.
+    env_lock = asyncio.Lock()
     ns = (
         gym_env.unwrapped.instance.namespace
         if hasattr(gym_env, "unwrapped")
@@ -126,7 +132,8 @@ def _make_tools(
     def entities():
         async def execute() -> str:
             """List the entities currently on the map."""
-            found = ns.get_entities()
+            async with env_lock:
+                found = ns.get_entities()
             if not found:
                 return "No entities on the map yet."
             return "\n".join(repr(e) for e in found)
@@ -137,7 +144,8 @@ def _make_tools(
     def inventory():
         async def execute() -> str:
             """Show the contents of your inventory."""
-            inv = ns.inspect_inventory()
+            async with env_lock:
+                inv = ns.inspect_inventory()
             items = dict(inv.items()) if hasattr(inv, "items") else dict(inv)
             if not items:
                 return "Inventory is empty."
@@ -151,8 +159,9 @@ def _make_tools(
     def summary():
         async def execute() -> str:
             """One-glance overview: position, score, budget, entity and item counts."""
-            found = ns.get_entities()
-            inv = ns.inspect_inventory()
+            async with env_lock:
+                found = ns.get_entities()
+                inv = ns.inspect_inventory()
             items = dict(inv.items()) if hasattr(inv, "items") else dict(inv)
             pos = getattr(ns, "player_location", None)
             return (
@@ -181,7 +190,8 @@ def _make_tools(
                 return "Step budget exhausted. No more run_code calls are allowed."
 
             action = Action(agent_idx=0, code=code)
-            obs, reward, terminated, truncated, info = gym_env.step(action)
+            async with env_lock:
+                obs, reward, terminated, truncated, info = gym_env.step(action)
             trajectory.total_steps += 1
 
             score = obs.get("score") or 0.0

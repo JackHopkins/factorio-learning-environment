@@ -159,6 +159,12 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
         error("Invalid direction " .. direction .. " provided. Please use 0 (north), 4 (east), 8 (south), or 12 (west).")
     end
 
+    -- The entity is built from the character's inventory, so it must hold one
+    if player.get_item_count(entity) < 1 then
+        local inv_contents = storage.utils.format_inventory_for_error(player)
+        error("\"No " .. entity .. " in inventory. Current inventory: " .. inv_contents .. "\"")
+    end
+
     -- Convert from Factorio 2.0 direction (0,4,8,12) to internal direction (0,1,2,3) for calculations
     local internal_direction = direction / 4
 
@@ -543,13 +549,12 @@ storage.actions.place_entity_next_to = function(player_index, entity, ref_x, ref
     end
 
     local placement_info = storage.utils.serialize_entity(new_entity)
-    
-    local item_stack = {name = entity, count = 1}
-    if player.get_main_inventory().can_insert(item_stack) then
-        player.get_main_inventory().remove(item_stack)
-        return placement_info
-    else
+
+    -- Consume the item; if it can't be removed, undo the placement
+    if player.remove_item{name = entity, count = 1} < 1 then
+        new_entity.destroy()
         local inv_contents = storage.utils.format_inventory_for_error(player)
-        error("Not enough " .. entity .. " in inventory. Current inventory: " .. inv_contents)
+        error("\"No " .. entity .. " in inventory. Current inventory: " .. inv_contents .. "\"")
     end
+    return placement_info
 end

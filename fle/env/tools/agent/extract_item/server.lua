@@ -1,99 +1,46 @@
--- Helper function to check all possible inventories of an entity
-local function get_entity_item_count(entity, item_name)
-    local inventory_types = {
-        defines.inventory.chest,
-        defines.inventory.furnace_source,
-        defines.inventory.furnace_result,
-        defines.inventory.assembling_machine_input,
-        defines.inventory.assembling_machine_output,
-        defines.inventory.fuel,
-        defines.inventory.burnt_result,
-        defines.inventory.reactor_source,
-        defines.inventory.reactor_result,
-        defines.inventory.lab_input,
-        defines.inventory.lab_source,
-        defines.inventory.mining_drill_input,
-        defines.inventory.item_main,  -- For cargo wagons
-        defines.inventory.robot_cargo,
-        defines.inventory.robot_repair,
-        defines.inventory.car_trunk,
-        defines.inventory.car_fuel,
-        defines.inventory.roboport_material,
-        defines.inventory.roboport_robot,
-        defines.inventory.storage_tank,
-        defines.inventory.artillery_turret_ammo,
-        defines.inventory.turret_ammo,
-        defines.inventory.beacon_modules,
-        defines.inventory.character_main,
-        defines.inventory.character_guns,
-        defines.inventory.character_ammo,
-        defines.inventory.character_armor,
-        defines.inventory.character_vehicle,
-        defines.inventory.character_trash
-    }
-
-    local total_count = 0
-    for _, inv_type in ipairs(inventory_types) do
-        local inventory = entity.get_inventory(inv_type)
+-- Move up to `count` items from the entity's inventories into the player's.
+-- Each slot is moved with its state: for tools (science packs) the top item of a
+-- stack may be part-used, and that partial durability goes with it, so the total
+-- durability in the world is unchanged. Returns the number of items moved.
+local function move_items_to_player(entity, player, item_name, count)
+    local moved = 0
+    for index = 1, entity.get_max_inventory_index() do
+        local inventory = entity.get_inventory(index)
         if inventory then
-            total_count = total_count + entity.get_item_count(item_name)
+            for slot = 1, #inventory do
+                if moved >= count then
+                    return moved
+                end
+                local stack = inventory[slot]
+                if stack.valid_for_read and stack.name == item_name then
+                    local is_tool = stack.prototype.type == "tool"
+                    local taken = {
+                        name = item_name,
+                        count = math.min(count - moved, stack.count),
+                        quality = stack.quality.name
+                    }
+                    if is_tool then
+                        taken.durability = stack.durability
+                    end
+                    local inserted = player.insert(taken)
+                    if inserted == 0 then
+                        return moved
+                    end
+                    if inserted >= stack.count then
+                        stack.clear()
+                    else
+                        stack.count = stack.count - inserted
+                        if is_tool then
+                            -- the part-used item went to the player; the rest are full
+                            stack.durability = stack.prototype.get_durability(stack.quality)
+                        end
+                    end
+                    moved = moved + inserted
+                end
+            end
         end
     end
-    return total_count
-end
-
--- Helper function to remove items from any valid inventory
-local function remove_items_from_entity(entity, stack)
-    local inventory_types = {
-        defines.inventory.chest,
-        defines.inventory.furnace_source,
-        defines.inventory.furnace_result,
-        defines.inventory.assembling_machine_input,
-        defines.inventory.assembling_machine_output,
-        defines.inventory.fuel,
-        defines.inventory.burnt_result,
-        defines.inventory.reactor_source,
-        defines.inventory.reactor_result,
-        defines.inventory.lab_input,
-        defines.inventory.lab_source,
-        defines.inventory.mining_drill_input,
-        defines.inventory.item_main,
-        defines.inventory.robot_cargo,
-        defines.inventory.robot_repair,
-        defines.inventory.car_trunk,
-        defines.inventory.car_fuel,
-        defines.inventory.roboport_material,
-        defines.inventory.roboport_robot,
-        defines.inventory.storage_tank,
-        defines.inventory.artillery_turret_ammo,
-        defines.inventory.turret_ammo,
-        defines.inventory.beacon_modules,
-        defines.inventory.character_main,
-        defines.inventory.character_guns,
-        defines.inventory.character_ammo,
-        defines.inventory.character_armor,
-        defines.inventory.character_vehicle,
-        defines.inventory.character_trash
-    }
-
-    local items_remaining = stack.count
-    local total_removed = 0
-
-    for _, inv_type in ipairs(inventory_types) do
-        if items_remaining <= 0 then
-            break
-        end
-
-        local inventory = entity.get_inventory(inv_type)
-        if inventory then
-            local current_stack = {name = stack.name, count = items_remaining}
-            local removed = entity.remove_item(current_stack)
-            total_removed = total_removed + removed
-            items_remaining = items_remaining - removed
-        end
-    end
-
-    return total_removed
+    return moved
 end
 
 storage.actions.extract_item = function(player_index, extract_item, count, x, y, source_name)
@@ -131,7 +78,7 @@ storage.actions.extract_item = function(player_index, extract_item, count, x, y,
 
     for _, building in ipairs(buildings) do
         if building.name ~= 'character' then
-            local item_count = get_entity_item_count(building, extract_item)
+            local item_count = building.get_item_count(extract_item)
             if item_count > 0 then
                 found_any_items = true
                 local distance = ((position.x - building.position.x) ^ 2 +
@@ -167,30 +114,17 @@ storage.actions.extract_item = function(player_index, extract_item, count, x, y,
     end
 
     -- Calculate how many items we can actually extract
-    local available_count = get_entity_item_count(closest_entity, extract_item)
+    local available_count = closest_entity.get_item_count(extract_item)
     local extract_count = math.min(count, available_count)
 
-    -- Create the stack for extraction
-    local stack = {name=extract_item, count=extract_count}
-
-    -- Attempt the extraction
-    local number_extracted = remove_items_from_entity(closest_entity, stack)
+    -- Move the items into the player's inventory (only what fits is removed)
+    local number_extracted = move_items_to_player(closest_entity, player, extract_item, extract_count)
 
     if number_extracted > 0 then
-        -- Insert items into player inventory
-        local inserted = player.insert(stack)
-
-        -- If we couldn't insert all items, put them back in the container
-        if inserted < number_extracted then
-            stack.count = number_extracted - inserted
-            closest_entity.insert(stack)
-            number_extracted = inserted
-        end
-
         -- game.print("Extracted " .. number_extracted .. " " .. extract_item)
         return number_extracted
     else
-        -- This should rarely happen given our prior checks
+        -- Nothing could be moved (e.g. the player's inventory is full)
         error("\"Failed to extract " .. extract_item .. "\"")
     end
 end

@@ -1004,17 +1004,27 @@ class ConnectEntities(Tool):
         self, groupable_entities: List[Entity], source_pos: Position
     ) -> List[ElectricityGroup]:
         """Process power pole groups"""
-        return cast(
-            List[ElectricityGroup],
-            self.get_entities(
-                {
-                    Prototype.SmallElectricPole,
-                    Prototype.BigElectricPole,
-                    Prototype.MediumElectricPole,
-                },
-                source_pos,
-            ),
+        entity_groups = self.get_entities(
+            {
+                Prototype.SmallElectricPole,
+                Prototype.BigElectricPole,
+                Prototype.MediumElectricPole,
+            },
+            source_pos,
         )
+
+        # get_entities returns every pole network within its default radius, so
+        # pick the one holding the poles this connection placed (or, when none
+        # were placed, the one at the source), as for pipe and wall groups.
+        placed_positions = [entity.position for entity in groupable_entities]
+        for positions in (placed_positions, [source_pos]):
+            for group in entity_groups:
+                if isinstance(group, ElectricityGroup) and any(
+                    pole.position in positions for pole in group.poles
+                ):
+                    return [group]
+
+        return cast(List[ElectricityGroup], entity_groups)
 
     def _adjust_belt_position(
         self, pos: Position, entity: Optional[Entity]

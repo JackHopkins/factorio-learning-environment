@@ -268,6 +268,18 @@ class FactorioNamespace:
         else:
             raise SyntaxError(f"Unsupported target type: {type(target)}")
 
+    @staticmethod
+    def _stored_names(targets) -> List[str]:
+        """Names bound by assignment targets, including tuple, list and starred
+        unpacking (`a, b = ...`, `first, *rest = ...`). Subscript and attribute
+        targets bind no name."""
+        names = []
+        for target in targets:
+            for n in ast.walk(target):
+                if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):
+                    names.append(n.id)
+        return names
+
     def reset(self):
         """
         Delete all variables that have accrued in the namespace by the agent, except for preexisting members.
@@ -471,6 +483,11 @@ class FactorioNamespace:
             return self.loop_context.handle_continue()
 
         elif isinstance(node, ast.For):
+            loop_names = [
+                name
+                for name in self._stored_names([node.target])
+                if name not in self._protected_names
+            ]
             try:
                 self.loop_context.enter_loop(node)
                 iter_obj = eval(
@@ -506,6 +523,12 @@ class FactorioNamespace:
                 return True
             finally:
                 self.loop_context.exit_loop()
+                # The loop variable stays bound after the loop, as in Python
+                for name in loop_names:
+                    if name in eval_dict and not name.startswith("_"):
+                        value = eval_dict[name]
+                        self.persistent_vars[name] = wrap_for_serialization(value)
+                        setattr(self, name, value)
 
         elif isinstance(node, ast.While):
             self.loop_context.enter_loop(node)
@@ -670,8 +693,13 @@ class FactorioNamespace:
             # Find all new or updated variables
             new_or_updated_keys = set()
 
-            # Check explicit targets
-            targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            # Check explicit targets: plain names, and names unpacked by tuple, list
+            # or starred targets (protected names are never persisted)
+            targets = [
+                name
+                for name in self._stored_names(node.targets)
+                if name not in self._protected_names
+            ]
             new_or_updated_keys.update(targets)
 
             # Also check for any new variables that might have been created by function calls

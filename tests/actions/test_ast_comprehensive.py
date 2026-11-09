@@ -339,6 +339,31 @@ global_var  # Return final value to verify
     assert "After: 200" in output_str, "Global modification should persist"
 
 
+def test_loop_variable_survives_helper_call(fle_instance):
+    """A for-loop variable must keep its current value after a bare call to an
+    agent-defined function, even if an older value of that name is persisted."""
+
+    fle_instance.eval_with_error("pos = (0, 0)", agent_idx=0, timeout=10)
+    result = fle_instance.eval_with_error(
+        """
+def helper(p):
+    return p
+
+for pos in [(1, 1), (2, 2)]:
+    helper(pos)
+    print(f"used {pos}")
+""",
+        agent_idx=0,
+        timeout=10,
+    )
+
+    output_str = str(result)
+    assert "used (1, 1)" in output_str and "used (2, 2)" in output_str, (
+        "Loop variable should not revert to its persisted value after a helper call"
+    )
+    assert "used (0, 0)" not in output_str
+
+
 def test_ast_nonlocal_statements(fle_instance):
     """Test ast.Nonlocal handler implementation"""
 

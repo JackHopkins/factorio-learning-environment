@@ -58,6 +58,7 @@ class SerializableFunction:
         # These won't be pickled
         self._instance = instance
         self._cached_func = None
+        self._initial_globals = {}
 
     def __getstate__(self):
         """Control which attributes are pickled"""
@@ -85,6 +86,7 @@ class SerializableFunction:
             self.return_annotation = state["return_annotation"]
         self._instance = None
         self._cached_func = None
+        self._initial_globals = {}
 
     def __str__(self):
         """Return a string representation with function signature and docstring"""
@@ -128,6 +130,10 @@ class SerializableFunction:
         if self._instance is None:
             raise RuntimeError("Function must be bound to an instance before calling")
         self._cached_func = self.reconstruct(self._instance, self)
+        # Snapshot the globals the function starts with, so callers can tell which
+        # names the call actually rebound (e.g. via `global`) from names that are
+        # just copies of persistent state.
+        self._initial_globals = dict(self._cached_func.__globals__)
         return self._cached_func(*args, **kwargs)
 
     @staticmethod

@@ -116,3 +116,10 @@ def test_move_to_near_entities(game):
         error_msg = str(e)
         assert "Could not move" in error_msg, f"Should get formatted error: {error_msg}"
         print(f"✓ Got proper error for blocked movement: {error_msg}")
+
+
+def test_player_location_is_current_within_a_program(game):
+    _, _, result = game.instance.eval_with_error(
+        "move_to(Position(x=10, y=10))\nprint(player_location)"
+    )
+    assert "x=10" in result and "y=10" in result, result

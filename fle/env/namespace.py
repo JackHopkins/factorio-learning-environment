@@ -464,6 +464,10 @@ class FactorioNamespace:
         if hasattr(node, "lineno"):
             self.line_value = node.lineno
 
+        # Tools such as move_to update self.player_location; eval_dict holds the
+        # value copied when the program started, so refresh it before each statement.
+        eval_dict["player_location"] = self.player_location
+
         if isinstance(node, ast.Break):
             return self.loop_context.handle_break()
 

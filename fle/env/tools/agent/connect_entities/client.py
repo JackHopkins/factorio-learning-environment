@@ -1,4 +1,3 @@
-from time import sleep
 from typing import Union, Optional, List, Dict, cast, Set
 
 import numpy
@@ -467,7 +466,14 @@ class ConnectEntities(Tool):
                 entity_size=size,
             )
 
-            sleep(0.05)  # Allow pathing system time to compute
+            # The path is computed asynchronously by the game, a little each tick, so
+            # a fixed wall-clock sleep is too short at low game speeds (at 1x, 50 ms
+            # is ~3 ticks). Wait for the request to finish; failures (not_found, busy,
+            # timeout) are reported by the server call below, as before.
+            try:
+                self.get_path(path_handle)
+            except Exception:
+                pass
 
             response, _ = self.execute(
                 self.player_index,

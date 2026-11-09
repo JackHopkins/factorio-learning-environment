@@ -478,6 +478,21 @@ def test_connect_pipes_by_positions(game):
     assert len(pipes.pipes) == 6
 
 
+def test_connect_long_pipe_at_normal_game_speed(game):
+    """
+    Paths are computed asynchronously by the game. At 1x speed a long path takes
+    longer than a fixed short wall-clock wait, so connect_entities must wait for it.
+    """
+    game.instance.set_speed(1)
+    try:
+        position_1 = Position(x=0, y=1)
+        position_2 = Position(x=0, y=41)
+        pipes = game.connect_entities(position_1, position_2, Prototype.Pipe)
+        assert len(pipes.pipes) >= 41
+    finally:
+        game.instance.set_speed(10)
+
+
 def test_connect_pipes_to_advanced_assembler(game):
     """
     Ensure that advanced assemblers can be connected to.

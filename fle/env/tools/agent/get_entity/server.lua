@@ -27,8 +27,16 @@ storage.actions.get_entity = function(player_index, entity, x, y)
     local closest_distance = math.huge
     local closest_entity = nil
 
+    -- Only entities whose tile footprint contains the position: the search area is
+    -- a tile wider than the position on each side, so it also holds neighbours.
+    local function covers_position(e)
+        local box = e.bounding_box
+        return position.x >= math.floor(box.left_top.x) and position.x <= math.ceil(box.right_bottom.x)
+            and position.y >= math.floor(box.left_top.y) and position.y <= math.ceil(box.right_bottom.y)
+    end
+
     for _, building in ipairs(entities) do
-        if building.name ~= 'character' then
+        if building.name ~= 'character' and covers_position(building) then
             local distance = ((position.x - building.position.x) ^ 2 +
                             (position.y - building.position.y) ^ 2) ^ 0.5
             if distance < closest_distance then

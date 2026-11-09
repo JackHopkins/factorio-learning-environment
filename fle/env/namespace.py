@@ -798,9 +798,18 @@ class FactorioNamespace:
                         and hasattr(func, "_cached_func")
                         and func._cached_func
                     ):
-                        # Get the function's globals and update our eval_dict with any changes
+                        # Get the function's globals and update our eval_dict with any changes.
+                        # Only names the call rebound are copied back: the rest of its globals
+                        # were copied from persistent_vars when the call started, and would
+                        # overwrite newer values in eval_dict (e.g. a for-loop variable).
                         func_globals = func._cached_func.__globals__
+                        initial_globals = getattr(func, "_initial_globals", {})
                         for name, value in func_globals.items():
+                            if (
+                                name in initial_globals
+                                and initial_globals[name] is value
+                            ):
+                                continue
                             if not name.startswith("_") and name in eval_dict:
                                 if eval_dict[name] != value:
                                     eval_dict[name] = value

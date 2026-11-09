@@ -61,20 +61,23 @@ local function get_refinery_position_offsets(fluid_type, recipe, is_input)
 end
 
 -- Helper function to get chemical plant position offsets
--- For north-facing chemical plant:
---   Inputs are on the south side (y + 1.5)
---   Outputs are on the north side (y - 1.5)
+-- For a chemical plant whose entity.direction is north (Factorio 2.0 prototype):
+--   Inputs are on the north side (y - 1.5)
+--   Outputs are on the south side (y + 1.5)
+-- Note: get_entity_direction maps a requested direction to the opposite entity
+-- direction for chemical plants, so a plant placed with direction=UP faces south
+-- and has its inputs on the south side.
 local function get_chemical_plant_position_offsets(index, total, is_input)
     if is_input then
         if total == 1 then
-            return -1, 1.5  -- South side for single input
+            return -1, -1.5  -- North side for single input
         else
-            -- For two inputs, space them out on south side
-            return -1 + (index - 1) * 2, 1.5
+            -- For two inputs, space them out on north side
+            return -1 + (index - 1) * 2, -1.5
         end
     else
-        -- Outputs are on the north side
-        return -1, -1.5
+        -- Outputs are on the south side
+        return -1, 1.5
     end
 end
 

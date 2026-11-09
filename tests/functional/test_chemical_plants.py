@@ -109,3 +109,43 @@ def test_build_chemical_plant(game):
         steam_engine,
         connection_type=Prototype.SmallElectricPole,
     )
+
+
+# The game's own input ports of the chemical plant at (x, y): the point between
+# each input port tile and the tile a pipe must occupy (FLE's connection point).
+game_input_ports = """
+local plant = game.surfaces[1].find_entities_filtered{{name = "chemical-plant", position = {{{x}, {y}}}}}[1]
+local out = {{}}
+for i = 1, #plant.fluidbox do
+    local proto = plant.fluidbox.get_prototype(i)
+    if proto.production_type == "input" then
+        for _, pc in pairs(plant.fluidbox.get_pipe_connections(i)) do
+            out[#out + 1] = ((pc.position.x + pc.target_position.x) / 2) .. ","
+                .. ((pc.position.y + pc.target_position.y) / 2)
+        end
+    end
+end
+rcon.print(table.concat(out, ";"))
+"""
+
+
+@pytest.mark.parametrize(
+    "direction", [Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT]
+)
+def test_chemical_plant_input_connection_points_match_game(base_game, direction):
+    position = Position(x=0.5, y=6.5)
+    base_game.move_to(position)
+    plant = base_game.place_entity(
+        Prototype.ChemicalPlant, direction=direction, position=position
+    )
+    plant = base_game.set_entity_recipe(plant, RecipeName.LightOilCracking)
+
+    response = base_game.instance.rcon_client.send_command(
+        "/sc " + game_input_ports.format(x=plant.position.x, y=plant.position.y)
+    )
+    expected = {
+        (float(px), float(py))
+        for px, py in (point.split(",") for point in response.split(";"))
+    }
+    reported = {(p.x, p.y) for p in plant.input_connection_points}
+    assert reported == expected

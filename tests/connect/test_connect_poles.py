@@ -439,6 +439,22 @@ def test_get_existing_electricity_connection_group(game):
     print("✓ Electricity connection handled gracefully")
 
 
+def test_connect_poles_returns_own_network(game):
+    """With several separate pole networks, each call returns its own one."""
+    # Which network comes first depends on the map's search order, so build one
+    # network in each quadrant: on the unfixed code at least one call returns
+    # another network.
+    for x, y in [(30, 30), (-30, -30), (30, -30), (-30, 30)]:
+        group = game.connect_entities(
+            Position(x=x, y=y), Position(x=x + 5, y=y), Prototype.SmallElectricPole
+        )
+        assert group.poles, "Expected an ElectricityGroup"
+        assert all(
+            abs(pole.position.x - x) < 8 and abs(pole.position.y - y) < 2
+            for pole in group.poles
+        ), f"Connection from ({x}, {y}) returned another network: {group}"
+
+
 def test_pole_retry_logic(game):
     """Test retry logic for intermittent Lua errors in pole connections"""
     pos1 = Position(x=40, y=40)

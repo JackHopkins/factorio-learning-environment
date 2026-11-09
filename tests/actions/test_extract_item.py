@@ -40,3 +40,11 @@ def test_extract_assembler_multi(game):
     assert game.inspect_inventory()[Prototype.IronPlate] == 2
     assert game.inspect_inventory()[Prototype.CopperCable] == 2
     assert count1 == 2 and count2 == 2
+
+
+def test_extract_out_of_reach(game):
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+    game.insert_item(Prototype.IronPlate, chest, quantity=10)
+    game.move_to(Position(x=30, y=0))
+    with pytest.raises(Exception, match="too far away"):
+        game.extract_item(Prototype.IronPlate, chest, quantity=2)

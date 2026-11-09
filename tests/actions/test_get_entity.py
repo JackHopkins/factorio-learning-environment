@@ -266,3 +266,10 @@ def test_get_assembling_machine_1(game):
     )
 
     assert retrieved_machine is not None, "Failed to retrieve assembling machine"
+
+
+def test_get_entity_on_empty_neighbouring_tile_returns_none(game):
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+    assert game.get_entity(Prototype.IronChest, chest.position) is not None
+    neighbour = Position(x=chest.position.x + 1, y=chest.position.y)
+    assert game.get_entity(Prototype.IronChest, neighbour) is None

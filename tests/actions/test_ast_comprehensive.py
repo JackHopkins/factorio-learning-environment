@@ -429,6 +429,39 @@ print(f"List after +=: {data}")
     )
 
 
+def test_unpacked_assignment_persistence(fle_instance):
+    """Tuple, starred and for-loop targets must update existing variables."""
+
+    fle_instance.eval_with_error(
+        "a, b, rest, i = 0, 'old', None, -1", agent_idx=0, timeout=10
+    )
+    result = fle_instance.eval_with_error(
+        """
+a, b = 1, 'new'
+print(f"same program: {b}")
+first, *rest = [1, 2, 3]
+for i in range(3):
+    pass
+""",
+        agent_idx=0,
+        timeout=10,
+    )
+    assert "same program: new" in str(result), (
+        "Tuple assignment should update an existing variable"
+    )
+
+    result = fle_instance.eval_with_error(
+        """
+print(f"next program: {b} {rest} {i}")
+""",
+        agent_idx=0,
+        timeout=10,
+    )
+    assert "next program: new [2, 3] 2" in str(result), (
+        "Unpacked and loop targets should persist between evaluations"
+    )
+
+
 def test_lambda_function_fix(fle_instance):
     """Test that the lambda function KeyError bug is fixed"""
 

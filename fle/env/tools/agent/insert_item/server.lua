@@ -176,8 +176,8 @@ storage.actions.insert_item = function(player_index, insert_item, count, x, y, t
         error("\"Could not find a nearby entity that can accept " .. insert_item.."\"")
     end
 
-    -- Throw an error if the entity is too far away from the player
-    if closest_distance > 10 then
+    -- Throw an error if the entity is out of the character's reach
+    if not player.can_reach_entity(closest_entity) then
         error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.position.x..", "..player.position.y.."), move closer.\"")
     end
 

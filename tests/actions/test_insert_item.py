@@ -304,3 +304,10 @@ def test_insert_into_two_furnaces(game):
     print(f"Inserted {copper_ore_count} Copper Ore into second Stone Furnace.")
 
     assert True
+
+
+def test_insert_out_of_reach(game):
+    chest = game.place_entity(Prototype.IronChest, position=Position(x=0, y=0))
+    game.move_to(Position(x=30, y=0))
+    with pytest.raises(Exception, match="too far away"):
+        game.insert_item(Prototype.IronPlate, chest, quantity=5)

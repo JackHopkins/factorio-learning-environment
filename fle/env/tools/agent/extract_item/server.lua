@@ -158,7 +158,7 @@ storage.actions.extract_item = function(player_index, extract_item, count, x, y,
         end
     end
 
-    if closest_distance > search_radius then
+    if not player.can_reach_entity(closest_entity) then
         error("\"Entity at ("..closest_entity.position.x..", "..closest_entity.position.y..") is too far away from your position of ("..player.position.x..","..player.position.y.."), move closer.\"")
     end
 

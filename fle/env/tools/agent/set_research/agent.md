@@ -68,6 +68,18 @@ Example error messages:
 "Cannot research logistics-2 because technology is not enabled"
 ```
 
+## Trigger Technologies
+
+In Factorio 2.0 some technologies are not researched in labs. They have no science-pack cost and are completed when the game action shown is done:
+
+- `steam-power`: craft 50 iron plates
+- `electronics`: craft 10 copper plates
+- `automation-science-pack`: craft a lab
+- `steel-axe`: craft 50 steel plates
+- `oil-processing`: mine crude oil
+- `uranium-processing`: mine uranium ore
+- `space-science-pack`: send a satellite to orbit
+
 ## Requirements
 
 - The technology must be valid and available

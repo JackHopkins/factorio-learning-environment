@@ -29,7 +29,6 @@ The function returns a list of Entity objects that match the specified criteria.
 
 - If no prototype/name/type is specified, returns all entities within radius
 - Returns empty list if no matching entities are found
-- Maximum radius is limited to 50 tiles for performance reasons
 
 ## Examples
 

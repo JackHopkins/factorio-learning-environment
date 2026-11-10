@@ -23,11 +23,11 @@ class ShiftEntity(Tool):
         self, entity: Entity, direction: Union[Direction, DirectionA], distance: int = 1
     ) -> Entity:
         """
-        Calculate the number of connecting entities needed to connect two entities, positions or groups.
-        :param source: First entity or position
-        :param target: Second entity or position
-        :param connection_type: a Pipe, TransportBelt or ElectricPole
-        :return: A integer representing how many entities are required to connect the source and target entities
+        Move an entity `distance` tiles in `direction` by picking it up and placing it again.
+        :param entity: The entity to move
+        :param direction: The direction to move it in
+        :param distance: Number of tiles to move it (default 1)
+        :return: The moved entity
         """
         assert isinstance(entity, Entity), "First argument must be an entity object"
         assert isinstance(direction, (Direction, DirectionA)), (

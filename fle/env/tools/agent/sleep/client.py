@@ -30,7 +30,7 @@ class Sleep(Tool):
 
     def __call__(self, seconds: int) -> bool:
         """
-        Sleep for up to 15 seconds before continuing. Useful for waiting for actions to complete.
+        Wait for the given number of game seconds before continuing. Useful for waiting for actions to complete.
         :param seconds: Number of seconds to sleep.
         :return: True if sleep was successful.
         """

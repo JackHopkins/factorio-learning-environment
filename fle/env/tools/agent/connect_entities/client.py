@@ -107,7 +107,15 @@ class ConnectEntities(Tool):
         )
 
     def __call__(self, *args, **kwargs):
-        """Wrapper method with retry logic for specific Lua errors."""
+        """
+        Connect two or more entities, positions or entity groups, in order, with belts, pipes or power poles.
+        Call as connect_entities(source, target, connection_type) or
+        connect_entities(*waypoints, connection_type=connection_type).
+        :param waypoints: Two or more Positions, Entities or EntityGroups to connect
+        :param connection_type: The Prototype to connect with, or a set of Prototypes of one kind, e.g. {Prototype.Pipe, Prototype.UndergroundPipe}
+        :param dry_run: If True, place nothing and return the number of entities required and available
+        :return: The resulting entity group (e.g. a BeltGroup, PipeGroup or ElectricityGroup)
+        """
         max_retries = 2
         retry_count = 0
 

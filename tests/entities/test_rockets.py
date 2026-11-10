@@ -21,7 +21,7 @@ def game(configure_game):
             "steam-engine": 5,
             "inserter": 10,
             "iron-chest": 5,
-            "rocket-control-unit": 100,
+            "processing-unit": 100,
             "rocket-fuel": 100,
             "low-density-structure": 100,
             "solar-panel": 10,
@@ -112,7 +112,7 @@ def test_inserter_to_rocket_silo(configure_game):
             "coal": 100,
             "low-density-structure": 200,
             "rocket-fuel": 200,
-            "rocket-control-unit": 200,
+            "processing-unit": 200,
         },
         merge=True,
     )
@@ -160,7 +160,7 @@ def test_inserter_to_rocket_silo(configure_game):
     for item_name, prototype in [
         ("low-density-structure", Prototype.LowDensityStructure),
         ("rocket-fuel", Prototype.RocketFuel),
-        ("rocket-control-unit", Prototype.RocketControlUnit),
+        ("processing-unit", Prototype.ProcessingUnit),
     ]:
         try:
             game.insert_item(prototype, chest, quantity=10)

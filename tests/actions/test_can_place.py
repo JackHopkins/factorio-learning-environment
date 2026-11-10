@@ -34,3 +34,22 @@ def test_can_place_over_player_large(game):
     game.place_entity(
         Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP
     )
+
+
+def test_can_place_offshore_pump_at_shore(configure_game):
+    game = configure_game(
+        inventory={"offshore-pump": 2}, merge=True, reset_position=True
+    )
+    water = game.nearest(Resource.Water)
+    game.move_to(water)
+    pump = game.place_entity(Prototype.OffshorePump, position=water)
+    position = pump.position
+    assert game.pickup_entity(pump)
+
+    # Factorio 2.0: the pump stands on land next to the water, not on a water tile
+    assert any(
+        game.can_place_entity(
+            Prototype.OffshorePump, direction=direction, position=position
+        )
+        for direction in (Direction.UP, Direction.RIGHT, Direction.DOWN, Direction.LEFT)
+    )

@@ -50,11 +50,17 @@ storage.actions.can_place_entity = function(player_index, entity, direction, x, 
         error("Cannot place the entity at the specified location due to collision with other entities.")
     end
 
-    -- Additional checks for specific entities like offshore-pump
+    -- Factorio 2.0: an offshore pump stands on land at the edge of water, so the tile
+    -- under it is usually not water. Let the game's placement rules decide.
     if entity == "offshore-pump" then
-        local tile = player.surface.get_tile(x, y)
-        if not tile.prototype.name:match("water") then
-            error("Cannot place the entity at the specified position due to lack of water.")
+        local can_place = player.surface.can_place_entity{
+            name = entity,
+            force = player.force,
+            position = position,
+            direction = direction_enum
+        }
+        if not can_place then
+            error("Cannot place the offshore pump at the specified position: it must be placed at the edge of water.")
         end
     end
 

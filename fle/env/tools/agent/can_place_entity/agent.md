@@ -49,5 +49,5 @@ else:
 
 3. Special Cases
 
-- Offshore pumps require water tiles
+- Offshore pumps are placed on land at the edge of water (Factorio 2.0), not on water tiles
 - Some entities have specific placement requirements

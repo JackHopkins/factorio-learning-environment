@@ -75,6 +75,7 @@ class EntityStatus(Enum):
     NO_INGREDIENTS = "no_ingredients"
     ITEM_INGREDIENT_SHORTAGE = "item_ingredient_shortage"
     RECIPE_NOT_RESEARCHED = "recipe_not_researched"
+    RECIPE_IS_PARAMETER = "recipe_is_parameter"
 
     # Fluid-related states
     NO_INPUT_FLUID = "no_input_fluid"
@@ -98,6 +99,7 @@ class EntityStatus(Enum):
 
     # Inserter/logistics states
     WAITING_FOR_SOURCE_ITEMS = "waiting_for_source_items"
+    WAITING_FOR_MORE_ITEMS = "waiting_for_more_items"
     WAITING_FOR_SPACE_IN_DESTINATION = "waiting_for_space_in_destination"
     OUT_OF_LOGISTIC_NETWORK = "out_of_logistic_network"
     NO_FILTER = "no_filter"
@@ -112,6 +114,7 @@ class EntityStatus(Enum):
     ON_THE_WAY = "on_the_way"
     WAITING_IN_ORBIT = "waiting_in_orbit"
     WAITING_FOR_ROCKET_TO_ARRIVE = "waiting_for_rocket_to_arrive"
+    WAITING_FOR_ROCKETS_TO_ARRIVE = "waiting_for_rockets_to_arrive"
 
     # Combat/turret states
     NO_AMMO = "no_ammo"

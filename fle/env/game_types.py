@@ -49,9 +49,7 @@ class RecipeName(enum.Enum):
         "basic-oil-processing"  # Recipe for producing petroleum gas with a oil refinery
     )
     AdvancedOilProcessing = "advanced-oil-processing"  # Recipe for producing petroleum gas, heavy oil and light oil with a oil refinery
-    CoalLiquefaction = (
-        "coal-liquefaction"  # Recipe for producing petroleum gas in a oil refinery
-    )
+    CoalLiquefaction = "coal-liquefaction"  # Recipe for producing heavy oil, light oil and petroleum gas from coal, heavy oil and steam in an oil refinery
     HeavyOilCracking = (
         "heavy-oil-cracking"  # Recipe for producing light oil in a chemical plant
     )
@@ -123,7 +121,13 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     FastSplitter = "fast-splitter", ent.Splitter
     ExpressSplitter = "express-splitter", ent.Splitter
 
+    # Factorio 2.0: the "rail" item places a straight-rail; placed rails are one of
+    # straight-rail, curved-rail-a, curved-rail-b or half-diagonal-rail
     Rail = "rail", ent.Rail
+    StraightRail = "straight-rail", ent.Rail
+    CurvedRailA = "curved-rail-a", ent.Rail
+    CurvedRailB = "curved-rail-b", ent.Rail
+    HalfDiagonalRail = "half-diagonal-rail", ent.Rail
 
     TransportBelt = "transport-belt", ent.TransportBelt
     FastTransportBelt = "fast-transport-belt", ent.TransportBelt
@@ -171,7 +175,8 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     StoneBrick = "stone-brick", None  # Crafting requires smelting 2 stone
     CopperCable = "copper-cable", None
     PlasticBar = "plastic-bar", None
-    EmptyBarrel = "empty-barrel", None
+    Barrel = "barrel", None  # Factorio 2.0: empty-barrel renamed to barrel
+    EmptyBarrel = "barrel", None  # Alias of Barrel (the 1.1 name was empty-barrel)
     Battery = "battery", None
     SulfuricAcid = "sulfuric-acid", None
     Uranium235 = "uranium-235", None
@@ -183,8 +188,11 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
         "advanced-oil-processing",
         None,
     )  # These are recipes, not prototypes.
-    CoalLiquifaction = "coal-liquifaction", None  # These are recipes, not prototypes.
-    SolidFuel = "solid-fuel", None  # These are recipes, not prototypes.
+    CoalLiquefaction = (
+        "coal-liquefaction",
+        None,
+    )  # These are recipes, not prototypes.
+    SolidFuel = "solid-fuel", None
     LightOil = "light-oil", None
     HeavyOil = "heavy-oil", None
 
@@ -201,6 +209,10 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     PiercingRoundsMagazine = "piercing-rounds-magazine", ent.Ammo
     FirearmMagazine = "firearm-magazine", ent.Ammo
     Grenade = "grenade", None
+    Explosives = "explosives", None
+    CliffExplosives = "cliff-explosives", None
+    Landfill = "landfill", None
+    RepairPack = "repair-pack", None
 
     Radar = "radar", ent.Entity
     StoneWall = "stone-wall", ent.Entity
@@ -225,10 +237,12 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     FlyingRobotFrame = "flying-robot-frame", None
 
     RocketSilo = "rocket-silo", ent.RocketSilo
-    Rocket = "rocket", ent.Rocket
+    Rocket = (
+        "rocket",
+        ent.Ammo,
+    )  # The rocket launcher's ammo item, not the silo's rocket
     Satellite = "satellite", None
     RocketPart = "rocket-part", None
-    RocketControlUnit = "rocket-control-unit", None
     LowDensityStructure = "low-density-structure", None
     RocketFuel = "rocket-fuel", None
     SpaceSciencePack = "space-science-pack", None

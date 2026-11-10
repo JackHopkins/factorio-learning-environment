@@ -33,7 +33,6 @@ def game(instance):
         "sulfur": 50,
         "low-density-structure": 10,
         "rocket-fuel": 10,
-        "rocket-control-unit": 10,
         "flying-robot-frame": 10,
         "grenade": 20,
         "firearm-magazine": 50,
@@ -97,7 +96,7 @@ ASSEMBLER_RECIPE_PROTOTYPES = [
     Prototype.UndergroundPipe,
     Prototype.StorageTank,
     Prototype.Pump,
-    Prototype.EmptyBarrel,
+    Prototype.Barrel,
     # Storage
     Prototype.WoodenChest,
     Prototype.IronChest,
@@ -124,7 +123,6 @@ ASSEMBLER_RECIPE_PROTOTYPES = [
     # Rocket parts
     Prototype.RocketFuel,
     Prototype.LowDensityStructure,
-    Prototype.RocketControlUnit,
     Prototype.Satellite,
     # Misc
     Prototype.SmallLamp,
@@ -202,7 +200,7 @@ ASSEMBLER_RECIPES = [
     "pipe-to-ground",
     "storage-tank",
     "pump",
-    "empty-barrel",
+    "barrel",
     # Storage
     "wooden-chest",
     "iron-chest",
@@ -235,7 +233,6 @@ ASSEMBLER_RECIPES = [
     # Rocket parts
     "rocket-fuel",
     "low-density-structure",
-    "rocket-control-unit",
     "satellite",
     # Misc
     "small-lamp",

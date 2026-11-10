@@ -149,7 +149,7 @@ class Prototype(enum.Enum):
     AutomationSciencePack, LogisticsSciencePack, ChemicalSciencePack
     MilitarySciencePack, ProductionSciencePack, UtilitySciencePack, SpaceSciencePack
     # Rocket
-    RocketSilo, Satellite, RocketPart, RocketControlUnit, LowDensityStructure, RocketFuel
+    RocketSilo, Satellite, RocketPart, LowDensityStructure, RocketFuel
 
 class RecipeName(enum.Enum):
     # Oil processing

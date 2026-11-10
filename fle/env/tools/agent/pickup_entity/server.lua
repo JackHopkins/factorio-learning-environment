@@ -38,11 +38,16 @@ storage.actions.pickup_entity = function(player_index, x, y, entity)
                 --    end
                 --end
 
-                -- Add chest contents if applicable
-                if ent.get_inventory(defines.inventory.chest) then
-                    local chest_contents = storage.utils.get_contents_compat(ent.get_inventory(defines.inventory.chest))
-                    for name, count in pairs(chest_contents) do
-                        table.insert(items_to_insert, {name=name, count=count})
+                -- Add the contents of every inventory. Factorio 2.0 keeps fuel, input,
+                -- output, modules and lab packs in separate inventories (index 1 is only
+                -- the chest / fuel inventory), and destroying the entity loses the rest.
+                for i = 1, ent.get_max_inventory_index() do
+                    local inventory = ent.get_inventory(i)
+                    if inventory then
+                        local contents = storage.utils.get_contents_compat(inventory)
+                        for name, count in pairs(contents) do
+                            table.insert(items_to_insert, {name=name, count=count})
+                        end
                     end
                 end
 
@@ -63,8 +68,15 @@ storage.actions.pickup_entity = function(player_index, x, y, entity)
                     end
                 end
 
-                -- Add the entity itself
-                table.insert(items_to_insert, {name=ent.name, count=1})
+                -- Add the item that places the entity (its name can differ from the
+                -- entity's, e.g. the rail item places a straight-rail)
+                local item_name, item_count = ent.name, 1
+                local items_to_place = ent.prototype.items_to_place_this
+                if items_to_place and items_to_place[1] then
+                    item_name = items_to_place[1].name
+                    item_count = items_to_place[1].count or 1
+                end
+                table.insert(items_to_insert, {name=item_name, count=item_count})
 
                 -- Check if player can receive all items
                 if not can_receive_items(items_to_insert) then

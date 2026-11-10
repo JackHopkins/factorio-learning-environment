@@ -154,3 +154,18 @@ def test_pickup_belts_that_dont_exist(game):
         game.pickup_entity(nbelts)
     except Exception:
         assert True, "Should not be able to pick up a non-existent belt"
+
+
+def test_pickup_furnace_returns_its_input(configure_game):
+    game = configure_game(
+        inventory={"stone-furnace": 1, "iron-ore": 10}, reset_position=True
+    )
+    furnace = game.place_entity(Prototype.StoneFurnace, position=Position(x=0, y=0))
+    # No fuel, so nothing smelts; the ore sits in the furnace's source inventory
+    game.insert_item(Prototype.IronOre, furnace, quantity=10)
+    assert game.inspect_inventory()[Prototype.IronOre] == 0
+
+    assert game.pickup_entity(furnace)
+    inventory = game.inspect_inventory()
+    assert inventory[Prototype.IronOre] == 10
+    assert inventory[Prototype.StoneFurnace] == 1

@@ -1055,3 +1055,22 @@ def test_belt_smart_collision_avoidance(game):
 
     assert belt, "Belt should be placed with smart collision avoidance"
     print(f"✓ Belt placed at {belt.position} avoiding obstacles")
+
+
+def test_place_next_to_consumes_item(game):
+    chest = game.place_entity(Prototype.WoodenChest, position=Position(x=0, y=0))
+    before = game.inspect_inventory()[Prototype.WoodenChest]
+    game.place_entity_next_to(
+        Prototype.WoodenChest, chest.position, direction=Direction.RIGHT, spacing=0
+    )
+    assert game.inspect_inventory()[Prototype.WoodenChest] == before - 1
+
+
+def test_place_next_to_without_item_places_nothing(game):
+    chest = game.place_entity(Prototype.WoodenChest, position=Position(x=0, y=0))
+    assert game.inspect_inventory().get(Prototype.IronChest, 0) == 0
+    with pytest.raises(Exception, match="No iron-chest in inventory"):
+        game.place_entity_next_to(
+            Prototype.IronChest, chest.position, direction=Direction.RIGHT, spacing=0
+        )
+    assert not game.get_entities({Prototype.IronChest})

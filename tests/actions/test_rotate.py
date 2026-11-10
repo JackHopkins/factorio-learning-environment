@@ -9,6 +9,7 @@ def game(configure_game):
     return configure_game(
         inventory={
             "iron-chest": 1,
+            "boiler": 1,
             "pipe": 10,
             "assembling-machine-2": 2,
             "transport-belt": 10,

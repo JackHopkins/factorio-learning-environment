@@ -1,3 +1,4 @@
+from fle.env import DirectionInternal
 from fle.env import entities as ent
 from fle.env.game_types import Prototype
 from fle.env.tools import Tool
@@ -33,8 +34,10 @@ class CanPlaceEntity(Tool):
         x, y = self.get_position(position)
         name, metaclass = entity.value
 
+        # Same direction encoding as place_entity (Factorio 2.0: 0, 4, 8, 12)
+        factorio_direction = DirectionInternal.to_factorio_direction(direction)
         response, elapsed = self.execute(
-            self.player_index, name, direction.value + 1, x, y
+            self.player_index, name, factorio_direction, x, y
         )
 
         if not isinstance(response, dict):

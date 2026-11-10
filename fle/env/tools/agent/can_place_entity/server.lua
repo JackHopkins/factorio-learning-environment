@@ -24,12 +24,17 @@ storage.actions.can_place_entity = function(player_index, entity, direction, x, 
         error("No " .. name .. " in inventory. Current inventory: " .. inv_contents)
     end
 
-    -- Get entity direction and collision box
-    local direction_enum = get_entity_direction(entity, direction)
+    -- Get entity direction and collision box. `direction` is a Factorio 2.0
+    -- direction (0, 4, 8, 12); map it the same way place_entity does, so the
+    -- answer is for the orientation place_entity would build.
+    local direction_enum = storage.utils.get_entity_direction(entity, direction)
     local prototype = prototypes.entity[entity]
     local collision_box = prototype.collision_box
     local width = math.abs(collision_box.right_bottom.x - collision_box.left_top.x)
     local height = math.abs(collision_box.right_bottom.y - collision_box.left_top.y)
+    if direction_enum == defines.direction.east or direction_enum == defines.direction.west then
+        width, height = height, width
+    end
 
     -- Define the area where the entity will be placed
     local target_area = {
@@ -65,17 +70,4 @@ storage.actions.can_place_entity = function(player_index, entity, direction, x, 
         error("Cannot place the entity at the specified position: x="..position.x..", y="..position.y)
     end
     return true
-end
-
-function get_entity_direction(entity, direction)
-    if direction == nil then
-        return defines.direction.north
-    end
-    local prototype = prototypes.entity[entity]
-    local cardinals = {defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west}
-    if prototype and prototype.type == "inserter" then
-        return cardinals[(direction % 4) + 1]
-    else
-        return cardinals[direction % 4]
-    end
 end

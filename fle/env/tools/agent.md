@@ -297,7 +297,7 @@ Copper plate - 18.75 per 60 seconds
 Iron plate - 18.75 per 60 seconds
 Stone brick - 18.75 per 60 seconds
 Automation science packs - 12 per 60 seconds
-Battery - 20 per 60 seconds. Can only be produced by a chemical plant
+Battery - 15 per 60 seconds. Can only be produced by a chemical plant
 
 Crafting speeds for liquids
 Sulfuric acid - 3000 per 60 seconds, can only be gotten with a chemical plant

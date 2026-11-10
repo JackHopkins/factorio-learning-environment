@@ -104,11 +104,11 @@ class Prototype(enum.Enum, metaclass=PrototypeMetaclass):
     FilterInserter = (
         "fast-inserter",
         ent.Inserter,
-    )  # Factorio 2.0: filter-inserter removed, use fast-inserter
+    )  # Factorio 2.0: filter-inserter removed (every inserter has filter slots); maps to fast-inserter
     StackFilterInserter = (
         "bulk-inserter",
         ent.Inserter,
-    )  # Factorio 2.0: renamed to bulk-inserter
+    )  # Factorio 2.0: stack-filter-inserter removed (every inserter has filter slots); maps to bulk-inserter
 
     Inserter = "inserter", ent.Inserter
 

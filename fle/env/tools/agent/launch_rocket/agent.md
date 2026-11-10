@@ -27,11 +27,13 @@ silo = place_entity_next_to(Prototype.RocketSilo, engine.position, Direction.RIG
 
 ## Required Components
 
-For each rocket launch you need:
+For each rocket launch the silo needs 100 rocket parts (Factorio 2.0). Each rocket part is made in the silo from:
 
-1. 100 Rocket Fuel
-2. 100 Rocket Control Units
-3. 100 Low Density Structures
+1. 10 Processing Units
+2. 10 Low Density Structures
+3. 10 Rocket Fuel
+
+That is 1,000 of each per rocket. Rocket Control Units do not exist in Factorio 2.0.
 
 ### 2. Monitoring Rocket Construction
 

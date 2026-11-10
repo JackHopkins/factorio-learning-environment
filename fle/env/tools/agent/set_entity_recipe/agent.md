@@ -50,7 +50,8 @@ print(f"Set the recipe of chemical plant at {chemical_plant.position} to Sulfur"
 
 ## Key Behaviors
 
-- The tool will search for the target entity within a 2-tile radius of the specified position
+- The tool will search for the target entity within 1 tile of the specified position
+- On an inserter it sets the inserter's first filter slot instead of a recipe (in Factorio 2.0 every inserter has filter slots)
 - If multiple machines are found, it will select the closest one
 - The recipe must be supported by the target entity, or an error will be raised
 - The tool updates the entity's recipe attribute with the new recipe name

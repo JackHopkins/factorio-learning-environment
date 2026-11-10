@@ -964,9 +964,25 @@ storage.utils.serialize_entity = function(entity)
     end
 
     -- Add input and output locations if the entity is a pump
+    -- Factorio 2.0: get_connections returns LuaFluidBox[] (no position), and an
+    -- unconnected pump has none. Read the pipe connections of the pump's single
+    -- fluidbox instead; target_position is the tile a pipe connects from.
     if entity.type == "pump" then
-        serialized.input_position = entity.fluidbox.get_connections(1)[1].position
-        serialized.output_position = entity.fluidbox.get_connections(2)[1].position
+        local ok, connections = pcall(function()
+            return entity.fluidbox.get_pipe_connections(1)
+        end)
+        if ok and connections then
+            for _, connection in pairs(connections) do
+                local target = connection.target_position
+                if target then
+                    if connection.flow_direction == "input" then
+                        serialized.input_position = {x = target.x, y = target.y}
+                    elseif connection.flow_direction == "output" then
+                        serialized.output_position = {x = target.x, y = target.y}
+                    end
+                end
+            end
+        end
     end
 
     -- Add the current research to the lab

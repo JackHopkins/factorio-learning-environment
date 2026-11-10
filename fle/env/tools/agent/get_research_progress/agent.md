@@ -22,7 +22,7 @@ current_progress = get_research_progress()  # Only works if research is active!
 
 ### Parameters
 
-- `technology`: Optional[Technology] - The technology to check progress for
+- `technology`: Optional[Union[Technology, str]] - The technology to check progress for, as a Technology enum value or the technology's name (e.g. `"automation-2"`)
   - If provided: Returns remaining requirements for that technology
   - If None: Returns requirements for current research (must have active research!)
 
@@ -120,7 +120,7 @@ except Exception as e:
 try:
     progress = get_research_progress(technology)
 except Exception as e:
-    if "Technology doesn't exist" in str(e):
+    if "doesn't exist" in str(e):
         # Handle invalid technology case
         pass
 ```

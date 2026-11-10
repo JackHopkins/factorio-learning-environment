@@ -7,12 +7,12 @@ The `set_research` tool enables setting the current research technology for the 
 ## Function Signature
 
 ```python
-def set_research(technology: Technology) -> List[Ingredient]
+def set_research(technology: Union[Technology, str]) -> List[Ingredient]
 ```
 
 ### Parameters
 
-- `technology`: A Technology enum value representing the technology to research
+- `technology`: A Technology enum value, or the technology's name as a string (e.g. `"automation-2"`). `Technology` has a member for every Factorio 2.0 base-game technology.
 
 ### Returns
 
@@ -54,7 +54,7 @@ The tool performs several validation checks before starting research:
 
 The tool will raise exceptions in the following situations:
 
-- Technology doesn't exist
+- Technology doesn't exist (the message lists the closest technology names)
 - Technology is already researched
 - Technology is not enabled
 - Missing prerequisites

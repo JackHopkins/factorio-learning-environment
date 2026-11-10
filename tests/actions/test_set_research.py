@@ -30,3 +30,16 @@ def test_fail_to_research_locked_technology(game):
     assert [ingredient.model_dump() for ingredient in remaining_ingredients] == [
         ingredient.model_dump() for ingredient in current_research_ingredients
     ]
+
+
+def test_set_research_by_name(game):
+    ingredients = game.set_research("automation")
+    assert ingredients[0].count == 10
+
+
+def test_set_research_unknown_name_lists_closest_names(game):
+    with pytest.raises(Exception) as exc_info:
+        game.set_research("research-speed")
+    assert str(exc_info.value).startswith(
+        "Technology research-speed does not exist. Closest technology names: research-speed-1"
+    )

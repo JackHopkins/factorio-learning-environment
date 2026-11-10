@@ -845,9 +845,10 @@ class Generator(FluidHandler, StaticEntity):
 class Pump(FluidHandler, Electric):
     """An electrically-powered fluid pump."""
 
+    input_position: Optional[Position] = None  # Where fluid enters the pump
+    output_position: Optional[Position] = None  # Where fluid leaves the pump
     _height: float = 1
     _width: float = 2
-    pass
 
 
 class OffshorePump(FluidHandler):

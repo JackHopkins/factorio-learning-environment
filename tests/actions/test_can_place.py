@@ -34,3 +34,23 @@ def test_can_place_over_player_large(game):
     game.place_entity(
         Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP
     )
+
+
+def test_can_place_depends_on_direction(game):
+    # A steam engine is 3x5 facing UP and 5x3 facing RIGHT
+    game.move_to(Position(x=0, y=6))
+    engine = game.place_entity(
+        Prototype.SteamEngine, position=Position(x=0, y=0), direction=Direction.UP
+    )
+    position = engine.position
+    assert game.pickup_entity(engine)
+
+    # A pipe inside the vertical footprint only
+    game.place_entity(Prototype.Pipe, position=Position(x=position.x, y=position.y + 2))
+
+    assert not game.can_place_entity(
+        Prototype.SteamEngine, direction=Direction.UP, position=position
+    )
+    assert game.can_place_entity(
+        Prototype.SteamEngine, direction=Direction.RIGHT, position=position
+    )

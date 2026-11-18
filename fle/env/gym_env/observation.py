@@ -75,7 +75,17 @@ class Observation:
         for item in obs_dict.get("inventory", []):
             inventory[item["type"]] = item["quantity"]
 
-        # Convert research state
+        # Convert research state. to_dict() writes the string "None" for a missing
+        # current_research and for an empty progress list (e.g. a fresh game where nothing has
+        # been researched), so map that sentinel back instead of iterating the string.
+        research_dict = obs_dict.get("research", {})
+        current_research = research_dict.get("current_research")
+        if current_research == "None":
+            current_research = None
+        progress_items = research_dict.get("progress", [])
+        if not isinstance(progress_items, (list, tuple)):
+            progress_items = []
+
         research = ResearchState(
             technologies={
                 tech["name"]: TechnologyState(
@@ -92,15 +102,12 @@ class Observation:
                 )
                 for tech in obs_dict.get("research", {}).get("technologies", [])
             },
-            current_research=obs_dict.get("research", {}).get("current_research"),
+            current_research=current_research,
             research_progress=obs_dict.get("research", {}).get(
                 "research_progress", 0.0
             ),
             research_queue=obs_dict.get("research", {}).get("research_queue", []),
-            progress={
-                item["name"]: item["value"]
-                for item in obs_dict.get("research", {}).get("progress", [])
-            },
+            progress={item["name"]: item["value"] for item in progress_items},
         )
 
         # Convert game info

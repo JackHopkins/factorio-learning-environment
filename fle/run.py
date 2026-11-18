@@ -23,7 +23,56 @@ def fle_init():
         sys.exit(1)
 
 
+CLUSTER_SCENARIOS = ("open_world", "default_lab_scenario")
+
+
+def _fle_cluster_python(args) -> None:
+    """Run `fle cluster` through the Python ClusterManager instead of run-envs.sh.
+
+    Windows cannot execute the bash script directly (subprocess raises
+    `OSError: [WinError 193] %1 is not a valid Win32 application`), so on
+    Windows the CLI uses the same ClusterManager that `fle inspect-eval`
+    already uses to auto-start servers. Defaults and validation mirror
+    run-envs.sh.
+    """
+    from fle.cluster.run_envs import ClusterManager
+
+    command = (args.cluster_command if args else None) or "start"
+    if command == "help":
+        print(
+            "Usage: fle cluster [start|stop|restart|help] [-n NUMBER] [-s SCENARIO]\n"
+            "  -n NUMBER    Number of Factorio instances (1-33, default: 1)\n"
+            f"  -s SCENARIO  One of {', '.join(CLUSTER_SCENARIOS)} "
+            "(default: default_lab_scenario)"
+        )
+        return
+
+    manager = ClusterManager()
+    if command == "stop":
+        manager.stop()
+    elif command == "restart":
+        manager.restart()
+    else:
+        num_instances = args.n if args and args.n is not None else 1
+        scenario = args.s if args and args.s else "default_lab_scenario"
+        if not 1 <= num_instances <= 33:
+            print(
+                "Error: Number of instances must be between 1 and 33.", file=sys.stderr
+            )
+            sys.exit(1)
+        if scenario not in CLUSTER_SCENARIOS:
+            print(
+                f"Error: Scenario must be one of {', '.join(CLUSTER_SCENARIOS)}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        manager.start(num_instances=num_instances, scenario=scenario)
+
+
 def fle_cluster(args):
+    if os.name == "nt":
+        _fle_cluster_python(args)
+        return
     cluster_path = Path(__file__).parent / "cluster"
     script = cluster_path / "run-envs.sh"
     if not script.exists():
